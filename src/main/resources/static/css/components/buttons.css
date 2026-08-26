@@ -1,0 +1,20 @@
+.btn-orange {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #FFFFFF;
+    transition: all 0.3s ease;
+}
+
+.btn-orange:hover,
+.btn-orange:focus {
+    background-color: var(--color-primary-hover);
+    border-color: var(--color-primary-hover);
+    color: #FFFFFF;
+    transform: translateY(-1px); /* Pequeno efeito de levantar ao passar o mouse */
+}
+
+/* Classe separada só para o formato, assim você pode ter botões de outras cores com o mesmo formato */
+.btn-pill {
+    border-radius: var(--btn-border-radius);
+    padding: var(--btn-padding-y) var(--btn-padding-x);
+}

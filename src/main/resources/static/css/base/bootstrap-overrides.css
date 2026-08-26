@@ -1,0 +1,15 @@
+/* Sobrescrevendo o fundo padrão do body do Bootstrap para telas de auth */
+body.auth-bg {
+    background-color: var(--bg-color-main);
+    font-family: var(--font-family-base);
+}
+
+/* Ajustando a cor dos links gerais */
+a {
+    color: var(--text-color-muted);
+    transition: color 0.2s ease;
+}
+
+a:hover {
+    color: var(--color-primary);
+}
