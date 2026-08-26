@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redefinir Senha - Projeto IV</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+
+    <!-- Fonte Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Seus Arquivos CSS -->
+    <link href="../../css/base/variables.css" rel="stylesheet">
+    <link href="../../css/base/bootstrap-overrides.css" rel="stylesheet">
+    <link href="../../css/components/onboarding-card.css" rel="stylesheet">
+    <link href="../../css/components/form-fields.css" rel="stylesheet">
+    <link href="../../css/components/buttons.css" rel="stylesheet">
+</head>
+
+<body class="bg-light auth-bg">
+
+    <div class="container d-flex justify-content-center align-items-center min-vh-100 py-4">
+
+        <div class="onboarding-card">
+            <form id="resetPasswordForm" action="#" method="POST" novalidate>
+
+                <!-- LINHA 1: E-mail -->
+                <div class="row align-items-start mb-4">
+                    <div class="col-md-8">
+                        <label for="email" class="form-label-custom">E-mail cadastrado</label>
+                        <input type="email" class="form-control custom-input" id="email" required>
+                        <p class="form-subtext mt-2 mb-0">
+                            Um código de redefinição de senha será enviado ao e-mail informado.<br>
+                            Não recebeu? Reenvio disponível em 30 segundos.
+                        </p>
+                    </div>
+                    <div class="col-md-4 pt-4 d-flex justify-content-end">
+                        <button type="button" class="btn btn-orange btn-pill text-white fw-bold w-100">enviar
+                            código</button>
+                    </div>
+                </div>
+
+                <div class="row align-items-end mb-4">
+                    <div class="col-md-8">
+                        <label class="form-label-custom">Código de redefinição</label>
+                        <div class="d-flex gap-2" id="codeContainer">
+                            <input type="text" maxlength="1" inputmode="numeric"
+                                class="form-control custom-input code-box code-input text-center">
+                            <input type="text" maxlength="1" inputmode="numeric"
+                                class="form-control custom-input code-box code-input text-center">
+                            <input type="text" maxlength="1" inputmode="numeric"
+                                class="form-control custom-input code-box code-input text-center">
+                            <input type="text" maxlength="1" inputmode="numeric"
+                                class="form-control custom-input code-box code-input text-center">
+                            <input type="text" maxlength="1" inputmode="numeric"
+                                class="form-control custom-input code-box code-input text-center">
+                            <input type="text" maxlength="1" inputmode="numeric"
+                                class="form-control custom-input code-box code-input text-center">
+                        </div>
+                    </div>
+                    <div class="col-md-4 d-flex justify-content-end">
+                        <button type="button"
+                            class="btn btn-orange btn-pill text-white fw-bold w-100">verificar</button>
+                    </div>
+                </div>
+
+                <!-- LINHA 3: Insira a nova senha -->
+                <div class="row align-items-end mb-4">
+                    <div class="col-md-8">
+                        <label for="senha" class="form-label-custom">Insira a nova senha</label>
+                        <input type="password" class="form-control custom-input" id="senha" required>
+                    </div>
+                </div>
+
+                <!-- LINHA 4: Confirme a nova senha -->
+                <div class="row align-items-end">
+                    <div class="col-md-8">
+                        <label for="confirmarSenha" class="form-label-custom">Confirme a nova senha</label>
+                        <input type="password" class="form-control custom-input" id="confirmarSenha" required>
+                    </div>
+                    <div class="col-md-4 d-flex justify-content-end">
+                        <button type="submit" class="btn btn-orange btn-pill text-white fw-bold w-100">alterar
+                            senha</button>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+
+    </div>
+
+    <!-- Scripts no final do body -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../../js/pages/redefinir-senha.js"></script>
+</body>
+
+</html>
