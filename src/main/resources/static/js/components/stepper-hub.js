@@ -1,0 +1,1 @@
+// lógica compartilhada dos hubs (Departamentos/Usuários) com sub-telas internas

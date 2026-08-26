@@ -1,0 +1,49 @@
+/* Estilos específicos da página de Onboarding */
+.onboarding-bg {
+    background-color: var(--bg-color-main, #F4E8E1);
+    min-height: 100vh;
+}
+
+/* Área de Upload (Drag and Drop) */
+.upload-zone {
+    border: 2px dashed var(--input-border-color, #E0E0E0);
+    border-radius: 16px;
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+    background-color: #F8F9FA;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.upload-zone:hover {
+    border-color: var(--color-primary, #F08A2B);
+    background-color: #FFFFFF;
+}
+
+/* Hub Selection Cards */
+.hub-card {
+    background-color: #F8F9FA;
+    border: 1px solid var(--input-border-color, #E0E0E0);
+    border-radius: 16px;
+    padding: 2.5rem;
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 160px;
+    transition: all 0.3s ease;
+}
+
+.hub-card:hover {
+    background-color: #FFFFFF;
+    border-color: var(--color-primary, #F08A2B);
+    box-shadow: 0 10px 20px rgba(240, 138, 43, 0.08);
+    transform: translateY(-2px);
+}
+
+.hub-card span {
+    color: var(--text-color-dark, #333333);
+    font-size: 1.25rem;
+    font-weight: 500;
+}

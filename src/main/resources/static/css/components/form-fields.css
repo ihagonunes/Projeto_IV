@@ -1,0 +1,22 @@
+.custom-input {
+    background-color: var(--input-bg-color);
+    border: 1px solid var(--input-border-color);
+    border-radius: var(--input-border-radius);
+    box-shadow: var(--shadow-input-inner);
+    padding: 0.75rem 1rem;
+    color: var(--text-color-dark);
+}
+
+/* Cor do texto do placeholder (e-mail, senha) */
+.custom-input::placeholder {
+    color: var(--text-color-muted);
+}
+
+/* Efeito de foco quando o usuário clica no input */
+.custom-input:focus {
+    background-color: #FFFFFF;
+    border-color: var(--color-primary);
+    /* Um anel de foco laranja suave */
+    box-shadow: 0 0 0 0.25rem rgba(240, 138, 43, 0.25); 
+    outline: none;
+}

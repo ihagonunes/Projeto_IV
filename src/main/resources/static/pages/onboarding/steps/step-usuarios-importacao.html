@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Onboarding - Importar Usuários - Projeto IV</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+
+    <!-- Fonte Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Arquivos CSS de Referência -->
+    <link href="../../../css/base/variables.css" rel="stylesheet">
+    <link href="../../../css/base/bootstrap-overrides.css" rel="stylesheet">
+    <link href="../../../css/components/onboarding-card.css" rel="stylesheet">
+    <link href="../../../css/components/form-fields.css" rel="stylesheet">
+    <link href="../../../css/components/buttons.css" rel="stylesheet">
+    <link href="../../../css/components/wizard-tabs.css" rel="stylesheet">
+    <link href="../../../css/pages/onboarding.css" rel="stylesheet">
+</head>
+
+<body class="bg-light auth-bg onboarding-bg">
+
+    <div class="container d-flex justify-content-center align-items-center min-vh-100 py-4">
+
+        <div class="onboarding-card p-5 bg-white">
+            
+            <!-- Menu de Passos (Stepper) -->
+            <ul class="wizard-stepper">
+                <li class="wizard-step">
+                    Tenant
+                </li>
+                <li class="wizard-step">
+                    Administrador Principal
+                </li>
+                <li class="wizard-step">
+                    Departamentos
+                </li>
+                <li class="wizard-step active">
+                    Usuários
+                </li>
+                <li class="wizard-step">
+                    IA
+                </li>
+                <li class="wizard-step">
+                    Revisão
+                </li>
+            </ul>
+
+            <form id="importForm" action="step-usuarios-hub.html" method="GET" novalidate>
+                <div class="my-4 text-center">
+                    <h4 class="mb-3 text-dark fw-semibold">Importação de Usuários</h4>
+                    <p class="text-muted">Faça o upload da planilha contendo a lista de usuários da plataforma.</p>
+                    
+                    <div class="upload-zone mx-auto" style="max-width: 500px; min-height: 200px;">
+                        <input type="file" id="userFile" class="d-none" accept=".csv, .xlsx, .xls">
+                        <label for="userFile" class="btn btn-outline-secondary btn-pill cursor-pointer px-4 py-2">Selecionar Planilha</label>
+                        <span class="text-muted small mt-3 d-block">Formatos suportados: .csv, .xlsx, .xls</span>
+                    </div>
+                </div>
+
+                <!-- Botões de Ação -->
+                <div class="d-flex justify-content-between mt-5">
+                    <a href="step-usuarios-hub.html" class="btn btn-outline-secondary btn-pill">voltar</a>
+                    <button type="submit" class="btn btn-orange btn-pill text-white fw-bold">próximo</button>
+                </div>
+            </form>
+
+        </div>
+
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>
