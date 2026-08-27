@@ -25,6 +25,7 @@
 .wizard-step.active {
     color: var(--color-primary, #F08A2B);
     font-weight: 600;
+    margin-top: 25px;
 }
 
 .wizard-step.active::after {

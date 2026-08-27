@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Onboarding - Formulário de Departamento - Projeto IV</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+
+    <!-- Fonte Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Arquivos CSS de Referência -->
+    <link href="../../../css/base/variables.css" rel="stylesheet">
+    <link href="../../../css/base/bootstrap-overrides.css" rel="stylesheet">
+    <link href="../../../css/components/onboarding-card.css" rel="stylesheet">
+    <link href="../../../css/components/form-fields.css" rel="stylesheet">
+    <link href="../../../css/components/buttons.css" rel="stylesheet">
+    <link href="../../../css/components/wizard-tabs.css" rel="stylesheet">
+    <link href="../../../css/pages/onboarding.css" rel="stylesheet">
+</head>
+
+<body class="bg-light auth-bg onboarding-bg">
+
+    <div class="container d-flex justify-content-center align-items-center min-vh-100 py-4">
+
+        <div class="onboarding-card p-5 bg-white">
+            
+            <!-- Menu de Passos (Stepper) -->
+            <ul class="wizard-stepper">
+                <li class="wizard-step">
+                    Tenant
+                </li>
+                <li class="wizard-step">
+                    Administrador Principal
+                </li>
+                <li class="wizard-step active">
+                    Departamentos
+                </li>
+                <li class="wizard-step">
+                    Usuários
+                </li>
+                <li class="wizard-step">
+                    IA
+                </li>
+                <li class="wizard-step">
+                    Revisão
+                </li>
+            </ul>
+
+            <form id="departamentoForm" action="step-departamentos-hub.html" method="GET" novalidate>
+                
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="nomeDepartamento" class="form-label-custom">Nome do departamento *</label>
+                        <input type="text" class="form-control custom-input" id="nomeDepartamento" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="liderDepartamento" class="form-label-custom">Líder do departamento</label>
+                        <input type="text" class="form-control custom-input" id="liderDepartamento">
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="orcamentoMensal" class="form-label-custom">Orçamento mensal (R$)</label>
+                        <input type="number" step="0.01" class="form-control custom-input" id="orcamentoMensal" placeholder="0,00">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="limiteAlerta" class="form-label-custom">Limite de alerta (%)</label>
+                        <input type="number" class="form-control custom-input" id="limiteAlerta" placeholder="Ex: 80">
+                    </div>
+
+                    <div class="col-md-12">
+                        <label for="emailAlerta" class="form-label-custom">E-mail de alerta de limite</label>
+                        <input type="email" class="form-control custom-input" id="emailAlerta" placeholder="alerta@empresa.com">
+                    </div>
+                    
+                    <div class="col-md-12">
+                        <label for="descricao" class="form-label-custom">Descrição (opcional)</label>
+                        <textarea class="form-control custom-input" id="descricao" rows="3"></textarea>
+                    </div>
+                </div>
+
+                <!-- Botões de Ação -->
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="step-departamentos-hub.html" class="btn btn-outline-secondary btn-pill">voltar</a>
+                    <button type="submit" class="btn btn-orange btn-pill text-white fw-bold">próximo</button>
+                </div>
+            </form>
+
+        </div>
+
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>
