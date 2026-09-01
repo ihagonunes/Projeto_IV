@@ -17,4 +17,10 @@
 .btn-pill {
     border-radius: var(--btn-border-radius);
     padding: var(--btn-padding-y) var(--btn-padding-x);
+    margin-top:5px;
+    margin-bottom: 5px;
+}
+
+.btn-onboarding {
+    width: 1000px;
 }
