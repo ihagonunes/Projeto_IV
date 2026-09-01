@@ -1,0 +1,52 @@
+# Catálogo de dependências
+
+## Runtime
+
+| Tecnologia | Uso | Política |
+|---|---|---|
+| Java 21 | runtime/LTS | obrigatório |
+| Spring Boot 4.1.1 | bootstrap/dependency management | baseline |
+| Spring Web | REST | obrigatório |
+| Spring Data JPA | persistência | obrigatório |
+| PostgreSQL | SGBD | único banco suportado |
+| Flyway | migrations | obrigatório |
+| Spring Validation | DTO/input validation | obrigatório |
+| Spring Security | autenticação/autorização | obrigatório |
+| OAuth2 Resource Server | primitives JWT Bearer | usado quando IAM/JWT for implementado |
+| Actuator | health/info | obrigatório para operação |
+
+## Teste
+
+| Biblioteca | Uso |
+|---|---|
+| JUnit 5 / Spring Boot Test | unit/application/API tests |
+| Spring Security Test | authorization/security |
+| ArchUnit 1.4.2 | enforcement modular |
+| Testcontainers 2.0.5 (`testcontainers-postgresql` + `testcontainers-junit-jupiter`) | integração com PostgreSQL real |
+
+## Não adicionar agora
+
+- H2;
+- Lombok;
+- MapStruct;
+- Spring Modulith;
+- Spring AI;
+- smolagents/Python runtime;
+- Redis;
+- Kafka/RabbitMQ;
+- pgvector;
+- Elasticsearch;
+- OpenTelemetry backend/vendor SDK;
+- SDK concreto de provider de IA.
+
+Esses itens exigem necessidade funcional explícita. Framework de provider e KnowledgeAccess permanecem abstratos.
+
+## Política
+
+Toda dependência nova deve responder:
+
+1. qual problema real resolve;
+2. por que a JDK/Spring atual não basta;
+3. qual módulo é proprietário;
+4. qual custo de manutenção/teste;
+5. se altera propriedade arquitetural → ADR.

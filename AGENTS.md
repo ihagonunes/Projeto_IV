@@ -425,3 +425,78 @@ A Jira issue is considered technically complete when:
 - documentation is updated when necessary;
 - CI passes;
 - the final diff contains no unrelated changes.
+
+---
+
+## 19. Guia Operacional — Plataforma QSOFT de Governança de IA
+
+Este repositório implementa a Plataforma QSOFT de Governança de IA como
+um Monólito Modular Java/Spring Boot. O contexto deve ser carregado
+progressivamente: este arquivo → `ai/context-map.md` → contexto específico
+→ código.
+
+Regras não negociáveis:
+
+- Não invente requisitos.
+- Não altere a arquitetura sem propor/atualizar ADR em `ai/adr/`.
+- O projeto é um único Maven, não Maven multi-module.
+- PostgreSQL é o único SGBD suportado. Não introduza H2.
+- Docker é opcional no desenvolvimento e não define fronteiras de domínio.
+- Outro módulo pode importar somente `sharedkernel` e a superfície `api.*`
+  de módulos permitidos.
+- Não importe `domain`, `application`, `infrastructure`, repository, entity
+  ou adapter de outro módulo.
+- Não crie FK SQL ou associação JPA cross-module.
+- Relações cross-module são IDs + Command/Query Port ou Domain Event.
+- `domain` não depende de Spring, JPA, SDK de provider, `application` ou
+  `infrastructure`.
+- TenantId vem do contexto autenticado; nunca confie em tenant enviado
+  pelo frontend.
+- Query SQL nativa tenant-aware deve conter filtro explícito por `tenant_id`.
+- LLM nunca decide autorização.
+- Conteúdo de prompt/resposta/documento/segredo não entra em módulos
+  analíticos.
+- Não exponha endpoint público `/ai/complete`.
+- Não introduza RAG, pgvector, provider concreto, broker, Redis ou
+  observabilidade externa sem tarefa explícita.
+- Não introduza dependência nova sem justificar em `ai/dependencies.md` ou
+  ADR quando arquitetural.
+- Toda mudança de comportamento deve ter teste proporcional ao risco.
+- Nunca coloque segredo real no repositório.
+
+Arquivos canônicos:
+
+- `ai/project.md` — produto e escopo.
+- `ai/architecture.md` — módulos, fronteiras e dependências.
+- `ai/contracts.md` — contratos públicos e eventos.
+- `ai/testing.md` — estratégia de testes.
+- `ai/dependencies.md` — catálogo técnico e política de dependências.
+- `ai/decisions.md` — índice dos ADRs.
+- `ai/adr/` — decisões formais.
+- `ai/epics/` — agrupamentos funcionais.
+- `ai/tasks/` — task packets curtos.
+
+Fluxo de implementação:
+
+1. Entender a tarefa.
+2. Ler somente o contexto mínimo.
+3. Identificar módulo proprietário.
+4. Confirmar contratos afetados.
+5. Planejar menor mudança reversível.
+6. Implementar dentro da fronteira do módulo.
+7. Adicionar/ajustar testes.
+8. Executar `./scripts/check --changed`.
+9. Revisar `git diff`.
+10. Executar `./scripts/check`.
+11. Para persistência/multi-tenancy, executar também `./scripts/check-integration`.
+
+Definition of Done:
+
+- compila com Java 21;
+- testes relevantes passam;
+- ArchUnit passa;
+- migration Flyway acompanha alteração de persistência;
+- nenhuma fronteira modular foi violada;
+- nenhuma regra tenant-aware foi enfraquecida;
+- documentação canônica foi atualizada se necessário;
+- diff contém somente mudanças relacionadas.
