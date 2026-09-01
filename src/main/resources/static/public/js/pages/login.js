@@ -10,8 +10,7 @@ const btnEsqueciSenha = document.getElementById('btnEsqueciSenha');
 if (btnEsqueciSenha) {
     btnEsqueciSenha.addEventListener('click', function (event) {
         event.preventDefault();
-        // Como 'login.html' e 'redefinir-senha.html' estão na mesma pasta ('auth')
-        window.location.href = 'redefinir-senha.html';
+        window.location.href = '/redefinir-senha';
     });
 }
 
@@ -39,7 +38,8 @@ if (form) {
         }
 
         if (formularioValido) {
-            console.log("Tudo preenchido! Enviando dados para a API...");
+            console.log("Tudo preenchido! Redirecionando para onboarding...");
+            window.location.href = '/onboarding';
         }
     });
 }
