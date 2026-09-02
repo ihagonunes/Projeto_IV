@@ -1,11 +1,16 @@
 -- IAM Module - Initial Schema
--- Tenant table
+-- Merged tenant definition (keeps status and TIMESTAMPTZ) and app_user table
+
 CREATE TABLE IF NOT EXISTS tenant (
-    id UUID PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    slug VARCHAR(255) NOT NULL UNIQUE,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    id         UUID         NOT NULL,
+    slug       VARCHAR(100) NOT NULL,
+    name       VARCHAR(200) NOT NULL,
+    status     VARCHAR(20)  NOT NULL,
+    created_at TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT pk_tenant PRIMARY KEY (id),
+    CONSTRAINT uq_tenant_slug UNIQUE (slug)
 );
 
 -- Application User table
@@ -16,8 +21,8 @@ CREATE TABLE IF NOT EXISTS app_user (
     password_hash VARCHAR(255),
     full_name VARCHAR(255),
     enabled BOOLEAN DEFAULT true,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_app_user_tenant FOREIGN KEY (tenant_id) REFERENCES tenant(id),
     UNIQUE(tenant_id, email)
 );
@@ -26,3 +31,5 @@ CREATE TABLE IF NOT EXISTS app_user (
 CREATE INDEX IF NOT EXISTS idx_app_user_email ON app_user(email);
 CREATE INDEX IF NOT EXISTS idx_app_user_tenant_id ON app_user(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_tenant_slug ON tenant(slug);
+CREATE INDEX IF NOT EXISTS idx_tenant_created_at ON tenant(created_at);
+

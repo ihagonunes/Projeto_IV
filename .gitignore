@@ -56,3 +56,7 @@ build/
 ### Front-end ###
 node_modules/
 Thumbs.db
+
+### Front-end ###
+node_modules/
+
