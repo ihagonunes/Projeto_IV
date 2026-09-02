@@ -17,6 +17,7 @@ public final class UserJpaMapper {
         entity.setName(user.name());
         entity.setHierarchyLevel(user.hierarchyLevel());
         entity.setDepartmentId(user.departmentId());
+        entity.setPasswordHash(user.passwordHash());
         entity.setStatus(user.status());
         entity.setCreatedAt(user.createdAt());
         entity.setUpdatedAt(user.updatedAt());
@@ -31,6 +32,7 @@ public final class UserJpaMapper {
             entity.getName(),
             entity.getHierarchyLevel(),
             entity.getDepartmentId(),
+            entity.getPasswordHash(),
             entity.getStatus(),
             entity.getCreatedAt(),
             entity.getUpdatedAt()

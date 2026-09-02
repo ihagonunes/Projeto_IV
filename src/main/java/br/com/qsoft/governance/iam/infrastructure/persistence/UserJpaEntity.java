@@ -39,6 +39,9 @@ public class UserJpaEntity {
     @Column(name = "department_id")
     private UUID departmentId;
 
+    @Column(name = "password_hash", length = 255)
+    private String passwordHash;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     private UserStatus status;
@@ -99,6 +102,14 @@ public class UserJpaEntity {
 
     public void setDepartmentId(UUID departmentId) {
         this.departmentId = departmentId;
+    }
+
+    public String getPasswordHash() {
+        return passwordHash;
+    }
+
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
     }
 
     public UserStatus getStatus() {

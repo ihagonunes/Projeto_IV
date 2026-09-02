@@ -19,19 +19,21 @@ public final class User {
     private final String name;
     private HierarchyLevel hierarchyLevel;
     private final UUID departmentId;
+    private String passwordHash;
     private UserStatus status;
     private final Instant createdAt;
     private Instant updatedAt;
 
     private User(UserId id, TenantId tenantId, String email, String name,
-                 HierarchyLevel hierarchyLevel, UUID departmentId, UserStatus status,
-                 Instant createdAt, Instant updatedAt) {
+                 HierarchyLevel hierarchyLevel, UUID departmentId, String passwordHash,
+                 UserStatus status, Instant createdAt, Instant updatedAt) {
         this.id = Objects.requireNonNull(id, "id");
         this.tenantId = Objects.requireNonNull(tenantId, "tenantId");
         this.email = Objects.requireNonNull(email, "email");
         this.name = Objects.requireNonNull(name, "name");
         this.hierarchyLevel = Objects.requireNonNull(hierarchyLevel, "hierarchyLevel");
         this.departmentId = departmentId;
+        this.passwordHash = passwordHash;
         this.status = Objects.requireNonNull(status, "status");
         this.createdAt = Objects.requireNonNull(createdAt, "createdAt");
         this.updatedAt = Objects.requireNonNull(updatedAt, "updatedAt");
@@ -40,14 +42,14 @@ public final class User {
     public static User create(UserId id, TenantId tenantId, String email, String name,
                               HierarchyLevel hierarchyLevel, UUID departmentId) {
         Instant now = Instant.now();
-        return new User(id, tenantId, email, name, hierarchyLevel, departmentId,
+        return new User(id, tenantId, email, name, hierarchyLevel, departmentId, null,
             UserStatus.ACTIVE, now, now);
     }
 
     public static User restore(UserId id, TenantId tenantId, String email, String name,
-                               HierarchyLevel hierarchyLevel, UUID departmentId,
+                               HierarchyLevel hierarchyLevel, UUID departmentId, String passwordHash,
                                UserStatus status, Instant createdAt, Instant updatedAt) {
-        return new User(id, tenantId, email, name, hierarchyLevel, departmentId,
+        return new User(id, tenantId, email, name, hierarchyLevel, departmentId, passwordHash,
             status, createdAt, updatedAt);
     }
 
@@ -73,6 +75,20 @@ public final class User {
 
     public UUID departmentId() {
         return departmentId;
+    }
+
+    public String passwordHash() {
+        return passwordHash;
+    }
+
+    public boolean hasPasswordHash() {
+        return passwordHash != null && !passwordHash.isBlank();
+    }
+
+    public User setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
+        this.updatedAt = Instant.now();
+        return this;
     }
 
     public UserStatus status() {
