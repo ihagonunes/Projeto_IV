@@ -19,9 +19,10 @@ public class SecurityBaselineConfig {
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/actuator/health/**", "/api/v1/auth/login").permitAll()
+                .requestMatchers("/actuator/health/**", "/api/v1/auth/login", "/api/v1/tenants").permitAll()
                 // Baseline segura: os endpoints de negócio permanecem fechados
                 // até o IAM/JWT ser implementado conforme ADR-30.
+                // POST /api/v1/tenants é o cadastro de onboarding (tenant ainda não existe).
                 .anyRequest().denyAll())
             .httpBasic(httpBasic -> httpBasic.disable())
             .formLogin(formLogin -> formLogin.disable())

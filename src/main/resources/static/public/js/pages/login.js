@@ -6,6 +6,19 @@ const inputEmail = document.getElementById('email');
 const inputSenha = document.getElementById('senha');
 const btnEsqueciSenha = document.getElementById('btnEsqueciSenha');
 
+// Exibe um aviso de erro no formulário, sem alterar o design do template.
+function showLoginError(message) {
+    const field = document.getElementById('loginForm');
+    if (!field) return;
+    const existing = field.querySelector('.login-error-banner');
+    if (existing) existing.remove();
+    const banner = document.createElement('div');
+    banner.className = 'alert alert-danger text-center mt-3 login-error-banner';
+    banner.setAttribute('role', 'alert');
+    banner.textContent = message;
+    field.appendChild(banner);
+}
+
 // 2. Evento de clique para Redefinir Senha
 if (btnEsqueciSenha) {
     btnEsqueciSenha.addEventListener('click', function (event) {
@@ -16,7 +29,7 @@ if (btnEsqueciSenha) {
 
 // 3. Validação do Formulário de Login
 if (form) {
-    form.addEventListener('submit', function (event) {
+    form.addEventListener('submit', async function (event) {
         event.preventDefault(); 
 
         let formularioValido = true;
@@ -38,8 +51,17 @@ if (form) {
         }
 
         if (formularioValido) {
-            console.log("Tudo preenchido! Redirecionando para onboarding...");
-            window.location.href = '/onboarding';
+            try {
+                // Autenticação delegada ao backend Spring (POST /api/v1/auth/login).
+                await window.Auth.login({
+                    email: inputEmail.value.trim(),
+                    password: inputSenha.value
+                });
+                window.location.href = '/onboarding';
+            } catch (err) {
+                console.error('Falha no login:', err);
+                showLoginError(err && err.message ? err.message : 'Não foi possível autenticar.');
+            }
         }
     });
 }
