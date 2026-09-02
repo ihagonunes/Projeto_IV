@@ -15,6 +15,9 @@ import br.com.qsoft.governance.iam.domain.user.HierarchyLevel;
 import br.com.qsoft.governance.iam.domain.user.User;
 import br.com.qsoft.governance.iam.domain.user.UserStatus;
 import br.com.qsoft.governance.sharedkernel.id.TenantId;
+import br.com.qsoft.governance.sharedkernel.id.UserId;
+import br.com.qsoft.governance.sharedkernel.tenant.TenantContext;
+import br.com.qsoft.governance.sharedkernel.tenant.TenantContextHolder;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -121,5 +124,27 @@ class UserPersistenceIT {
 
         User reloaded = userRepository.findById(user.id()).orElseThrow();
         assertThat(reloaded.hierarchyLevel()).isEqualTo(HierarchyLevel.EXECUTIVE);
+    }
+
+    @Test
+    void shouldNotReadOtherTenantUserWhenContextIsSet() {
+        Tenant tenantA = newTenant("isoA");
+        Tenant tenantB = newTenant("isoB");
+        User userA = createUser.create(new CreateUserCommand(
+            tenantA.id(), "ana@iso.com", "Ana", HierarchyLevel.MANAGER, null));
+        User userB = createUser.create(new CreateUserCommand(
+            tenantB.id(), "bob@iso.com", "Bob", HierarchyLevel.MANAGER, null));
+
+        // Contexto autenticado do tenant A (vem do JWT, nunca do cliente).
+        TenantContextHolder.set(new TenantContext(tenantA.id(), UserId.random()));
+        try {
+            assertThat(userRepository.findById(userA.id())).isPresent();
+            // Usuário do Tenant B é invisível sob o contexto do Tenant A.
+            assertThat(userRepository.findById(userB.id())).isEmpty();
+            // A busca por e-mail do Tenant B também retorna vazio (isolamento).
+            assertThat(userRepository.findByTenantIdAndEmail(tenantB.id(), "bob@iso.com")).isEmpty();
+        } finally {
+            TenantContextHolder.clear();
+        }
     }
 }

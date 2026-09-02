@@ -10,14 +10,25 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.UUID;
+import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.ParamDef;
 
 /**
  * Persistência JPA do agregado User. O department_id é uma referência
  * cross-module persistida apenas como ID, sem FK SQL (ADR-29/ADR-05).
+ * <p>
+ * O {@code @Filter} transversal é a DEFESA SECUNDÁRIA de isolamento
+ * (ADR-03): o filtro explícito por tenant_id nas queries é a defesa primária.
  */
+@FilterDef(name = UserJpaEntity.TENANT_FILTER_NAME,
+    parameters = @ParamDef(name = "tenantId", type = UUID.class))
+@Filter(name = UserJpaEntity.TENANT_FILTER_NAME, condition = "tenant_id = :tenantId")
 @Entity
 @Table(name = "app_user")
 public class UserJpaEntity {
+
+    public static final String TENANT_FILTER_NAME = "tenantFilter";
 
     @Id
     @Column(name = "id", nullable = false)
