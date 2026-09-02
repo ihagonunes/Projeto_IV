@@ -3,6 +3,10 @@ package br.com.qsoft.governance.iam.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import br.com.qsoft.governance.iam.api.model.AuthorizationResult;
+import br.com.qsoft.governance.iam.api.model.AuthorizationScope;
+import br.com.qsoft.governance.iam.api.model.Permission;
+import br.com.qsoft.governance.iam.api.query.AuthorizationQuery;
 import br.com.qsoft.governance.iam.application.port.UserRepository;
 import br.com.qsoft.governance.iam.domain.exception.AuthorizationDeniedException;
 import br.com.qsoft.governance.iam.domain.exception.UserNotFoundException;
@@ -46,10 +50,36 @@ class ChangeUserHierarchyLevelTest {
         }
     };
 
-    private final ChangeUserHierarchyLevel useCase = new ChangeUserHierarchyLevel(userRepository);
+    private final AuthorizationQuery authorizationQuery = new AuthorizationQuery() {
+        @Override
+        public AuthorizationResult checkPermission(UserId userId, Permission permission) {
+            User user = userRepository.findById(userId).orElse(null);
+            if (user == null) {
+                return AuthorizationResult.deny("Usuário não encontrado.");
+            }
+            if (user.status() != UserStatus.ACTIVE) {
+                return AuthorizationResult.deny("Usuário inativo.");
+            }
+            if (!user.hasPermission(permission)) {
+                return AuthorizationResult.deny("Permissão negada: " + permission.name() + ".");
+            }
+            return AuthorizationResult.allow();
+        }
 
-    private User userIn(TenantId tenantId, String email, HierarchyLevel level) {
+        @Override
+        public AuthorizationScope resolveScope(UserId userId) {
+            return AuthorizationScope.SELF;
+        }
+    };
+
+    private final ChangeUserHierarchyLevel useCase =
+        new ChangeUserHierarchyLevel(userRepository, authorizationQuery);
+
+    private User userIn(TenantId tenantId, String email, HierarchyLevel level, Permission... permissions) {
         User user = User.create(UserId.random(), tenantId, email, email, level, null);
+        for (Permission permission : permissions) {
+            user.grantPermission(permission);
+        }
         usersById.put(user.id(), user);
         return user;
     }
@@ -57,7 +87,7 @@ class ChangeUserHierarchyLevelTest {
     @Test
     void shouldChangeHierarchyLevelWithinSameTenant() {
         TenantId tenantId = TenantId.random();
-        User actor = userIn(tenantId, "admin@x.com", HierarchyLevel.EXECUTIVE);
+        User actor = userIn(tenantId, "admin@x.com", HierarchyLevel.EXECUTIVE, Permission.MANAGE_HIERARCHY);
         User target = userIn(tenantId, "ana@x.com", HierarchyLevel.COLLABORATOR);
 
         User updated = useCase.change(new ChangeUserHierarchyLevelCommand(
@@ -70,8 +100,20 @@ class ChangeUserHierarchyLevelTest {
     }
 
     @Test
+    void shouldRejectWhenActorLacksPermission() {
+        TenantId tenantId = TenantId.random();
+        User actor = userIn(tenantId, "user@x.com", HierarchyLevel.COLLABORATOR);
+        User target = userIn(tenantId, "ana@x.com", HierarchyLevel.COLLABORATOR);
+
+        assertThatThrownBy(() -> useCase.change(new ChangeUserHierarchyLevelCommand(
+            actor.id(), target.id(), HierarchyLevel.MANAGER)))
+            .isInstanceOf(AuthorizationDeniedException.class);
+    }
+
+    @Test
     void shouldRejectChangeAcrossTenants() {
-        User actor = userIn(TenantId.random(), "admin@a.com", HierarchyLevel.EXECUTIVE);
+        User actor = userIn(TenantId.random(), "admin@a.com", HierarchyLevel.EXECUTIVE,
+            Permission.MANAGE_HIERARCHY);
         User target = userIn(TenantId.random(), "ana@b.com", HierarchyLevel.COLLABORATOR);
 
         assertThatThrownBy(() -> useCase.change(new ChangeUserHierarchyLevelCommand(
@@ -82,7 +124,8 @@ class ChangeUserHierarchyLevelTest {
     @Test
     void shouldRejectUnknownTarget() {
         TenantId tenantId = TenantId.random();
-        User actor = userIn(tenantId, "admin@x.com", HierarchyLevel.EXECUTIVE);
+        User actor = userIn(tenantId, "admin@x.com", HierarchyLevel.EXECUTIVE,
+            Permission.MANAGE_HIERARCHY);
 
         assertThatThrownBy(() -> useCase.change(new ChangeUserHierarchyLevelCommand(
             actor.id(), UserId.random(), HierarchyLevel.MANAGER)))

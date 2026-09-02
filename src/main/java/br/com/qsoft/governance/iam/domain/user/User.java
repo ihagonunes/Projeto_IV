@@ -1,9 +1,13 @@
 package br.com.qsoft.governance.iam.domain.user;
 
+import br.com.qsoft.governance.iam.api.model.Permission;
 import br.com.qsoft.governance.sharedkernel.id.TenantId;
 import br.com.qsoft.governance.sharedkernel.id.UserId;
 import java.time.Instant;
+import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -20,13 +24,14 @@ public final class User {
     private HierarchyLevel hierarchyLevel;
     private final UUID departmentId;
     private String passwordHash;
+    private final Set<Permission> permissions;
     private UserStatus status;
     private final Instant createdAt;
     private Instant updatedAt;
 
     private User(UserId id, TenantId tenantId, String email, String name,
                  HierarchyLevel hierarchyLevel, UUID departmentId, String passwordHash,
-                 UserStatus status, Instant createdAt, Instant updatedAt) {
+                 Set<Permission> permissions, UserStatus status, Instant createdAt, Instant updatedAt) {
         this.id = Objects.requireNonNull(id, "id");
         this.tenantId = Objects.requireNonNull(tenantId, "tenantId");
         this.email = Objects.requireNonNull(email, "email");
@@ -34,6 +39,7 @@ public final class User {
         this.hierarchyLevel = Objects.requireNonNull(hierarchyLevel, "hierarchyLevel");
         this.departmentId = departmentId;
         this.passwordHash = passwordHash;
+        this.permissions = permissions == null ? new HashSet<>() : new HashSet<>(permissions);
         this.status = Objects.requireNonNull(status, "status");
         this.createdAt = Objects.requireNonNull(createdAt, "createdAt");
         this.updatedAt = Objects.requireNonNull(updatedAt, "updatedAt");
@@ -43,14 +49,15 @@ public final class User {
                               HierarchyLevel hierarchyLevel, UUID departmentId) {
         Instant now = Instant.now();
         return new User(id, tenantId, email, name, hierarchyLevel, departmentId, null,
-            UserStatus.ACTIVE, now, now);
+            Set.of(), UserStatus.ACTIVE, now, now);
     }
 
     public static User restore(UserId id, TenantId tenantId, String email, String name,
                                HierarchyLevel hierarchyLevel, UUID departmentId, String passwordHash,
-                               UserStatus status, Instant createdAt, Instant updatedAt) {
+                               Set<Permission> permissions, UserStatus status,
+                               Instant createdAt, Instant updatedAt) {
         return new User(id, tenantId, email, name, hierarchyLevel, departmentId, passwordHash,
-            status, createdAt, updatedAt);
+            permissions, status, createdAt, updatedAt);
     }
 
     public UserId id() {
@@ -88,6 +95,37 @@ public final class User {
     public User setPasswordHash(String passwordHash) {
         this.passwordHash = passwordHash;
         this.updatedAt = Instant.now();
+        return this;
+    }
+
+    public Set<Permission> permissions() {
+        return Set.copyOf(permissions);
+    }
+
+    public boolean hasPermission(Permission permission) {
+        return permissions.contains(permission);
+    }
+
+    /**
+     * ADMIN é o conjunto completo de permissões, não um nível hierárquico (ADR-04).
+     */
+    public boolean isAdmin() {
+        return permissions.containsAll(EnumSet.allOf(Permission.class));
+    }
+
+    public User grantPermission(Permission permission) {
+        if (permission != null) {
+            permissions.add(permission);
+            this.updatedAt = Instant.now();
+        }
+        return this;
+    }
+
+    public User revokePermission(Permission permission) {
+        if (permission != null) {
+            permissions.remove(permission);
+            this.updatedAt = Instant.now();
+        }
         return this;
     }
 
