@@ -6,6 +6,7 @@ const inputEmail = document.getElementById('email');
 const inputSenha = document.getElementById('senha');
 const btnEsqueciSenha = document.getElementById('btnEsqueciSenha');
 
+
 // Exibe um aviso de erro no formulário, sem alterar o design do template.
 function showLoginError(message) {
     const field = document.getElementById('loginForm');
@@ -19,6 +20,7 @@ function showLoginError(message) {
     field.appendChild(banner);
 }
 
+
 // 2. Evento de clique para Redefinir Senha
 if (btnEsqueciSenha) {
     btnEsqueciSenha.addEventListener('click', function (event) {
@@ -27,12 +29,15 @@ if (btnEsqueciSenha) {
     });
 }
 
+
 // 3. Validação do Formulário de Login
 if (form) {
     form.addEventListener('submit', async function (event) {
         event.preventDefault(); 
 
+
         let formularioValido = true;
+
 
         // Validação do E-mail
         if (inputEmail.value.trim() === '') {
@@ -42,6 +47,7 @@ if (form) {
             inputEmail.classList.remove('is-invalid');
         }
 
+
         // Validação da Senha
         if (inputSenha.value.trim() === '') {
             inputSenha.classList.add('is-invalid');
@@ -49,6 +55,7 @@ if (form) {
         } else {
             inputSenha.classList.remove('is-invalid');
         }
+
 
         if (formularioValido) {
             try {
@@ -66,12 +73,14 @@ if (form) {
     });
 }
 
+
 // 4. Limpeza da mensagem de erro ao digitar
 if (inputEmail) {
     inputEmail.addEventListener('input', function () {
         inputEmail.classList.remove('is-invalid');
     });
 }
+
 
 if (inputSenha) {
     inputSenha.addEventListener('input', function () {
