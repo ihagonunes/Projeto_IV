@@ -56,9 +56,13 @@
       <scope>runtime</scope>
     </dependency>
 
+    <!-- Spring Boot 4 modularizou a auto-configuracao: o FlywayAutoConfiguration
+         agora vive em spring-boot-starter-flyway (flyway-core sozinho nao ativa
+         as migrations automaticas no contexto Spring). Sem este starter o Flyway
+         nao roda e o Hibernate falha com "missing table". -->
     <dependency>
-      <groupId>org.flywaydb</groupId>
-      <artifactId>flyway-core</artifactId>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-flyway</artifactId>
     </dependency>
 
     <dependency>
