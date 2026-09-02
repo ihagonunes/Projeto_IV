@@ -1,0 +1,37 @@
+# Decisões consolidadas
+
+Este arquivo é um índice. Leia somente o ADR relacionado à tarefa.
+
+| ID | Decisão | Status | Arquivo |
+|---|---|---|---|
+| ADR-01 | Modular Monolith | ACCEPTED | `ai/adr/ADR-01-modular-monolith.md` |
+| ADR-02 | Cross-module Communication | ACCEPTED | `ai/adr/ADR-02-cross-module-communication.md` |
+| ADR-03 | Multi-tenancy | ACCEPTED | `ai/adr/ADR-03-multi-tenancy.md` |
+| ADR-04 | IAM | ACCEPTED | `ai/adr/ADR-04-iam.md` |
+| ADR-05 | User Area Ownership | ACCEPTED | `ai/adr/ADR-05-user-area-ownership.md` |
+| ADR-06 | Budget Ownership | ACCEPTED | `ai/adr/ADR-06-budget-ownership.md` |
+| ADR-07 | ModelPolicy Ownership | ACCEPTED | `ai/adr/ADR-07-modelpolicy-ownership.md` |
+| ADR-08 | Mandatory Default Model | ACCEPTED | `ai/adr/ADR-08-mandatory-default-model.md` |
+| ADR-09 | AI Catalog | ACCEPTED | `ai/adr/ADR-09-ai-catalog.md` |
+| ADR-10 | Provider Credentials | ACCEPTED | `ai/adr/ADR-10-provider-credentials.md` |
+| ADR-11 | AI Completion | ACCEPTED | `ai/adr/ADR-11-ai-completion.md` |
+| ADR-12 | AI Failure Handling | ACCEPTED | `ai/adr/ADR-12-ai-failure-handling.md` |
+| ADR-13 | Usage Observability | ACCEPTED | `ai/adr/ADR-13-usage-observability.md` |
+| ADR-14 | Knowledge Access Abstraction | ACCEPTED | `ai/adr/ADR-14-knowledge-access-abstraction.md` |
+| ADR-15 | KnowledgeDocument Authorization | ACCEPTED | `ai/adr/ADR-15-knowledgedocument-authorization.md` |
+| ADR-16 | Chat Privacy | ACCEPTED | `ai/adr/ADR-16-chat-privacy.md` |
+| ADR-17 | Engagement | ACCEPTED | `ai/adr/ADR-17-engagement.md` |
+| ADR-18 | Adoption Window | ACCEPTED | `ai/adr/ADR-18-adoption-window.md` |
+| ADR-19 | AI Credits | ACCEPTED | `ai/adr/ADR-19-ai-credits.md` |
+| ADR-20 | Governance Score | ACCEPTED | `ai/adr/ADR-20-governance-score.md` |
+| ADR-21 | Missing Score Data | ACCEPTED | `ai/adr/ADR-21-missing-score-data.md` |
+| ADR-22 | Security Compliance | ACCEPTED | `ai/adr/ADR-22-security-compliance.md` |
+| ADR-23 | Utilization | ACCEPTED | `ai/adr/ADR-23-utilization.md` |
+| ADR-24 | Project | ACCEPTED | `ai/adr/ADR-24-project.md` |
+| ADR-25 | Agent Policies Lifecycle | ACCEPTED | `ai/adr/ADR-25-agent-policies-lifecycle.md` |
+| ADR-26 | Operational and Historical Analytics Separation | ACCEPTED | `ai/adr/ADR-26-operational-and-historical-analytics-separation.md` |
+| ADR-27 | Governance Score Period and Snapshot | ACCEPTED | `ai/adr/ADR-27-governance-score-period-and-snapshot.md` |
+| ADR-28 | REST API Design | ACCEPTED | `ai/adr/ADR-28-rest-api-design.md` |
+| ADR-29 | Modular Persistence | ACCEPTED | `ai/adr/ADR-29-modular-persistence.md` |
+| ADR-30 | Authentication and JWT Security | ACCEPTED | `ai/adr/ADR-30-authentication-and-jwt-security.md` |
+| ADR-31 | Physical Modular Structure and Enforcement | ACCEPTED | `ai/adr/ADR-31-physical-modular-structure-and-enforcement.md` |
