@@ -17,7 +17,7 @@ public final class User {
     private final TenantId tenantId;
     private final String email;
     private final String name;
-    private final HierarchyLevel hierarchyLevel;
+    private HierarchyLevel hierarchyLevel;
     private final UUID departmentId;
     private UserStatus status;
     private final Instant createdAt;
@@ -100,6 +100,19 @@ public final class User {
             this.status = UserStatus.INACTIVE;
             this.updatedAt = Instant.now();
         }
+        return this;
+    }
+
+    /**
+     * Altera o nível hierárquico do usuário. Exige um nível válido e não-nulo;
+     * ADMIN não é um nível hierárquico (ADR-04).
+     */
+    public User changeHierarchyLevel(HierarchyLevel newLevel) {
+        if (newLevel == null) {
+            throw new IllegalArgumentException("hierarchyLevel não pode ser nulo.");
+        }
+        this.hierarchyLevel = newLevel;
+        this.updatedAt = Instant.now();
         return this;
     }
 }

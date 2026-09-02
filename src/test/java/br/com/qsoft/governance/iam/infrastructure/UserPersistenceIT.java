@@ -109,4 +109,17 @@ class UserPersistenceIT {
             "ana@x.com", "Ana", HierarchyLevel.MANAGER, null)))
             .isInstanceOf(TenantNotFoundException.class);
     }
+
+    @Test
+    void shouldPersistHierarchyLevelChange() {
+        Tenant tenant = newTenant("hier");
+        User user = createUser.create(new CreateUserCommand(
+            tenant.id(), "ana@hier.com", "Ana", HierarchyLevel.COLLABORATOR, null));
+
+        user.changeHierarchyLevel(HierarchyLevel.EXECUTIVE);
+        userRepository.save(user);
+
+        User reloaded = userRepository.findById(user.id()).orElseThrow();
+        assertThat(reloaded.hierarchyLevel()).isEqualTo(HierarchyLevel.EXECUTIVE);
+    }
 }

@@ -3,6 +3,7 @@ package br.com.qsoft.governance.iam.infrastructure.persistence;
 import br.com.qsoft.governance.iam.application.port.UserRepository;
 import br.com.qsoft.governance.iam.domain.user.User;
 import br.com.qsoft.governance.sharedkernel.id.TenantId;
+import br.com.qsoft.governance.sharedkernel.id.UserId;
 import java.util.Optional;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +27,12 @@ public class UserRepositoryAdapter implements UserRepository {
     public User save(User user) {
         UserJpaEntity entity = jpaRepository.save(mapper.toEntity(user));
         return mapper.toDomain(entity);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<User> findById(UserId id) {
+        return jpaRepository.findById(id.value()).map(mapper::toDomain);
     }
 
     @Override
