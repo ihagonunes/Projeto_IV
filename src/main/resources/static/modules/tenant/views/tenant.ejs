@@ -1,0 +1,89 @@
+<%- contentFor("espaco-head") %>
+<link href="/public/css/components/onboarding-card.css" rel="stylesheet">
+<link href="/public/css/components/wizard-tabs.css" rel="stylesheet">
+<link href="/public/css/pages/onboarding.css" rel="stylesheet">
+
+<div class="container d-flex justify-content-center align-items-center min-vh-100 py-4">
+
+        <div class="onboarding-card p-5 bg-white">
+            
+            <%- include("../../../views/partials/wizard-stepper", { activeStep: 0 }) %>
+
+            <form id="tenantForm" action="/onboarding/admin" method="GET" novalidate>
+                <div class="row g-4">
+                    <!-- Coluna da Esquerda (Formulário) -->
+                    <div class="col-md-8">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="nomeEmpresa" class="form-label-custom">Nome da empresa *</label>
+                                <input type="text" class="form-control custom-input" id="nomeEmpresa" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="cnpj" class="form-label-custom">CNPJ *</label>
+                                <input type="text" class="form-control custom-input" id="cnpj" placeholder="00.000.000/0000-00" required>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="setor" class="form-label-custom">Setor *</label>
+                                <select class="form-select custom-input" id="setor" required>
+                                    <option value="" disabled selected>Selecione...</option>
+                                    <option value="tecnologia">Tecnologia</option>
+                                    <option value="saude">Saúde</option>
+                                    <option value="educacao">Educação</option>
+                                    <option value="financas">Finanças</option>
+                                    <option value="outro">Outro</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="porteEmpresa" class="form-label-custom">Porte da empresa *</label>
+                                <select class="form-select custom-input" id="porteEmpresa" required>
+                                    <option value="" disabled selected>Selecione...</option>
+                                    <option value="micro">Microempresa</option>
+                                    <option value="pequena">Pequena Empresa</option>
+                                    <option value="media">Média Empresa</option>
+                                    <option value="grande">Grande Empresa</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="fusoHorario" class="form-label-custom">Fuso horário padrão *</label>
+                                <select class="form-select custom-input" id="fusoHorario" required>
+                                    <option value="GMT-3" selected>Brasília (GMT-3)</option>
+                                    <option value="GMT-4">Manaus (GMT-4)</option>
+                                    <option value="GMT-5">Rio Branco (GMT-5)</option>
+                                    <option value="UTC">UTC</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="idioma" class="form-label-custom">Idioma padrão da plataforma *</label>
+                                <select class="form-select custom-input" id="idioma" required>
+                                    <option value="pt-BR" selected>Português (Brasil)</option>
+                                    <option value="en">Inglês</option>
+                                    <option value="es">Espanhol</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Coluna da Direita (Upload de Logo) -->
+                    <div class="col-md-4 d-flex flex-column align-items-center justify-content-center">
+                        <label for="logoEmpresa" class="form-label-custom mb-3 text-center">Logo da empresa</label>
+                        <div class="upload-zone w-100 d-flex flex-column align-items-center justify-content-center" style="height: 200px;">
+                            <input type="file" id="logoEmpresa" class="d-none" accept="image/*">
+                            <span class="text-muted small mt-2">Arraste ou clique para enviar</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botão de Ação -->
+                <div class="d-flex justify-content-end mt-4">
+                    <button type="submit" class="btn btn-orange btn-pill text-white fw-bold">próximo</button>
+                </div>
+            </form>
+
+        </div>
+
+    </div>
+
+<!-- Scripts específicos do passo -->
+<script src="/public/js/pages/onboarding/step-tenant.js"></script>

@@ -21,7 +21,6 @@ const express = require("express");
 const path = require("path");
 const wrap = require("express-async-error-wrapper");
 const cookieParser = require("cookie-parser"); // https://stackoverflow.com/a/16209531/3569421
-const sql = require("./data/sql");
 
 require("dotenv").config({ encoding: "utf8" });
 
@@ -67,8 +66,12 @@ app.use(cookieParser());
 app.use(express.json({ limit: 10485760, inflate: true, strict: false })); // http://expressjs.com/en/api.html#express.json
 app.use(express.urlencoded({ extended: true })); // http://expressjs.com/en/api.html#express.urlencoded
 
-// Configura o diretório de onde tirar as views
-app.set("views", path.join(__dirname, "views"));
+// Configura os diretórios de views: layout global + views de cada módulo.
+// O Express procura o template primeiro em views/ e depois em modules/.
+app.set("views", [
+	path.join(__dirname, "views"),
+	path.join(__dirname, "modules")
+]);
 
 // Define o view engine como o ejs e importa o express-ejs-layouts
 // https://www.npmjs.com/package/express-ejs-layouts, pois o ejs não
@@ -85,25 +88,18 @@ app.use((req, res, next) => {
 	next();
 });
 
-// Especifica quais módulos serão responsáveis por servir cada rota,
-// a partir dos endereços requisitados pelo cliente
-//
-// A string no primeiro parâmetro representa o começo do caminho
-// requisitado. Vamos ver alguns exemplos de caminhos, e como eles
-// seriam tratados pelo Express
-//
-// Caminho completo   Caminho do tratador   Tratador e resultado
-// /                  /                     index (OK)
-// /usuario           /                     usuario (OK)
-// /usuario/novo      /novo                 usuario (OK)
-// /usuario/alterar   /alterar              usuario (Erro, não temos /alterar em usuario)
-// /outra             /outra                index (OK)
-// /usuarioteste      /usuarioteste         index (Erro, não temos /usuarioteste em index)
-//
-// https://expressjs.com/en/guide/routing.html
-
-// Cadastros simples
-app.use("/", require("./routes/index"));
+// ---------------------------------------------------------------------------
+// Módulos — cada módulo é autônomo (routes + controller + views).
+// NENHUMA rota de API ou lógica de negócio deve ser adicionada aqui.
+// Novas funcionalidades = novo arquivo em modules/ e um app.use abaixo.
+// ---------------------------------------------------------------------------
+app.use("/", require("./modules/auth/auth.routes"));
+app.use("/", require("./modules/tenant/tenant.routes"));
+app.use("/", require("./modules/admin/admin.routes"));
+app.use("/", require("./modules/departamentos/departamentos.routes"));
+app.use("/", require("./modules/usuarios/usuarios.routes"));
+app.use("/", require("./modules/ia/ia.routes"));
+app.use("/", require("./modules/revisao/revisao.routes"));
 
 // Depois de registrados todos os caminhos das rotas e seus
 // tratadores, registramos os tratadores que serão chamados
@@ -122,21 +118,6 @@ app.use((err, req, res, next) => {
 
 	res.render("erro", { mensagem: err.message });
 });
-
-if (process.env.sql_host) {
-	sql.init({
-		connectionLimit: parseInt(process.env.sql_connectionLimit),
-		waitForConnections: !!parseInt(process.env.sql_waitForConnections),
-		charset: process.env.sql_charset,
-		host: process.env.sql_host,
-		port: parseInt(process.env.sql_port),
-		user: process.env.sql_user,
-		password: process.env.sql_password,
-		database: process.env.sql_database
-	});
-} else {
-	console.log("Database environment variables (sql_host) not set. SQL connection pool not initialized.");
-}
 
 const ip = process.env.IP || "127.0.0.1";
 const porta = parseInt(process.env.PORT) || 3000;

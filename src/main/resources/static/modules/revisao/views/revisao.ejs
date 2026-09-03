@@ -1,0 +1,59 @@
+<%- contentFor("espaco-head") %>
+<link href="/public/css/components/onboarding-card.css" rel="stylesheet">
+<link href="/public/css/components/wizard-tabs.css" rel="stylesheet">
+<link href="/public/css/pages/onboarding.css" rel="stylesheet">
+
+<div class="container d-flex justify-content-center align-items-center min-vh-100 py-4">
+
+        <div class="onboarding-card p-5 bg-white">
+            
+            <%- include("../../../views/partials/wizard-stepper", { activeStep: 5 }) %>
+
+            <form id="revisaoForm" action="/login" method="GET" novalidate>
+                
+                <h5 class="fw-semibold text-dark mb-3">Revisão</h5>
+                
+                <!-- Box de Revisão com as informações consolidadas -->
+                <div class="border rounded bg-light p-4 mb-4" style="min-height: 250px;">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <h6 class="fw-bold text-warning border-bottom pb-1">Empresa (Tenant)</h6>
+                            <p class="mb-1"><strong>Nome:</strong> <span id="revNomeEmpresa">Minha Empresa LTDA</span></p>
+                            <p class="mb-1"><strong>CNPJ:</strong> <span id="revCnpj">12.345.678/0001-90</span></p>
+                            <p class="mb-1"><strong>Setor / Porte:</strong> <span id="revSetorPorte">Tecnologia / Grande</span></p>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6 class="fw-bold text-warning border-bottom pb-1">Administrador</h6>
+                            <p class="mb-1"><strong>Nome:</strong> <span id="revNomeAdmin">João da Silva</span></p>
+                            <p class="mb-1"><strong>E-mail:</strong> <span id="revEmailAdmin">joao@empresa.com</span></p>
+                            <p class="mb-1"><strong>Telefone:</strong> <span id="revTelefone">(11) 98765-4321</span></p>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6 class="fw-bold text-warning border-bottom pb-1">Departamentos e Usuários</h6>
+                            <p class="mb-1"><strong>Departamentos configurados:</strong> <span id="revDepartamentos">2</span></p>
+                            <p class="mb-1"><strong>Método de importação de usuários:</strong> <span id="revMetodoUsuarios">Cadastro Manual</span></p>
+                        </div>
+
+                        <div class="col-md-6">
+                            <h6 class="fw-bold text-warning border-bottom pb-1">Integração de IA</h6>
+                            <p class="mb-1"><strong>Provedor:</strong> <span id="revProvedor">OpenAI</span></p>
+                            <p class="mb-1"><strong>Modelos ativos:</strong> <span id="revModelos">gpt-4o (2 modelos)</span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botões de Ação -->
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="/onboarding/ia" class="btn btn-outline-secondary btn-pill">voltar</a>
+                    <button type="submit" class="btn btn-orange btn-pill text-white fw-bold">Finalizar</button>
+                </div>
+            </form>
+
+        </div>
+
+    </div>
+
+<!-- Scripts específicos do passo -->
+<script src="/public/js/pages/onboarding/step-revisao.js"></script>

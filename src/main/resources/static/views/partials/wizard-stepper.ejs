@@ -1,0 +1,22 @@
+<%
+/**
+ * Partial reutilizável: wizard-stepper do onboarding.
+ * Variável esperada: activeStep (número, 0-indexed)
+ *   0 = Tenant
+ *   1 = Administrador Principal
+ *   2 = Departamentos
+ *   3 = Usuários
+ *   4 = IA
+ *   5 = Revisão
+ */
+const steps = ["Tenant", "Administrador Principal", "Departamentos", "Usuários", "IA", "Revisão"];
+const currentStep = typeof activeStep !== "undefined" ? activeStep : 0;
+%>
+<!-- Menu de Passos (Stepper) -->
+<ul class="wizard-stepper">
+<% steps.forEach(function(step, index) { %>
+    <li class="wizard-step<%= index === currentStep ? ' active' : '' %>">
+        <%= step %>
+    </li>
+<% }); %>
+</ul>
