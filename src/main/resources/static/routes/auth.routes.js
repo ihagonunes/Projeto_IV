@@ -1,6 +1,6 @@
 const express = require("express");
 const wrap = require("express-async-error-wrapper");
-const authController = require("./auth.controller");
+const authController = require("../modules/auth/auth.controller");
 
 const router = express.Router();
 

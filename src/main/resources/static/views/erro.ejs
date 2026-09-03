@@ -1,3 +1,9 @@
-<h1>Erro!</h1>
+<%- contentFor("espaco-head") %>
 
-<p><%= mensagem %></p>
+<div class="container d-flex justify-content-center align-items-center min-vh-100">
+    <div class="text-center">
+        <h1 class="display-1 fw-bold text-warning">Erro</h1>
+        <p class="fs-5 text-muted mb-4"><%= mensagem || "Ocorreu um erro inesperado." %></p>
+        <a href="/login" class="btn btn-orange btn-pill text-white fw-bold">Voltar ao início</a>
+    </div>
+</div>

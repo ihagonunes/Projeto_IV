@@ -132,13 +132,13 @@ app.use((req, res, next) => {
 // NENHUMA rota de API ou lógica de negócio deve ser adicionada aqui.
 // Novas funcionalidades = novo arquivo em modules/ e um app.use abaixo.
 // ---------------------------------------------------------------------------
-app.use("/", require("./modules/auth/auth.routes"));
-app.use("/", require("./modules/tenant/tenant.routes"));
-app.use("/", require("./modules/admin/admin.routes"));
-app.use("/", require("./modules/departamentos/departamentos.routes"));
-app.use("/", require("./modules/usuarios/usuarios.routes"));
-app.use("/", require("./modules/ia/ia.routes"));
-app.use("/", require("./modules/revisao/revisao.routes"));
+app.use("/", require("./routes/auth.routes"));
+app.use("/", require("./routes/tenant.routes"));
+app.use("/", require("./routes/admin.routes"));
+app.use("/", require("./routes/departamentos.routes"));
+app.use("/", require("./routes/usuarios.routes"));
+app.use("/", require("./routes/ia.routes"));
+app.use("/", require("./routes/revisao.routes"));
 
 // Depois de registrados todos os caminhos das rotas e seus
 // tratadores, registramos os tratadores que serão chamados

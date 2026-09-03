@@ -1,6 +1,6 @@
 const express = require("express");
 const wrap = require("express-async-error-wrapper");
-const tenantController = require("./tenant.controller");
+const tenantController = require("../modules/tenant/tenant.controller");
 
 const router = express.Router();
 
