@@ -46,7 +46,13 @@ public class UserRepositoryAdapter implements UserRepository {
     @Override
     @Transactional(readOnly = true)
     public Optional<User> findById(UserId id) {
-        applyTenantFilter();
+        TenantContext context = TenantContextHolder.get();
+        if (context != null) {
+            // @Filter não se aplica ao find() por PK; restrição explícita por tenant.
+            return jpaRepository.findByIdAndTenantId(id.value(), context.tenantId().value())
+                .map(mapper::toDomain);
+        }
+        // Sem TenantContext (ex.: revalidação do token), consulta sem restrição.
         return jpaRepository.findById(id.value()).map(mapper::toDomain);
     }
 
