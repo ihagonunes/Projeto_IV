@@ -7,29 +7,9 @@
 
         <div class="onboarding-card p-5 bg-white">
             
-            <!-- Menu de Passos (Stepper) -->
-            <ul class="wizard-stepper">
-                <li class="wizard-step">
-                    Tenant
-                </li>
-                <li class="wizard-step">
-                    Administrador Principal
-                </li>
-                <li class="wizard-step">
-                    Departamentos
-                </li>
-                <li class="wizard-step active">
-                    Usuários
-                </li>
-                <li class="wizard-step">
-                    IA
-                </li>
-                <li class="wizard-step">
-                    Revisão
-                </li>
-            </ul>
+            <%- include("../../../views/partials/wizard-stepper", { activeStep: 3 }) %>
 
-            <form id="usuarioManualForm" action="/onboarding/steps/step-usuarios-hub" method="GET" novalidate>
+            <form id="usuarioManualForm" action="/onboarding/usuarios/hub" method="GET" novalidate>
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label for="nomeUsuario" class="form-label-custom">Nome completo *</label>
@@ -77,7 +57,7 @@
 
                 <!-- Botões de Ação -->
                 <div class="d-flex justify-content-between mt-4">
-                    <a href="/onboarding/steps/step-usuarios-hub" class="btn btn-outline-secondary btn-pill">voltar</a>
+                    <a href="/onboarding/usuarios/hub" class="btn btn-outline-secondary btn-pill">voltar</a>
                     <button type="submit" class="btn btn-orange btn-pill text-white fw-bold">próximo</button>
                 </div>
             </form>
@@ -85,8 +65,6 @@
         </div>
 
     </div>
-
-    <!-- Bootstrap JS -->
 
 <!-- Scripts específicos do passo -->
 <script src="/public/js/pages/onboarding/step-usuarios.js"></script>

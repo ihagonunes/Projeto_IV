@@ -7,29 +7,9 @@
 
         <div class="onboarding-card p-5 bg-white">
             
-            <!-- Menu de Passos (Stepper) -->
-            <ul class="wizard-stepper">
-                <li class="wizard-step active">
-                    Tenant
-                </li>
-                <li class="wizard-step">
-                    Administrador Principal
-                </li>
-                <li class="wizard-step">
-                    Departamentos
-                </li>
-                <li class="wizard-step">
-                    Usuários
-                </li>
-                <li class="wizard-step">
-                    IA
-                </li>
-                <li class="wizard-step">
-                    Revisão
-                </li>
-            </ul>
+            <%- include("../../../views/partials/wizard-stepper", { activeStep: 0 }) %>
 
-            <form id="tenantForm" action="/onboarding/steps/step-admin" method="GET" novalidate>
+            <form id="tenantForm" action="/onboarding/admin" method="GET" novalidate>
                 <div class="row g-4">
                     <!-- Coluna da Esquerda (Formulário) -->
                     <div class="col-md-8">
@@ -104,8 +84,6 @@
         </div>
 
     </div>
-
-    <!-- Bootstrap JS -->
 
 <!-- Scripts específicos do passo -->
 <script src="/public/js/pages/onboarding/step-tenant.js"></script>

@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <%- include("comum/cabecalho") %>
+    <%- include("partials/cabecalho") %>
     <%- defineContent("espaco-head") %>
 </head>
-<body class="<%- typeof bodyClass !== 'undefined' ? bodyClass : 'bg-light auth-bg' %>">
+<body class="<%= typeof bodyClass !== 'undefined' ? bodyClass : 'bg-light auth-bg' %>">
 
     <%- body %>
 
-    <%- include("comum/rodape") %>
+    <%- include("partials/rodape") %>
 </body>
 </html>

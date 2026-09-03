@@ -1,0 +1,233 @@
+/* public/css/pages/admin-usuarios.css */
+
+.admin-card {
+    border-radius: 16px;
+    box-shadow: var(--shadow-card, 0 10px 30px rgba(0, 0, 0, 0.08));
+    border: 1px solid var(--input-border-color, #E0E0E0);
+    background-color: #FFFFFF;
+    transition: all 0.3s ease;
+}
+
+/* Header Administrativo */
+.admin-header-badge {
+    background-color: #EEF2FF;
+    color: #4F46E5;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.admin-header-badge.non-admin {
+    background-color: #FEF2F2;
+    color: #DC2626;
+}
+
+/* Indicador de Tenant Ativo */
+.tenant-context-badge {
+    background-color: #F3F4F6;
+    color: #374151;
+    font-size: 0.825rem;
+    font-weight: 600;
+    padding: 5px 12px;
+    border-radius: 8px;
+    border: 1px solid #E5E7EB;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Trava de Acesso / Access Banner */
+.access-restricted-banner {
+    background-color: #FEF2F2;
+    border: 1px solid #FCA5A5;
+    color: #991B1B;
+    border-radius: 12px;
+    padding: 16px 20px;
+}
+
+/* Card Explicativo de Conceitos (Diferença entre Hierarquia e Administração) */
+.concept-card {
+    background: linear-gradient(135deg, #F8FAFC 0%, #EFF6FF 100%);
+    border: 1px solid #DBEAFE;
+    border-radius: 14px;
+    padding: 16px 20px;
+}
+
+.concept-box {
+    background-color: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+    padding: 12px 14px;
+    height: 100%;
+}
+
+.concept-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.concept-icon.level {
+    background-color: #E0E7FF;
+    color: #4338CA;
+}
+
+.concept-icon.admin {
+    background-color: #FEF3C7;
+    color: #D97706;
+}
+
+/* Badges de Nível Hierárquico */
+.level-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.level-badge.diretoria {
+    background-color: #EDE9FE;
+    color: #6D28D9;
+    border: 1px solid #DDD6FE;
+}
+
+.level-badge.gerencia {
+    background-color: #E0F2FE;
+    color: #0369A1;
+    border: 1px solid #BAE6FD;
+}
+
+.level-badge.coordenacao {
+    background-color: #ECFDF5;
+    color: #047857;
+    border: 1px solid #A7F3D0;
+}
+
+.level-badge.operacional {
+    background-color: #F3F4F6;
+    color: #4B5563;
+    border: 1px solid #E5E7EB;
+}
+
+.level-badge.estagiario {
+    background-color: #FFFBEB;
+    color: #B45309;
+    border: 1px solid #FDE68A;
+}
+
+/* Badges de Permissão Administrativa */
+.admin-perm-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.admin-perm-badge.is-admin {
+    background-color: #FFF3E0;
+    color: #E65100;
+    border: 1px solid #FFE0B2;
+}
+
+.admin-perm-badge.is-common {
+    background-color: #F1F5F9;
+    color: #64748B;
+    border: 1px solid #E2E8F0;
+}
+
+/* Botões de Ação na Tabela */
+.btn-action {
+    padding: 4px 12px;
+    font-size: 0.8rem;
+    border-radius: 20px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.btn-action-edit {
+    color: #F08A2B;
+    border: 1px solid #F08A2B;
+    background-color: transparent;
+}
+
+.btn-action-edit:hover:not(:disabled) {
+    background-color: #F08A2B;
+    color: #FFFFFF;
+}
+
+.btn-action-edit:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Área de Filtros */
+.filter-bar {
+    background-color: #F8F9FA;
+    border-radius: 12px;
+    padding: 12px 16px;
+    border: 1px solid #E9ECEF;
+}
+
+/* Modal Customizado */
+.custom-modal-content {
+    border-radius: 16px;
+    border: 1px solid #E2E8F0;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+}
+
+.custom-modal-header {
+    border-bottom: 1px solid #F1F5F9;
+    padding: 20px 24px 16px 24px;
+}
+
+.custom-modal-body {
+    padding: 24px;
+}
+
+.custom-modal-footer {
+    border-top: 1px solid #F1F5F9;
+    padding: 16px 24px 20px 24px;
+}
+
+.form-label-custom {
+    color: #1F2937;
+    font-size: 0.875rem;
+    margin-bottom: 6px;
+}
+
+.field-explanation {
+    font-size: 0.775rem;
+    color: #6B7280;
+    margin-top: 4px;
+}
+
+/* Animação Toast */
+.alert-toast {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

@@ -7,42 +7,9 @@
 
         <div class="onboarding-card p-5 bg-white">
             
-            <!-- Menu de Passos (Stepper) -->
-            <ul class="wizard-stepper">
-                <li class="wizard-step">
-                    Tenant
-                </li>
-                <li class="wizard-step">
-                    Administrador Principal
-                </li>
-                <li class="wizard-step active">
-                    Departamentos
-                </li>
-                <li class="wizard-step">
-                    Usuários
-                </li>
-                <li class="wizard-step">
-                    IA
-                </li>
-                <li class="wizard-step">
-                    Revisão
-                </li>
-            </ul>
+            <%- include("../../../views/partials/wizard-stepper", { activeStep: 2 }) %>
 
-            <form id="departamentoForm" action="/onboarding/steps/step-departamentos-hub" method="GET" novalidate>
-                
-                <!-- Selecionar Departamento (Apenas no Modo Edição/Visualização do Cadastro.pdf) -->
-                <div class="row mb-3" id="editSelectorRow">
-                    <div class="col-12">
-                        <label for="selecionarDepartamento" class="form-label-custom">Selecionar departamento</label>
-                        <select class="form-select custom-input" id="selecionarDepartamento">
-                            <option value="" disabled selected>Selecione um departamento para editar...</option>
-                            <option value="ti">Tecnologia da Informação</option>
-                            <option value="rh">Recursos Humanos</option>
-                            <option value="financeiro">Financeiro</option>
-                        </select>
-                    </div>
-                </div>
+            <form id="departamentoForm" action="/onboarding/departamentos/hub" method="GET" novalidate>
 
                 <div class="row g-3">
                     <div class="col-md-6">
@@ -76,7 +43,7 @@
 
                 <!-- Botões de Ação -->
                 <div class="d-flex justify-content-between mt-4">
-                    <a href="/onboarding/steps/step-departamentos-hub" class="btn btn-outline-secondary btn-pill">voltar</a>
+                    <a href="/onboarding/departamentos/hub" class="btn btn-outline-secondary btn-pill">voltar</a>
                     <button type="submit" class="btn btn-orange btn-pill text-white fw-bold">próximo</button>
                 </div>
             </form>
@@ -84,8 +51,6 @@
         </div>
 
     </div>
-
-    <!-- Bootstrap JS -->
 
 <!-- Scripts específicos do passo -->
 <script src="/public/js/pages/onboarding/step-departamentos.js"></script>

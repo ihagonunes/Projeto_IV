@@ -7,29 +7,9 @@
 
         <div class="onboarding-card p-5 bg-white">
             
-            <!-- Menu de Passos (Stepper) -->
-            <ul class="wizard-stepper">
-                <li class="wizard-step">
-                    Tenant
-                </li>
-                <li class="wizard-step">
-                    Administrador Principal
-                </li>
-                <li class="wizard-step">
-                    Departamentos
-                </li>
-                <li class="wizard-step">
-                    Usuários
-                </li>
-                <li class="wizard-step">
-                    IA
-                </li>
-                <li class="wizard-step active">
-                    Revisão
-                </li>
-            </ul>
+            <%- include("../../../views/partials/wizard-stepper", { activeStep: 5 }) %>
 
-            <form id="revisaoForm" action="..//login" method="GET" novalidate>
+            <form id="revisaoForm" action="/login" method="GET" novalidate>
                 
                 <h5 class="fw-semibold text-dark mb-3">Revisão</h5>
                 
@@ -52,21 +32,21 @@
                         
                         <div class="col-md-6">
                             <h6 class="fw-bold text-warning border-bottom pb-1">Departamentos e Usuários</h6>
-                            <p class="mb-1"><strong>Departamentos configurados:</strong> 2</p>
-                            <p class="mb-1"><strong>Método de importação de usuários:</strong> Cadastro Manual</p>
+                            <p class="mb-1"><strong>Departamentos configurados:</strong> <span id="revDepartamentos">2</span></p>
+                            <p class="mb-1"><strong>Método de importação de usuários:</strong> <span id="revMetodoUsuarios">Cadastro Manual</span></p>
                         </div>
 
                         <div class="col-md-6">
                             <h6 class="fw-bold text-warning border-bottom pb-1">Integração de IA</h6>
-                            <p class="mb-1"><strong>Provedor:</strong> OpenAI</p>
-                            <p class="mb-1"><strong>Modelos ativos:</strong> gpt-4o (2 modelos)</p>
+                            <p class="mb-1"><strong>Provedor:</strong> <span id="revProvedor">OpenAI</span></p>
+                            <p class="mb-1"><strong>Modelos ativos:</strong> <span id="revModelos">gpt-4o (2 modelos)</span></p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Botões de Ação -->
                 <div class="d-flex justify-content-between mt-4">
-                    <a href="/onboarding/steps/step-ia" class="btn btn-outline-secondary btn-pill">voltar</a>
+                    <a href="/onboarding/ia" class="btn btn-outline-secondary btn-pill">voltar</a>
                     <button type="submit" class="btn btn-orange btn-pill text-white fw-bold">Finalizar</button>
                 </div>
             </form>
@@ -74,8 +54,6 @@
         </div>
 
     </div>
-
-    <!-- Bootstrap JS -->
 
 <!-- Scripts específicos do passo -->
 <script src="/public/js/pages/onboarding/step-revisao.js"></script>

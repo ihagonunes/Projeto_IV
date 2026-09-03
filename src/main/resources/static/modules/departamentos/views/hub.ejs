@@ -1,0 +1,41 @@
+<%- contentFor("espaco-head") %>
+<link href="/public/css/components/onboarding-card.css" rel="stylesheet">
+<link href="/public/css/components/wizard-tabs.css" rel="stylesheet">
+<link href="/public/css/pages/onboarding.css" rel="stylesheet">
+
+<div class="container d-flex justify-content-center align-items-center min-vh-100 py-4">
+
+        <div class="onboarding-card p-5 bg-white">
+            
+            <%- include("../../../views/partials/wizard-stepper", { activeStep: 2 }) %>
+
+            <div class="row g-4 justify-content-center my-4">
+                <div class="col-md-4">
+                    <a href="/onboarding/departamentos/add" class="hub-card">
+                        <span>Adicionar departamento</span>
+                    </a>
+                </div>
+                <div class="col-md-4">
+                    <a href="/onboarding/departamentos/form?mode=edit" class="hub-card">
+                        <span>Editar departamento</span>
+                    </a>
+                </div>
+                <div class="col-md-4">
+                    <a href="/onboarding/departamentos/listar" class="hub-card">
+                        <span>Listar departamentos</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Botões de Ação -->
+            <div class="d-flex justify-content-between mt-5">
+                <a href="/onboarding/admin" class="btn btn-outline-secondary btn-pill">voltar</a>
+                <a href="/onboarding/usuarios/hub" class="btn btn-orange btn-pill text-white fw-bold">próximo</a>
+            </div>
+
+        </div>
+
+    </div>
+
+<!-- Scripts específicos do passo -->
+<script src="/public/js/pages/onboarding/step-departamentos.js"></script>
