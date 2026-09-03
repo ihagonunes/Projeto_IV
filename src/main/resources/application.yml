@@ -35,3 +35,12 @@ management:
     health:
       probes:
         enabled: true
+
+app:
+  security:
+    jwt:
+      # Segredo HMAC para assinatura/validação do JWT (ADR-30).
+      # Valor abaixo é apenas para DESENVOLVIMENTO LOCAL. Em produção,
+      # sobrescreva via variável de ambiente JWT_SECRET.
+      secret: ${JWT_SECRET:f4e3d2c1b0a0987612ab2384c5de6f70a1b2c3d4e5f60718293a4b5c6d7e8f90}
+      ttl-minutes: 30

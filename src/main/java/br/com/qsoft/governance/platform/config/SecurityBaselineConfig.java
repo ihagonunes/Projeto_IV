@@ -1,7 +1,11 @@
 package br.com.qsoft.governance.platform.config;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -20,10 +24,16 @@ public class SecurityBaselineConfig {
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/actuator/health/**", "/api/v1/auth/login", "/api/v1/tenants").permitAll()
-                // Baseline segura: os endpoints de negócio permanecem fechados
-                // até o IAM/JWT ser implementado conforme ADR-30.
-                // POST /api/v1/tenants é o cadastro de onboarding (tenant ainda não existe).
-                .anyRequest().denyAll())
+                // Endpoints de negócio exigem JWT Bearer válido (ADR-30).
+                // A revalidação de Tenant/User ACTIVE e do TenantContext
+                // acontece no TenantContextFilter (módulo iam).
+                .anyRequest().authenticated())
+            .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
+            .exceptionHandling(exception -> exception
+                .authenticationEntryPoint((request, response, authException) ->
+                    writeJsonError(response, HttpStatus.UNAUTHORIZED.value(), "Não autenticado."))
+                .accessDeniedHandler((request, response, accessDenied) ->
+                    writeJsonError(response, HttpStatus.FORBIDDEN.value(), "Acesso negado.")))
             .httpBasic(httpBasic -> httpBasic.disable())
             .formLogin(formLogin -> formLogin.disable())
             .logout(logout -> logout.disable())
@@ -35,5 +45,13 @@ public class SecurityBaselineConfig {
     @Bean
     PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    private static void writeJsonError(jakarta.servlet.http.HttpServletResponse response, int status, String message)
+        throws IOException {
+        response.setStatus(status);
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+        response.getWriter().write("{\"message\":\"" + message + "\"}");
     }
 }

@@ -25,11 +25,19 @@ class CreateUserTest {
     private final Map<String, User> usersByTenantAndEmail = new LinkedHashMap<>();
     private final Map<TenantId, Tenant> tenantsById = new LinkedHashMap<>();
 
+    private final Map<UserId, User> usersById = new LinkedHashMap<>();
+
     private final UserRepository userRepository = new UserRepository() {
         @Override
         public User save(User user) {
             usersByTenantAndEmail.put(key(user.tenantId(), user.email()), user);
+            usersById.put(user.id(), user);
             return user;
+        }
+
+        @Override
+        public Optional<User> findById(UserId id) {
+            return Optional.ofNullable(usersById.get(id));
         }
 
         @Override
