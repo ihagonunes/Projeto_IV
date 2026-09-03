@@ -5,6 +5,7 @@
 // (exibido no canto inferior esquerdo) tenha avançado!
 //****************************************************************
 
+
 //****************************************************************
 // Para utilizar o view engine ejs, adicionamos a linha
 // "ejs": "^2.6.1", às dependências do arquivo package.json
@@ -17,22 +18,28 @@
 // na opção "Install Missing npm Package(s)"
 //****************************************************************
 
+
 const express = require("express");
 const path = require("path");
 const wrap = require("express-async-error-wrapper");
 const cookieParser = require("cookie-parser"); // https://stackoverflow.com/a/16209531/3569421
 const http = require("http");
+const sql = require("./data/sql");
+
 
 require("dotenv").config({ encoding: "utf8" });
+
 
 // Configura o cache, para armazenar as 200 últimas páginas
 // já processadas, por ordem de uso
 const ejs = require("ejs");
 
+
 const LRU = require("lru-cache");
 const cache = new LRU({
 	max: 200
 });
+
 
 // Ver comentários no pacote https://github.com/tech-espm/labs-teem :)
 if (!("remove" in cache)) {
@@ -47,16 +54,19 @@ if (!("reset" in cache)) {
 }
 ejs.cache = cache;
 
+
 const app = express();
 
 // Slug do tenant exposto ao frontend (login/onboarding) como global,
 // injetado pelas views (window.QSOFT_TENANT_SLUG). Configurável via env.
 app.locals.qsoftTenantSlug = process.env.QSOFT_TENANT_SLUG || "";
 
+
 // Não queremos o header X-Powered-By
 app.disable("x-powered-by");
 // Não queremos o header ETag nas views
 app.disable("etag");
+
 
 // Explica para o express qual será o diretório de onde serviremos os
 // arquivos estáticos (js, css, imagens etc...)
@@ -66,16 +76,20 @@ app.use("/public", express.static(path.join(__dirname, "public"), {
 	maxAge: "30d"
 }));
 
+
 app.use(cookieParser());
+
 
 // BFF: repassa chamadas /api/* para o backend Spring Boot (Monólito Modular).
 // O frontend consome a API REST /api/v1 de forma same-origin, sem acesso direto a MYSQL.
 // O target é configurável via API_PROXY_TARGET (padrão http://localhost:8080).
 const API_PROXY_TARGET = new URL(process.env.API_PROXY_TARGET || "http://localhost:8080");
 
+
 app.use("/api", (req, res) => {
     const headers = Object.assign({}, req.headers);
     headers.host = API_PROXY_TARGET.host;
+
 
     const proxyReq = http.request({
         hostname: API_PROXY_TARGET.hostname,
@@ -88,6 +102,7 @@ app.use("/api", (req, res) => {
         proxyRes.pipe(res);
     });
 
+
     proxyReq.on("error", () => {
         if (res.headersSent) {
             res.end();
@@ -99,20 +114,25 @@ app.use("/api", (req, res) => {
         });
     });
 
+
     req.pipe(proxyReq);
 });
+
 
 app.use(express.json({ limit: 10485760, inflate: true, strict: false })); // http://expressjs.com/en/api.html#express.json
 app.use(express.urlencoded({ extended: true })); // http://expressjs.com/en/api.html#express.urlencoded
 
+
 // Configura o diretório de onde tirar as views
 app.set("views", path.join(__dirname, "views"));
+
 
 // Define o view engine como o ejs e importa o express-ejs-layouts
 // https://www.npmjs.com/package/express-ejs-layouts, pois o ejs não
 // suporta layouts nativamente: https://www.npmjs.com/package/ejs#layouts
 app.set("view engine", "ejs");
 app.use(require("express-ejs-layouts"));
+
 
 // Nosso middleware para evitar cache das páginas e api
 // (deixa depois do static, pois os arquivos static devem usar cache e coisas)
@@ -122,6 +142,7 @@ app.use((req, res, next) => {
 	res.header("Pragma", "no-cache");
 	next();
 });
+
 
 // Especifica quais módulos serão responsáveis por servir cada rota,
 // a partir dos endereços requisitados pelo cliente
@@ -140,8 +161,10 @@ app.use((req, res, next) => {
 //
 // https://expressjs.com/en/guide/routing.html
 
+
 // Cadastros simples
 app.use("/", require("./routes/index"));
+
 
 // Depois de registrados todos os caminhos das rotas e seus
 // tratadores, registramos os tratadores que serão chamados
@@ -158,15 +181,19 @@ app.use("/", require("./routes/index"));
 app.use((err, req, res, next) => {
 	res.status(err.status || 500);
 
+
 	res.render("erro", { mensagem: err.message });
 });
+
 
 // Persistência é responsabilidade do backend Spring Boot (Monólito Modular).
 // O acesso a dados do frontend ocorre exclusivamente via API REST /api/v1 (proxy acima).
 // Nenhum pool de conexão MySQL/PostgreSQL é criado neste processo Node.
 
+
 const ip = process.env.IP || "127.0.0.1";
 const porta = parseInt(process.env.PORT) || 3000;
+
 
 const server = app.listen(porta, ip, () => {
 	console.log(`Servidor Express executando em ${ip}:${porta}`);

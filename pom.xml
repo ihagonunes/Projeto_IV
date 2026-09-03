@@ -56,9 +56,13 @@
       <scope>runtime</scope>
     </dependency>
 
+    <!-- Spring Boot 4 modularizou a auto-configuracao: o FlywayAutoConfiguration
+         agora vive em spring-boot-starter-flyway (flyway-core sozinho nao ativa
+         as migrations automaticas no contexto Spring). Sem este starter o Flyway
+         nao roda e o Hibernate falha com "missing table". -->
     <dependency>
-      <groupId>org.flywaydb</groupId>
-      <artifactId>flyway-core</artifactId>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-flyway</artifactId>
     </dependency>
 
     <dependency>
@@ -132,6 +136,17 @@
 
   <build>
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <!-- Garante que mvn test não execute testes de integração (*IT.java),
+               os quais exigem Testcontainers e são rodados pelo failsafe em -Pintegration. -->
+          <excludes>
+            <exclude>**/*IT.java</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>

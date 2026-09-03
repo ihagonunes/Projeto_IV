@@ -52,6 +52,9 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+### Front-end ###
+node_modules/
 Thumbs.db
 
 ### Front-end ###
