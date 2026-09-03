@@ -1,6 +1,6 @@
 const express = require("express");
 const wrap = require("express-async-error-wrapper");
-const adminController = require("./admin.controller");
+const adminController = require("../modules/admin/admin.controller");
 
 const router = express.Router();
 

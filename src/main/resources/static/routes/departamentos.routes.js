@@ -1,6 +1,6 @@
 const express = require("express");
 const wrap = require("express-async-error-wrapper");
-const departamentosController = require("./departamentos.controller");
+const departamentosController = require("../modules/departamentos/departamentos.controller");
 
 const router = express.Router();
 

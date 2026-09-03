@@ -1,6 +1,6 @@
 const express = require("express");
 const wrap = require("express-async-error-wrapper");
-const revisaoController = require("./revisao.controller");
+const iaController = require("../modules/ia/ia.controller");
 
 const router = express.Router();
 
@@ -8,10 +8,10 @@ const router = express.Router();
 // Rotas de RENDER (páginas)
 // ---------------------------------------------------------------------------
 
-/** GET /onboarding/revisao → step de revisão final do onboarding */
-router.get("/onboarding/revisao", wrap(async (req, res) => {
-    res.render("revisao/views/revisao", {
-        titulo: "Revisão Final",
+/** GET /onboarding/ia → step de configuração de IA */
+router.get("/onboarding/ia", wrap(async (req, res) => {
+    res.render("ia/views/ia", {
+        titulo: "Configuração de IA",
         bodyClass: "bg-light auth-bg onboarding-bg"
     });
 }));
@@ -20,10 +20,10 @@ router.get("/onboarding/revisao", wrap(async (req, res) => {
 // Rotas de API-PROXY (chamam o Spring Boot via controller)
 // ---------------------------------------------------------------------------
 
-/** GET /api/revisao → obtém resumo para revisão */
-router.get("/api/revisao", wrap(revisaoController.obterResumo));
+/** GET /api/ia → obtém configurações de IA */
+router.get("/api/ia", wrap(iaController.obterConfig));
 
-/** POST /api/revisao/confirmar → confirma e finaliza onboarding */
-router.post("/api/revisao/confirmar", wrap(revisaoController.confirmar));
+/** POST /api/ia → salva configurações de IA */
+router.post("/api/ia", wrap(iaController.salvarConfig));
 
 module.exports = router;
