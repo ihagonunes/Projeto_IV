@@ -9,7 +9,9 @@ require("dotenv").config({ encoding: "utf8" });
  * Nenhuma rota ou controller deve hardcodar a URL do back.
  */
 const api = axios.create({
-    baseURL: process.env.SPRING_API_URL || "http://localhost:8080",
+    // Base do back + prefixo /api/v1 (ADR-28). Mantém o axios; os controllers
+    // chamam caminhos relativos (ex.: "/auth/login", "/admin/convites").
+    baseURL: (process.env.SPRING_API_URL || "http://localhost:8080") + "/api/v1",
     headers: {
         "Content-Type": "application/json"
     },
