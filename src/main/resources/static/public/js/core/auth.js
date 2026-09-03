@@ -28,8 +28,9 @@
             email: (credentials && credentials.email) || "",
             password: (credentials && credentials.password) || ""
         };
-        // tenantSlug só é enviado quando é conhecido no frontend (usuário logando em um tenant).
-        var tenantSlug = credentials && credentials.tenantSlug;
+        // tenantSlug: do chamador (ex.: onboarding) ou do slug injetado pelo BFF
+        // (window.QSOFT_TENANT_SLUG). O backend exige tenantSlug no login (ADR-30).
+        var tenantSlug = (credentials && credentials.tenantSlug) || window.QSOFT_TENANT_SLUG;
         if (tenantSlug) {
             body.tenantSlug = tenantSlug;
         }
