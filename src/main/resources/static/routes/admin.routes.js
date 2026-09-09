@@ -8,11 +8,19 @@ const router = express.Router();
 // Rotas de RENDER (páginas)
 // ---------------------------------------------------------------------------
 
+/** GET /convites → renderiza a página de gestão de convites */
+router.get("/convites", wrap(async (req, res) => {
+    res.render("admin/views/convites", {
+        titulo: "Gestão de Convites",
+        bodyClass: "auth-bg"
+    });
+}));
+
 /** GET /admin/convites → renderiza a página de gestão de convites */
 router.get("/admin/convites", wrap(async (req, res) => {
     res.render("admin/views/convites", {
-        titulo: "Emissão de Convites - Administração",
-        bodyClass: "bg-light auth-bg"
+        titulo: "Gestão de Convites",
+        bodyClass: "auth-bg"
     });
 }));
 

@@ -5,6 +5,21 @@ const form = document.getElementById('loginForm');
 const inputEmail = document.getElementById('email');
 const inputSenha = document.getElementById('senha');
 const btnEsqueciSenha = document.getElementById('btnEsqueciSenha');
+const loginErrorMessage = document.getElementById('loginErrorMessage');
+
+function hideErrorMessage() {
+    if (loginErrorMessage) {
+        loginErrorMessage.textContent = '';
+        loginErrorMessage.classList.add('d-none');
+    }
+}
+
+function showErrorMessage(msg) {
+    if (loginErrorMessage) {
+        loginErrorMessage.textContent = msg;
+        loginErrorMessage.classList.remove('d-none');
+    }
+}
 
 // 2. Evento de clique para Redefinir Senha
 if (btnEsqueciSenha) {
@@ -16,8 +31,9 @@ if (btnEsqueciSenha) {
 
 // 3. Validação do Formulário de Login
 if (form) {
-    form.addEventListener('submit', function (event) {
+    form.addEventListener('submit', async function (event) {
         event.preventDefault(); 
+        hideErrorMessage();
 
         let formularioValido = true;
 
@@ -38,8 +54,14 @@ if (form) {
         }
 
         if (formularioValido) {
-            console.log("Tudo preenchido! Redirecionando para onboarding...");
-            window.location.href = '/onboarding';
+            try {
+                await Auth.login({ email: inputEmail.value, password: inputSenha.value });
+                window.location.href = '/onboarding';
+            } catch(e) {
+                console.error("Erro ao realizar login:", e);
+                const msg = e && e.message ? e.message : "Falha ao conectar ao servidor. Verifique se o backend está rodando.";
+                showErrorMessage(msg);
+            }
         }
     });
 }
@@ -48,11 +70,13 @@ if (form) {
 if (inputEmail) {
     inputEmail.addEventListener('input', function () {
         inputEmail.classList.remove('is-invalid');
+        hideErrorMessage();
     });
 }
 
 if (inputSenha) {
     inputSenha.addEventListener('input', function () {
         inputSenha.classList.remove('is-invalid');
+        hideErrorMessage();
     });
 }

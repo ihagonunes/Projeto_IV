@@ -29,6 +29,14 @@ router.get("/redefinir-senha", wrap(async (req, res) => {
     });
 }));
 
+/** GET /onboarding → tela de boas-vindas ao onboarding */
+router.get("/onboarding", wrap(async (req, res) => {
+    res.render("auth/views/onboarding", {
+        titulo: "Onboarding",
+        bodyClass: "bg-light auth-bg onboarding-bg"
+    });
+}));
+
 // ---------------------------------------------------------------------------
 // Rotas de API-PROXY (chamam o Spring Boot via controller)
 // ---------------------------------------------------------------------------

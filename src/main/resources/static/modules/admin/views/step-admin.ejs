@@ -1,15 +1,23 @@
 <%- contentFor("espaco-head") %>
 <link href="/public/css/components/onboarding-card.css" rel="stylesheet">
-<link href="/public/css/components/wizard-tabs.css" rel="stylesheet">
 <link href="/public/css/pages/onboarding.css" rel="stylesheet">
 
-<div class="container d-flex justify-content-center align-items-center min-vh-100 py-4">
+<div class="atlas-onboarding-wrapper step-bg-admin">
 
-        <div class="onboarding-card p-5 bg-white">
-            
-            <%- include("../../../views/partials/wizard-stepper", { activeStep: 1 }) %>
+    <%- include("../../../views/partials/wizard-stepper", { activeStep: 1 }) %>
 
+    <main class="atlas-content">
+
+        <div class="atlas-page-header">
+            <h1 class="atlas-page-title">Administrador Principal</h1>
+            <p class="atlas-page-subtitle">Defina as credenciais do administrador responsável pela plataforma.</p>
+        </div>
+
+        <div class="atlas-card">
             <form id="adminForm" action="/onboarding/departamentos/hub" method="GET" novalidate>
+
+                <p class="atlas-section-title">Dados Pessoais & Acesso</p>
+
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label for="nomeCompleto" class="form-label-custom">Nome completo *</label>
@@ -19,7 +27,7 @@
                         <label for="emailCorporativo" class="form-label-custom">E-mail corporativo *</label>
                         <input type="email" class="form-control custom-input" id="emailCorporativo" placeholder="exemplo@empresa.com" required>
                     </div>
-                    
+
                     <div class="col-md-6">
                         <label for="cargo" class="form-label-custom">Cargo *</label>
                         <input type="text" class="form-control custom-input" id="cargo" required>
@@ -29,26 +37,26 @@
                         <input type="tel" class="form-control custom-input" id="telefone" placeholder="(00) 00000-0000" required>
                     </div>
 
+                    <p class="atlas-section-title mt-3">Credenciais de Acesso</p>
+
                     <div class="col-md-6">
                         <label for="senha" class="form-label-custom">Senha *</label>
-                        <input type="password" class="form-control custom-input" id="senha" required>
+                        <input type="password" class="form-control custom-input" id="senha" placeholder="••••••••" required>
                     </div>
                     <div class="col-md-6">
                         <label for="confirmarSenha" class="form-label-custom">Confirmação de senha *</label>
-                        <input type="password" class="form-control custom-input" id="confirmarSenha" required>
+                        <input type="password" class="form-control custom-input" id="confirmarSenha" placeholder="••••••••" required>
                     </div>
                 </div>
 
-                <!-- Botões de Ação -->
-                <div class="d-flex justify-content-between mt-4">
-                    <a href="/tenant" class="btn btn-outline-secondary btn-pill">voltar</a>
-                    <button type="submit" class="btn btn-orange btn-pill text-white fw-bold">próximo</button>
+                <div class="atlas-form-footer">
+                    <a href="/tenant" class="btn btn-outline-secondary btn-pill">← voltar</a>
+                    <button type="submit" class="btn btn-orange btn-pill fw-bold px-4">próximo →</button>
                 </div>
             </form>
-
         </div>
 
-    </div>
+    </main>
+</div>
 
-<!-- Scripts específicos do passo -->
 <script src="/public/js/pages/onboarding/step-admin.js"></script>

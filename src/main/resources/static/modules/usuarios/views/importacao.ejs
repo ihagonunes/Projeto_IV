@@ -1,36 +1,41 @@
 <%- contentFor("espaco-head") %>
 <link href="/public/css/components/onboarding-card.css" rel="stylesheet">
-<link href="/public/css/components/wizard-tabs.css" rel="stylesheet">
 <link href="/public/css/pages/onboarding.css" rel="stylesheet">
 
-<div class="container d-flex justify-content-center align-items-center min-vh-100 py-4">
+<div class="atlas-onboarding-wrapper step-bg-usuarios">
 
-        <div class="onboarding-card p-5 bg-white">
-            
-            <%- include("../../../views/partials/wizard-stepper", { activeStep: 3 }) %>
+    <%- include("../../../views/partials/wizard-stepper", { activeStep: 3 }) %>
 
-            <form id="importForm" action="/onboarding/usuarios/hub" method="GET" novalidate>
-                <div class="my-4 text-center">
-                    <h4 class="mb-3 text-dark fw-semibold">Importação de Usuários</h4>
-                    <p class="text-muted">Faça o upload da planilha contendo a lista de usuários da plataforma.</p>
-                    
-                    <div class="upload-zone mx-auto" style="max-width: 500px; min-height: 200px;">
-                        <input type="file" id="userFile" class="d-none" accept=".csv, .xlsx, .xls">
-                        <label for="userFile" class="btn btn-outline-secondary btn-pill cursor-pointer px-4 py-2">Selecionar Planilha</label>
-                        <span class="text-muted small mt-3 d-block">Formatos suportados: .csv, .xlsx, .xls</span>
-                    </div>
-                </div>
+    <main class="atlas-content">
 
-                <!-- Botões de Ação -->
-                <div class="d-flex justify-content-between mt-5">
-                    <a href="/onboarding/usuarios/hub" class="btn btn-outline-secondary btn-pill">voltar</a>
-                    <button type="submit" class="btn btn-orange btn-pill text-white fw-bold">próximo</button>
-                </div>
-            </form>
-
+        <div class="atlas-page-header">
+            <h1 class="atlas-page-title">Importação de Usuários</h1>
+            <p class="atlas-page-subtitle">Faça o upload de uma planilha para importar usuários em massa.</p>
         </div>
 
-    </div>
+        <div class="atlas-card d-flex flex-column align-items-center" style="min-height:350px;">
+            <form id="importForm" action="/onboarding/usuarios/hub" method="GET" novalidate style="width:100%;">
 
-<!-- Scripts específicos do passo -->
+                <div class="upload-zone d-flex flex-column align-items-center justify-content-center" style="min-height:220px;">
+                    <i class="bi bi-file-earmark-spreadsheet" style="font-size:3.5rem; color:var(--color-primary); opacity:0.65; margin-bottom:1rem;"></i>
+                    <input type="file" id="userFile" class="d-none" accept=".csv, .xlsx, .xls">
+                    <label for="userFile" class="btn btn-outline-secondary btn-pill px-4 py-2" style="cursor:pointer;">
+                        Selecionar Planilha
+                    </label>
+                    <span style="font-size:0.75rem; color:var(--text-color-muted); margin-top:0.75rem;">
+                        Formatos suportados: .csv, .xlsx, .xls
+                    </span>
+                    <span id="selectedFileName" style="font-size:0.8rem; color:var(--color-primary); margin-top:0.5rem; display:none;"></span>
+                </div>
+
+                <div class="atlas-form-footer">
+                    <a href="/onboarding/usuarios/hub" class="btn btn-outline-secondary btn-pill">← voltar</a>
+                    <button type="submit" class="btn btn-orange btn-pill fw-bold px-4">próximo →</button>
+                </div>
+            </form>
+        </div>
+
+    </main>
+</div>
+
 <script src="/public/js/pages/onboarding/step-usuarios.js"></script>
