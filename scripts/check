@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+mode="all"
+if [[ "${1:-}" == "--changed" ]]; then
+  mode="changed"
+elif [[ "${1:-}" != "" ]]; then
+  echo "Uso: $0 [--changed]" >&2
+  exit 2
+fi
+
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$root"
+
+required=(
+  AGENTS.md
+  ai/context-map.md
+  ai/architecture.md
+  ai/contracts.md
+  ai/decisions.md
+  pom.xml
+)
+
+for file in "${required[@]}"; do
+  [[ -f "$file" ]] || { echo "Arquivo obrigatório ausente: $file" >&2; exit 1; }
+done
+
+if [[ "$mode" == "changed" ]] && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  git diff --name-only --diff-filter=ACMR HEAD -- 2>/dev/null | sed 's/^/changed: /' || true
+fi
+
+echo "==> Compilação + unit/architecture tests"
+mvn -B test
+
+echo "==> Checks concluídos"

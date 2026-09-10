@@ -21,6 +21,21 @@ function showErrorMessage(msg) {
     }
 }
 
+
+// Exibe um aviso de erro no formulário, sem alterar o design do template.
+function showLoginError(message) {
+    const field = document.getElementById('loginForm');
+    if (!field) return;
+    const existing = field.querySelector('.login-error-banner');
+    if (existing) existing.remove();
+    const banner = document.createElement('div');
+    banner.className = 'alert alert-danger text-center mt-3 login-error-banner';
+    banner.setAttribute('role', 'alert');
+    banner.textContent = message;
+    field.appendChild(banner);
+}
+
+
 // 2. Evento de clique para Redefinir Senha
 if (btnEsqueciSenha) {
     btnEsqueciSenha.addEventListener('click', function (event) {
@@ -29,13 +44,16 @@ if (btnEsqueciSenha) {
     });
 }
 
+
 // 3. Validação do Formulário de Login
 if (form) {
     form.addEventListener('submit', async function (event) {
         event.preventDefault(); 
         hideErrorMessage();
 
+
         let formularioValido = true;
+
 
         // Validação do E-mail
         if (inputEmail.value.trim() === '') {
@@ -45,6 +63,7 @@ if (form) {
             inputEmail.classList.remove('is-invalid');
         }
 
+
         // Validação da Senha
         if (inputSenha.value.trim() === '') {
             inputSenha.classList.add('is-invalid');
@@ -52,6 +71,7 @@ if (form) {
         } else {
             inputSenha.classList.remove('is-invalid');
         }
+
 
         if (formularioValido) {
             try {
@@ -66,6 +86,7 @@ if (form) {
     });
 }
 
+
 // 4. Limpeza da mensagem de erro ao digitar
 if (inputEmail) {
     inputEmail.addEventListener('input', function () {
@@ -73,6 +94,7 @@ if (inputEmail) {
         hideErrorMessage();
     });
 }
+
 
 if (inputSenha) {
     inputSenha.addEventListener('input', function () {

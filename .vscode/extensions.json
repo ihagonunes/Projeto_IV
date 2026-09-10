@@ -1,0 +1,11 @@
+{
+  "recommendations": [
+    "vscjava.vscode-java-pack",
+    "vmware.vscode-spring-boot",
+    "vscjava.vscode-maven",
+    "redhat.vscode-yaml",
+    "ms-azuretools.vscode-docker",
+    "sonarsource.sonarlint-vscode",
+    "eamodio.gitlens"
+  ]
+}

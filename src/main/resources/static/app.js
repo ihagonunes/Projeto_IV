@@ -21,6 +21,7 @@ const express = require("express");
 const path = require("path");
 const wrap = require("express-async-error-wrapper");
 const cookieParser = require("cookie-parser"); // https://stackoverflow.com/a/16209531/3569421
+const http = require("http");
 
 require("dotenv").config({ encoding: "utf8" });
 
@@ -48,6 +49,10 @@ ejs.cache = cache;
 
 const app = express();
 
+// Slug do tenant exposto ao frontend (login/onboarding) como global,
+// injetado pelas views (window.QSOFT_TENANT_SLUG). Configurável via env.
+app.locals.qsoftTenantSlug = process.env.QSOFT_TENANT_SLUG || "";
+
 // Não queremos o header X-Powered-By
 app.disable("x-powered-by");
 // Não queremos o header ETag nas views
@@ -62,6 +67,40 @@ app.use("/public", express.static(path.join(__dirname, "public"), {
 }));
 
 app.use(cookieParser());
+
+// BFF: repassa chamadas /api/* para o backend Spring Boot (Monólito Modular).
+// O frontend consome a API REST /api/v1 de forma same-origin, sem acesso direto a MYSQL.
+// O target é configurável via API_PROXY_TARGET (padrão http://localhost:8080).
+const API_PROXY_TARGET = new URL(process.env.API_PROXY_TARGET || "http://localhost:8080");
+
+app.use("/api", (req, res) => {
+    const headers = Object.assign({}, req.headers);
+    headers.host = API_PROXY_TARGET.host;
+
+    const proxyReq = http.request({
+        hostname: API_PROXY_TARGET.hostname,
+        port: API_PROXY_TARGET.port || 80,
+        path: req.originalUrl,
+        method: req.method,
+        headers: headers
+    }, (proxyRes) => {
+        res.writeHead(proxyRes.statusCode, proxyRes.headers);
+        proxyRes.pipe(res);
+    });
+
+    proxyReq.on("error", () => {
+        if (res.headersSent) {
+            res.end();
+            return;
+        }
+        res.status(502).json({
+            error: "Bad Gateway",
+            message: "Não foi possível alcançar o backend da plataforma."
+        });
+    });
+
+    req.pipe(proxyReq);
+});
 
 app.use(express.json({ limit: 10485760, inflate: true, strict: false })); // http://expressjs.com/en/api.html#express.json
 app.use(express.urlencoded({ extended: true })); // http://expressjs.com/en/api.html#express.urlencoded
@@ -118,6 +157,10 @@ app.use((err, req, res, next) => {
 
 	res.render("erro", { mensagem: err.message });
 });
+
+// Persistência é responsabilidade do backend Spring Boot (Monólito Modular).
+// O acesso a dados do frontend ocorre exclusivamente via API REST /api/v1 (proxy acima).
+// Nenhum pool de conexão MySQL/PostgreSQL é criado neste processo Node.
 
 const ip = process.env.IP || "127.0.0.1";
 const porta = parseInt(process.env.PORT) || 3000;
