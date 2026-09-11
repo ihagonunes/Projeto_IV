@@ -1,7 +1,8 @@
 .btn-orange {
     background-color: var(--color-primary);
     border-color: var(--color-primary);
-    color: #FFFFFF;
+    color: #0B1020; /* Texto escuro no botão amarelo para contraste */
+    font-weight: 600;
     transition: all 0.3s ease;
 }
 
@@ -9,8 +10,9 @@
 .btn-orange:focus {
     background-color: var(--color-primary-hover);
     border-color: var(--color-primary-hover);
-    color: #FFFFFF;
+    color: #0B1020;
     transform: translateY(-1px); /* Pequeno efeito de levantar ao passar o mouse */
+    box-shadow: 0 4px 15px rgba(240, 194, 47, 0.4);
 }
 
 /* Classe separada só para o formato, assim você pode ter botões de outras cores com o mesmo formato */
@@ -19,6 +21,23 @@
     padding: var(--btn-padding-y) var(--btn-padding-x);
     margin-top:5px;
     margin-bottom: 5px;
+}
+
+.btn-outline-gold {
+    background-color: rgba(240, 194, 47, 0.08);
+    border: 1px solid var(--color-primary);
+    color: var(--color-primary);
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-outline-gold:hover,
+.btn-outline-gold:focus {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #0B1020;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(240, 194, 47, 0.35);
 }
 
 .btn-onboarding {

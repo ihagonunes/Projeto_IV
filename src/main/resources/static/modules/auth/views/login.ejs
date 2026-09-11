@@ -2,48 +2,77 @@
     <link href="/public/css/components/auth-card.css" rel="stylesheet">
     <link href="/public/css/pages/login.css" rel="stylesheet">
 
-    <div class="container d-flex justify-content-center align-items-center vh-100">
+    <!-- Import Map para Three.js -->
+    <script type="importmap">
+{
+    "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.162.0/examples/jsm/"
+    }
+}
+</script>
 
-        <div class="auth-card text-center p-1 bg-white">
-            <div class="auth-card text-center p-1 bg-white">
-                <div class="auth-card text-center p-1 bg-white">
+    <div class="login-wrapper">
 
-                    <h1 class="mb-4 text-dark fw-light">Bem-Vindo</h1>
+        <!-- ===== BACKGROUND: REDE NEURAL QUÂNTICA 3D (TELA CHEIA) ===== -->
+        <div class="login-bg-container" id="login-bg-container">
+            <canvas id="neural-network-canvas"></canvas>
+        </div>
 
-                    <form id="loginForm" action="#" method="POST" novalidate>
+        <!-- ===== CENTRO: CARD CIRCULAR ATLAS ===== -->
+        <div class="login-center-container">
+            <div class="auth-card auth-card-circle">
 
-                        <!-- Campo E-mail -->
-                        <div class="mb-3">
-                            <input type="email" class="form-control custom-input" id="email" placeholder="e-mail"
-                                required>
-                            <div class="invalid-feedback text-center mt-2">
-                                Ei, você esqueceu de preencher o e-mail!
-                            </div>
-                        </div>
-
-                        <!-- Campo Senha -->
-                        <div class="mb-3">
-                            <input type="password" class="form-control custom-input" id="senha" placeholder="senha"
-                                required>
-                            <div class="invalid-feedback text-center mt-2">
-                                Ei, você esqueceu de preencher a senha!
-                            </div>
-                        </div>
-
-                        <!-- Link Esqueci a Senha -->
-                        <div class="mb-4">
-                            <a href="/redefinir-senha" id="btnEsqueciSenha"
-                                class="text-muted text-decoration-none small">esqueci a
-                                senha</a>
-                        </div>
-
-                        <!-- Botão de Entrar -->
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-orange btn-pill text-white fw-bold">entrar</button>
-                        </div>
-
-                    </form>
+                <!-- Logo / Branding ATLAS -->
+                <div class="login-logo-area">
+                    <div class="login-logo-placeholder">
+                        <img src="/public/img/atlas-name.png" alt="ATLAS" class="atlas-brand-name-img">
+                    </div>
                 </div>
+
+                <!-- Formulário -->
+                <form id="loginForm" action="javascript:void(0);" novalidate class="login-form" autocomplete="off">
+
+                    <!-- E-mail -->
+                    <div class="login-field-group">
+                        <label for="email" class="login-label">E-mail</label>
+                        <div class="login-input-wrapper">
+                            <i class="bi bi-envelope login-input-icon"></i>
+                            <input type="email" class="form-control custom-input login-input" id="email"
+                                placeholder="seu@email.com" autocomplete="off" required>
+                        </div>
+                        <div class="invalid-feedback">Informe um e-mail válido.</div>
+                    </div>
+
+                    <!-- Senha -->
+                    <div class="login-field-group">
+                        <label for="senha" class="login-label">Senha</label>
+                        <div class="login-input-wrapper">
+                            <i class="bi bi-lock login-input-icon"></i>
+                            <input type="password" class="form-control custom-input login-input" id="senha"
+                                placeholder="••••••••" autocomplete="new-password" required>
+                        </div>
+                        <div class="invalid-feedback">Informe sua senha.</div>
+                    </div>
+
+                    <!-- Esqueci a senha -->
+                    <div class="login-forgot">
+                        <a href="/redefinir-senha" id="btnEsqueciSenha">esqueci a senha</a>
+                    </div>
+
+                    <!-- Botão entrar -->
+                    <button type="submit" class="btn btn-orange btn-pill fw-bold w-100 login-btn">
+                        entrar
+                    </button>
+
+                    <!-- Mensagem de erro do servidor/login -->
+                    <div id="loginErrorMessage" class="text-danger text-center small mt-2 d-none" style="font-size: 0.85rem; color: #ff4d4d !important;"></div>
+
+                </form>
+
+                <!-- Rodapé -->
+                <p class="login-circle-footer-text">ATLAS © 2026 · Todos os direitos reservados</p>
+
             </div>
         </div>
 
@@ -53,3 +82,4 @@
     <script src="/public/js/core/api-client.js"></script>
     <script src="/public/js/core/auth.js"></script>
     <script src="/public/js/pages/login.js"></script>
+    <script type="module" src="/public/js/pages/neural-network.js"></script>

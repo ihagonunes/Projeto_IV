@@ -1,59 +1,117 @@
 <%- contentFor("espaco-head") %>
-<link href="/public/css/components/onboarding-card.css" rel="stylesheet">
-<link href="/public/css/components/wizard-tabs.css" rel="stylesheet">
-<link href="/public/css/pages/onboarding.css" rel="stylesheet">
+    <link href="/public/css/components/onboarding-card.css" rel="stylesheet">
+    <link href="/public/css/pages/onboarding.css" rel="stylesheet">
 
-<div class="container d-flex justify-content-center align-items-center min-vh-100 py-4">
+    <div class="atlas-onboarding-wrapper step-bg-revisao">
 
-        <div class="onboarding-card p-5 bg-white">
-            
-            <%- include("../../../views/partials/wizard-stepper", { activeStep: 5 }) %>
+        <%- include("../../../views/partials/wizard-stepper", { activeStep: 5 }) %>
 
-            <form id="revisaoForm" action="/login" method="GET" novalidate>
-                
-                <h5 class="fw-semibold text-dark mb-3">Revisão</h5>
-                
-                <!-- Box de Revisão com as informações consolidadas -->
-                <div class="border rounded bg-light p-4 mb-4" style="min-height: 250px;">
-                    <div class="row g-4">
-                        <div class="col-md-6">
-                            <h6 class="fw-bold text-warning border-bottom pb-1">Empresa (Tenant)</h6>
-                            <p class="mb-1"><strong>Nome:</strong> <span id="revNomeEmpresa">Minha Empresa LTDA</span></p>
-                            <p class="mb-1"><strong>CNPJ:</strong> <span id="revCnpj">12.345.678/0001-90</span></p>
-                            <p class="mb-1"><strong>Setor / Porte:</strong> <span id="revSetorPorte">Tecnologia / Grande</span></p>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <h6 class="fw-bold text-warning border-bottom pb-1">Administrador</h6>
-                            <p class="mb-1"><strong>Nome:</strong> <span id="revNomeAdmin">João da Silva</span></p>
-                            <p class="mb-1"><strong>E-mail:</strong> <span id="revEmailAdmin">joao@empresa.com</span></p>
-                            <p class="mb-1"><strong>Telefone:</strong> <span id="revTelefone">(11) 98765-4321</span></p>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <h6 class="fw-bold text-warning border-bottom pb-1">Departamentos e Usuários</h6>
-                            <p class="mb-1"><strong>Departamentos configurados:</strong> <span id="revDepartamentos">2</span></p>
-                            <p class="mb-1"><strong>Método de importação de usuários:</strong> <span id="revMetodoUsuarios">Cadastro Manual</span></p>
-                        </div>
+            <main class="atlas-content">
 
-                        <div class="col-md-6">
-                            <h6 class="fw-bold text-warning border-bottom pb-1">Integração de IA</h6>
-                            <p class="mb-1"><strong>Provedor:</strong> <span id="revProvedor">OpenAI</span></p>
-                            <p class="mb-1"><strong>Modelos ativos:</strong> <span id="revModelos">gpt-4o (2 modelos)</span></p>
-                        </div>
-                    </div>
+                <div class="atlas-page-header">
+                    <h1 class="atlas-page-title">Revisão Final</h1>
+                    <p class="atlas-page-subtitle">Confirme as configurações antes de finalizar o onboarding.</p>
                 </div>
 
-                <!-- Botões de Ação -->
-                <div class="d-flex justify-content-between mt-4">
-                    <a href="/onboarding/ia" class="btn btn-outline-secondary btn-pill">voltar</a>
-                    <button type="submit" class="btn btn-orange btn-pill text-white fw-bold">Finalizar</button>
+                <div class="atlas-card">
+                    <form id="revisaoForm" action="/onboarding" method="GET" novalidate>
+
+                        <p class="atlas-section-title">Resumo da Configuração</p>
+
+                        <div class="row g-4 mb-2">
+
+                            <!-- Empresa (Tenant) -->
+                            <div class="col-md-6">
+                                <div
+                                    style="border: 1px solid rgba(240,194,47,0.2); border-radius:10px; padding:1.2rem; background: rgba(11,16,32,0.4);">
+                                    <p
+                                        style="font-size:0.7rem; font-weight:700; letter-spacing:2px; color:var(--color-primary); text-transform:uppercase; margin-bottom:0.75rem; display:flex; align-items:center; gap:8px;">
+                                        <i class="bi bi-building"></i> Empresa (Tenant)
+                                    </p>
+                                    <p class="mb-1" style="font-size:0.88rem;"><span
+                                            style="color:var(--text-color-muted);">Nome:</span> <span
+                                            id="revNomeEmpresa" style="color:var(--text-color-main);">Minha Empresa
+                                            LTDA</span></p>
+                                    <p class="mb-1" style="font-size:0.88rem;"><span
+                                            style="color:var(--text-color-muted);">CNPJ:</span> <span id="revCnpj"
+                                            style="color:var(--text-color-main);">12.345.678/0001-90</span></p>
+                                    <p class="mb-0" style="font-size:0.88rem;"><span
+                                            style="color:var(--text-color-muted);">Setor / Porte:</span> <span
+                                            id="revSetorPorte" style="color:var(--text-color-main);">Tecnologia /
+                                            Grande</span></p>
+                                </div>
+                            </div>
+
+                            <!-- Administrador -->
+                            <div class="col-md-6">
+                                <div
+                                    style="border: 1px solid rgba(240,194,47,0.2); border-radius:10px; padding:1.2rem; background: rgba(11,16,32,0.4);">
+                                    <p
+                                        style="font-size:0.7rem; font-weight:700; letter-spacing:2px; color:var(--color-primary); text-transform:uppercase; margin-bottom:0.75rem; display:flex; align-items:center; gap:8px;">
+                                        <i class="bi bi-person-badge"></i> Administrador
+                                    </p>
+                                    <p class="mb-1" style="font-size:0.88rem;"><span
+                                            style="color:var(--text-color-muted);">Nome:</span> <span id="revNomeAdmin"
+                                            style="color:var(--text-color-main);">João da Silva</span></p>
+                                    <p class="mb-1" style="font-size:0.88rem;"><span
+                                            style="color:var(--text-color-muted);">E-mail:</span> <span
+                                            id="revEmailAdmin"
+                                            style="color:var(--text-color-main);">joao@empresa.com</span></p>
+                                    <p class="mb-0" style="font-size:0.88rem;"><span
+                                            style="color:var(--text-color-muted);">Telefone:</span> <span
+                                            id="revTelefone" style="color:var(--text-color-main);">(11)
+                                            98765-4321</span></p>
+                                </div>
+                            </div>
+
+                            <!-- Departamentos & Usuários -->
+                            <div class="col-md-6">
+                                <div
+                                    style="border: 1px solid rgba(240,194,47,0.2); border-radius:10px; padding:1.2rem; background: rgba(11,16,32,0.4);">
+                                    <p
+                                        style="font-size:0.7rem; font-weight:700; letter-spacing:2px; color:var(--color-primary); text-transform:uppercase; margin-bottom:0.75rem; display:flex; align-items:center; gap:8px;">
+                                        <i class="bi bi-diagram-3"></i> Departamentos & Usuários
+                                    </p>
+                                    <p class="mb-1" style="font-size:0.88rem;"><span
+                                            style="color:var(--text-color-muted);">Departamentos configurados:</span>
+                                        <span id="revDepartamentos" style="color:var(--text-color-main);">2</span></p>
+                                    <p class="mb-0" style="font-size:0.88rem;"><span
+                                            style="color:var(--text-color-muted);">Método de usuários:</span> <span
+                                            id="revMetodoUsuarios" style="color:var(--text-color-main);">Cadastro
+                                            Manual</span></p>
+                                </div>
+                            </div>
+
+                            <!-- IA -->
+                            <div class="col-md-6">
+                                <div
+                                    style="border: 1px solid rgba(240,194,47,0.2); border-radius:10px; padding:1.2rem; background: rgba(11,16,32,0.4);">
+                                    <p
+                                        style="font-size:0.7rem; font-weight:700; letter-spacing:2px; color:var(--color-primary); text-transform:uppercase; margin-bottom:0.75rem; display:flex; align-items:center; gap:8px;">
+                                        <i class="bi bi-cpu"></i> Integração de IA
+                                    </p>
+                                    <p class="mb-1" style="font-size:0.88rem;"><span
+                                            style="color:var(--text-color-muted);">Provedor:</span> <span
+                                            id="revProvedor" style="color:var(--text-color-main);">OpenAI</span></p>
+                                    <p class="mb-0" style="font-size:0.88rem;"><span
+                                            style="color:var(--text-color-muted);">Modelos ativos:</span> <span
+                                            id="revModelos" style="color:var(--text-color-main);">gpt-4o (2
+                                            modelos)</span></p>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <div class="atlas-form-footer">
+                            <a href="/onboarding/ia" class="btn btn-outline-secondary btn-pill">← voltar</a>
+                            <button type="submit" class="btn btn-orange btn-pill fw-bold px-4">
+                                <i class="bi bi-check2-circle me-2"></i>Finalizar Configuração
+                            </button>
+                        </div>
+                    </form>
                 </div>
-            </form>
 
-        </div>
-
+            </main>
     </div>
 
-<!-- Scripts específicos do passo -->
-<script src="/public/js/pages/onboarding/step-revisao.js"></script>
+    <script src="/public/js/pages/onboarding/step-revisao.js"></script>

@@ -1,34 +1,57 @@
+/* =============================================================
+   auth-card.css - Card Circular de Autenticação ATLAS
+   ============================================================= */
+
 .auth-card {
-    background-color: var(--bg-color-card);
+    background: rgba(16, 24, 45, 0.78);
+    backdrop-filter: blur(24px) saturate(140%);
+    -webkit-backdrop-filter: blur(24px) saturate(140%);
 
-    /* Forma de Círculo */
+    /* Forma de Círculo Perfeito */
     border-radius: 50%;
-    max-width: 520px;
-    height: 520px;
-    margin: -3px;
+    width: clamp(380px, 94vw, 560px);
+    height: clamp(380px, 94vw, 560px);
     aspect-ratio: 1 / 1;
-    /* Força a altura ser igual à largura */
+    margin: 0 auto;
 
-    /* Sombra e borda (para o efeito de anel em volta) */
-    box-shadow: var(--shadow-circle), var(--shadow-circle-inner);
-    border: 16px solid rgba(255, 255, 255, 0.4);
-    /* Anel translúcido */
+    /* Sombra e borda (efeito de anel translúcido com brilho dourado) */
+    border: 14px solid rgba(255, 255, 255, 0.08);
+    box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.75),
+        0 0 50px rgba(240, 194, 47, 0.22),
+        inset 0 0 35px rgba(240, 194, 47, 0.08),
+        inset 0 0 60px rgba(0, 0, 0, 0.5);
 
-    /* Centralizando o conteúdo dentro do círculo */
+    /* Centralizando o conteúdo interno */
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    padding: 2rem;
+    padding: 1.6rem 2.2rem;
+    box-sizing: border-box;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.4s ease, border-color 0.4s ease;
 }
 
-/* Limita a largura do formulário para não encostar nas bordas redondas */
+.auth-card:hover {
+    border-color: rgba(240, 194, 47, 0.2);
+    box-shadow:
+        0 25px 70px rgba(0, 0, 0, 0.85),
+        0 0 65px rgba(240, 194, 47, 0.35),
+        inset 0 0 45px rgba(240, 194, 47, 0.12),
+        inset 0 0 60px rgba(0, 0, 0, 0.4);
+}
+
+/* Formulário ajustado à geometria circular */
 .auth-card form {
     width: 100%;
     max-width: 250px;
+    margin: 0 auto;
 }
 
 .auth-card h1 {
-    color: var(--text-color-dark);
-    font-size: 2.5rem;
-}
+    color: var(--text-color-main);
+    font-size: 1.8rem;
+    font-weight: 600;
+}

@@ -1,0 +1,336 @@
+/* =============================================================
+   login.css - Layout ATLAS com Card Circular Central e 3D Full-Screen
+   ============================================================= */
+
+/* ── Wrapper principal full-screen ─────────────────────────── */
+.login-wrapper {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    min-height: 100vh;
+    overflow: hidden;
+    background-color: var(--bg-color-main);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ── Background: Canvas 3D em Tela Cheia ────────────────────── */
+.login-bg-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1;
+    pointer-events: auto;
+}
+
+#neural-network-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    cursor: crosshair;
+}
+
+/* ── Container Central (Sobreposto ao Canvas) ──────────────── */
+.login-center-container {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    padding: 1.5rem;
+    box-sizing: border-box;
+    pointer-events: none;
+    /* Permite que cliques fora do círculo atinjam o canvas */
+}
+
+.login-center-container>* {
+    pointer-events: auto;
+    /* Reativa interatividade dentro do card circular */
+}
+
+/* ── Logo / Branding Centralizado ───────────────────────────── */
+.login-logo-area {
+    margin-bottom: 0.6rem;
+    text-align: center;
+}
+
+.login-logo-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0;
+}
+
+.atlas-brand-name-img {
+    height: 220px;
+    max-width: 90%;
+    width: auto;
+    filter: drop-shadow(0 0 10px rgba(240, 194, 47, 0.35));
+    object-fit: contain;
+    margin-bottom: -40px;
+    margin-top: -50px;
+}
+
+/* ── Formulário dentro do Círculo ───────────────────────────── */
+.login-form {
+    width: 100%;
+    max-width: 250px;
+    margin: 0 auto;
+}
+
+.login-field-group {
+    margin-bottom: 0.75rem;
+    text-align: left;
+}
+
+.login-label {
+    display: block;
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--text-color-muted);
+    margin-bottom: 0.25rem;
+}
+
+.login-input-wrapper {
+    position: relative;
+}
+
+.login-input-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-color-muted);
+    font-size: 0.8rem;
+    pointer-events: none;
+    z-index: 3;
+}
+
+.login-input {
+    padding-left: 2.2rem !important;
+    background-color: rgba(11, 16, 32, 0.75) !important;
+    border: 1px solid rgba(240, 194, 47, 0.25) !important;
+    border-radius: 50px !important;
+    color: var(--text-color-main) !important;
+    font-size: 0.82rem;
+    height: 38px;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
+}
+
+.login-input:focus {
+    border-color: var(--color-primary) !important;
+    box-shadow: 0 0 12px rgba(240, 194, 47, 0.3) !important;
+    background-color: rgba(16, 24, 45, 0.95) !important;
+}
+
+.login-input::placeholder {
+    color: rgba(139, 142, 161, 0.45);
+    font-size: 0.78rem;
+}
+
+/* ── Link esqueci a senha ───────────────────────────────────── */
+.login-forgot {
+    text-align: center;
+    margin-bottom: 0.85rem;
+    margin-top: -0.3rem;
+}
+
+.login-forgot a {
+    font-size: 0.7rem;
+    color: var(--text-color-muted);
+    text-decoration: none;
+    letter-spacing: 0.5px;
+    transition: color 0.2s, text-shadow 0.2s;
+}
+
+.login-forgot a:hover {
+    color: var(--color-primary);
+    text-shadow: 0 0 8px rgba(240, 194, 47, 0.4);
+}
+
+/* ── Botão entrar ───────────────────────────────────────────── */
+.login-btn {
+    height: 40px;
+    font-size: 0.8rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    border-radius: 50px !important;
+    box-shadow: 0 4px 20px rgba(240, 194, 47, 0.25);
+    transition: all 0.3s ease;
+}
+
+.login-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px rgba(240, 194, 47, 0.45);
+}
+
+/* ── Rodapé no Círculo ──────────────────────────────────────── */
+.login-circle-footer-text {
+    font-size: 0.6rem;
+    color: rgba(139, 142, 161, 0.5);
+    letter-spacing: 1px;
+    margin: 0.75rem 0 0 0;
+    white-space: nowrap;
+    text-align: center;
+}
+
+/* ── Lado Direito & Arte ASCII (Redefinir Senha) ───────────── */
+.login-left {
+    flex: 0 0 45%;
+    max-width: 45%;
+    position: relative;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 2rem;
+    box-sizing: border-box;
+}
+
+.login-right {
+    flex: 0 0 55%;
+    max-width: 55%;
+    position: relative;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    overflow: hidden;
+    padding: 1rem;
+    box-sizing: border-box;
+}
+
+.login-ascii-scene {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    width: 100%;
+    max-width: 100%;
+}
+
+.login-ascii-art {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: clamp(2.4px, 0.45vw, 6.2px);
+    line-height: 1.0;
+    letter-spacing: 0;
+    color: var(--color-primary, #F0C22F);
+    text-shadow: 0 0 10px rgba(240, 194, 47, 0.5), 0 0 20px rgba(240, 194, 47, 0.25);
+    margin: 0;
+    white-space: pre;
+    overflow: hidden;
+    pointer-events: none;
+    user-select: none;
+}
+
+.fibonacci-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: -1;
+    opacity: 0.35;
+}
+
+.fib-circle {
+    position: absolute;
+    border: 1px solid rgba(240, 194, 47, 0.35);
+    border-radius: 50%;
+    box-shadow: 0 0 15px rgba(240, 194, 47, 0.15);
+}
+
+.fib-1 {
+    width: 100px;
+    height: 100px;
+}
+
+.fib-2 {
+    width: 200px;
+    height: 200px;
+}
+
+.fib-3 {
+    width: 330px;
+    height: 330px;
+}
+
+.fib-4 {
+    width: 480px;
+    height: 480px;
+}
+
+.fib-5 {
+    width: 650px;
+    height: 650px;
+}
+
+.ascii-label-bottom {
+    margin-top: 1rem;
+    text-align: center;
+    z-index: 2;
+}
+
+.ascii-label-text {
+    display: block;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 6px;
+    color: var(--color-primary, #F0C22F);
+    text-shadow: 0 0 12px rgba(240, 194, 47, 0.5);
+}
+
+.ascii-label-sub {
+    display: block;
+    font-size: 0.75rem;
+    letter-spacing: 2px;
+    color: var(--text-color-muted, #8B8EA1);
+    font-style: italic;
+    margin-top: 4px;
+}
+
+/* ── Responsivo: Mobile & Ajustes de Altura ─────────────────── */
+@media (max-width: 992px) {
+    .login-right {
+        display: none;
+    }
+
+    .login-left {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+}
+
+@media (max-width: 576px) {
+    .auth-card {
+        border-width: 8px;
+        padding: 1.8rem 1.5rem;
+    }
+
+    .login-form {
+        max-width: 240px;
+    }
+
+    .atlas-brand {
+        font-size: 1.5rem;
+        letter-spacing: 4px;
+    }
+
+    .login-tagline {
+        font-size: 0.65rem;
+    }
+}

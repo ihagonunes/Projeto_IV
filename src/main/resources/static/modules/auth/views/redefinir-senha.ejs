@@ -1,31 +1,42 @@
 <%- contentFor("espaco-head") %>
-<link href="/public/css/components/onboarding-card.css" rel="stylesheet">
+    <link href="/public/css/components/onboarding-card.css" rel="stylesheet">
+    <link href="/public/css/pages/login.css" rel="stylesheet">
 
-<div class="container d-flex justify-content-center align-items-center min-vh-100 py-4">
+    <div class="login-wrapper">
 
-    <div class="onboarding-card">
-        <form id="resetPasswordForm" action="#" method="POST" novalidate>
+        <!-- ===== LADO ESQUERDO: Formulário ===== -->
+        <div class="login-left">
 
-            <!-- LINHA 1: E-mail -->
-            <div class="row align-items-start mb-4">
-                <div class="col-md-8">
-                    <label for="email" class="form-label-custom">E-mail cadastrado</label>
-                    <input type="email" class="form-control custom-input" id="email" required>
-                    <p class="form-subtext mt-2 mb-0">
-                        Um código de redefinição de senha será enviado ao e-mail informado.<br>
+            <!-- Logo / Branding -->
+            <div class="login-logo-area">
+                <p class="login-tagline">Redefinição de Acesso</p>
+            </div>
+
+            <form id="resetPasswordForm" action="#" method="POST" novalidate style="width:100%; max-width: 420px;">
+
+                <!-- E-mail -->
+                <div class="mb-1">
+                    <label for="email" class="form-label-custom"
+                        style="font-size:0.72rem; letter-spacing:2px; text-transform:uppercase;">E-mail
+                        cadastrado</label>
+                    <div class="d-flex gap-2">
+                        <input type="email" class="form-control custom-input flex-grow-1" id="email"
+                            placeholder="seu@email.com" required>
+                        <button type="button" class="btn btn-orange btn-pill fw-bold px-3"
+                            style="white-space:nowrap; font-size:0.8rem;">enviar código</button>
+                    </div>
+                    <p class="form-subtext mt-2 mb-3">
+                        Um código de redefinição será enviado ao e-mail informado.<br>
                         Não recebeu? Reenvio disponível em 30 segundos.
                     </p>
                 </div>
-                <div class="col-md-4 pt-4 d-flex justify-content-end">
-                    <button type="button" class="btn btn-orange btn-pill text-white fw-bold w-100">enviar
-                        código</button>
-                </div>
-            </div>
 
-            <div class="row align-items-end mb-4">
-                <div class="col-md-8">
-                    <label class="form-label-custom">Código de redefinição</label>
-                    <div class="d-flex gap-2" id="codeContainer">
+                <!-- Código de redefinição -->
+                <div class="mb-4">
+                    <label class="form-label-custom"
+                        style="font-size:0.72rem; letter-spacing:2px; text-transform:uppercase;">Código de
+                        redefinição</label>
+                    <div class="d-flex gap-2 align-items-center" id="codeContainer">
                         <input type="text" maxlength="1" inputmode="numeric"
                             class="form-control custom-input code-box code-input text-center">
                         <input type="text" maxlength="1" inputmode="numeric"
@@ -38,38 +49,57 @@
                             class="form-control custom-input code-box code-input text-center">
                         <input type="text" maxlength="1" inputmode="numeric"
                             class="form-control custom-input code-box code-input text-center">
+                        <button type="button" class="btn btn-orange btn-pill fw-bold px-3 ms-2"
+                            style="font-size:0.8rem;">verificar</button>
                     </div>
                 </div>
-                <div class="col-md-4 d-flex justify-content-end">
-                    <button type="button"
-                        class="btn btn-orange btn-pill text-white fw-bold w-100">verificar</button>
+
+                <!-- Nova senha -->
+                <div class="mb-3">
+                    <label for="senha" class="form-label-custom"
+                        style="font-size:0.72rem; letter-spacing:2px; text-transform:uppercase;">Nova senha</label>
+                    <input type="password" class="form-control custom-input" id="senha" placeholder="••••••••" required>
+                </div>
+
+                <!-- Confirmar nova senha -->
+                <div class="mb-4">
+                    <label for="confirmarSenha" class="form-label-custom"
+                        style="font-size:0.72rem; letter-spacing:2px; text-transform:uppercase;">Confirme a nova
+                        senha</label>
+                    <input type="password" class="form-control custom-input" id="confirmarSenha" placeholder="••••••••"
+                        required>
+                </div>
+
+                <!-- Botões -->
+                <div class="d-flex gap-3">
+                    <a href="/login" class="btn btn-outline-secondary btn-pill flex-grow-1">voltar ao login</a>
+                    <button type="submit" class="btn btn-orange btn-pill fw-bold flex-grow-1">alterar senha</button>
+                </div>
+
+            </form>
+
+            <p class="login-footer-text">ATLAS © 2026 · Todos os direitos reservados</p>
+
+        </div>
+
+        <!-- ===== LADO DIREITO: ASCII Grego ===== -->
+        <div class="login-right">
+            <div class="login-ascii-scene">
+                <pre class="login-ascii-art" id="asciiArtContainer"></pre>
+                <div class="fibonacci-overlay">
+                    <div class="fib-circle fib-1"></div>
+                    <div class="fib-circle fib-2"></div>
+                    <div class="fib-circle fib-3"></div>
+                    <div class="fib-circle fib-4"></div>
+                    <div class="fib-circle fib-5"></div>
+                </div>
+                <div class="ascii-label-bottom">
+                    <span class="ascii-label-sub">ὁ τιτὰν ποὺ κρατεῖ τον κόσμο</span>
                 </div>
             </div>
+        </div>
 
-            <!-- LINHA 3: Insira a nova senha -->
-            <div class="row align-items-end mb-4">
-                <div class="col-md-8">
-                    <label for="senha" class="form-label-custom">Insira a nova senha</label>
-                    <input type="password" class="form-control custom-input" id="senha" required>
-                </div>
-            </div>
-
-            <!-- LINHA 4: Confirme a nova senha -->
-            <div class="row align-items-end">
-                <div class="col-md-8">
-                    <label for="confirmarSenha" class="form-label-custom">Confirme a nova senha</label>
-                    <input type="password" class="form-control custom-input" id="confirmarSenha" required>
-                </div>
-                <div class="col-md-4 d-flex justify-content-end">
-                    <button type="submit" class="btn btn-orange btn-pill text-white fw-bold w-100">alterar
-                        senha</button>
-                </div>
-            </div>
-
-        </form>
     </div>
 
-</div>
-
-<!-- Scripts de Redefinir Senha -->
-<script src="/public/js/pages/redefinir-senha.js"></script>
+    <!-- Scripts de Redefinir Senha -->
+    <script src="/public/js/pages/redefinir-senha.js"></script>
