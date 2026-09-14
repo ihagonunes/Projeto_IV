@@ -16,7 +16,7 @@ CREATE TABLE app_user (
 
     CONSTRAINT pk_app_user PRIMARY KEY (id),
     CONSTRAINT uq_app_user_tenant_email UNIQUE (tenant_id, email),
-    CONSTRAINT fk_app_user_tenant FOREIGN KEY (tenant_id) REFERENCES tenant (id)
+    CONSTRAINT fk_app_user_tenant FOREIGN KEY (tenant_id) REFERENCES iam_tenants (id)
 );
 
 CREATE INDEX idx_app_user_tenant_id ON app_user (tenant_id);

@@ -15,7 +15,7 @@ import java.util.UUID;
  * para que o domínio permaneça livre de JPA (ADR-31).
  */
 @Entity
-@Table(name = "tenant")
+@Table(name = "iam_tenants")
 public class TenantJpaEntity {
 
     @Id
