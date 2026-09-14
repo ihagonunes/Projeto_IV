@@ -37,6 +37,10 @@ management:
         enabled: true
 
 app:
+  bootstrap:
+    # Cria dados de demonstração (tenant qsoft + admin) na inicialização.
+    # Desative em ambientes que não devam receber dados demo.
+    demo-data: true
   security:
     jwt:
       # Segredo HMAC para assinatura/validação do JWT (ADR-30).
