@@ -24,6 +24,7 @@
     <testcontainers.version>2.0.5</testcontainers.version>
     <maven-failsafe.version>3.5.5</maven-failsafe.version>
     <jacoco.version>0.8.15</jacoco.version>
+    <springdoc.version>3.1.0</springdoc.version>
   </properties>
 
   <dependencyManagement>
@@ -71,14 +72,6 @@
       <artifactId>flyway-database-postgresql</artifactId>
     </dependency>
 
-    <!-- Spring Boot 4: a auto-configuração do Flyway vive em módulo dedicado
-         (spring-boot-flyway). Sem ela, as migrations não são aplicadas
-         automaticamente e o schema fica vazio (ddl-auto=validate falha). -->
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-flyway</artifactId>
-    </dependency>
-
     <!-- Validation -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -100,6 +93,13 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+
+    <!-- OpenAPI 3 / Swagger UI (dashboard da API), compatível com Spring Boot 4.1 -->
+    <dependency>
+      <groupId>org.springdoc</groupId>
+      <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+      <version>${springdoc.version}</version>
     </dependency>
 
     <!-- Tests -->

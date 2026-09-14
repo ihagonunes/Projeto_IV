@@ -23,7 +23,12 @@ public class SecurityBaselineConfig {
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/actuator/health/**", "/api/v1/auth/login", "/api/v1/tenants").permitAll()
+                .requestMatchers(
+                    "/actuator/health/**",
+                    "/api/v1/auth/login", "/api/v1/tenants", "/api/v1/usuarios",
+                    // Swagger/OpenAPI (dashboard da API)
+                    "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html")
+                .permitAll()
                 // Endpoints de negócio exigem JWT Bearer válido (ADR-30).
                 // A revalidação de Tenant/User ACTIVE e do TenantContext
                 // acontece no TenantContextFilter (módulo iam).

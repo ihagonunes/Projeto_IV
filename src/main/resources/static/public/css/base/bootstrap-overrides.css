@@ -1,7 +1,14 @@
-/* Sobrescrevendo o fundo padrão do body do Bootstrap para telas de auth */
-body.auth-bg {
+/* Sobrescrevendo o fundo padrão do body do Bootstrap */
+body {
     background-color: var(--bg-color-main);
     font-family: var(--font-family-base);
+    color: var(--text-color-main);
+    margin: 0;
+    padding: 0;
+}
+
+body.auth-bg {
+    background-color: var(--bg-color-main);
 }
 
 /* Ajustando a cor dos links gerais */
@@ -12,4 +19,105 @@ a {
 
 a:hover {
     color: var(--color-primary);
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: var(--text-color-main);
+}
+
+/* Fix Bootstrap selects para dark mode */
+.form-select.custom-input {
+    background-color: var(--input-bg-color);
+    color: var(--text-color-main);
+    border-color: var(--input-border-color);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%238B8EA1' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+}
+
+.form-select.custom-input:focus {
+    background-color: #10182D;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 0.25rem rgba(240, 194, 47, 0.25);
+    color: var(--text-color-main);
+}
+
+.form-select.custom-input option {
+    background-color: var(--bg-color-card);
+    color: var(--text-color-main);
+}
+
+/* Fix Bootstrap dropdown menus */
+.dropdown-menu {
+    background-color: var(--bg-color-card);
+    border: 1px solid rgba(240, 194, 47, 0.2);
+}
+
+.dropdown-item {
+    color: var(--text-color-main);
+}
+
+.dropdown-item:hover, .dropdown-item:focus {
+    background-color: rgba(240, 194, 47, 0.1);
+    color: var(--color-primary);
+}
+
+.dropdown-item.active {
+    background-color: rgba(240, 194, 47, 0.15);
+    color: var(--color-primary);
+}
+
+/* Fix Bootstrap modal backdrop */
+.modal-content {
+    background-color: var(--bg-color-card);
+    color: var(--text-color-main);
+    border: 1px solid rgba(240, 194, 47, 0.2);
+}
+
+/* Fix btn-close para dark mode */
+.btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+/* Fix btn-outline-secondary para dark mode */
+.btn-outline-secondary {
+    color: var(--text-color-muted);
+    border-color: var(--text-color-muted);
+}
+
+.btn-outline-secondary:hover {
+    background-color: rgba(139, 142, 161, 0.15);
+    border-color: var(--text-color-muted);
+    color: var(--text-color-main);
+}
+
+/* Fix form-check (switches) */
+.form-check-input {
+    background-color: var(--input-bg-color);
+    border-color: var(--input-border-color);
+}
+
+.form-check-input:checked {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+}
+
+/* Fix form-switch */
+.form-check-input[type="checkbox"]:focus {
+    box-shadow: 0 0 0 0.25rem rgba(240, 194, 47, 0.25);
+    border-color: var(--color-primary);
+}
+
+.form-check-label {
+    color: var(--text-color-muted);
+}
+
+/* Spinner */
+.spinner-border {
+    color: var(--bg-color-main);
+}
+
+/* Branding ATLAS - Fonte grega para logo placeholders */
+.atlas-brand {
+    font-family: 'Cinzel Decorative', serif;
+    color: var(--color-primary);
+    letter-spacing: 2px;
 }

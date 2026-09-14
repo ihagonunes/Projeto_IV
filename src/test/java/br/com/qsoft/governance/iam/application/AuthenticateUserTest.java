@@ -107,6 +107,17 @@ class AuthenticateUserTest {
     }
 
     @Test
+    void shouldDeriveTenantFromEmailDomainWhenSlugAbsent() {
+        Tenant tenant = activeTenant("qsoft");
+        activeUser(tenant, "ana@qsoft.com", "secret123");
+
+        AuthenticatedUser result = useCase.login(new LoginCommand(null, "ana@qsoft.com", "secret123"));
+
+        assertThat(result.tenantId()).isEqualTo(tenant.id());
+        assertThat(result.email()).isEqualTo("ana@qsoft.com");
+    }
+
+    @Test
     void shouldRejectWrongPassword() {
         Tenant tenant = activeTenant("qsoft");
         activeUser(tenant, "ana@qsoft.com", "secret123");

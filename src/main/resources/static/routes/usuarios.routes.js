@@ -12,7 +12,7 @@ const router = express.Router();
 router.get("/admin/usuarios", wrap(async (req, res) => {
     res.render("usuarios/views/admin-usuarios", {
         titulo: "Gestão de Nível Hierárquico e Permissões - Administração",
-        bodyClass: "bg-light auth-bg"
+        bodyClass: "auth-bg"
     });
 }));
 
