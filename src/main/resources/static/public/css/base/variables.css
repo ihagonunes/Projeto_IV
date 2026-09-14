@@ -1,36 +1,51 @@
 /* CSS Custom Properties (Variáveis) 
-   Baseadas no Design System (Figma)
+   Baseadas no Design System (Figma) - ATLAS Dark Theme
 */
 :root {
     /* Cores Principais */
-    --color-primary: #F08A2B; /* Laranja dos botões (aproximado do protótipo) */
-    --color-primary-hover: #D97A24; /* Laranja ligeiramente mais escuro para hover */
+    --color-primary: #F0C22F; /* Laranja/Amarelo dos botões e destaques */
+    --color-primary-hover: #D0A728; /* Ligeiramente mais escuro para hover */
     
     /* Backgrounds */
-    --bg-color-main: #F4E8E1; /* Tom terracota/creme de fundo (estimado do frame) */
-    --bg-color-card: #FFFFFF; /* Fundo do card de login e painéis */
+    --bg-color-main: #0B1020; /* Fundo escuro geral do site */
+    --bg-color-card: #10182D; /* Fundo secundário (cards de login e painéis) */
     
     /* Tipografia e Textos */
-    --text-color-dark: #333333; /* Cor para títulos (ex: "Bem-Vindo") */
-    --text-color-muted: #999999; /* Cor do placeholder "e-mail", "senha" e links */
+    --text-color-main: #E2E8F0; /* Cor para textos principais e títulos */
+    --text-color-muted: #8B8EA1; /* Cor do placeholder "e-mail", "senha" e links */
     
     /* Inputs */
-    --input-bg-color: #F8F9FA; /* Fundo cinza bem claro dos inputs */
-    --input-border-color: #E0E0E0; /* Borda sutil dos inputs */
-    --input-border-radius: 50px; /* Bordas totalmente arredondadas (pill) */
+    --input-bg-color: #0B1020; /* Fundo do input mais escuro para dar profundidade */
+    --input-border-color: #8B8EA1; /* Borda com a cor secundária */
+    --input-border-radius: 8px; /* Bordas menos arredondadas, mais high-tech (opcional, ajustando pill para 8px) */
     
     /* Botões */
-    --btn-border-radius: 50px; /* Bordas totalmente arredondadas (pill) */
-    --btn-padding-y: 0.5rem;
+    --btn-border-radius: 8px; /* High-tech square-ish buttons ao invés de pill total */
+    --btn-padding-y: 0.6rem;
     --btn-padding-x: 2rem;
-
     
     /* Sombras */
-    --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.2); /* Sombra suave para o card flutuante */
-    --shadow-input-inner: inset 0 2px 4px rgba(0, 0, 0, 0.1); /* Sombra interna (inner shadow) típica de inputs neumórficos/arredondados */
-    --shadow-circle: 0 4px 50px rgba(0, 0, 0, 0.1); /* Sombra maior para dar o efeito de círculo flutuando (baseado na imagem Bem-vindo) */
-    --shadow-circle-inner: inset 0 4px 50px rgba(0, 0, 0, 0.25);
+    --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.5); /* Sombra mais forte para dark mode */
+    --shadow-input-inner: inset 0 2px 4px rgba(0, 0, 0, 0.3); 
+    --shadow-circle: 0 4px 50px rgba(240, 194, 47, 0.15); /* Brilho amarelo sutil */
+    --shadow-circle-inner: inset 0 4px 50px rgba(240, 194, 47, 0.1);
 
     /* Fonte */
---font-family-base: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-family-base: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
+
+@property --border-angle {
+    syntax: '<angle>';
+    initial-value: 0deg;
+    inherits: false;
+}
+
+@keyframes rotateBorderBeam {
+    0% {
+        --border-angle: 0deg;
+    }
+    100% {
+        --border-angle: 360deg;
+    }
+}
+

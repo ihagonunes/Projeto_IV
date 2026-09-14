@@ -1,0 +1,273 @@
+<%- contentFor("espaco-head") %>
+    <link href="/public/css/components/auth-card.css" rel="stylesheet">
+    <link href="/public/css/components/data-grid.css" rel="stylesheet">
+    <link href="/public/css/pages/admin-usuarios.css" rel="stylesheet">
+
+    <div class="container py-5">
+
+        <!-- Cabeçalho Administrativo, Contexto do Tenant e Alternador de Perfil -->
+        <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom flex-wrap gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <h1 class="h3 fw-bold mb-0">Gestão de Usuários & Níveis de Acesso</h1>
+                    <span class="tenant-context-badge">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor"
+                            class="bi bi-building" viewBox="0 0 16 16">
+                            <path
+                                d="M4 2.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm3.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5zM4 5.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm3.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5zM4 8.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm3.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5zM4 11.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm3.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5z" />
+                            <path
+                                d="M2 1a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1zm11 0H3v14h3v-2.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5V15h3z" />
+                        </svg>
+                        Tenant: Acceletec Solutions
+                    </span>
+                </div>
+                <p class="text-muted mb-0 small">Visualização e alteração do nível hierárquico e das permissões
+                    administrativas dos usuários corporativos.</p>
+            </div>
+
+            <div class="d-flex align-items-center gap-3">
+                <div id="roleBadgeContainer" class="admin-header-badge">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                        class="bi bi-shield-check" viewBox="0 0 16 16">
+                        <path
+                            d="M5.338 1.59a61 61 0 0 0-2.837.856.48.48 0 0 0-.328.39c-.554 4.157.726 7.19 2.253 9.188a10.7 10.7 0 0 0 2.287 2.233c.346.244.652.42.893.533q.18.085.293.134a.1.1 0 0 0 .01.003c.001.001.006.002.012.002l.002.001.001.001.001.001c.242-.113.547-.29.893-.533a10.7 10.7 0 0 0 2.287-2.233c1.527-1.997 2.807-5.031 2.253-9.188a.48.48 0 0 0-.328-.39c-.651-.213-1.75-.56-2.837-.855C9.552 1.29 8.531 1.067 8 1.067s-1.552.223-2.662.524zM5.072.56C6.157.265 7.31 0 8 0s1.843.265 2.928.56c1.11.3 2.229.655 2.887.87a1.5 1.5 0 0 1 1.044 1.262c.596 4.477-.787 7.795-2.465 9.99a11.8 11.8 0 0 1-2.517 2.453 7 7 0 0 1-1.048.625c-.28.132-.581.24-.829.24s-.548-.108-.829-.24a7 7 0 0 1-1.048-.625 11.8 11.8 0 0 1-2.517-2.453C1.928 10.487.545 7.169 1.141 2.692A1.5 1.5 0 0 1 2.185 1.43 63 63 0 0 1 5.072.56" />
+                        <path
+                            d="M10.854 5.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7.5 7.793l2.646-2.647a.5.5 0 0 1 .708 0" />
+                    </svg>
+                    <span id="roleBadgeText">Perfil: Administrador</span>
+                </div>
+
+                <!-- Alternador Rápido de Perfil para Teste dos Critérios de Aceite -->
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle btn-pill" type="button"
+                        data-bs-toggle="dropdown" aria-expanded="false">
+                        Simular Perfil
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                        <li><button class="dropdown-item small active" type="button"
+                                onclick="setSimulatedRole('admin')">Administrador</button></li>
+                        <li><button class="dropdown-item small" type="button"
+                                onclick="setSimulatedRole('comum')">Usuário Comum (Não-Admin)</button></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Banner de Acesso Restrito -->
+        <div id="accessDeniedBanner" class="access-restricted-banner mb-4 d-none">
+            <div class="d-flex align-items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor"
+                    class="bi bi-exclamation-triangle-fill me-3 flex-shrink-0" viewBox="0 0 16 16">
+                    <path
+                        d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z" />
+                </svg>
+                <div>
+                    <strong class="d-block fs-6">Acesso Restrito a Administradores</strong>
+                    <span class="small">Você está navegando com um perfil sem permissões administrativas. As ações de
+                        alteração de nível hierárquico e privilégios estão bloqueadas para o seu usuário.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Container de Notificações / Toast Feedbacks -->
+        <div id="alertArea" class="mb-4"></div>
+
+        <!-- Card de Diferenciação Conceitual -->
+        <div class="concept-card mb-4">
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="#2563EB"
+                    class="bi bi-info-circle-fill" viewBox="0 0 16 16">
+                    <path
+                        d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z" />
+                </svg>
+                <h2 class="h6 fw-bold mb-0">Entenda a Diferença entre Nível Hierárquico e Permissão Administrativa</h2>
+            </div>
+            <div class="row g-3 mt-1">
+                <div class="col-md-6">
+                    <div class="concept-box d-flex gap-3 align-items-start">
+                        <div class="concept-icon level">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                                class="bi bi-diagram-3" viewBox="0 0 16 16">
+                                <path fill-rule="evenodd"
+                                    d="M6 3.5A1.5 1.5 0 0 1 7.5 2h1A1.5 1.5 0 0 1 10 3.5v1A1.5 1.5 0 0 1 8.5 6v1H14a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0v-1A.5.5 0 0 1 2 7h5.5V6A1.5 1.5 0 0 1 6 4.5zM8.5 4.5a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5zM0 11.5A1.5 1.5 0 0 1 1.5 10h1A1.5 1.5 0 0 1 4 11.5v1A1.5 1.5 0 0 1 2.5 14h-1A1.5 1.5 0 0 1 0 12.5zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5zm4.5 1A1.5 1.5 0 0 1 7.5 10h1a1.5 1.5 0 0 1 1.5 1.5v1A1.5 1.5 0 0 1 8.5 14h-1A1.5 1.5 0 0 1 6 12.5zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5zm4.5 1a1.5 1.5 0 0 1 1.5-1.5h1a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5h-1a1.5 1.5 0 0 1-1.5-1.5zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <strong class="d-block small fw-bold mb-1">Nível Hierárquico (Organograma)</strong>
+                            <p class="text-muted small mb-0">Refere-se à posição institucional do usuário (ex:
+                                <em>Diretoria, Gerência, Coordenação, Operacional, Estagiário</em>). Utilizado para
+                                relatórios, workflows de aprovação e governança organizacional.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="concept-box d-flex gap-3 align-items-start">
+                        <div class="concept-icon admin">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                                class="bi bi-shield-lock" viewBox="0 0 16 16">
+                                <path
+                                    d="M5.338 1.59a61 61 0 0 0-2.837.856.48.48 0 0 0-.328.39c-.554 4.157.726 7.19 2.253 9.188a10.7 10.7 0 0 0 2.287 2.233c.346.244.652.42.893.533q.18.085.293.134a.1.1 0 0 0 .01.003c.001.001.006.002.012.002l.002.001.001.001.001.001c.242-.113.547-.29.893-.533a10.7 10.7 0 0 0 2.287-2.233c1.527-1.997 2.807-5.031 2.253-9.188a.48.48 0 0 0-.328-.39c-.651-.213-1.75-.56-2.837-.855C9.552 1.29 8.531 1.067 8 1.067s-1.552.223-2.662.524zM5.072.56C6.157.265 7.31 0 8 0s1.843.265 2.928.56c1.11.3 2.229.655 2.887.87a1.5 1.5 0 0 1 1.044 1.262c.596 4.477-.787 7.795-2.465 9.99a11.8 11.8 0 0 1-2.517 2.453 7 7 0 0 1-1.048.625c-.28.132-.581.24-.829.24s-.548-.108-.829-.24a7 7 0 0 1-1.048-.625 11.8 11.8 0 0 1-2.517-2.453C1.928 10.487.545 7.169 1.141 2.692A1.5 1.5 0 0 1 2.185 1.43 63 63 0 0 1 5.072.56" />
+                                <path
+                                    d="M9.5 6.5a1.5 1.5 0 0 1-1 1.415V9.5a.5.5 0 0 1-1 0V7.915a1.5 1.5 0 1 1 2 0l-.5-.915z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <strong class="d-block small fw-bold mb-1">Permissão Administrativa (Sistema)</strong>
+                            <p class="text-muted small mb-0">Refere-se à concessão de privilégios de gestão no software
+                                (ex: <em>Administrador do Tenant</em> — altera configurações, dados e usuários vs
+                                <em>Usuário Comum</em> — acesso às funcionalidades de rotina).</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabela / Grid de Usuários do Tenant -->
+        <div class="admin-card p-4">
+            <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                <div>
+                    <h2 class="h5 fw-bold mb-0">Usuários Registrados no Tenant</h2>
+                    <span class="text-muted small">Gerencie as atribuições organizacionais e autorizações de acesso de
+                        cada membro.</span>
+                </div>
+                <span id="totalUsuariosBadge" class="badge bg-secondary rounded-pill fs-6 px-3">0 usuários</span>
+            </div>
+
+            <!-- Barra de Filtros e Busca -->
+            <div class="filter-bar mb-3">
+                <div class="row g-2">
+                    <div class="col-md-4">
+                        <input type="text" id="searchInput" class="form-control form-control-sm custom-input"
+                            placeholder="Buscar por nome ou e-mail...">
+                    </div>
+                    <div class="col-md-3">
+                        <select id="departamentoFilter" class="form-select form-select-sm custom-input">
+                            <option value="TODOS">Todos os Departamentos</option>
+                            <option value="Tecnologia da Informação">Tecnologia da Informação</option>
+                            <option value="Recursos Humanos">Recursos Humanos</option>
+                            <option value="Financeiro">Financeiro</option>
+                            <option value="Vendas & Comercial">Vendas & Comercial</option>
+                            <option value="Operações">Operações</option>
+                            <option value="Marketing">Marketing</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select id="nivelFilter" class="form-select form-select-sm custom-input">
+                            <option value="TODOS">Todos os Níveis</option>
+                            <option value="Diretoria">Diretoria</option>
+                            <option value="Gerência">Gerência</option>
+                            <option value="Coordenação">Coordenação</option>
+                            <option value="Operacional">Operacional</option>
+                            <option value="Estagiário">Estagiário</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select id="permFilter" class="form-select form-select-sm custom-input">
+                            <option value="TODOS">Todas Permissões</option>
+                            <option value="ADMIN">Administrador</option>
+                            <option value="COMUM">Usuário Comum</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grid de Dados -->
+            <div class="data-grid-container">
+                <table class="data-grid text-nowrap">
+                    <thead>
+                        <tr>
+                            <th>Usuário</th>
+                            <th>Departamento</th>
+                            <th>Nível Hierárquico</th>
+                            <th>Permissão Administrativa</th>
+                            <th>Último Acesso</th>
+                            <th class="text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usuariosTableBody">
+                        <!-- Preenchido dinamicamente via JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Estado Vazio -->
+            <div id="emptyState" class="text-center py-5 d-none">
+                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="#CCC" class="bi bi-people mb-2"
+                    viewBox="0 0 16 16">
+                    <path
+                        d="M15 14s1 0 1-1-1-4-5-4-5 3-5 4 1 1 1 1zm-7.978-1L7 12.996c.001-.264.167-1.03.76-1.72C8.312 10.629 9.282 10 11 10c1.717 0 2.687.63 3.24 1.276.593.69.758 1.457.76 1.72l-.008.004H7.022zM11 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4m3-2a3 3 0 1 1-6 0 3 3 0 0 1 6 0M6.936 9.28a6 6 0 0 0-1.23-.247A7 7 0 0 0 5 9c-4 0-5 3-5 4 0 .667.333 1 1 1h4.216A2.24 2.24 0 0 1 5 13c0-1.01.377-2.042 1.09-2.904.243-.294.526-.569.846-.816M4.92 10A5.5 5.5 0 0 0 4 13H1c0-.26.164-1.03.76-1.724.545-.636 1.492-1.256 3.16-1.275ZM1.5 5.5a3 3 0 1 1 6 0 3 3 0 0 1-6 0m3-2a2 2 0 1 0 0 4 2 2 0 0 0 0-4" />
+                </svg>
+                <p class="text-muted small mb-0">Nenhum usuário encontrado para os filtros selecionados.</p>
+            </div>
+        </div>
+
+        <!-- Navegação de Retorno -->
+        <div class="mt-4 text-center">
+            <a href="/onboarding" class="text-decoration-none text-muted small">← Voltar para o Onboarding</a>
+        </div>
+
+    </div>
+
+    <!-- Modal de Edição de Usuário -->
+    <div class="modal fade" id="modalEditarUsuario" tabindex="-1" aria-labelledby="modalEditarUsuarioLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content custom-modal-content">
+                <div class="modal-header custom-modal-header">
+                    <div>
+                        <h5 class="modal-title fw-bold" id="modalEditarUsuarioLabel">Alterar Nível e Permissão</h5>
+                        <p class="text-muted small mb-0" id="modalUserSubtitle">Selecione as novas atribuições para o
+                            usuário.</p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+
+                <form id="formEditarUsuario" novalidate>
+                    <div class="modal-body custom-modal-body">
+                        <input type="hidden" id="editUserId">
+                        <div class="mb-3">
+                            <label class="form-label-custom fw-semibold">Usuário Selecionado</label>
+                            <input type="text" class="form-control custom-input" id="editUserName" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editNivelHierarquico" class="form-label-custom fw-semibold">Nível Hierárquico
+                                *</label>
+                            <select class="form-select custom-input" id="editNivelHierarquico" required>
+                                <option value="Diretoria">Diretoria</option>
+                                <option value="Gerência">Gerência</option>
+                                <option value="Coordenação">Coordenação</option>
+                                <option value="Operacional">Operacional</option>
+                                <option value="Estagiário">Estagiário</option>
+                            </select>
+                            <div class="field-explanation">Define a posição do usuário na hierarquia corporativa da
+                                empresa.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editPermissaoAdmin" class="form-label-custom fw-semibold">Permissão
+                                Administrativa no Sistema *</label>
+                            <select class="form-select custom-input" id="editPermissaoAdmin" required>
+                                <option value="ADMIN">Administrador do Tenant (Acesso total a gestão)</option>
+                                <option value="COMUM">Usuário Comum (Acesso sem privilégios de gestão)</option>
+                            </select>
+                            <div class="field-explanation">Define se o usuário possui autonomia para alterar
+                                configurações, gerenciar outros membros e emitir convites.</div>
+                        </div>
+                    </div>
+                    <div class="modal-footer custom-modal-footer">
+                        <button type="button" class="btn btn-outline-secondary btn-pill"
+                            data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" id="btnSalvarEdicao"
+                            class="btn btn-orange btn-pill text-white fw-bold d-flex align-items-center justify-content-center gap-2">
+                            <span id="editSpinner" class="spinner-border spinner-border-sm d-none" role="status"
+                                aria-hidden="true"></span>
+                            <span>Salvar Alterações</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts da Página -->
+    <script src="/public/js/core/api-client.js"></script>
+    <script src="/public/js/pages/admin-usuarios.js"></script>

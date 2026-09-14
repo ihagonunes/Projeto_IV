@@ -1,0 +1,38 @@
+<%- contentFor("espaco-head") %>
+    <link href="/public/css/components/onboarding-card.css" rel="stylesheet">
+    <link href="/public/css/pages/onboarding.css" rel="stylesheet">
+
+    <div class="onboarding-welcome-wrapper">
+
+        <!-- LADO ESQUERDO (35%): LOGO PNG -->
+        <div class="onboarding-welcome-left">
+            <div class="welcome-logo-container">
+                <img src="/public/img/atlas-logo.png" alt="ATLAS" class="welcome-logo-img">
+            </div>
+        </div>
+
+        <!-- LADO DIREITO (65%): CABEÇALHO E CARD DE NAVEGAÇÃO -->
+        <main class="onboarding-welcome-right">
+
+            <div
+                class="onboarding-card welcome-card-compact d-flex flex-column align-items-center justify-content-center text-center">
+                <p class="welcome-card-text">
+                    Prepare os dados da empresa, do administrador principal, preferências de departamento, usuários e
+                    credenciais de IA.
+                </p>
+                <div class="d-flex gap-3 flex-wrap justify-content-center">
+                    <a href="/tenant" class="btn btn-outline-gold btn-pill fw-bold px-4 py-2"
+                        style="font-size:0.92rem;">
+                        Novo Cadastro →
+                    </a>
+                    <a href="/convites" class="btn btn-outline-gold btn-pill fw-bold px-4 py-2"
+                        style="font-size:0.92rem;">
+                        <i class="bi bi-envelope-paper me-1"></i> Convites
+                    </a>
+                    <a href="/login" class="btn btn-outline-secondary btn-pill px-4 py-2"
+                        style="font-size:0.92rem;">Voltar ao Login</a>
+                </div>
+            </div>
+
+        </main>
+    </div>

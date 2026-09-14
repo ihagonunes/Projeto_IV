@@ -1,0 +1,75 @@
+<%- contentFor("espaco-head") %>
+<link href="/public/css/components/onboarding-card.css" rel="stylesheet">
+<link href="/public/css/pages/onboarding.css" rel="stylesheet">
+
+<div class="atlas-onboarding-wrapper step-bg-departamentos">
+
+    <%- include("../../../views/partials/wizard-stepper", { activeStep: 2 }) %>
+
+    <main class="atlas-content">
+
+        <div class="atlas-page-header">
+            <h1 class="atlas-page-title">Editar Departamento</h1>
+            <p class="atlas-page-subtitle">Selecione e edite as configurações de um departamento existente.</p>
+        </div>
+
+        <div class="atlas-card">
+            <form id="departamentoForm" action="/onboarding/departamentos/hub" method="GET" novalidate>
+
+                <p class="atlas-section-title">Selecionar Departamento</p>
+
+                <div class="row mb-4" id="editSelectorRow">
+                    <div class="col-12">
+                        <label for="selecionarDepartamento" class="form-label-custom">Departamento para editar</label>
+                        <select class="form-select custom-input" id="selecionarDepartamento">
+                            <option value="" disabled selected>Selecione um departamento para editar...</option>
+                            <option value="ti">Tecnologia da Informação</option>
+                            <option value="rh">Recursos Humanos</option>
+                            <option value="financeiro">Financeiro</option>
+                        </select>
+                    </div>
+                </div>
+
+                <p class="atlas-section-title">Dados do Departamento</p>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="nomeDepartamento" class="form-label-custom">Nome do departamento *</label>
+                        <input type="text" class="form-control custom-input" id="nomeDepartamento" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="liderDepartamento" class="form-label-custom">Líder do departamento</label>
+                        <input type="text" class="form-control custom-input" id="liderDepartamento">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="orcamentoMensal" class="form-label-custom">Orçamento mensal (R$)</label>
+                        <input type="number" step="0.01" class="form-control custom-input" id="orcamentoMensal" placeholder="0,00">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="limiteAlerta" class="form-label-custom">Limite de alerta (%)</label>
+                        <input type="number" class="form-control custom-input" id="limiteAlerta" placeholder="Ex: 80">
+                    </div>
+
+                    <div class="col-md-12">
+                        <label for="emailAlerta" class="form-label-custom">E-mail de alerta de limite</label>
+                        <input type="email" class="form-control custom-input" id="emailAlerta" placeholder="alerta@empresa.com">
+                    </div>
+
+                    <div class="col-md-12">
+                        <label for="descricao" class="form-label-custom">Descrição (opcional)</label>
+                        <textarea class="form-control custom-input" id="descricao" rows="3"></textarea>
+                    </div>
+                </div>
+
+                <div class="atlas-form-footer">
+                    <a href="/onboarding/departamentos/hub" class="btn btn-outline-secondary btn-pill">← voltar</a>
+                    <button type="submit" class="btn btn-orange btn-pill fw-bold px-4">próximo →</button>
+                </div>
+            </form>
+        </div>
+
+    </main>
+</div>
+
+<script src="/public/js/pages/onboarding/step-departamentos.js"></script>

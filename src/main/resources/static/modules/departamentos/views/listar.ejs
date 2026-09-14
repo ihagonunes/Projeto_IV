@@ -1,0 +1,44 @@
+<%- contentFor("espaco-head") %>
+<link href="/public/css/components/onboarding-card.css" rel="stylesheet">
+<link href="/public/css/components/data-grid.css" rel="stylesheet">
+<link href="/public/css/pages/onboarding.css" rel="stylesheet">
+
+<div class="atlas-onboarding-wrapper step-bg-departamentos">
+
+    <%- include("../../../views/partials/wizard-stepper", { activeStep: 2 }) %>
+
+    <main class="atlas-content">
+
+        <div class="atlas-page-header">
+            <h1 class="atlas-page-title">Departamentos Cadastrados</h1>
+            <p class="atlas-page-subtitle">Lista de departamentos registrados no sistema.</p>
+        </div>
+
+        <div class="atlas-card">
+            <div class="data-grid-container">
+                <table class="data-grid">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Líder</th>
+                            <th>Orçamento</th>
+                            <th>Alerta</th>
+                            <th class="text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="departamentosTableBody">
+                        <!-- Preenchido dinamicamente via JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="atlas-form-footer">
+                <a href="/onboarding/departamentos/hub" class="btn btn-outline-secondary btn-pill">← voltar</a>
+                <a href="/onboarding/usuarios/hub" class="btn btn-orange btn-pill fw-bold px-4">próximo →</a>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<script src="/public/js/pages/onboarding/step-departamentos.js"></script>

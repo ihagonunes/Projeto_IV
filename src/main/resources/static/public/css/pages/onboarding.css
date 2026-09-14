@@ -1,49 +1,660 @@
-/* Estilos específicos da página de Onboarding */
-.onboarding-bg {
-    background-color: var(--bg-color-main, #F4E8E1);
+/* =============================================================
+   onboarding.css - Layout Dashboard ATLAS
+   Referência: analitics.jpg + getintouch.jpg
+   ============================================================= */
+
+/* ── Wrapper principal das páginas de onboarding ───────────── */
+.atlas-onboarding-wrapper {
+    display: flex;
     min-height: 100vh;
+    background-color: #0B1020;
+    background-image:
+        radial-gradient(circle at 50% -12%, rgba(240, 194, 47, 0.16) 0%, transparent 60%),
+        radial-gradient(circle at 88% 92%, rgba(251, 133, 0, 0.08) 0%, transparent 55%),
+        radial-gradient(circle at 10% 25%, rgba(19, 29, 54, 0.75) 0%, transparent 50%);
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    position: relative;
 }
 
-/* Área de Upload (Drag and Drop) */
-.upload-zone {
-    border: 2px dashed var(--input-border-color, #E0E0E0);
+/* =============================================================
+   Design de Fundos Exclusivos para Cada Etapa de Cadastro
+   Inspirado em referencias/backgrounds.jpg
+   ============================================================= */
+
+/* ── Etapa 0: Tenant / Empresa (Fundação & Pilar Dourado) ──── */
+.atlas-onboarding-wrapper.step-bg-tenant {
+    background-color: #0B1020;
+    background-image:
+        radial-gradient(circle at 50% -12%, rgba(240, 194, 47, 0.24) 0%, transparent 60%),
+        radial-gradient(circle at 15% 75%, rgba(251, 133, 0, 0.14) 0%, transparent 50%),
+        radial-gradient(circle at 85% 20%, rgba(16, 32, 64, 0.85) 0%, transparent 45%);
+}
+
+.atlas-onboarding-wrapper.step-bg-tenant::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image:
+        linear-gradient(to right, rgba(240, 194, 47, 0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(240, 194, 47, 0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    opacity: 0.7;
+    z-index: 0;
+}
+
+/* ── Etapa 1: Administrador (Escudo & Coroa Dourada) ────────── */
+.atlas-onboarding-wrapper.step-bg-admin {
+    background-color: #0A0F1E;
+    background-image:
+        radial-gradient(circle at 75% 10%, rgba(240, 194, 47, 0.22) 0%, transparent 55%),
+        radial-gradient(circle at 25% 85%, rgba(240, 194, 47, 0.16) 0%, transparent 50%),
+        radial-gradient(circle at 50% 50%, rgba(251, 133, 0, 0.09) 0%, transparent 70%);
+}
+
+.atlas-onboarding-wrapper.step-bg-admin::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image:
+        radial-gradient(2px 2px at 20% 30%, rgba(240, 194, 47, 0.4), transparent),
+        radial-gradient(1.5px 1.5px at 80% 70%, rgba(255, 255, 255, 0.35), transparent),
+        radial-gradient(1px 1px at 50% 20%, rgba(240, 194, 47, 0.3), transparent);
+    background-size: 160px 160px;
+    pointer-events: none;
+    opacity: 0.8;
+    z-index: 0;
+}
+
+/* ── Etapa 2: Departamentos (Rede & Nódulos Organizacionais) ─ */
+.atlas-onboarding-wrapper.step-bg-departamentos {
+    background-color: #0B1022;
+    background-image:
+        radial-gradient(circle at 85% 15%, rgba(240, 194, 47, 0.25) 0%, transparent 50%),
+        radial-gradient(circle at 15% 35%, rgba(251, 133, 0, 0.16) 0%, transparent 45%),
+        radial-gradient(circle at 60% 85%, rgba(30, 58, 110, 0.85) 0%, transparent 60%);
+}
+
+.atlas-onboarding-wrapper.step-bg-departamentos::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image:
+        radial-gradient(120px 120px at 70% 30%, rgba(240, 194, 47, 0.07), transparent),
+        radial-gradient(90px 90px at 30% 75%, rgba(251, 133, 0, 0.06), transparent);
+    pointer-events: none;
+    opacity: 0.9;
+    z-index: 0;
+}
+
+/* ── Etapa 3: Usuários (Fluxo & Constelação de Pessoas) ──────── */
+.atlas-onboarding-wrapper.step-bg-usuarios {
+    background-color: #090E1D;
+    background-image:
+        radial-gradient(ellipse at 90% 0%, rgba(240, 194, 47, 0.26) 0%, transparent 60%),
+        radial-gradient(circle at 40% 90%, rgba(251, 133, 0, 0.14) 0%, transparent 50%),
+        radial-gradient(circle at 10% 50%, rgba(20, 35, 70, 0.75) 0%, transparent 50%);
+}
+
+.atlas-onboarding-wrapper.step-bg-usuarios::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image:
+        radial-gradient(0.8px 0.8px at 25% 15%, rgba(255, 255, 255, 0.5), transparent),
+        radial-gradient(1px 1px at 75% 85%, rgba(240, 194, 47, 0.45), transparent),
+        radial-gradient(0.6px 0.6px at 60% 35%, rgba(255, 255, 255, 0.4), transparent);
+    background-size: 140px 140px;
+    pointer-events: none;
+    opacity: 0.75;
+    z-index: 0;
+}
+
+/* ── Etapa 4: IA (Processamento Inteligente & Aura Dourada) ───── */
+.atlas-onboarding-wrapper.step-bg-ia {
+    background-color: #0B1020;
+    background-image:
+        radial-gradient(circle at 75% 20%, rgba(240, 194, 47, 0.25) 0%, transparent 55%),
+        radial-gradient(circle at 20% 70%, rgba(251, 133, 0, 0.14) 0%, transparent 50%),
+        radial-gradient(circle at 50% 90%, rgba(16, 28, 56, 0.85) 0%, transparent 60%);
+}
+
+.atlas-onboarding-wrapper.step-bg-ia::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image:
+        radial-gradient(1px 1px at 30% 25%, rgba(240, 194, 47, 0.5), transparent),
+        radial-gradient(1.2px 1.2px at 70% 75%, rgba(255, 255, 255, 0.4), transparent),
+        radial-gradient(0.8px 0.8px at 50% 45%, rgba(240, 194, 47, 0.35), transparent);
+    background-size: 150px 150px;
+    pointer-events: none;
+    opacity: 0.75;
+    z-index: 0;
+}
+
+/* ── Etapa 5: Revisão (Horizonte Radiante Dourado & Triunfo) ──── */
+.atlas-onboarding-wrapper.step-bg-revisao {
+    background-color: #0A0E1C;
+    background-image:
+        radial-gradient(ellipse at 50% 100%, rgba(240, 194, 47, 0.34) 0%, transparent 70%),
+        radial-gradient(circle at 50% 0%, rgba(251, 133, 0, 0.18) 0%, transparent 50%),
+        radial-gradient(circle at 15% 15%, rgba(255, 255, 255, 0.09) 0%, transparent 40%);
+}
+
+.atlas-onboarding-wrapper.step-bg-revisao::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image:
+        radial-gradient(1.2px 1.2px at 30% 70%, rgba(240, 194, 47, 0.55), transparent),
+        radial-gradient(1.5px 1.5px at 70% 20%, rgba(255, 255, 255, 0.45), transparent);
+    background-size: 180px 180px;
+    pointer-events: none;
+    opacity: 0.8;
+    z-index: 0;
+}
+
+/* ── Sidebar fixa: stepper vertical ────────────────────────── */
+.atlas-sidebar {
+    width: 220px;
+    flex-shrink: 0;
+    background-color: rgba(11, 16, 32, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-right: 1px solid rgba(240, 194, 47, 0.15);
+    display: flex;
+    flex-direction: column;
+    padding: 2rem 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    z-index: 2;
+}
+
+.atlas-sidebar-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 0 1.25rem 1.5rem 1.25rem;
+    border-bottom: 1px solid rgba(240, 194, 47, 0.12);
+    margin-bottom: 1.25rem;
+}
+
+.atlas-sidebar-logo-img {
+    max-width: 100%;
+    max-height: 100px;
+    height: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 0 10px rgba(240, 194, 47, 0.35));
+    margin-bottom: -25px;
+}
+
+.atlas-sidebar-logo .atlas-brand-icon {
+    font-size: 1.4rem;
+    color: var(--color-primary);
+}
+
+.atlas-sidebar-logo .atlas-brand {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 1rem;
+    color: var(--color-primary);
+    letter-spacing: 3px;
+    font-weight: 700;
+}
+
+/* ── Passos da sidebar ─────────────────────────────────────── */
+.atlas-step-list {
+    list-style: none;
+    margin: 0;
+    padding: 0 0.75rem;
+    flex: 1;
+}
+
+.atlas-step-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
+    margin-bottom: 4px;
+    cursor: default;
+    transition: background 0.2s;
+}
+
+.atlas-step-num {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(139, 142, 161, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text-color-muted);
+    flex-shrink: 0;
+    transition: all 0.3s;
+}
+
+.atlas-step-label {
+    font-size: 0.82rem;
+    color: var(--text-color-muted);
+    font-weight: 500;
+    transition: color 0.3s;
+}
+
+/* Estado: ativo */
+.atlas-step-item.active .atlas-step-num {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+    color: var(--bg-color-main);
+}
+
+.atlas-step-item.active .atlas-step-label {
+    color: var(--text-color-main);
+    font-weight: 600;
+}
+
+.atlas-step-item.active {
+    background-color: rgba(240, 194, 47, 0.08);
+}
+
+/* Estado: completo */
+.atlas-step-item.done .atlas-step-num {
+    background-color: rgba(74, 222, 128, 0.2);
+    border-color: #4ade80;
+    color: #4ade80;
+}
+
+.atlas-step-item.done .atlas-step-label {
+    color: #4ade80;
+}
+
+/* ── Área de conteúdo principal ────────────────────────────── */
+.atlas-content {
+    flex: 1;
+    padding: 1.75rem 3rem;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+    z-index: 1;
+    box-sizing: border-box;
+}
+
+/* ── Cabeçalho da página ───────────────────────────────────── */
+.atlas-page-header {
+    margin-bottom: 1.1rem;
+    padding-bottom: 0.65rem;
+    border-bottom: 1px solid rgba(240, 194, 47, 0.12);
+}
+
+.atlas-page-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--text-color-main);
+    margin: 0 0 0.2rem 0;
+    letter-spacing: 0.5px;
+}
+
+.atlas-page-subtitle {
+    font-size: 0.82rem;
+    color: var(--text-color-muted);
+    margin: 0;
+}
+
+/* ── Card de conteúdo (Glassmorphism + Borda Dourada Circulante) ── */
+.atlas-card {
+    position: relative;
+    background: linear-gradient(135deg,
+            rgba(16, 24, 45, 0.82) 0%,
+            rgba(11, 16, 32, 0.94) 100%);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(240, 194, 47, 0.18);
     border-radius: 16px;
-    padding: 2.5rem 1.5rem;
-    text-align: center;
-    background-color: #F8F9FA;
-    transition: all 0.3s ease;
-    cursor: pointer;
+    padding: 1.6rem 2.25rem;
+    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.5);
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+    z-index: 1;
+    overflow: hidden;
 }
 
-.upload-zone:hover {
-    border-color: var(--color-primary, #F08A2B);
-    background-color: #FFFFFF;
+/* Reflexo Especular de Vidro Fixo no Topo */
+.atlas-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    -webkit-mask-image: linear-gradient(135deg, #ffffff 0%, rgba(255, 255, 255, 0) 45%);
+    mask-image: linear-gradient(135deg, #ffffff 0%, rgba(255, 255, 255, 0) 45%);
+    pointer-events: none;
+    z-index: 2;
 }
 
-/* Hub Selection Cards */
+
+/* Seção de título dentro do card */
+.atlas-section-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--color-primary);
+    margin-top: 0.75rem;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.atlas-section-title::before {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 2px;
+    background-color: var(--color-primary);
+    border-radius: 1px;
+}
+
+/* ── Hub Cards (escolha de método) ─────────────────────────── */
 .hub-card {
-    background-color: #F8F9FA;
-    border: 1px solid var(--input-border-color, #E0E0E0);
-    border-radius: 16px;
-    padding: 2.5rem;
+    background-color: rgba(11, 16, 32, 0.7);
+    border: 1px solid rgba(240, 194, 47, 0.2);
+    border-radius: 14px;
+    padding: 1.75rem 1.5rem;
     text-decoration: none;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-height: 160px;
+    min-height: 130px;
     transition: all 0.3s ease;
+    gap: 0.75rem;
 }
 
 .hub-card:hover {
-    background-color: #FFFFFF;
-    border-color: var(--color-primary, #F08A2B);
-    box-shadow: 0 10px 20px rgba(240, 138, 43, 0.08);
-    transform: translateY(-2px);
+    background-color: rgba(240, 194, 47, 0.06);
+    border-color: var(--color-primary);
+    box-shadow: 0 0 20px rgba(240, 194, 47, 0.12);
+    transform: translateY(-3px);
 }
 
 .hub-card span {
-    color: var(--text-color-dark, #333333);
-    font-size: 1.25rem;
+    color: var(--text-color-main);
+    font-size: 1rem;
     font-weight: 500;
+    letter-spacing: 0.5px;
+}
+
+/* Ícone dentro do hub-card */
+.hub-card-icon {
+    font-size: 1.8rem;
+    color: var(--color-primary);
+    opacity: 0.85;
+}
+
+/* ── Upload Zone ────────────────────────────────────────────── */
+.upload-zone {
+    border: 2px dashed rgba(240, 194, 47, 0.3);
+    border-radius: 12px;
+    padding: 1.75rem 1.25rem;
+    text-align: center;
+    background-color: rgba(11, 16, 32, 0.4);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.upload-zone:hover {
+    border-color: var(--color-primary);
+    background-color: rgba(240, 194, 47, 0.04);
+}
+
+/* ── Footer de ações (botões voltar/próximo) ───────────────── */
+.atlas-form-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1.25rem;
+    padding-top: 0.85rem;
+    border-top: 1px solid rgba(240, 194, 47, 0.1);
+}
+
+/* ── Responsivo: colapsar sidebar ─────────────────────────── */
+@media (max-width: 768px) {
+    .atlas-onboarding-wrapper {
+        flex-direction: column;
+    }
+
+    .atlas-sidebar {
+        width: 100%;
+        height: auto;
+        position: static;
+        padding: 1rem;
+        border-right: none;
+        border-bottom: 1px solid rgba(240, 194, 47, 0.15);
+    }
+
+    .atlas-step-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 0;
+    }
+
+    .atlas-step-item {
+        flex-direction: column;
+        gap: 4px;
+        padding: 0.5rem;
+        min-width: 70px;
+        text-align: center;
+    }
+
+    .atlas-content {
+        padding: 1.5rem;
+    }
+}
+
+/* ── Layout 30/70 para a página de Onboarding sem sidebar ───────────── */
+.onboarding-welcome-wrapper {
+    display: flex;
+    width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    background-color: var(--bg-color-main);
+    overflow: hidden;
+}
+
+.onboarding-welcome-left {
+    flex: 0 0 35%;
+    max-width: 35%;
+    height: 100vh;
+    max-height: 100vh;
+    background-color: var(--bg-color-card);
+    border-right: 1px solid rgba(240, 194, 47, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    box-sizing: border-box;
+    overflow: hidden;
+    position: relative;
+}
+
+.welcome-logo-container {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.welcome-logo-img {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    object-position: center;
+    border-radius: 8px;
+    filter: drop-shadow(0 0 22px rgba(240, 194, 47, 0.45));
+}
+
+/* ── Lado Direito com Céu Noturno Estrelado atrás do Card ───────────── */
+.onboarding-welcome-right {
+    flex: 0 0 65%;
+    max-width: 65%;
+    padding: 2.2rem 3.5rem;
+    height: 100vh;
+    max-height: 100vh;
+    background: radial-gradient(ellipse at 50% 100%, #131d36 0%, #0B1020 55%, #050814 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    box-sizing: border-box;
+    overflow: hidden;
+    position: relative;
+}
+
+.onboarding-welcome-right>* {
+    position: relative;
+    z-index: 2;
+}
+
+/* Camada 1: Poeira Estelar Ultrafina de Altíssima Densidade */
+.onboarding-welcome-right::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+        radial-gradient(0.6px 0.6px at 10% 18%, rgba(255, 255, 255, 0.95), transparent),
+        radial-gradient(0.8px 0.8px at 22% 48%, rgba(240, 194, 47, 0.9), transparent),
+        radial-gradient(0.5px 0.5px at 34% 12%, rgba(255, 255, 255, 0.85), transparent),
+        radial-gradient(1px 1px at 46% 74%, rgba(255, 255, 255, 1), transparent),
+        radial-gradient(0.7px 0.7px at 58% 38%, rgba(240, 194, 47, 0.95), transparent),
+        radial-gradient(0.5px 0.5px at 70% 88%, rgba(255, 255, 255, 0.8), transparent),
+        radial-gradient(0.9px 0.9px at 82% 24%, rgba(255, 255, 255, 0.95), transparent),
+        radial-gradient(0.6px 0.6px at 94% 62%, rgba(240, 194, 47, 0.85), transparent),
+        radial-gradient(0.8px 0.8px at 16% 94%, rgba(255, 255, 255, 0.9), transparent),
+        radial-gradient(0.5px 0.5px at 64% 06%, rgba(255, 255, 255, 0.85), transparent),
+        radial-gradient(1px 1px at 76% 50%, rgba(240, 194, 47, 0.9), transparent);
+    background-repeat: repeat;
+    background-size: 110px 110px;
+    animation: starrySkyTwinkle 3s ease-in-out infinite alternate;
+    pointer-events: none;
+    opacity: 0.95;
+    z-index: 1;
+}
+
+/* Camada 2: Constelações e Brilhos Cintilantes Secundários atrás do Card */
+.onboarding-welcome-right::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+        radial-gradient(1px 1px at 14% 66%, rgba(255, 255, 255, 1), transparent),
+        radial-gradient(0.7px 0.7px at 28% 28%, rgba(240, 194, 47, 0.95), transparent),
+        radial-gradient(1.1px 1.1px at 44% 84%, rgba(255, 255, 255, 0.9), transparent),
+        radial-gradient(0.6px 0.6px at 60% 16%, rgba(255, 255, 255, 0.85), transparent),
+        radial-gradient(0.9px 0.9px at 74% 72%, rgba(240, 194, 47, 1), transparent),
+        radial-gradient(0.7px 0.7px at 88% 40%, rgba(255, 255, 255, 0.8), transparent),
+        radial-gradient(1.2px 1.2px at 38% 96%, rgba(240, 194, 47, 0.9), transparent),
+        radial-gradient(320px 320px at 50% 50%, rgba(240, 194, 47, 0.1), transparent 70%);
+    background-repeat: repeat;
+    background-size: 150px 150px;
+    animation: starrySkyTwinkle 5s ease-in-out infinite alternate-reverse;
+    pointer-events: none;
+    opacity: 0.95;
+    z-index: 1;
+}
+
+@keyframes starrySkyTwinkle {
+    0% {
+        opacity: 0.55;
+        transform: scale(0.99);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.01);
+    }
+
+    100% {
+        opacity: 0.75;
+        transform: scale(1);
+    }
+}
+
+.onboarding-welcome-right .atlas-page-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(240, 194, 47, 0.12);
+}
+
+.welcome-card-compact {
+    padding: 2.5rem 3rem !important;
+    min-height: auto !important;
+    flex: initial !important;
+}
+
+.welcome-card-icon {
+    font-size: 2.8rem;
+    color: var(--color-primary);
+    margin-bottom: 0.9rem;
+    line-height: 1;
+    filter: drop-shadow(0 0 10px rgba(240, 194, 47, 0.45));
+}
+
+.welcome-card-title {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 1.55rem;
+    color: var(--text-color-main);
+    letter-spacing: 3px;
+    margin-bottom: 0.5rem;
+}
+
+.welcome-card-text {
+    color: var(--text-color-muted);
+    max-width: 520px;
+    margin-bottom: 2rem;
+    font-size: 0.92rem;
+    line-height: 1.55;
+}
+
+@media (max-width: 992px) {
+    .onboarding-welcome-wrapper {
+        flex-direction: column;
+        height: auto;
+        max-height: none;
+        overflow: auto;
+    }
+
+    .onboarding-welcome-left {
+        flex: none;
+        max-width: 100%;
+        height: auto;
+        max-height: none;
+        min-height: 180px;
+        border-right: none;
+        border-bottom: 1px solid rgba(240, 194, 47, 0.15);
+        padding: 2rem 1.5rem;
+    }
+
+    .onboarding-welcome-right {
+        flex: none;
+        max-width: 100%;
+        height: auto;
+        max-height: none;
+        padding: 2rem 1.5rem;
+    }
 }

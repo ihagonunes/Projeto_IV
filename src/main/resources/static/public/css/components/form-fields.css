@@ -3,8 +3,9 @@
     border: 1px solid var(--input-border-color);
     border-radius: var(--input-border-radius);
     box-shadow: var(--shadow-input-inner);
-    padding: 0.75rem 1rem;
-    color: var(--text-color-dark);
+    padding: 0.55rem 0.85rem;
+    font-size: 0.88rem;
+    color: var(--text-color-main);
 }
 
 /* Cor do texto do placeholder (e-mail, senha) */
@@ -14,9 +15,22 @@
 
 /* Efeito de foco quando o usuário clica no input */
 .custom-input:focus {
-    background-color: #FFFFFF;
+    background-color: #10182D;
+    /* Fundo secundário no foco para destacar um pouco */
     border-color: var(--color-primary);
-    /* Um anel de foco laranja suave */
-    box-shadow: 0 0 0 0.25rem rgba(240, 138, 43, 0.25); 
+    /* Um anel de foco laranja/amarelo suave */
+    box-shadow: 0 0 0 0.25rem rgba(240, 194, 47, 0.25);
+    color: var(--text-color-main);
     outline: none;
+}
+
+/* Prevenir fundo claro do Preenchimento Automático (Autofill) do Chrome / Edge */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px #0B1020 inset !important;
+    -webkit-text-fill-color: var(--text-color-main) !important;
+    caret-color: var(--text-color-main) !important;
+    transition: background-color 5000s ease-in-out 0s;
 }

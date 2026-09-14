@@ -37,4 +37,20 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
     });
+
+    // 4. Carrega a arte ASCII dinamicamente via Fetch
+    const asciiArtContainer = document.getElementById('asciiArtContainer');
+    if (asciiArtContainer) {
+        fetch('/public/txt/atlas-ascii.txt')
+            .then(response => {
+                if (!response.ok) throw new Error('Não foi possível carregar a arte ASCII');
+                return response.text();
+            })
+            .then(text => {
+                asciiArtContainer.textContent = text;
+            })
+            .catch(err => {
+                console.error('Erro ao carregar ASCII art:', err);
+            });
+    }
 });

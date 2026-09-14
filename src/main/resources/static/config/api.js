@@ -1,0 +1,21 @@
+const axios = require("axios");
+
+require("dotenv").config({ encoding: "utf8" });
+
+/**
+ * Instância centralizada do axios apontando para o back Spring Boot.
+ * Toda chamada HTTP para o back deve usar esta instância.
+ * A URL base é lida da variável de ambiente SPRING_API_URL.
+ * Nenhuma rota ou controller deve hardcodar a URL do back.
+ */
+const api = axios.create({
+    // Base do back + prefixo /api/v1 (ADR-28). Mantém o axios; os controllers
+    // chamam caminhos relativos (ex.: "/auth/login", "/admin/convites").
+    baseURL: (process.env.SPRING_API_URL || "http://localhost:8080") + "/api/v1",
+    headers: {
+        "Content-Type": "application/json"
+    },
+    timeout: 10000
+});
+
+module.exports = api;

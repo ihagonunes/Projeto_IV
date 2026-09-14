@@ -1,0 +1,104 @@
+<%- contentFor("espaco-head") %>
+<link href="/public/css/components/onboarding-card.css" rel="stylesheet">
+<link href="/public/css/pages/onboarding.css" rel="stylesheet">
+
+<div class="atlas-onboarding-wrapper step-bg-tenant">
+
+    <%- include("../../../views/partials/wizard-stepper", { activeStep: 0 }) %>
+
+    <main class="atlas-content">
+
+        <div class="atlas-page-header">
+            <h1 class="atlas-page-title">Dados da Empresa</h1>
+            <p class="atlas-page-subtitle">Informe as informações institucionais e preferências gerais do tenant.</p>
+        </div>
+
+        <div class="atlas-card">
+            <form id="tenantForm" action="/onboarding/admin" method="GET" novalidate>
+                <div class="row g-4">
+
+                    <!-- Coluna da Esquerda (Formulário) -->
+                    <div class="col-md-8">
+                        <p class="atlas-section-title">Identificação</p>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="nomeEmpresa" class="form-label-custom">Nome da empresa *</label>
+                                <input type="text" class="form-control custom-input" id="nomeEmpresa" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="cnpj" class="form-label-custom">CNPJ *</label>
+                                <input type="text" class="form-control custom-input" id="cnpj" placeholder="00.000.000/0000-00" required>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="setor" class="form-label-custom">Setor *</label>
+                                <select class="form-select custom-input" id="setor" required>
+                                    <option value="" disabled selected>Selecione...</option>
+                                    <option value="tecnologia">Tecnologia</option>
+                                    <option value="saude">Saúde</option>
+                                    <option value="educacao">Educação</option>
+                                    <option value="financas">Finanças</option>
+                                    <option value="outro">Outro</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="porteEmpresa" class="form-label-custom">Porte da empresa *</label>
+                                <select class="form-select custom-input" id="porteEmpresa" required>
+                                    <option value="" disabled selected>Selecione...</option>
+                                    <option value="micro">Microempresa</option>
+                                    <option value="pequena">Pequena Empresa</option>
+                                    <option value="media">Média Empresa</option>
+                                    <option value="grande">Grande Empresa</option>
+                                </select>
+                            </div>
+
+                            <p class="atlas-section-title mt-3">Localização & Preferências</p>
+
+                            <div class="col-md-6">
+                                <label for="fusoHorario" class="form-label-custom">Fuso horário padrão *</label>
+                                <select class="form-select custom-input" id="fusoHorario" required>
+                                    <option value="GMT-3" selected>Brasília (GMT-3)</option>
+                                    <option value="GMT-4">Manaus (GMT-4)</option>
+                                    <option value="GMT-5">Rio Branco (GMT-5)</option>
+                                    <option value="UTC">UTC</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="idioma" class="form-label-custom">Idioma padrão *</label>
+                                <select class="form-select custom-input" id="idioma" required>
+                                    <option value="pt-BR" selected>Português (Brasil)</option>
+                                    <option value="en">Inglês</option>
+                                    <option value="es">Espanhol</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Coluna da Direita: Upload de Logo -->
+                    <div class="col-md-4 d-flex flex-column">
+                        <p class="atlas-section-title">Logo da Empresa</p>
+                        <div class="upload-zone d-flex flex-column align-items-center justify-content-center" style="flex:1; min-height:200px;">
+                            <i class="bi bi-cloud-upload" style="font-size:2.5rem; color: var(--color-primary); opacity:0.6;"></i>
+                            <input type="file" id="logoEmpresa" class="d-none" accept="image/*">
+                            <label for="logoEmpresa" class="btn btn-outline-secondary btn-pill mt-3 px-4" style="cursor:pointer;">
+                                Selecionar arquivo
+                            </label>
+                            <span style="font-size:0.75rem; color:var(--text-color-muted); margin-top:0.75rem;">
+                                PNG, JPG ou SVG · Máx 2MB
+                            </span>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="atlas-form-footer">
+                    <span></span>
+                    <button type="submit" class="btn btn-orange btn-pill fw-bold px-4">próximo →</button>
+                </div>
+            </form>
+        </div>
+
+    </main>
+</div>
+
+<script src="/public/js/pages/onboarding/step-tenant.js"></script>

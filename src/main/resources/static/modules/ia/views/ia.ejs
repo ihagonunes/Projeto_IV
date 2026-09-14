@@ -1,0 +1,101 @@
+<%- contentFor("espaco-head") %>
+<link href="/public/css/components/onboarding-card.css" rel="stylesheet">
+<link href="/public/css/components/data-grid.css" rel="stylesheet">
+<link href="/public/css/pages/onboarding.css" rel="stylesheet">
+
+<div class="atlas-onboarding-wrapper step-bg-ia">
+
+    <%- include("../../../views/partials/wizard-stepper", { activeStep: 4 }) %>
+
+    <main class="atlas-content">
+
+        <div class="atlas-page-header">
+            <h1 class="atlas-page-title">Configuração de IA</h1>
+            <p class="atlas-page-subtitle">Configure o provedor de inteligência artificial e os modelos disponíveis.</p>
+        </div>
+
+        <div class="atlas-card">
+            <form id="iaForm" action="/onboarding/revisao" method="GET" novalidate>
+
+                <!-- Credencial BYOK -->
+                <p class="atlas-section-title">Credencial do Provedor (BYOK)</p>
+                <div class="row g-3 align-items-end mb-4">
+                    <div class="col-md-4">
+                        <label for="provedorIa" class="form-label-custom">Provedor de IA</label>
+                        <select class="form-select custom-input" id="provedorIa">
+                            <option value="" disabled selected>Selecione...</option>
+                            <option value="openai">OpenAI</option>
+                            <option value="anthropic">Anthropic</option>
+                            <option value="google">Google Gemini</option>
+                        </select>
+                    </div>
+                    <div class="col-md-5">
+                        <label for="apiKey" class="form-label-custom">Chave de API</label>
+                        <input type="password" class="form-control custom-input" id="apiKey" placeholder="sk-...">
+                    </div>
+                    <div class="col-md-3">
+                        <button type="button" class="btn btn-orange btn-pill w-100 fw-bold">testar conexão</button>
+                    </div>
+                    <div class="col-md-9">
+                        <label for="nomeCredencial" class="form-label-custom">Nome interno da credencial</label>
+                        <input type="text" class="form-control custom-input" id="nomeCredencial" placeholder="Ex: Credencial Produção">
+                    </div>
+                </div>
+
+                <!-- Catálogo de Modelos -->
+                <p class="atlas-section-title">Catálogo de Modelos</p>
+                <div class="data-grid-container mb-4">
+                    <table class="data-grid">
+                        <thead>
+                            <tr>
+                                <th>Modelo</th>
+                                <th>Status</th>
+                                <th>Permissões</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>gpt-4o</td>
+                                <td>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" role="switch" id="model1" checked>
+                                        <label class="form-check-label" for="model1">Ativo</label>
+                                    </div>
+                                </td>
+                                <td>
+                                    <select class="form-select custom-input form-select-sm" style="width:auto">
+                                        <option value="todos">Todos</option>
+                                        <option value="restrito">Restrito</option>
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>claude-3-5-sonnet</td>
+                                <td>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" role="switch" id="model2">
+                                        <label class="form-check-label" for="model2">Inativo</label>
+                                    </div>
+                                </td>
+                                <td>
+                                    <select class="form-select custom-input form-select-sm" style="width:auto">
+                                        <option value="todos">Todos</option>
+                                        <option value="restrito">Restrito</option>
+                                    </select>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="atlas-form-footer">
+                    <a href="/onboarding/usuarios/hub" class="btn btn-outline-secondary btn-pill">← voltar</a>
+                    <button type="submit" class="btn btn-orange btn-pill fw-bold px-4">próximo →</button>
+                </div>
+            </form>
+        </div>
+
+    </main>
+</div>
+
+<script src="/public/js/pages/onboarding/step-ia.js"></script>

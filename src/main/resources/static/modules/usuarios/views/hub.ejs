@@ -1,0 +1,45 @@
+<%- contentFor("espaco-head") %>
+<link href="/public/css/components/onboarding-card.css" rel="stylesheet">
+<link href="/public/css/pages/onboarding.css" rel="stylesheet">
+
+<div class="atlas-onboarding-wrapper step-bg-usuarios">
+
+    <%- include("../../../views/partials/wizard-stepper", { activeStep: 3 }) %>
+
+    <main class="atlas-content">
+
+        <div class="atlas-page-header">
+            <h1 class="atlas-page-title">Usuários</h1>
+            <p class="atlas-page-subtitle">Escolha como deseja cadastrar os usuários da plataforma.</p>
+        </div>
+
+        <div class="atlas-card">
+            <p class="atlas-section-title">Método de cadastro</p>
+
+            <div class="row g-4 my-2">
+                <div class="col-md-6">
+                    <a href="/onboarding/usuarios/importacao" class="hub-card">
+                        <i class="bi bi-file-earmark-arrow-up hub-card-icon"></i>
+                        <span>Importação por arquivo</span>
+                        <small style="color:var(--text-color-muted); font-size:0.78rem; text-align:center;">Importe usuários em massa via CSV</small>
+                    </a>
+                </div>
+                <div class="col-md-6">
+                    <a href="/onboarding/usuarios/manual" class="hub-card">
+                        <i class="bi bi-person-plus hub-card-icon"></i>
+                        <span>Cadastro manual</span>
+                        <small style="color:var(--text-color-muted); font-size:0.78rem; text-align:center;">Adicione usuários individualmente</small>
+                    </a>
+                </div>
+            </div>
+
+            <div class="atlas-form-footer">
+                <a href="/onboarding/departamentos/hub" class="btn btn-outline-secondary btn-pill">← voltar</a>
+                <a href="/onboarding/ia" class="btn btn-orange btn-pill fw-bold px-4">próximo →</a>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<script src="/public/js/pages/onboarding/step-usuarios.js"></script>

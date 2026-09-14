@@ -1,0 +1,42 @@
+<% /** * Partial reutilizável: wizard-stepper do onboarding — layout SIDEBAR vertical. * Variável esperada: activeStep
+    (número, 0-indexed) * 0=Tenant * 1=Administrador Principal * 2=Departamentos * 3=Usuários * 4=IA * 5=Revisão */
+    const steps=[ { label: "Tenant" , icon: "bi-building" }, { label: "Administrador" , icon: "bi-person-badge" }, {
+    label: "Departamentos" , icon: "bi-diagram-3" }, { label: "Usuários" , icon: "bi-people" }, { label: "IA" ,
+    icon: "bi-cpu" }, { label: "Revisão" , icon: "bi-check-circle" } ]; const currentStep=typeof activeStep
+    !=="undefined" ? activeStep : 0; %>
+
+    <!-- Sidebar de navegação do Onboarding -->
+    <aside class="atlas-sidebar">
+
+        <!-- Logo ATLAS -->
+        <div class="atlas-sidebar-logo justify-content-center">
+            <img src="/public/img/atlas-name.png" alt="ATLAS" class="atlas-sidebar-logo-img">
+        </div>
+
+        <!-- Lista de passos -->
+        <ul class="atlas-step-list">
+            <% steps.forEach(function(step, index) { %>
+                <li
+                    class="atlas-step-item <%= index === currentStep ? 'active' : (index < currentStep ? 'done' : '') %>">
+                    <div class="atlas-step-num">
+                        <% if (index < currentStep) { %>
+                            <i class="bi bi-check2" style="font-size:0.85rem;"></i>
+                            <% } else { %>
+                                <%= index + 1 %>
+                                    <% } %>
+                    </div>
+                    <span class="atlas-step-label">
+                        <%= step.label %>
+                    </span>
+                </li>
+                <% }); %>
+        </ul>
+
+        <!-- Dica de ajuda no rodapé da sidebar -->
+        <div style="padding: 1.5rem; border-top: 1px solid rgba(240,194,47,0.12); margin-top: auto;">
+            <p style="font-size: 0.72rem; color: var(--text-color-muted); opacity: 0.6; margin:0; line-height:1.5;">
+                Configure sua plataforma passo a passo. Você pode revisar antes de finalizar.
+            </p>
+        </div>
+
+    </aside>
