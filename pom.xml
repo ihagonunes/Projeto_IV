@@ -23,6 +23,7 @@
     <archunit.version>1.4.2</archunit.version>
     <testcontainers.version>2.0.5</testcontainers.version>
     <maven-failsafe.version>3.5.5</maven-failsafe.version>
+    <jacoco.version>0.8.15</jacoco.version>
   </properties>
 
   <dependencyManagement>
@@ -136,6 +137,31 @@
 
   <build>
     <plugins>
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>${jacoco.version}</version>
+        <executions>
+          <!-- 1) Instrumenta as classes sob teste com o agente JaCoCo -->
+          <execution>
+            <id>jacoco-prepare-agent</id>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+          </execution>
+          <!-- 2) Gera o relatório ao final da fase test (não exige Docker).
+                  Padrão do goal report é fase verify; fixamos em test para que
+                  mvn test local e o job unit-and-architecture do CI gerem relatório. -->
+          <execution>
+            <id>jacoco-report</id>
+            <phase>test</phase>
+            <goals>
+              <goal>report</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>

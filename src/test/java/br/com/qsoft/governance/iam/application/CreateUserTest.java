@@ -157,6 +157,43 @@ class CreateUserTest {
             .isInstanceOf(IllegalArgumentException.class);
     }
 
+    /**
+     * CENÁRIO BDD — planejado por: <b>Ihago</b> (no caso de uso interno)
+     *
+     * Confirma que o <em>CreateUser</em> também cria o usuário com o papel
+     * COLABORATOR. O mesmo cenário, com a camada de autorização do
+     * administrador, é coberto por RegisterUserTest.shouldRegisterUserWithCollaboratorRole.
+     * Este é um teste de "caracterização": trava o comportamento existente
+     * para impedir regressões futuras.
+     */
+    @Test
+    void shouldCreateUserAsCollaborator() {
+        Tenant tenant = activeTenant();
+
+        User user = useCase.create(new CreateUserCommand(
+            tenant.id(), "bia@qsoft.com", "Bia", HierarchyLevel.COLLABORATOR, null));
+
+        assertThat(user.hierarchyLevel()).isEqualTo(HierarchyLevel.COLLABORATOR);
+        assertThat(user.status()).isEqualTo(UserStatus.ACTIVE);
+    }
+
+    /**
+     * CENÁRIO BDD — planejado por: <b>Ihan</b> (no caso de uso interno)
+     *
+     * Papel (hierarchyLevel) é obrigatório também no <em>CreateUser</em>.
+     * Obs.: o CreateUser usa Objects.requireNonNull (lança NullPointerException);
+     * a mensagem amigável "obrigatório" (IllegalArgumentException) é exposta
+     * pelo RegisterUser — coberto por RegisterUserTest.shouldRejectRegistrationWithoutRole.
+     */
+    @Test
+    void shouldRejectNullRole() {
+        Tenant tenant = activeTenant();
+
+        assertThatThrownBy(() -> useCase.create(new CreateUserCommand(
+            tenant.id(), "ana@qsoft.com", "Ana", null, null)))
+            .isInstanceOf(NullPointerException.class);
+    }
+
     @Test
     void hierarchyLevelShouldNotContainAdmin() {
         assertThat(java.util.Arrays.stream(HierarchyLevel.values()).map(Enum::name))
