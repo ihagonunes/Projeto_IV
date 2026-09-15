@@ -24,6 +24,12 @@
     }
 
     async function login(credentials) {
+        // Garante que nenhum token expirado seja enviado na requisição de login.
+        // O api-client injeta o Bearer automaticamente se houver token em storage,
+        // o que faz o Spring Security rejeitar a requisição com 401 antes de autenticar.
+        API.clearToken();
+        try { localStorage.removeItem(STORAGE_USER); } catch (e) { /* ignore */ }
+
         var body = {
             email: (credentials && credentials.email) || "",
             password: (credentials && credentials.password) || ""
@@ -36,6 +42,7 @@
         }
 
         var response = await API.post("/auth/login", body);
+
 
         // O contrato do backend retorna o JWT; aceita os nomes mais comuns para resiliência.
         var token = response && (response.accessToken || response.token || response.access_token);
@@ -62,12 +69,24 @@
         return true;
     }
 
+    /**
+     * Chamado quando qualquer requisição autenticada retorna 401 (token expirado).
+     * Limpa a sessão local e redireciona para /sessao-expirada (SPI-66).
+     * Não deve ser chamado em páginas pública (login, aceitar-convite).
+     */
+    function handleSessionExpired() {
+        API.clearToken();
+        try { localStorage.removeItem(STORAGE_USER); } catch (e) { /* ignore */ }
+        window.location.href = "/sessao-expirada";
+    }
+
     window.Auth = {
         login: login,
         logout: logout,
         getToken: getToken,
         getUser: getUser,
         isAuthenticated: isAuthenticated,
-        requireAuth: requireAuth
+        requireAuth: requireAuth,
+        handleSessionExpired: handleSessionExpired
     };
 })();

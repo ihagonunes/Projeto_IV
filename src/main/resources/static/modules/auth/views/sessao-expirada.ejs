@@ -1,0 +1,73 @@
+<%- contentFor("espaco-head") %>
+    <link href="/public/css/components/auth-card.css" rel="stylesheet">
+    <link href="/public/css/pages/login.css" rel="stylesheet">
+
+    <!-- Import Map para Three.js (mesmo canvas de fundo do login) -->
+    <script type="importmap">
+{
+    "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.162.0/examples/jsm/"
+    }
+}
+</script>
+
+    <div class="login-wrapper">
+
+        <!-- ===== BACKGROUND: REDE NEURAL QUÂNTICA 3D (TELA CHEIA) ===== -->
+        <div class="login-bg-container" id="login-bg-container">
+            <canvas id="neural-network-canvas"></canvas>
+        </div>
+
+        <!-- ===== CENTRO: CARD CIRCULAR ATLAS ===== -->
+        <div class="login-center-container">
+            <div class="auth-card auth-card-circle">
+
+                <!-- Ícone de relógio -->
+                <div class="mb-3" style="opacity: 0.85;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24"
+                        fill="none" stroke="rgba(240,194,47,0.9)" stroke-width="1.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
+                    </svg>
+                </div>
+
+                <!-- Título e subtítulo -->
+                <h1 class="mb-1" style="font-size:1.5rem; font-weight:600; color:#f0f0f0; letter-spacing:1px;">
+                    sessão expirada
+                </h1>
+                <p class="text-center mb-4"
+                    style="font-size:0.75rem; color:rgba(139,142,161,0.85); max-width:210px; line-height:1.5;">
+                    Sua sessão chegou ao fim.<br>Faça login novamente para continuar.
+                </p>
+
+                <!-- Contador regressivo -->
+                <p class="mb-3 text-center"
+                    style="font-size:0.72rem; color:rgba(139,142,161,0.7); letter-spacing:0.5px;">
+                    Redirecionando em
+                    <span id="countdown"
+                        style="color:rgba(240,194,47,0.9); font-weight:700;">5</span>s…
+                </p>
+
+                <!-- Botão -->
+                <div style="width:100%; max-width:230px;">
+                    <button id="btnEntrarNovamente" type="button"
+                        class="btn btn-orange btn-pill fw-bold w-100 login-btn d-flex align-items-center justify-content-center"
+                        style="white-space: nowrap; font-size: 0.75rem; letter-spacing: 1px;">
+                        entrar novamente
+                    </button>
+                </div>
+
+                <!-- Rodapé -->
+                <p class="login-circle-footer-text mt-3">ATLAS © 2026 · Todos os direitos reservados</p>
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Scripts -->
+    <script src="/public/js/core/api-client.js"></script>
+    <script src="/public/js/pages/sessao-expirada.js"></script>
+    <script type="module" src="/public/js/pages/neural-network.js"></script>

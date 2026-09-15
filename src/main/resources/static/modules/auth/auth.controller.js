@@ -32,4 +32,19 @@ async function redefinirSenha(req, res, next) {
     }
 }
 
-module.exports = { login, redefinirSenha };
+/**
+ * POST /api/auth/aceitar-convite
+ * Repassa o token de convite + dados do usuário ao Spring Boot para concluir
+ * o cadastro do convidado no tenant (SPI-30).
+ */
+async function aceitarConvite(req, res, next) {
+    try {
+        const response = await api.post("/auth/aceitar-convite", req.body);
+        res.status(response.status).json(response.data);
+    } catch (err) {
+        next(err);
+    }
+}
+
+module.exports = { login, redefinirSenha, aceitarConvite };
+
