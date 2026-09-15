@@ -31,8 +31,10 @@ Variáveis úteis (`.env`):
 | `DB_HOST` / `DB_PORT` / `DB_NAME` / `DB_USER` / `DB_PASSWORD` | Banco do backend | Ajuste ao seu PostgreSQL |
 | `SERVER_PORT` | Porta do backend | padrão `8080` |
 | `API_PROXY_TARGET` | Alvo do proxy `/api/*` do frontend | padrão `http://localhost:8080` |
-| `QSOFT_TENANT_SLUG` | Slug do tenant injetado no login | **necessário para o login funcionar** |
-| `JWT_SECRET` | Segredo de assinatura/validação do JWT | default é apenas dev; defina forte em produção |
+| `QSOFT_TENANT_SLUG` | Slug do tenant injetado no login | opcional (o login também deriva o tenant do domínio do e-mail) |
+| `JWT_SECRET` | Segredo de assinatura/validação do JWT | **OBRIGATÓRIO (mín. 32 chars); sem ele o app não sobe** |
+| `APP_BOOTSTRAP_DEMO_DATA` | Habilita o seed de demonstração | padrão `false`; use `true` apenas em dev |
+| `APP_BOOTSTRAP_DEMO_PASSWORD` | Senha do admin demo (seed) | necessária quando o seed está habilitado |
 
 ---
 
@@ -103,11 +105,18 @@ Endpoints principais (prefixo `/api/v1`):
     -H "Content-Type: application/json" \
     -d '{"slug":"qsoft","name":"QSOFT"}'
   ```
-- **Login** (emite JWT Bearer):
+- **Login** (emite JWT Bearer). `tenantSlug` é opcional: se ausente, o tenant é derivado do domínio do e-mail:
   ```bash
   curl -X POST http://localhost:8080/api/v1/auth/login \
     -H "Content-Type: application/json" \
-    -d '{"tenantSlug":"qsoft","email":"ana@qsoft.com","password":"secret123"}'
+    -d '{"email":"admin@qsoft.com","password":"<senha>"}'
+  ```
+- **Criar usuário** (endpoint **protegido** — exige JWT + permissão `MANAGE_USERS`; o tenant vem do token):
+  ```bash
+  curl -X POST http://localhost:8080/api/v1/usuarios \
+    -H "Authorization: Bearer <token>" \
+    -H "Content-Type: application/json" \
+    -d '{"email":"ana@qsoft.com","name":"Ana","hierarchyLevel":"MANAGER","password":"secret123"}'
   ```
 - **Endpoints protegidos**: envie o token retornado:
   ```bash
@@ -115,7 +124,9 @@ Endpoints principais (prefixo `/api/v1`):
     -H "Authorization: Bearer <token>"
   ```
 
-> **Importante (login de ponta a ponta):** o login exige `tenantSlug + email + password`. Para um usuário conseguir logar, ele precisa existir **no tenant do slug** e ter **senha (`password_hash`)**. Hoje **não há endpoint HTTP de criação de usuário** (mutação protegida — decisão registrada no `docs/lessonslearned&Decisions.md`). Para testar, crie o usuário via seed/teste (ex.: `CreateUser` + `User.setPasswordHash(...)` nos testes) — ou aguarde o endpoint protegido.
+> **Dados de demonstração (opcional):** habilite `APP_BOOTSTRAP_DEMO_DATA=true` e `APP_BOOTSTRAP_DEMO_PASSWORD=<senha>` para o backend criar, na inicialização, o tenant `qsoft` e o admin `admin@qsoft.com`. Sem isso, o seed **não** roda (padrão seguro).
+>
+> **Importante:** o `POST /api/v1/usuarios` é **protegido** (JWT + `MANAGE_USERS`) e o `tenantId` vem do token — nunca do corpo. Para o primeiro usuário, use o seed de demonstração ou crie via migração/admin.
 
 ---
 
@@ -134,11 +145,13 @@ Endpoints principais (prefixo `/api/v1`):
 ## 7. Problemas comuns
 
 - **`node_modules` ausente** (erro ao rodar o front): `npm install`.
-- **Login retorna 400 `tenantSlug é obrigatório`**: defina `QSOFT_TENANT_SLUG` no `.env` (ou forneça o slug no login).
-- **Schema vazio / `missing table [app_user]`**: confirme que a dependência `spring-boot-flyway` está no `pom.xml` e `spring.flyway.enabled=true` (Flyway aplica as migrations na inicialização).
+- **App não sobe com erro de `JWT_SECRET`**: defina `JWT_SECRET` no `.env` com **32+ caracteres** (é obrigatório).
+- **Login retorna 400**: informe um `email` válido; o `tenantSlug` é opcional (derivado do domínio do e-mail).
+- **`POST /api/v1/usuarios` retorna 401/403**: o endpoint é protegido — envie `Authorization: Bearer <token>` de um usuário com a permissão `MANAGE_USERS`.
+- **Login falha / não há usuário**: habilite o seed demo (`APP_BOOTSTRAP_DEMO_DATA=true` + `APP_BOOTSTRAP_DEMO_PASSWORD`) ou crie o usuário pela API protegida.
+- **Schema vazio / `missing table [app_user]`**: confirme que a dependência `spring-boot-starter-flyway` está no `pom.xml` e `spring.flyway.enabled=true` (Flyway aplica as migrations na inicialização).
 - **ITs falham por falta de Docker**: inicie o Docker Desktop/Engine antes de `mvn verify -Pintegration`.
 - **Portas em conflito (8080/3000/5432)**: altere `SERVER_PORT`, `PORT` e `DB_PORT` no `.env`.
-- **Segredo JWT**: em produção, sobrescreva `JWT_SECRET`; o default do `application.yml` é para desenvolvimento.
 
 ---
 

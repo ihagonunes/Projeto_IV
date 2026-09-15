@@ -38,13 +38,14 @@ management:
 
 app:
   bootstrap:
-    # Cria dados de demonstração (tenant qsoft + admin) na inicialização.
-    # Desative em ambientes que não devam receber dados demo.
-    demo-data: true
+    # Seed de demonstração (tenant + admin) DESABILITADO por padrão.
+    # Para habilitar localmente: APP_BOOTSTRAP_DEMO_DATA=true e
+    # APP_BOOTSTRAP_DEMO_PASSWORD=<senha forte>.
+    demo-data: false
   security:
     jwt:
       # Segredo HMAC para assinatura/validação do JWT (ADR-30).
-      # Valor abaixo é apenas para DESENVOLVIMENTO LOCAL. Em produção,
-      # sobrescreva via variável de ambiente JWT_SECRET.
-      secret: ${JWT_SECRET:f4e3d2c1b0a0987612ab2384c5de6f70a1b2c3d4e5f60718293a4b5c6d7e8f90}
+      # OBRIGATÓRIO: defina a variável de ambiente JWT_SECRET (mínimo 32 chars).
+      # Sem valor, a aplicação falha no boot (não há default inseguro).
+      secret: ${JWT_SECRET:}
       ttl-minutes: 30

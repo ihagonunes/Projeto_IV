@@ -1,5 +1,6 @@
 package br.com.qsoft.governance.iam.infrastructure.web;
 
+import br.com.qsoft.governance.iam.domain.exception.AuthorizationDeniedException;
 import br.com.qsoft.governance.iam.domain.exception.TenantNotFoundException;
 import br.com.qsoft.governance.iam.domain.exception.UserEmailAlreadyExistsException;
 import java.util.Map;
@@ -18,6 +19,17 @@ public class UserApiExceptionHandler {
     @ExceptionHandler(UserEmailAlreadyExistsException.class)
     public ResponseEntity<Map<String, String>> handleEmailExists(UserEmailAlreadyExistsException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("message", ex.getMessage()));
+    }
+
+    @ExceptionHandler(AuthorizationDeniedException.class)
+    public ResponseEntity<Map<String, String>> handleAuthorizationDenied(AuthorizationDeniedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", ex.getMessage()));
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<Map<String, String>> handleMissingContext(IllegalStateException ex) {
+        // TenantContextHolder.require() sem contexto autenticado.
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Não autenticado."));
     }
 
     @ExceptionHandler(TenantNotFoundException.class)
