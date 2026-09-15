@@ -21,6 +21,17 @@ function showErrorMessage(msg) {
     }
 }
 
+// Exibe mensagem de sucesso quando o usuário conclui o cadastro via aceite de convite
+(function () {
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('cadastro') === 'concluido' && loginErrorMessage) {
+        loginErrorMessage.textContent = 'Cadastro concluído! Faça login para continuar.';
+        loginErrorMessage.style.color = 'rgba(72,199,116,0.95)';
+        loginErrorMessage.classList.remove('d-none');
+    }
+})();
+
+
 
 // Exibe um aviso de erro no formulário, sem alterar o design do template.
 function showLoginError(message) {

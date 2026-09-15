@@ -1,10 +1,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title><%= ((typeof titulo === "undefined" || !titulo) ? "ATLAS" : (titulo + " - ATLAS")) %></title>
+<title>
+    <%= ((typeof titulo==="undefined" || !titulo) ? "ATLAS" : (titulo + " - ATLAS" )) %>
+</title>
 
 <!-- Slug do tenant para o frontend (login/API /api/v1). Configurado via BFF/env. -->
 <script>
-    window.QSOFT_TENANT_SLUG = <%= JSON.stringify(typeof qsoftTenantSlug !== "undefined" ? qsoftTenantSlug : "") %>;
+    window.QSOFT_TENANT_SLUG = '<%= typeof qsoftTenantSlug !== "undefined" ? qsoftTenantSlug : "" %>';
 </script>
 
 <!-- Bootstrap CSS (CDN) -->
@@ -17,7 +19,9 @@
 <!-- Google Fonts: Poppins (UI) + Cinzel Decorative (logo/branding grego) -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link
+    href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Poppins:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
 
 <!-- Base CSS Variables and Overrides -->
 <link href="/public/css/base/variables.css" rel="stylesheet">

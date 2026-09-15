@@ -23,6 +23,8 @@
 | Spring Security Test | authorization/security |
 | ArchUnit 1.4.2 | enforcement modular |
 | Testcontainers 2.0.5 (`testcontainers-postgresql` + `testcontainers-junit-jupiter`) | integração com PostgreSQL real |
+| JaCoCo 0.8.15 | cobertura de código (relatório em target/site/jacoco) |
+
 
 ## Não adicionar agora
 

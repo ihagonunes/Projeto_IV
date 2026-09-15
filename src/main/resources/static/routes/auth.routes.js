@@ -37,14 +37,30 @@ router.get("/onboarding", wrap(async (req, res) => {
     });
 }));
 
-// ---------------------------------------------------------------------------
-// Rotas de API-PROXY (chamam o Spring Boot via controller)
-// ---------------------------------------------------------------------------
+/** GET /sessao-expirada → renderiza a tela de sessão expirada (SPI-66) */
+router.get("/sessao-expirada", wrap(async (req, res) => {
+    res.render("auth/views/sessao-expirada", {
+        titulo: "Sessão Expirada",
+        bodyClass: "bg-light auth-bg"
+    });
+}));
+
+/** GET /aceitar-convite → tela pública de aceite de convite (SPI-30) */
+router.get("/aceitar-convite", wrap(async (req, res) => {
+    res.render("auth/views/aceite-convite", {
+        titulo: "Aceitar Convite",
+        bodyClass: "bg-light auth-bg",
+        tenantNome: req.query.tenant || null
+    });
+}));
 
 /** POST /api/auth/login → proxy para Spring Boot */
 router.post("/api/auth/login", wrap(authController.login));
 
 /** POST /api/auth/redefinir-senha → proxy para Spring Boot */
 router.post("/api/auth/redefinir-senha", wrap(authController.redefinirSenha));
+
+/** POST /api/auth/aceitar-convite → proxy para Spring Boot (SPI-30) */
+router.post("/api/auth/aceitar-convite", wrap(authController.aceitarConvite));
 
 module.exports = router;
