@@ -26,4 +26,13 @@ router.get("/api/ia", wrap(iaController.obterConfig));
 /** POST /api/ia → salva configurações de IA */
 router.post("/api/ia", wrap(iaController.salvarConfig));
 
+/** GET /api/ia/provedores → lista provedores globais da plataforma */
+router.get("/api/ia/provedores", wrap(iaController.listarProvedores));
+
+/** GET /api/ia/modelos → lista catálogo de modelos de IA */
+router.get("/api/ia/modelos", wrap(iaController.listarModelos));
+
+/** PATCH /api/ia/modelos/:id/status → atualiza status Ativo/Inativo do modelo no banco */
+router.patch("/api/ia/modelos/:id/status", wrap(iaController.atualizarStatusModelo));
+
 module.exports = router;

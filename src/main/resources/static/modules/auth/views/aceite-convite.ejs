@@ -1,0 +1,122 @@
+<%- contentFor("espaco-head") %>
+    <link href="/public/css/components/onboarding-card.css" rel="stylesheet">
+    <link href="/public/css/pages/login.css" rel="stylesheet">
+
+    <div class="login-wrapper">
+
+        <!-- ===== LADO ESQUERDO: Formulário ===== -->
+        <div class="login-left">
+
+            <!-- Cabeçalho -->
+            <div class="login-logo-area">
+                <p class="login-tagline">Aceitar Convite</p>
+            </div>
+
+            <!-- Mensagem de boas-vindas -->
+            <div class="mb-4" style="width:100%; max-width:420px;">
+                <% if (typeof tenantNome !== 'undefined' && tenantNome) { %>
+                    <p class="form-subtext" style="font-size:0.85rem; line-height:1.6;">
+                        Você foi convidado para ingressar em
+                        <strong style="color: rgba(240,194,47,0.9);"><%= tenantNome %></strong>.<br>
+                        Defina sua senha para concluir o cadastro.
+                    </p>
+                <% } else { %>
+                    <p class="form-subtext" style="font-size:0.85rem; line-height:1.6;">
+                        Defina sua senha para concluir o cadastro na plataforma.
+                    </p>
+                <% } %>
+            </div>
+
+            <form id="aceiteConviteForm" action="javascript:void(0);" novalidate
+                style="width:100%; max-width: 420px;">
+
+                <!-- Nome completo -->
+                <div class="mb-3">
+                    <label for="nomeCompleto" class="form-label-custom"
+                        style="font-size:0.72rem; letter-spacing:2px; text-transform:uppercase;">
+                        Nome completo
+                    </label>
+                    <input type="text" class="form-control custom-input" id="nomeCompleto"
+                        placeholder="seu nome completo" required>
+                    <div class="invalid-feedback">Informe seu nome completo.</div>
+                </div>
+
+                <!-- E-mail (somente leitura — preenchido via query string) -->
+                <div class="mb-3">
+                    <label for="emailConvite" class="form-label-custom"
+                        style="font-size:0.72rem; letter-spacing:2px; text-transform:uppercase;">
+                        E-mail
+                    </label>
+                    <input type="email" class="form-control custom-input" id="emailConvite"
+                        placeholder="e-mail" readonly
+                        style="opacity: 0.7; cursor: not-allowed;">
+                    <p class="form-subtext mt-2 mb-0">
+                        Este é o e-mail para o qual o convite foi enviado.
+                    </p>
+                </div>
+
+                <!-- Senha -->
+                <div class="mb-3">
+                    <label for="senha" class="form-label-custom"
+                        style="font-size:0.72rem; letter-spacing:2px; text-transform:uppercase;">
+                        Defina sua senha
+                    </label>
+                    <input type="password" class="form-control custom-input" id="senha"
+                        placeholder="••••••••" required>
+                    <div class="invalid-feedback">Informe uma senha.</div>
+                </div>
+
+                <!-- Confirmar senha -->
+                <div class="mb-4">
+                    <label for="confirmarSenha" class="form-label-custom"
+                        style="font-size:0.72rem; letter-spacing:2px; text-transform:uppercase;">
+                        Confirme a senha
+                    </label>
+                    <input type="password" class="form-control custom-input" id="confirmarSenha"
+                        placeholder="••••••••" required>
+                    <div class="invalid-feedback">As senhas não coincidem.</div>
+                </div>
+
+                <!-- Mensagem de erro inline -->
+                <div id="aceiteErrorMessage" class="text-danger small mb-3 d-none"
+                    style="font-size:0.82rem;"></div>
+
+                <!-- Botões -->
+                <div class="d-flex gap-3">
+                    <a href="/login" class="btn btn-outline-secondary btn-pill flex-grow-1">
+                        cancelar
+                    </a>
+                    <button type="submit" id="btnConcluir"
+                        class="btn btn-orange btn-pill fw-bold flex-grow-1">
+                        concluir cadastro
+                    </button>
+                </div>
+
+            </form>
+
+            <p class="login-footer-text">ATLAS © 2026 · Todos os direitos reservados</p>
+
+        </div>
+
+        <!-- ===== LADO DIREITO: ASCII Art ===== -->
+        <div class="login-right">
+            <div class="login-ascii-scene">
+                <pre class="login-ascii-art" id="asciiArtContainer"></pre>
+                <div class="fibonacci-overlay">
+                    <div class="fib-circle fib-1"></div>
+                    <div class="fib-circle fib-2"></div>
+                    <div class="fib-circle fib-3"></div>
+                    <div class="fib-circle fib-4"></div>
+                    <div class="fib-circle fib-5"></div>
+                </div>
+                <div class="ascii-label-bottom">
+                    <span class="ascii-label-sub">ὁ τιτὰν ποὺ κρατεῖ τον κόσμο</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Scripts -->
+    <script src="/public/js/core/api-client.js"></script>
+    <script src="/public/js/pages/aceite-convite.js"></script>
