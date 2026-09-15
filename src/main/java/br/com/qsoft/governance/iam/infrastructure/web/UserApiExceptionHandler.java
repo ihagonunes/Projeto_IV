@@ -3,6 +3,7 @@ package br.com.qsoft.governance.iam.infrastructure.web;
 import br.com.qsoft.governance.iam.domain.exception.AuthorizationDeniedException;
 import br.com.qsoft.governance.iam.domain.exception.TenantNotFoundException;
 import br.com.qsoft.governance.iam.domain.exception.UserEmailAlreadyExistsException;
+import br.com.qsoft.governance.iam.domain.exception.UserNotFoundException;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -32,8 +33,8 @@ public class UserApiExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Não autenticado."));
     }
 
-    @ExceptionHandler(TenantNotFoundException.class)
-    public ResponseEntity<Map<String, String>> handleTenantNotFound(TenantNotFoundException ex) {
+    @ExceptionHandler({ TenantNotFoundException.class, UserNotFoundException.class })
+    public ResponseEntity<Map<String, String>> handleNotFound(RuntimeException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", ex.getMessage()));
     }
 

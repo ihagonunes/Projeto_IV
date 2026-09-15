@@ -36,6 +36,14 @@ management:
       probes:
         enabled: true
 
+# OpenAPI/Swagger: habilitado por padrão (dev). Em produção, defina
+# OPENAPI_ENABLED=false para não expor a superfície da API.
+springdoc:
+  api-docs:
+    enabled: ${OPENAPI_ENABLED:true}
+  swagger-ui:
+    enabled: ${OPENAPI_ENABLED:true}
+
 app:
   bootstrap:
     # Seed de demonstração (tenant + admin) DESABILITADO por padrão.
