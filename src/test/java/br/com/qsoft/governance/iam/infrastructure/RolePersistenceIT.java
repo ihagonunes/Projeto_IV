@@ -85,10 +85,21 @@ class RolePersistenceIT {
     @Test
     void shouldDetectDuplicateNameWithinTenant() {
         Tenant tenant = newTenant();
-        roleRepository.save(Role.create(RoleId.random(), tenant.id(), "MANAGER"));
+        String name = "CUSTOM-" + UUID.randomUUID();
+        roleRepository.save(Role.create(RoleId.random(), tenant.id(), name));
 
-        assertThat(roleRepository.existsByTenantIdAndName(tenant.id(), "MANAGER")).isTrue();
+        assertThat(roleRepository.existsByTenantIdAndName(tenant.id(), name)).isTrue();
         assertThat(roleRepository.existsByTenantIdAndName(tenant.id(), "OUTRO")).isFalse();
+    }
+
+    @Test
+    void shouldProvisionDefaultRolesOnTenantRegistration() {
+        Tenant tenant = newTenant();
+
+        assertThat(roleRepository.existsByTenantIdAndName(tenant.id(), "COLLABORATOR")).isTrue();
+        assertThat(roleRepository.existsByTenantIdAndName(tenant.id(), "LEADER")).isTrue();
+        assertThat(roleRepository.existsByTenantIdAndName(tenant.id(), "MANAGER")).isTrue();
+        assertThat(roleRepository.existsByTenantIdAndName(tenant.id(), "EXECUTIVE")).isTrue();
     }
 
     @Test
@@ -96,7 +107,7 @@ class RolePersistenceIT {
         Tenant tenant = newTenant();
         User user = createUser.create(new CreateUserCommand(
             tenant.id(), "assign@rbac.com", "Assign", HierarchyLevel.MANAGER, null));
-        Role role = roleRepository.save(Role.create(RoleId.random(), tenant.id(), "MANAGER"));
+        Role role = roleRepository.save(Role.create(RoleId.random(), tenant.id(), "CUSTOM-" + UUID.randomUUID()));
 
         RoleAssignment saved = roleAssignmentRepository.save(
             RoleAssignment.create(user.id(), role.id(), tenant.id(), null));
