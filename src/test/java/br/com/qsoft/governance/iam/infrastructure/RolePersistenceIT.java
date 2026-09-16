@@ -2,14 +2,20 @@ package br.com.qsoft.governance.iam.infrastructure;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import br.com.qsoft.governance.iam.application.CreateUser;
+import br.com.qsoft.governance.iam.application.CreateUserCommand;
 import br.com.qsoft.governance.iam.application.RegisterTenant;
 import br.com.qsoft.governance.iam.application.RegisterTenantCommand;
+import br.com.qsoft.governance.iam.application.port.RoleAssignmentRepository;
 import br.com.qsoft.governance.iam.application.port.RoleRepository;
 import br.com.qsoft.governance.iam.domain.rbac.Action;
 import br.com.qsoft.governance.iam.domain.rbac.Permission;
 import br.com.qsoft.governance.iam.domain.rbac.Resource;
 import br.com.qsoft.governance.iam.domain.rbac.Role;
+import br.com.qsoft.governance.iam.domain.rbac.RoleAssignment;
 import br.com.qsoft.governance.iam.domain.tenant.Tenant;
+import br.com.qsoft.governance.iam.domain.user.HierarchyLevel;
+import br.com.qsoft.governance.iam.domain.user.User;
 import br.com.qsoft.governance.sharedkernel.id.RoleId;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -46,7 +52,13 @@ class RolePersistenceIT {
     RegisterTenant registerTenant;
 
     @Autowired
+    CreateUser createUser;
+
+    @Autowired
     RoleRepository roleRepository;
+
+    @Autowired
+    RoleAssignmentRepository roleAssignmentRepository;
 
     private Tenant newTenant() {
         return registerTenant.register(new RegisterTenantCommand(
@@ -77,5 +89,20 @@ class RolePersistenceIT {
 
         assertThat(roleRepository.existsByTenantIdAndName(tenant.id(), "MANAGER")).isTrue();
         assertThat(roleRepository.existsByTenantIdAndName(tenant.id(), "OUTRO")).isFalse();
+    }
+
+    @Test
+    void shouldPersistRoleAssignment() {
+        Tenant tenant = newTenant();
+        User user = createUser.create(new CreateUserCommand(
+            tenant.id(), "assign@rbac.com", "Assign", HierarchyLevel.MANAGER, null));
+        Role role = roleRepository.save(Role.create(RoleId.random(), tenant.id(), "MANAGER"));
+
+        RoleAssignment saved = roleAssignmentRepository.save(
+            RoleAssignment.create(user.id(), role.id(), tenant.id(), null));
+
+        assertThat(roleAssignmentRepository.findById(saved.id())).isPresent();
+        assertThat(roleAssignmentRepository.findByTenantIdAndUserId(tenant.id(), user.id()))
+            .hasSize(1);
     }
 }

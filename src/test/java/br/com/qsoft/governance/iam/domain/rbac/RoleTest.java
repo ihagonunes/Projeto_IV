@@ -57,13 +57,13 @@ class RoleTest {
 
     @Test
     void roleAssignmentShouldReferenceDepartmentById() {
-        var assignment = new RoleAssignment(
+        var assignment = RoleAssignment.create(
             br.com.qsoft.governance.sharedkernel.id.UserId.random(),
             RoleId.random(), tenantId, java.util.UUID.randomUUID());
 
         assertThat(assignment.isDepartmentScoped()).isTrue();
 
-        var tenantWide = new RoleAssignment(
+        var tenantWide = RoleAssignment.create(
             br.com.qsoft.governance.sharedkernel.id.UserId.random(),
             RoleId.random(), tenantId, null);
         assertThat(tenantWide.isDepartmentScoped()).isFalse();
