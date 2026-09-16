@@ -64,8 +64,9 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.CREATED).body(UserResponse.from(user));
     }
 
-    /** Altera o nível hierárquico de um usuário (autorização no caso de uso — SPI-47). */
+    /** Altera o nível hierárquico de um usuário. Requer permissão USER:MANAGE (SPI-47). */
     @PostMapping("/{id}/nivel")
+    @RequiresPermission(resource = Resource.USER, action = Action.MANAGE)
     public ResponseEntity<UserResponse> changeHierarchyLevel(@PathVariable UUID id,
                                                              @Valid @RequestBody HierarchyLevelRequest request) {
         TenantContext context = TenantContextHolder.require();
