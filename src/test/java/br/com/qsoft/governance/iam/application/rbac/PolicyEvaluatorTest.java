@@ -239,4 +239,29 @@ class PolicyEvaluatorTest {
 
         assertThat(evaluator.isAllowed(EvaluationContext.of(tenantId, userId), manageUsers)).isFalse();
     }
+
+    @Test
+    void shouldReturnEffectivePermissionsFromRoles() {
+        TenantId tenantId = activeTenant();
+        UserId userId = activeUser(tenantId);
+        RoleId roleId = roleWith(tenantId, manageUsers);
+        roles.get(roleId).grantPermission(Permission.of(Resource.TENANT, Action.READ));
+        assign(tenantId, userId, roleId, null);
+
+        assertThat(evaluator.effectivePermissions(EvaluationContext.of(tenantId, userId)))
+            .containsExactlyInAnyOrder(
+                Permission.of(Resource.USER, Action.MANAGE),
+                Permission.of(Resource.TENANT, Action.READ));
+    }
+
+    @Test
+    void shouldReturnEmptyEffectivePermissionsForInvalidContext() {
+        TenantId tenantId = activeTenant();
+        UserId userId = activeUser(tenantId);
+        RoleId roleId = roleWith(tenantId, manageUsers);
+        assign(tenantId, userId, roleId, null);
+        users.get(userId).deactivate();
+
+        assertThat(evaluator.effectivePermissions(EvaluationContext.of(tenantId, userId))).isEmpty();
+    }
 }

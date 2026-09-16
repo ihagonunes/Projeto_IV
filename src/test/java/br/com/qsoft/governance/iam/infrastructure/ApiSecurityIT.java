@@ -182,4 +182,18 @@ class ApiSecurityIT {
     void shouldLoginWithoutTenantSlug() {
         assertThat(login(ADMIN_EMAIL)).isNotBlank();
     }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void shouldReturnEffectivePermissionsForCurrentUser() {
+        String token = login(ADMIN_EMAIL);
+
+        Map<?, ?> response = client.get().uri("/api/v1/usuarios/me/permissoes")
+            .header("Authorization", "Bearer " + token)
+            .retrieve().body(Map.class);
+
+        assertThat(response).isNotNull();
+        Iterable<String> permissions = (Iterable<String>) response.get("permissions");
+        assertThat(permissions).contains("USER:MANAGE");
+    }
 }

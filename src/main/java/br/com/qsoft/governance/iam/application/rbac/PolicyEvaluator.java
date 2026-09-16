@@ -11,8 +11,11 @@ import br.com.qsoft.governance.iam.domain.rbac.RoleAssignment;
 import br.com.qsoft.governance.iam.domain.tenant.TenantStatus;
 import br.com.qsoft.governance.iam.domain.user.User;
 import br.com.qsoft.governance.iam.domain.user.UserStatus;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
 /**
@@ -48,6 +51,35 @@ public class PolicyEvaluator {
         Objects.requireNonNull(context, "context é obrigatório.");
         Objects.requireNonNull(permission, "permission é obrigatória.");
 
+        AuthorizationResult invalid = validate(context);
+        if (invalid != null) {
+            return invalid;
+        }
+
+        if (applicableRoles(context).stream().anyMatch(role -> role.hasPermission(permission))) {
+            return AuthorizationResult.allow();
+        }
+        return AuthorizationResult.deny(
+            "Permissão negada: " + permission.resource() + ":" + permission.action() + ".");
+    }
+
+    public boolean isAllowed(EvaluationContext context, Permission permission) {
+        return evaluate(context, permission).allowed();
+    }
+
+    /**
+     * Conjunto de permissões efetivas do usuário no contexto (união das
+     * permissões dos papéis aplicáveis). Vazio se o contexto for inválido.
+     */
+    public Set<Permission> effectivePermissions(EvaluationContext context) {
+        Objects.requireNonNull(context, "context é obrigatório.");
+        return applicableRoles(context).stream()
+            .flatMap(role -> role.permissions().stream())
+            .collect(Collectors.toUnmodifiableSet());
+    }
+
+    /** Valida o contexto; retorna a negação correspondente ou {@code null} se válido. */
+    private AuthorizationResult validate(EvaluationContext context) {
         User user = userRepository.findById(context.userId()).orElse(null);
         if (user == null || user.status() != UserStatus.ACTIVE) {
             return AuthorizationResult.deny("Usuário inexistente ou inativo.");
@@ -55,31 +87,26 @@ public class PolicyEvaluator {
         if (!user.tenantId().equals(context.tenantId())) {
             return AuthorizationResult.deny("Usuário não pertence ao tenant do contexto.");
         }
-
         var tenant = tenantRepository.findById(context.tenantId()).orElse(null);
         if (tenant == null || tenant.status() != TenantStatus.ACTIVE) {
             return AuthorizationResult.deny("Tenant inexistente ou inativo.");
         }
+        return null;
+    }
 
-        List<RoleAssignment> assignments =
-            roleAssignmentRepository.findByTenantIdAndUserId(context.tenantId(), context.userId());
-
-        for (RoleAssignment assignment : assignments) {
+    private List<Role> applicableRoles(EvaluationContext context) {
+        if (validate(context) != null) {
+            return List.of();
+        }
+        List<Role> roles = new ArrayList<>();
+        for (RoleAssignment assignment :
+            roleAssignmentRepository.findByTenantIdAndUserId(context.tenantId(), context.userId())) {
             if (assignment.isDepartmentScoped()
                 && !Objects.equals(assignment.departmentId(), context.departmentId())) {
                 continue;
             }
-            Role role = roleRepository.findById(assignment.roleId()).orElse(null);
-            if (role != null && role.hasPermission(permission)) {
-                return AuthorizationResult.allow();
-            }
+            roleRepository.findById(assignment.roleId()).ifPresent(roles::add);
         }
-
-        return AuthorizationResult.deny(
-            "Permissão negada: " + permission.resource() + ":" + permission.action() + ".");
-    }
-
-    public boolean isAllowed(EvaluationContext context, Permission permission) {
-        return evaluate(context, permission).allowed();
+        return roles;
     }
 }
