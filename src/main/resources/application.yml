@@ -52,6 +52,9 @@ app:
     # APP_BOOTSTRAP_DEMO_PASSWORD=<senha forte>.
     demo-data: false
   security:
+    invite:
+      # Validade (em horas) do token de convite.
+      ttl-hours: 48
     jwt:
       # Segredo HMAC para assinatura/validação do JWT (ADR-30).
       # OBRIGATÓRIO: defina a variável de ambiente JWT_SECRET (mínimo 32 chars).
