@@ -22,7 +22,7 @@ public final class User {
     private final String email;
     private final String name;
     private HierarchyLevel hierarchyLevel;
-    private final UUID departmentId;
+    private UUID departmentId;
     private String passwordHash;
     private final Set<Permission> permissions;
     private UserStatus status;
@@ -154,6 +154,22 @@ public final class User {
             this.status = UserStatus.INACTIVE;
             this.updatedAt = Instant.now();
         }
+        return this;
+    }
+
+    public User updateDepartment(UUID newDepartmentId) {
+        this.departmentId = newDepartmentId;
+        this.updatedAt = Instant.now();
+        return this;
+    }
+
+    public User updateAdminPermissions(boolean makeAdmin) {
+        if (makeAdmin) {
+            this.permissions.addAll(EnumSet.allOf(Permission.class));
+        } else {
+            this.permissions.clear();
+        }
+        this.updatedAt = Instant.now();
         return this;
     }
 

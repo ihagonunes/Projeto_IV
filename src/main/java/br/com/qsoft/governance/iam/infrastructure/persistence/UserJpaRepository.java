@@ -15,4 +15,6 @@ public interface UserJpaRepository extends JpaRepository<UserJpaEntity, UUID> {
      * (o @Filter Hibernate não se aplica ao find() por chave primária).
      */
     Optional<UserJpaEntity> findByIdAndTenantId(UUID id, UUID tenantId);
+
+    java.util.List<UserJpaEntity> findAllByTenantId(UUID tenantId);
 }

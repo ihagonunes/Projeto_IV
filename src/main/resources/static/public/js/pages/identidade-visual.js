@@ -1,5 +1,9 @@
 /**
  * identidade-visual.js — Lógica da tela de Identidade Visual e Branding (SPI-53)
+ *
+ * Endpoints consumidos (via proxy Node → Spring Boot):
+ *   GET    /api/tenant/branding  → carrega dados atuais (retorna TenantResponse)
+ *   PATCH  /api/tenant/branding  → salva logoUrl, primaryColor, secondaryColor
  */
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -21,6 +25,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     const previewNavbarLogo = document.getElementById("previewNavbarLogo");
     const previewNavbarBrand = document.getElementById("previewNavbarBrand");
 
+    // logoUrl atual em base64 ou URL, usado no payload
+    let logoUrlAtual = "";
+
     // 1. Atualizações em tempo real (Live Preview)
     nomeExibicaoInput.addEventListener("input", (e) => {
         const val = e.target.value.trim();
@@ -40,7 +47,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             const reader = new FileReader();
             reader.onload = (event) => {
                 const imgData = event.target.result;
-                
+                logoUrlAtual = imgData;
+
                 // Atualiza Thumbnail do formulário
                 logoPreviewThumb.src = imgData;
                 logoPreviewThumbContainer.classList.remove("d-none");
@@ -57,32 +65,36 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     // 2. Carregar dados atuais
-    await carregarIdentidadeVisual();
+    await carregarBranding();
 
-    async function carregarIdentidadeVisual() {
+    async function carregarBranding() {
         try {
-            const data = await API.get("/tenant/identidade-visual");
+            // GET /api/tenant/branding retorna o TenantResponse completo
+            const data = await API.get("/tenant/branding");
             if (data) {
                 preencherFormulario(data);
             } else {
                 usarDadosMock();
             }
         } catch (err) {
-            console.warn("API de identidade visual indisponível, usando fallback mock:", err);
+            console.warn("API de branding indisponível, usando fallback mock:", err);
             usarDadosMock();
         }
     }
 
     function preencherFormulario(data) {
-        if (data.nomeExibicao) {
-            nomeExibicaoInput.value = data.nomeExibicao;
-            if (previewNavbarBrand) previewNavbarBrand.textContent = data.nomeExibicao.toUpperCase();
-            if (tenantContextName) tenantContextName.textContent = data.nomeExibicao;
+        // `name` vem do TenantResponse
+        const nome = data.name || data.nomeExibicao || "";
+        if (nome) {
+            nomeExibicaoInput.value = nome;
+            if (previewNavbarBrand) previewNavbarBrand.textContent = nome.toUpperCase();
+            if (tenantContextName) tenantContextName.textContent = nome;
         }
-        if (data.slogan) {
+        if (data.slogan && sloganMarcaInput) {
             sloganMarcaInput.value = data.slogan;
         }
         if (data.logoUrl) {
+            logoUrlAtual = data.logoUrl;
             logoPreviewThumb.src = data.logoUrl;
             logoPreviewThumbContainer.classList.remove("d-none");
             if (uploadIcon) uploadIcon.classList.add("d-none");
@@ -99,15 +111,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     function usarDadosMock() {
-        const mock = {
-            nomeExibicao: "Acceletec Solutions",
+        preencherFormulario({
+            name: "Acceletec Solutions",
             slogan: "Governança & Inteligência Corporativa",
             logoUrl: ""
-        };
-        preencherFormulario(mock);
+        });
     }
 
-    // 3. Submissão do Formulário
+    // 3. Submissão do Formulário (SPI-53)
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
         alertArea.innerHTML = "";
@@ -120,13 +131,16 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         setLoading(true);
 
+        // O backend aceita { logoUrl, primaryColor, secondaryColor }
+        // O nomeExibicao é salvo via PATCH /me (SPI-52), não no branding
         const payload = {
-            nomeExibicao: nomeExibicaoInput.value.trim(),
-            slogan: sloganMarcaInput.value.trim()
+            logoUrl: logoUrlAtual || null,
+            primaryColor: null,   // extensível via futuros campos de cor
+            secondaryColor: null
         };
 
         try {
-            await API.put("/tenant/identidade-visual", payload);
+            await API.patch("/tenant/branding", payload);
             showAlert("Identidade visual e branding salvos com sucesso!", "success");
         } catch (err) {
             console.error("Erro ao salvar identidade visual:", err);

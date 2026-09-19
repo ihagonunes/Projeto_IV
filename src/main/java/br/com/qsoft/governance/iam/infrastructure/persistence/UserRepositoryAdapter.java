@@ -70,6 +70,16 @@ public class UserRepositoryAdapter implements UserRepository {
         return jpaRepository.existsByTenantIdAndEmail(tenantId.value(), email);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public java.util.List<User> findAllByTenantId(TenantId tenantId) {
+        applyTenantFilter();
+        return jpaRepository.findAllByTenantId(tenantId.value())
+            .stream()
+            .map(mapper::toDomain)
+            .toList();
+    }
+
     /**
      * Ativa o filtro de isolamento por tenant_id apenas quando existe um
      * TenantContext (request autenticado). Durante bootstrap/login o contexto

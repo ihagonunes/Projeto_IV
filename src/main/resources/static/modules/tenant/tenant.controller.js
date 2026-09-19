@@ -3,6 +3,7 @@ const api = require("../../config/api");
 /**
  * Controller do módulo Tenant.
  * Proxy puro para o Spring Boot — sem validação ou lógica de negócio.
+ * Os endpoints seguem os mesmos paths do TenantController.java (PATCH /api/v1/tenants/me/...).
  */
 
 /** GET /api/tenant → lista tenants */
@@ -15,7 +16,7 @@ async function listar(req, res, next) {
     }
 }
 
-/** POST /api/tenant → cria um novo tenant */
+/** POST /api/tenant → cria um novo tenant (onboarding público) */
 async function criar(req, res, next) {
     try {
         const response = await api.post("/tenants", req.body);
@@ -35,34 +36,44 @@ async function obterAtual(req, res, next) {
     }
 }
 
-/** PUT /api/tenant/me → atualiza os dados do tenant */
+/** PATCH /api/tenant/me → atualiza dados cadastrais do tenant (SPI-52) */
 async function atualizar(req, res, next) {
     try {
-        const response = await api.put("/tenants/me", req.body);
+        const response = await api.patch("/tenants/me", req.body);
         res.status(response.status).json(response.data);
     } catch (err) {
         next(err);
     }
 }
 
-/** GET /api/tenant/identidade-visual → busca identidade visual do tenant */
-async function obterIdentidadeVisual(req, res, next) {
+/** GET /api/tenant/branding → busca identidade visual do tenant (SPI-53) */
+async function obterBranding(req, res, next) {
     try {
-        const response = await api.get("/tenants/me/identidade-visual");
+        const response = await api.get("/tenants/me");
         res.status(response.status).json(response.data);
     } catch (err) {
         next(err);
     }
 }
 
-/** PUT /api/tenant/identidade-visual → atualiza identidade visual do tenant */
-async function atualizarIdentidadeVisual(req, res, next) {
+/** PATCH /api/tenant/branding → atualiza identidade visual do tenant (SPI-53) */
+async function atualizarBranding(req, res, next) {
     try {
-        const response = await api.put("/tenants/me/identidade-visual", req.body);
+        const response = await api.patch("/tenants/me/branding", req.body);
         res.status(response.status).json(response.data);
     } catch (err) {
         next(err);
     }
 }
 
-module.exports = { listar, criar, obterAtual, atualizar, obterIdentidadeVisual, atualizarIdentidadeVisual };
+/** PATCH /api/tenant/status → altera status ativo/inativo do tenant (SPI-57) */
+async function alterarStatus(req, res, next) {
+    try {
+        const response = await api.patch("/tenants/me/status", req.body);
+        res.status(response.status).json(response.data);
+    } catch (err) {
+        next(err);
+    }
+}
+
+module.exports = { listar, criar, obterAtual, atualizar, obterBranding, atualizarBranding, alterarStatus };
