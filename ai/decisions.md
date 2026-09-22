@@ -57,3 +57,17 @@ Itens **identificados e ainda não decididos**. Não implementar antes de um ADR
 - **Decisão (opção b):** persistir o domínio com restrição `UNIQUE` e validar no cadastro, em vez de derivá-lo do `slug`.
 - **Implementado:** migration `V007` (`iam_tenants.email_domain` + índice único), `Tenant.emailDomain`, `RegisterTenant` rejeitando sobreposição (`TenantDomainAlreadyExistsException` → 409), porta `TenantDomainRepository`, `emailDomain` no `TenantRequest`/`TenantResponse` e **emenda ao ADR-32** (login resolvido pelo domínio cadastrado).
 - **Pendência (frontend):** `emailDomain` passou a ser **obrigatório** em `POST /api/v1/tenants`; o formulário de onboarding precisa enviar o campo. Tenants legados sem domínio seguem usando o fallback do ADR-32.
+
+### Recuperação de senha (SPI-65) — BLOQUEADO por decisão
+
+- **Origem:** SPI-65 / POPROJ-15 ("link de recuperação expira após tempo definido; nova senha segue política de segurança; link de uso único").
+- **Lacuna 1 — entrega do link:** não existe infraestrutura de e-mail/notificação no projeto (nenhuma dependência de mail no `pom.xml`, nenhum notificador). Sem canal de entrega o fluxo não fecha: retornar o token na resposta HTTP permitiria sequestro de conta, e registrá-lo em log viola o AGENTS §9 ("logs nunca contêm tokens").
+- **Lacuna 2 — política de senha:** não existe política de senha no projeto (nenhuma validação de força/complexidade em qualquer ponto).
+- **Opções (a decidir):** (a) porta `PasswordResetNotifier` no `application` com implementação **no-op** no MVP (o token nunca é logado nem devolvido), deixando o provider real como evolução; (b) introduzir `spring-boot-starter-mail` (nova dependência → exige justificativa em `ai/dependencies.md` ou ADR); (c) manter fora do MVP.
+- **Enquanto não decidido:** nenhum endpoint de recuperação de senha é exposto.
+
+### Backend compartilhado para rate limiting (SPI-67) — decisão futura
+
+- **Implementado:** rate limiting do login **em memória** (`LoginAttemptLimiter`), por instância, em janela fixa (padrão: 5 tentativas / 15 min), chaveado por IP + e-mail. Sem lockout persistente de conta, conforme a task e o ADR-30.
+- **Limitações conhecidas:** (i) o limite é **por instância** — não é compartilhado entre réplicas; (ii) o estado se perde em restart; (iii) a chave usa o IP do socket (`getRemoteAddr()`), então atrás de um proxy reverso todos os clientes compartilham o IP do proxy (`X-Forwarded-For` exigiria configuração de proxy confiável).
+- **Decisão futura:** um backend compartilhado (ex.: Redis) para o rate limiting exigiria dependência nova → justificar em `ai/dependencies.md` ou ADR.
