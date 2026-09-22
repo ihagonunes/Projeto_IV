@@ -115,6 +115,12 @@ Múltiplos Providers podem estar ACTIVE. Provider local não implica Docker.
 - Chat é privado inclusive de MANAGER/ADMIN;
 - LLM nunca decide autorização.
 
+## Pendências de decisão (não decidido)
+
+- **Escopo de plataforma (SPI-57).** A baseline assume que todo principal autenticado possui `tenant_id` e é tenant-scoped (ADR-03/ADR-30). O bloqueio global de tenant (`TenantStatus` `ACTIVE`/`INACTIVE`) já é aplicado no login (`AuthenticateUser`) e em requests protegidos (`TenantContextFilter`), porém **não há ator autorizado a alterar o status**: a task pressupõe um "admin de plataforma" que não existe, e suspender a partir do próprio tenant gera lockout irreversível. Exige ADR antes de virar endpoint — ver `ai/decisions.md` → *Decisões abertas*.
+
+- **Domínio de e-mail corporativo (SPI-54) — resolvido.** Cada tenant passa a ter um domínio único (`iam_tenants.email_domain`, migration `V007`), validado no cadastro (409 em sobreposição). A resolução do tenant no login usa o domínio **cadastrado**, com fallback legado (ADR-32 emendado). Pendência de frontend: `emailDomain` é obrigatório em `POST /api/v1/tenants`.
+
 ## Ambientes
 
 ```text

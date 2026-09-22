@@ -92,7 +92,7 @@ class InviteFlowIT {
 
     private void ensureData() {
         try {
-            registerTenant.register(new RegisterTenantCommand(TENANT_SLUG, "Invite Demo"));
+            registerTenant.register(new RegisterTenantCommand(TENANT_SLUG, "Invite Demo", TENANT_SLUG + ".com"));
         } catch (TenantSlugAlreadyExistsException ignored) {
             // já criado por um teste anterior
         }

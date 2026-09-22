@@ -13,6 +13,7 @@ public final class TenantJpaMapper {
         entity.setId(tenant.id().value());
         entity.setSlug(tenant.slug());
         entity.setName(tenant.name());
+        entity.setEmailDomain(tenant.emailDomain());
         entity.setStatus(tenant.status());
         entity.setCreatedAt(tenant.createdAt());
         entity.setUpdatedAt(tenant.updatedAt());
@@ -24,6 +25,7 @@ public final class TenantJpaMapper {
             TenantId.of(entity.getId()),
             entity.getSlug(),
             entity.getName(),
+            entity.getEmailDomain(),
             entity.getStatus(),
             entity.getCreatedAt(),
             entity.getUpdatedAt()

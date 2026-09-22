@@ -1,6 +1,7 @@
 package br.com.qsoft.governance.iam.infrastructure.web;
 
 import br.com.qsoft.governance.iam.domain.exception.AuthorizationDeniedException;
+import br.com.qsoft.governance.iam.domain.exception.TenantDomainAlreadyExistsException;
 import br.com.qsoft.governance.iam.domain.exception.TenantNotFoundException;
 import br.com.qsoft.governance.iam.domain.exception.TenantSlugAlreadyExistsException;
 import java.util.Map;
@@ -19,6 +20,11 @@ public class TenantApiExceptionHandler {
 
     @ExceptionHandler(TenantSlugAlreadyExistsException.class)
     public ResponseEntity<Map<String, String>> handleSlugAlreadyExists(TenantSlugAlreadyExistsException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("message", ex.getMessage()));
+    }
+
+    @ExceptionHandler(TenantDomainAlreadyExistsException.class)
+    public ResponseEntity<Map<String, String>> handleDomainAlreadyExists(TenantDomainAlreadyExistsException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("message", ex.getMessage()));
     }
 

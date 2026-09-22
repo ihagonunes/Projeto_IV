@@ -98,7 +98,7 @@ class UserManagementIT {
 
     private void ensureTenant(String slug, String name, String adminEmail, String password) {
         try {
-            registerTenant.register(new RegisterTenantCommand(slug, name));
+            registerTenant.register(new RegisterTenantCommand(slug, name, slug + ".com"));
         } catch (TenantSlugAlreadyExistsException ignored) {
             // já criado por um teste anterior
         }

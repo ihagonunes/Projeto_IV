@@ -43,6 +43,7 @@ public class DemoDataSeeder implements ApplicationRunner {
 
     public static final String TENANT_SLUG = "qsoft";
     public static final String ADMIN_EMAIL = "admin@qsoft.com";
+    public static final String EMAIL_DOMAIN = "qsoft.com";
 
     private final RegisterTenant registerTenant;
     private final TenantRepository tenantRepository;
@@ -77,7 +78,7 @@ public class DemoDataSeeder implements ApplicationRunner {
         }
 
         try {
-            registerTenant.register(new RegisterTenantCommand(TENANT_SLUG, "QSOFT Demo"));
+            registerTenant.register(new RegisterTenantCommand(TENANT_SLUG, "QSOFT Demo", EMAIL_DOMAIN));
         } catch (TenantSlugAlreadyExistsException e) {
             log.info("Tenant demo '{}' já existe.", TENANT_SLUG);
         }

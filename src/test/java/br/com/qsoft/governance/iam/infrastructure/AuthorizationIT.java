@@ -100,7 +100,7 @@ class AuthorizationIT {
 
     private void ensureData() {
         try {
-            registerTenant.register(new RegisterTenantCommand(TENANT_SLUG, "RBAC Demo"));
+            registerTenant.register(new RegisterTenantCommand(TENANT_SLUG, "RBAC Demo", TENANT_SLUG + ".com"));
         } catch (TenantSlugAlreadyExistsException ignored) {
             // já criado por um teste anterior
         }

@@ -61,8 +61,8 @@ class RolePersistenceIT {
     RoleAssignmentRepository roleAssignmentRepository;
 
     private Tenant newTenant() {
-        return registerTenant.register(new RegisterTenantCommand(
-            "rbac-" + UUID.randomUUID(), "RBAC Demo"));
+        String slug = "rbac-" + UUID.randomUUID();
+        return registerTenant.register(new RegisterTenantCommand(slug, "RBAC Demo", slug + ".example"));
     }
 
     @Test

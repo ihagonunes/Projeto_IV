@@ -94,7 +94,7 @@ class TenantManagementIT {
 
     private void ensureTenant() {
         try {
-            registerTenant.register(new RegisterTenantCommand(TENANT_SLUG, "Tenant Mgmt"));
+            registerTenant.register(new RegisterTenantCommand(TENANT_SLUG, "Tenant Mgmt", TENANT_SLUG + ".com"));
         } catch (TenantSlugAlreadyExistsException ignored) {
             // já criado por um teste anterior
         }

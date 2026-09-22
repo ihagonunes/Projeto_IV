@@ -21,7 +21,7 @@
 | Método | Caminho | Corpo (request) | Resposta | Autorização |
 |---|---|---|---|---|
 | POST | `/api/v1/auth/login` | `{ tenantSlug?, email, password }` | `{ token, tokenType }` | público |
-| POST | `/api/v1/tenants` | `{ slug, name }` | tenant | público (onboarding) |
+| POST | `/api/v1/tenants` | `{ slug, name, emailDomain }` | tenant | público (onboarding) |
 | POST | `/api/v1/usuarios` | `{ email, name, hierarchyLevel, password, departmentId? }` | usuário | `USER:MANAGE` |
 | POST | `/api/v1/usuarios/{id}/nivel` | `{ hierarchyLevel }` | usuário | `USER:MANAGE` |
 | GET | `/api/v1/usuarios/me/permissoes` | — | `{ userId, permissions[] }` | autenticado |
@@ -109,7 +109,7 @@ Os `modules/*/*.controller.js` (axios → `/api/v1/...`) **nunca executam** porq
 2. ✅ **Modelo RBAC (SPI-39)**: adotado **papéis por tenant** (`iam_roles`/`iam_role_permissions`/`iam_role_assignments`);
    removido o modelo `permission_grant` (órfão). Decisão registrada em `ai/adr/ADR-33-authorization-model-roles.md`.
 3. ⏳ **Backend — IAM (existente)**: POPROJ-14 entregue — `GET /api/v1/usuarios` (SPI-62), `PATCH /api/v1/usuarios/{id}` (SPI-63), `PATCH /api/v1/usuarios/{id}/status` (SPI-61), `POST /api/v1/convites/{id}/reenviar` (SPI-59) e `DELETE /api/v1/convites/{id}`.
-   SPI-52 entregue (`GET/PUT /api/v1/tenants/me`; `TENANT:MANAGE` concedida ao EXECUTIVE na matriz padrão). SPI-57: o bloqueio de login e de requests protegidos para tenant INACTIVE já era garantido e agora tem cobertura de IT; **não** há endpoint de mudança de status — o ator "admin de plataforma" não existe no código e criá-lo exige ADR. Pendente: `GET/PUT /api/v1/tenants/me/identidade-visual` (SPI-53, exige migration).
+   SPI-52 entregue (`GET/PUT /api/v1/tenants/me`; `TENANT:MANAGE` concedida ao EXECUTIVE na matriz padrão). SPI-57: o bloqueio de login e de requests protegidos para tenant INACTIVE já era garantido e agora tem cobertura de IT; **não** há endpoint de mudança de status — o ator "admin de plataforma" não existe no código e criá-lo exige ADR. SPI-54 entregue: `emailDomain` obrigatório em `POST /api/v1/tenants`, único globalmente (409 em sobreposição); o login resolve o tenant pelo domínio cadastrado (ADR-32 emendado). Pendente: `GET/PUT /api/v1/tenants/me/identidade-visual` (SPI-53, exige migration).
 4. **Frontend — adaptar** (§4.1): unificar o cliente HTTP, corrigir paths/verbos e remover a camada server-side morta (ou repontá-la).
 5. **Backend — módulos futuros** (`department`, `aigateway`, `revisao`): implementar quando as tasks existirem; telas visual-only até lá.
 6. **Testes**: por endpoint novo, teste de API (401/403/200) + IT de tenant isolation; ArchUnit verde.

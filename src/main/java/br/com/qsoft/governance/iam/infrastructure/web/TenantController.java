@@ -50,7 +50,8 @@ public class TenantController {
 
     @PostMapping
     public ResponseEntity<TenantResponse> create(@Valid @RequestBody TenantRequest request) {
-        Tenant tenant = registerTenant.register(new RegisterTenantCommand(request.slug(), request.name()));
+        Tenant tenant = registerTenant.register(new RegisterTenantCommand(
+            request.slug(), request.name(), request.emailDomain()));
         return ResponseEntity.status(HttpStatus.CREATED).body(TenantResponse.from(tenant));
     }
 
