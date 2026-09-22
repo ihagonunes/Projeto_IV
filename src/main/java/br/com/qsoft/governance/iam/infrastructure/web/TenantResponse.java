@@ -5,7 +5,8 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * Payload de saída com a representação pública de um tenant.
+ * Payload de saída com a representação pública de um tenant,
+ * incluindo dados cadastrais e identidade visual (white-label).
  */
 public record TenantResponse(
     UUID id,
@@ -13,6 +14,9 @@ public record TenantResponse(
     String name,
     String emailDomain,
     String status,
+    String logoUrl,
+    String primaryColor,
+    String secondaryColor,
     Instant createdAt
 ) {
 
@@ -23,6 +27,9 @@ public record TenantResponse(
             tenant.name(),
             tenant.emailDomain(),
             tenant.status().name(),
+            tenant.logoUrl(),
+            tenant.primaryColor(),
+            tenant.secondaryColor(),
             tenant.createdAt()
         );
     }

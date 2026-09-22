@@ -1,10 +1,10 @@
 package br.com.qsoft.governance.iam.application;
 
 import br.com.qsoft.governance.iam.application.port.UserRepository;
-import br.com.qsoft.governance.iam.domain.exception.AuthorizationDeniedException;
 import br.com.qsoft.governance.iam.domain.exception.UserNotFoundException;
 import br.com.qsoft.governance.iam.domain.user.User;
 import br.com.qsoft.governance.iam.domain.user.UserStatus;
+import br.com.qsoft.governance.sharedkernel.id.TenantId;
 import br.com.qsoft.governance.sharedkernel.id.UserId;
 import java.util.Objects;
 import org.springframework.stereotype.Service;
@@ -31,37 +31,31 @@ public class ChangeUserStatus {
         this.userRepository = userRepository;
     }
 
-    public User change(ChangeUserStatusCommand command) {
+    public User changeStatus(ChangeUserStatusCommand command) {
         if (command == null) {
             throw new IllegalArgumentException("Command é obrigatório.");
         }
-        UserId actor = Objects.requireNonNull(command.actorUserId(), "actorUserId");
-        UserId target = Objects.requireNonNull(command.targetUserId(), "targetUserId");
-        UserStatus status = Objects.requireNonNull(command.status(), "status");
+        TenantId tenantId = Objects.requireNonNull(command.tenantId(), "tenantId");
+        UserId targetUserId = Objects.requireNonNull(command.targetUserId(), "targetUserId");
+        UserStatus newStatus = Objects.requireNonNull(command.newStatus(), "newStatus");
 
-        User actorUser = userRepository.findById(actor)
-            .orElseThrow(() -> new UserNotFoundException(actor));
-        User targetUser = userRepository.findById(target)
-            .orElseThrow(() -> new UserNotFoundException(target));
-
-        // Escopo: só altera usuários do MESMO tenant (ADR-03).
-        if (!actorUser.tenantId().equals(targetUser.tenantId())) {
-            throw new AuthorizationDeniedException(
-                "Usuário não autorizado a alterar status de usuário de outro tenant.");
+        if (newStatus == UserStatus.INACTIVE && command.executorId() != null && command.executorId().equals(targetUserId)) {
+            throw new IllegalArgumentException("Você não pode desativar seu próprio usuário.");
         }
 
-        // Guarda: um administrador não pode desativar a própria conta e se
-        // trancar fora do sistema (o token passaria a ser recusado).
-        if (status == UserStatus.INACTIVE && actor.equals(target)) {
-            throw new IllegalArgumentException(
-                "Não é permitido desativar o próprio usuário.");
+        User user = userRepository.findById(targetUserId)
+            .orElseThrow(() -> new UserNotFoundException(targetUserId));
+
+        if (!user.tenantId().equals(tenantId)) {
+            throw new UserNotFoundException(targetUserId);
         }
 
-        if (status == UserStatus.ACTIVE) {
-            targetUser.activate();
+        if (newStatus == UserStatus.ACTIVE) {
+            user.activate();
         } else {
-            targetUser.deactivate();
+            user.deactivate();
         }
-        return userRepository.save(targetUser);
+
+        return userRepository.save(user);
     }
 }

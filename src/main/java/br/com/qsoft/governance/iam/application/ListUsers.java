@@ -1,46 +1,45 @@
 package br.com.qsoft.governance.iam.application;
 
-import br.com.qsoft.governance.iam.application.port.UserSearchFilter;
-import br.com.qsoft.governance.iam.application.port.UserSearchRepository;
+import br.com.qsoft.governance.iam.application.port.UserRepository;
 import br.com.qsoft.governance.iam.domain.user.User;
+import br.com.qsoft.governance.iam.domain.user.UserStatus;
 import br.com.qsoft.governance.sharedkernel.id.TenantId;
-import br.com.qsoft.governance.sharedkernel.query.PageResult;
+import java.util.List;
 import java.util.Objects;
 import org.springframework.stereotype.Service;
 
-/**
- * Caso de uso de listagem/busca paginada de usuários do tenant (SPI-62).
- * <p>
- * A AUTORIZAÇÃO (permissão granular USER:READ) é aplicada no endpoint pelo
- * {@code PermissionInterceptor} via {@code @RequiresPermission}. O tenant vem
- * SEMPRE do contexto autenticado — nunca do cliente (ADR-03).
- */
 @Service
 public class ListUsers {
 
-    static final int DEFAULT_SIZE = 20;
-    static final int MAX_SIZE = 100;
+    private final UserRepository userRepository;
 
-    private final UserSearchRepository userSearchRepository;
-
-    public ListUsers(UserSearchRepository userSearchRepository) {
-        this.userSearchRepository = userSearchRepository;
+    public ListUsers(UserRepository userRepository) {
+        this.userRepository = userRepository;
     }
 
-    public PageResult<User> list(ListUsersCommand command) {
-        if (command == null) {
-            throw new IllegalArgumentException("Command é obrigatório.");
+    public List<User> list(ListUsersQuery query) {
+        if (query == null) {
+            throw new IllegalArgumentException("Query é obrigatória.");
         }
-        TenantId tenantId = Objects.requireNonNull(command.tenantId(), "tenantId");
-        int page = Math.max(command.page(), 0);
-        int size = command.size() <= 0 ? DEFAULT_SIZE : Math.min(command.size(), MAX_SIZE);
+        TenantId tenantId = Objects.requireNonNull(query.tenantId(), "tenantId");
 
-        UserSearchFilter filter = new UserSearchFilter(
-            command.hierarchyLevel(),
-            command.departmentId(),
-            command.name(),
-            command.email()
-        );
-        return userSearchRepository.search(tenantId, filter, page, size);
+        List<User> users = userRepository.findAllByTenantId(tenantId);
+
+        if (query.status() != null && !query.status().isBlank() && !"TODOS".equalsIgnoreCase(query.status())) {
+            try {
+                UserStatus filterStatus = UserStatus.valueOf(query.status().toUpperCase());
+                users = users.stream().filter(u -> u.status() == filterStatus).toList();
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
+
+        if (query.search() != null && !query.search().isBlank()) {
+            String term = query.search().toLowerCase().trim();
+            users = users.stream()
+                .filter(u -> u.name().toLowerCase().contains(term) || u.email().toLowerCase().contains(term))
+                .toList();
+        }
+
+        return users;
     }
 }

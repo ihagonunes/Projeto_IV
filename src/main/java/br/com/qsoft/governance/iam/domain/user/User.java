@@ -157,6 +157,22 @@ public final class User {
         return this;
     }
 
+    public User updateDepartment(UUID newDepartmentId) {
+        this.departmentId = newDepartmentId;
+        this.updatedAt = Instant.now();
+        return this;
+    }
+
+    public User updateAdminPermissions(boolean makeAdmin) {
+        if (makeAdmin) {
+            this.permissions.addAll(EnumSet.allOf(Permission.class));
+        } else {
+            this.permissions.clear();
+        }
+        this.updatedAt = Instant.now();
+        return this;
+    }
+
     /**
      * Altera o nível hierárquico do usuário. Exige um nível válido e não-nulo;
      * ADMIN não é um nível hierárquico (ADR-04).
