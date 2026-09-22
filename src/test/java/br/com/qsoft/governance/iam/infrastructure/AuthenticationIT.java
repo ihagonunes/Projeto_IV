@@ -63,7 +63,8 @@ class AuthenticationIT {
     PasswordEncoder passwordEncoder;
 
     private Tenant tenant(String prefix) {
-        return registerTenant.register(new RegisterTenantCommand(prefix + "-" + UUID.randomUUID(), prefix));
+        String slug = prefix + "-" + UUID.randomUUID();
+        return registerTenant.register(new RegisterTenantCommand(slug, prefix, slug + ".example"));
     }
 
     @Test

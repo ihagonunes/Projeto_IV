@@ -1,38 +1,51 @@
 package br.com.qsoft.governance.iam.infrastructure;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import br.com.qsoft.governance.iam.api.model.AuthorizationResult;
-import br.com.qsoft.governance.iam.api.model.Permission;
-import br.com.qsoft.governance.iam.api.query.AuthorizationQuery;
-import br.com.qsoft.governance.iam.application.ChangeUserHierarchyLevel;
-import br.com.qsoft.governance.iam.application.ChangeUserHierarchyLevelCommand;
-import br.com.qsoft.governance.iam.application.CreateUser;
-import br.com.qsoft.governance.iam.application.CreateUserCommand;
+import br.com.qsoft.governance.iam.application.ProvisionUser;
+import br.com.qsoft.governance.iam.application.ProvisionUserCommand;
 import br.com.qsoft.governance.iam.application.RegisterTenant;
 import br.com.qsoft.governance.iam.application.RegisterTenantCommand;
+import br.com.qsoft.governance.iam.application.port.RoleAssignmentRepository;
+import br.com.qsoft.governance.iam.application.port.RoleRepository;
+import br.com.qsoft.governance.iam.application.port.TenantRepository;
 import br.com.qsoft.governance.iam.application.port.UserRepository;
-import br.com.qsoft.governance.iam.domain.exception.AuthorizationDeniedException;
+import br.com.qsoft.governance.iam.domain.exception.TenantSlugAlreadyExistsException;
+import br.com.qsoft.governance.iam.domain.exception.UserEmailAlreadyExistsException;
+import br.com.qsoft.governance.iam.domain.rbac.Action;
+import br.com.qsoft.governance.iam.domain.rbac.Permission;
+import br.com.qsoft.governance.iam.domain.rbac.Resource;
+import br.com.qsoft.governance.iam.domain.rbac.Role;
+import br.com.qsoft.governance.iam.domain.rbac.RoleAssignment;
 import br.com.qsoft.governance.iam.domain.tenant.Tenant;
 import br.com.qsoft.governance.iam.domain.user.HierarchyLevel;
 import br.com.qsoft.governance.iam.domain.user.User;
+import br.com.qsoft.governance.sharedkernel.id.RoleId;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
- * Teste de integração do RBAC (AuthorizationQuery + ChangeUserHierarchyLevel)
- * com PostgreSQL real. Exige Docker.
+ * Teste de integração do RBAC no endpoint de modificação hierárquica
+ * (POST /api/v1/usuarios/{id}/nivel) com servidor real e PostgreSQL.
+ * Exige Docker.
  */
 @Testcontainers
-@SpringBootTest(classes = br.com.qsoft.governance.GovernanceApplication.class)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+    classes = br.com.qsoft.governance.GovernanceApplication.class)
 class AuthorizationIT {
 
     @Container
@@ -49,56 +62,114 @@ class AuthorizationIT {
         registry.add("spring.datasource.password", POSTGRES::getPassword);
     }
 
+    private static final String TENANT_SLUG = "rbacdemo";
+    private static final String ADMIN_EMAIL = "admin@rbacdemo.com";
+    private static final String USER_EMAIL = "user@rbacdemo.com";
+    private static final String PASSWORD = "secret123";
+    private static final String ROLE_NAME = "USER_MANAGER";
+
+    @LocalServerPort
+    int port;
+
     @Autowired
     RegisterTenant registerTenant;
 
     @Autowired
-    CreateUser createUser;
+    ProvisionUser provisionUser;
 
     @Autowired
-    ChangeUserHierarchyLevel changeUserHierarchyLevel;
-
-    @Autowired
-    AuthorizationQuery authorizationQuery;
+    TenantRepository tenantRepository;
 
     @Autowired
     UserRepository userRepository;
 
-    private Tenant tenant(String prefix) {
-        return registerTenant.register(new RegisterTenantCommand(prefix + "-" + UUID.randomUUID(), prefix));
+    @Autowired
+    RoleRepository roleRepository;
+
+    @Autowired
+    RoleAssignmentRepository roleAssignmentRepository;
+
+    private RestClient client;
+    private UUID targetId;
+
+    @BeforeEach
+    void setUp() {
+        client = RestClient.builder().baseUrl("http://localhost:" + port).build();
+        ensureData();
     }
 
-    private User newUser(Tenant tenant, String email) {
-        User user = createUser.create(new CreateUserCommand(
-            tenant.id(), email, email, HierarchyLevel.COLLABORATOR, null));
-        return userRepository.findById(user.id()).orElseThrow();
+    private void ensureData() {
+        try {
+            registerTenant.register(new RegisterTenantCommand(TENANT_SLUG, "RBAC Demo", TENANT_SLUG + ".com"));
+        } catch (TenantSlugAlreadyExistsException ignored) {
+            // já criado por um teste anterior
+        }
+        Tenant tenant = tenantRepository.findBySlug(TENANT_SLUG).orElseThrow();
+        User admin = provisionIfAbsent(tenant, ADMIN_EMAIL, HierarchyLevel.EXECUTIVE);
+        provisionIfAbsent(tenant, USER_EMAIL, HierarchyLevel.COLLABORATOR);
+        targetId = admin.id().value();
+
+        Role role = roleRepository.findByTenantIdAndName(tenant.id(), ROLE_NAME)
+            .orElseGet(() -> {
+                Role created = Role.create(RoleId.random(), tenant.id(), ROLE_NAME);
+                created.grantPermission(Permission.of(Resource.USER, Action.MANAGE));
+                return roleRepository.save(created);
+            });
+        boolean assigned = roleAssignmentRepository
+            .findByTenantIdAndUserId(tenant.id(), admin.id())
+            .stream()
+            .anyMatch(assignment -> assignment.roleId().equals(role.id()));
+        if (!assigned) {
+            roleAssignmentRepository.save(
+                RoleAssignment.create(admin.id(), role.id(), tenant.id(), null));
+        }
+    }
+
+    private User provisionIfAbsent(Tenant tenant, String email, HierarchyLevel level) {
+        try {
+            return provisionUser.provision(new ProvisionUserCommand(
+                tenant.id(), email, email, level, PASSWORD, null, Set.of()));
+        } catch (UserEmailAlreadyExistsException ignored) {
+            return userRepository.findByTenantIdAndEmail(tenant.id(), email).orElseThrow();
+        }
+    }
+
+    private String login(String email) {
+        Map<?, ?> response = client.post().uri("/api/v1/auth/login")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(Map.of("email", email, "password", PASSWORD))
+            .retrieve().body(Map.class);
+        return response == null ? null : (String) response.get("token");
+    }
+
+    private int changeLevel(String token, UUID id, String level) {
+        var spec = client.post().uri("/api/v1/usuarios/" + id + "/nivel")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(Map.of("hierarchyLevel", level));
+        if (token != null) {
+            spec = spec.header("Authorization", "Bearer " + token);
+        }
+        try {
+            return spec.retrieve().toBodilessEntity().getStatusCode().value();
+        } catch (RestClientResponseException e) {
+            return e.getStatusCode().value();
+        }
     }
 
     @Test
-    void shouldAllowAdminPermissionToChangeHierarchy() {
-        Tenant tenant = tenant("rbac");
-        User admin = newUser(tenant, "admin@rbac.com");
-        admin.grantPermission(Permission.MANAGE_HIERARCHY);
-        userRepository.save(admin);
-        User target = newUser(tenant, "ana@rbac.com");
-
-        AuthorizationResult result =
-            authorizationQuery.checkPermission(admin.id(), Permission.MANAGE_HIERARCHY);
-        assertThat(result.allowed()).isTrue();
-
-        User updated = changeUserHierarchyLevel.change(
-            new ChangeUserHierarchyLevelCommand(admin.id(), target.id(), HierarchyLevel.EXECUTIVE));
-        assertThat(updated.hierarchyLevel()).isEqualTo(HierarchyLevel.EXECUTIVE);
+    void shouldAllowAdminWithPermissionToChangeHierarchy() {
+        String token = login(ADMIN_EMAIL);
+        assertThat(changeLevel(token, targetId, "MANAGER")).isEqualTo(200);
     }
 
     @Test
-    void shouldDenyCollaboratorToChangeHierarchy() {
-        Tenant tenant = tenant("rbac");
-        User collaborator = newUser(tenant, "user@rbac.com");
-        User target = newUser(tenant, "ana@rbac.com");
+    void shouldDenyUserWithoutPermissionToChangeHierarchy() {
+        String token = login(USER_EMAIL);
+        assertThat(changeLevel(token, targetId, "EXECUTIVE")).isEqualTo(403);
+    }
 
-        assertThatThrownBy(() -> changeUserHierarchyLevel.change(
-            new ChangeUserHierarchyLevelCommand(collaborator.id(), target.id(), HierarchyLevel.EXECUTIVE)))
-            .isInstanceOf(AuthorizationDeniedException.class);
+    @Test
+    void shouldRejectChangeWithoutToken() {
+        assertThat(changeLevel(null, targetId, "EXECUTIVE")).isEqualTo(401);
     }
 }

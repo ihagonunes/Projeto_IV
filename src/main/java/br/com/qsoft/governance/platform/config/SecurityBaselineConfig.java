@@ -26,6 +26,8 @@ public class SecurityBaselineConfig {
                 .requestMatchers(
                     "/actuator/health/**",
                     "/api/v1/auth/login", "/api/v1/tenants",
+                    // Aceite de convite (usuário convidado ainda não está autenticado)
+                    "/api/v1/convites/aceitar",
                     // Swagger/OpenAPI (dashboard da API)
                     "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html")
                 .permitAll()

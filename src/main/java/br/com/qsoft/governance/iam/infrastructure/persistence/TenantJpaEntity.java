@@ -28,6 +28,9 @@ public class TenantJpaEntity {
     @Column(name = "name", nullable = false, length = 200)
     private String name;
 
+    @Column(name = "email_domain", length = 253, unique = true)
+    private String emailDomain;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     private TenantStatus status;
@@ -64,6 +67,14 @@ public class TenantJpaEntity {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getEmailDomain() {
+        return emailDomain;
+    }
+
+    public void setEmailDomain(String emailDomain) {
+        this.emailDomain = emailDomain;
     }
 
     public TenantStatus getStatus() {

@@ -1,8 +1,5 @@
 package br.com.qsoft.governance.iam.application;
 
-import br.com.qsoft.governance.iam.api.model.AuthorizationResult;
-import br.com.qsoft.governance.iam.api.model.Permission;
-import br.com.qsoft.governance.iam.api.query.AuthorizationQuery;
 import br.com.qsoft.governance.iam.application.port.UserRepository;
 import br.com.qsoft.governance.iam.domain.exception.AuthorizationDeniedException;
 import br.com.qsoft.governance.iam.domain.exception.UserNotFoundException;
@@ -14,18 +11,18 @@ import org.springframework.stereotype.Service;
 
 /**
  * Caso de uso de alteração controlada do nível hierárquico de um usuário.
- *	Exige (ADR-04/ADR-03): autorização via AuthorizationQuery (permissão
- *	MANAGE_HIERARCHY) + mesmo tenant. A interpretação hierárquica é do IAM.
+ *
+ * A AUTORIZAÇÃO (permissão granular USER:MANAGE) é aplicada no endpoint pelo
+ * {@code PermissionInterceptor} via {@code @RequiresPermission} (SPI-47). Aqui
+ * permanece o invariante de escopo: só altera usuários do MESMO tenant (ADR-03).
  */
 @Service
 public class ChangeUserHierarchyLevel {
 
     private final UserRepository userRepository;
-    private final AuthorizationQuery authorizationQuery;
 
-    public ChangeUserHierarchyLevel(UserRepository userRepository, AuthorizationQuery authorizationQuery) {
+    public ChangeUserHierarchyLevel(UserRepository userRepository) {
         this.userRepository = userRepository;
-        this.authorizationQuery = authorizationQuery;
     }
 
     public User change(ChangeUserHierarchyLevelCommand command) {
@@ -41,16 +38,6 @@ public class ChangeUserHierarchyLevel {
 
         User actorUser = userRepository.findById(actor)
             .orElseThrow(() -> new UserNotFoundException(actor));
-
-        // Autorização determinística do IAM: permissão MANAGE_HIERARCHY.
-        AuthorizationResult authorization =
-            authorizationQuery.checkPermission(actor, Permission.MANAGE_HIERARCHY);
-        if (!authorization.allowed()) {
-            throw new AuthorizationDeniedException(
-                authorization.denialReason() != null ? authorization.denialReason()
-                    : "Usuário não autorizado a alterar níveis hierárquicos.");
-        }
-
         User targetUser = userRepository.findById(target)
             .orElseThrow(() -> new UserNotFoundException(target));
 

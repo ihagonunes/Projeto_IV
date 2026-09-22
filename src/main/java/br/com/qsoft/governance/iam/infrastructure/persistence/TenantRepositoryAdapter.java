@@ -1,5 +1,6 @@
 package br.com.qsoft.governance.iam.infrastructure.persistence;
 
+import br.com.qsoft.governance.iam.application.port.TenantDomainRepository;
 import br.com.qsoft.governance.iam.application.port.TenantRepository;
 import br.com.qsoft.governance.iam.domain.tenant.Tenant;
 import br.com.qsoft.governance.sharedkernel.id.TenantId;
@@ -8,10 +9,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Adapter de persistência que satisfaz a porta TenantRepository do módulo IAM.
+ * Adapter de persistência que satisfaz as portas TenantRepository e
+ * TenantDomainRepository do módulo IAM.
  */
 @Component
-public class TenantRepositoryAdapter implements TenantRepository {
+public class TenantRepositoryAdapter implements TenantRepository, TenantDomainRepository {
 
     private final TenantJpaRepository jpaRepository;
     private final TenantJpaMapper mapper;
@@ -44,5 +46,24 @@ public class TenantRepositoryAdapter implements TenantRepository {
     @Transactional(readOnly = true)
     public boolean existsBySlug(String slug) {
         return jpaRepository.existsBySlug(slug);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Tenant> findByEmailDomain(String emailDomain) {
+        if (emailDomain == null || emailDomain.isBlank()) {
+            return Optional.empty();
+        }
+        return jpaRepository.findByEmailDomain(Tenant.normalizeDomain(emailDomain))
+            .map(mapper::toDomain);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean existsByEmailDomain(String emailDomain) {
+        if (emailDomain == null || emailDomain.isBlank()) {
+            return false;
+        }
+        return jpaRepository.existsByEmailDomain(Tenant.normalizeDomain(emailDomain));
     }
 }

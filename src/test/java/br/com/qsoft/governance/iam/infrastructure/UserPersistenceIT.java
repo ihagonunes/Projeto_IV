@@ -60,7 +60,8 @@ class UserPersistenceIT {
     UserRepository userRepository;
 
     private Tenant newTenant(String prefix) {
-        return registerTenant.register(new RegisterTenantCommand(prefix + "-" + UUID.randomUUID(), prefix));
+        String slug = prefix + "-" + UUID.randomUUID();
+        return registerTenant.register(new RegisterTenantCommand(slug, prefix, slug + ".example"));
     }
 
     @Test

@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import br.com.qsoft.governance.iam.application.RegisterTenant;
 import br.com.qsoft.governance.iam.application.RegisterTenantCommand;
 import br.com.qsoft.governance.iam.application.port.TenantRepository;
+import br.com.qsoft.governance.iam.domain.exception.TenantDomainAlreadyExistsException;
 import br.com.qsoft.governance.iam.domain.exception.TenantSlugAlreadyExistsException;
 import br.com.qsoft.governance.iam.domain.tenant.Tenant;
 import br.com.qsoft.governance.iam.domain.tenant.TenantStatus;
@@ -52,7 +53,7 @@ class TenantPersistenceIT {
     void shouldPersistTenant() {
         String slug = "acme-" + UUID.randomUUID();
 
-        Tenant tenant = registerTenant.register(new RegisterTenantCommand(slug, "ACME"));
+        Tenant tenant = registerTenant.register(new RegisterTenantCommand(slug, "ACME", slug + ".example"));
 
         assertThat(tenant.id()).isNotNull();
         assertThat(tenant.status()).isEqualTo(TenantStatus.ACTIVE);
@@ -62,14 +63,28 @@ class TenantPersistenceIT {
         assertThat(found.slug()).isEqualTo(slug);
         assertThat(found.name()).isEqualTo("ACME");
         assertThat(found.status()).isEqualTo(TenantStatus.ACTIVE);
+        assertThat(found.emailDomain()).isEqualTo(slug + ".example");
+    }
+
+    /** SPI-54: o domínio de e-mail corporativo é persistido e único globalmente. */
+    @Test
+    void shouldRejectDuplicateEmailDomain() {
+        String slug = "dom-" + UUID.randomUUID();
+        String domain = slug + ".example";
+        registerTenant.register(new RegisterTenantCommand(slug, "Dom", domain));
+
+        String otherSlug = "dom2-" + UUID.randomUUID();
+        assertThatThrownBy(() -> registerTenant.register(
+            new RegisterTenantCommand(otherSlug, "Dom2", domain)))
+            .isInstanceOf(TenantDomainAlreadyExistsException.class);
     }
 
     @Test
     void shouldRejectDuplicateSlug() {
         String slug = "dup-" + UUID.randomUUID();
-        registerTenant.register(new RegisterTenantCommand(slug, "Dup"));
+        registerTenant.register(new RegisterTenantCommand(slug, "Dup", slug + ".example"));
 
-        assertThatThrownBy(() -> registerTenant.register(new RegisterTenantCommand(slug, "Dup2")))
+        assertThatThrownBy(() -> registerTenant.register(new RegisterTenantCommand(slug, "Dup2", slug + ".example")))
             .isInstanceOf(TenantSlugAlreadyExistsException.class);
     }
 

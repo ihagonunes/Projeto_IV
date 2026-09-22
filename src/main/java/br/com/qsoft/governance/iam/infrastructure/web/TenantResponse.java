@@ -11,6 +11,7 @@ public record TenantResponse(
     UUID id,
     String slug,
     String name,
+    String emailDomain,
     String status,
     Instant createdAt
 ) {
@@ -20,6 +21,7 @@ public record TenantResponse(
             tenant.id().value(),
             tenant.slug(),
             tenant.name(),
+            tenant.emailDomain(),
             tenant.status().name(),
             tenant.createdAt()
         );

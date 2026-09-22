@@ -35,4 +35,39 @@ Este arquivo é um índice. Leia somente o ADR relacionado à tarefa.
 | ADR-29 | Modular Persistence | ACCEPTED | `ai/adr/ADR-29-modular-persistence.md` |
 | ADR-30 | Authentication and JWT Security | ACCEPTED | `ai/adr/ADR-30-authentication-and-jwt-security.md` |
 | ADR-31 | Physical Modular Structure and Enforcement | ACCEPTED | `ai/adr/ADR-31-physical-modular-structure-and-enforcement.md` |
-| ADR-32 | Tenant resolution on login (email-domain fallback) | ACCEPTED | `ai/adr/ADR-32-tenant-resolution-on-login.md` |
+| ADR-32 | Tenant resolution on login (email-domain fallback) | ACCEPTED (emendado pela SPI-54) | `ai/adr/ADR-32-tenant-resolution-on-login.md` |
+| ADR-33 | Modelo de autorização (RBAC por papéis por tenant) | ACCEPTED | `ai/adr/ADR-33-authorization-model-roles.md` |
+
+## Decisões abertas (pendentes de ADR)
+
+Itens **identificados e ainda não decididos**. Não implementar antes de um ADR.
+
+### Escopo de plataforma e ciclo de vida do tenant (SPI-57)
+
+- **Origem:** SPI-57 / POPROJ-13 ("bloqueio global de login para tenants suspensos por admin de plataforma").
+- **Já garantido:** `TenantStatus` (`ACTIVE`/`INACTIVE`), com bloqueio no login (`AuthenticateUser`) e em requests protegidos (`TenantContextFilter`); coberto por `TenantManagementIT`.
+- **Em aberto:** **não existe ator autorizado a alterar o status do tenant.** A task pressupõe um "admin de plataforma"; a baseline só formaliza atores tenant-scoped (ADR-03/ADR-04/ADR-30). Suspender a partir do próprio tenant produz **lockout irreversível** — ninguém consegue autenticar para reativar.
+- **Se decidido (proposta):** ADR novo (escopo de plataforma) + emenda/referência ao ADR-03 (exceção explícita ao isolamento) e possivelmente ao ADR-30 (JWT sem `tenant_id`); atualização de `ai/architecture.md` (ownership e allowlist de `platform`, hoje ausentes); ator/módulo de plataforma; migration para auditoria (`status_changed_at`/`status_changed_by`).
+- **Enquanto não decidido:** nenhum endpoint de mudança de status de tenant é exposto.
+
+### Domínio de e-mail corporativo único (SPI-54) — RESOLVIDO (emenda ao ADR-32)
+
+- **Origem:** SPI-54 / POPROJ-13 ("validação backend para impedir sobreposição de domínios cadastrados").
+- **Tensão original:** a task assume "não exige alteração estrutural", mas `Tenant` não possuía campo de domínio e `RegisterTenant` só validava unicidade de `slug`.
+- **Decisão (opção b):** persistir o domínio com restrição `UNIQUE` e validar no cadastro, em vez de derivá-lo do `slug`.
+- **Implementado:** migration `V007` (`iam_tenants.email_domain` + índice único), `Tenant.emailDomain`, `RegisterTenant` rejeitando sobreposição (`TenantDomainAlreadyExistsException` → 409), porta `TenantDomainRepository`, `emailDomain` no `TenantRequest`/`TenantResponse` e **emenda ao ADR-32** (login resolvido pelo domínio cadastrado).
+- **Pendência (frontend):** `emailDomain` passou a ser **obrigatório** em `POST /api/v1/tenants`; o formulário de onboarding precisa enviar o campo. Tenants legados sem domínio seguem usando o fallback do ADR-32.
+
+### Recuperação de senha (SPI-65) — BLOQUEADO por decisão
+
+- **Origem:** SPI-65 / POPROJ-15 ("link de recuperação expira após tempo definido; nova senha segue política de segurança; link de uso único").
+- **Lacuna 1 — entrega do link:** não existe infraestrutura de e-mail/notificação no projeto (nenhuma dependência de mail no `pom.xml`, nenhum notificador). Sem canal de entrega o fluxo não fecha: retornar o token na resposta HTTP permitiria sequestro de conta, e registrá-lo em log viola o AGENTS §9 ("logs nunca contêm tokens").
+- **Lacuna 2 — política de senha:** não existe política de senha no projeto (nenhuma validação de força/complexidade em qualquer ponto).
+- **Opções (a decidir):** (a) porta `PasswordResetNotifier` no `application` com implementação **no-op** no MVP (o token nunca é logado nem devolvido), deixando o provider real como evolução; (b) introduzir `spring-boot-starter-mail` (nova dependência → exige justificativa em `ai/dependencies.md` ou ADR); (c) manter fora do MVP.
+- **Enquanto não decidido:** nenhum endpoint de recuperação de senha é exposto.
+
+### Backend compartilhado para rate limiting (SPI-67) — decisão futura
+
+- **Implementado:** rate limiting do login **em memória** (`LoginAttemptLimiter`), por instância, em janela fixa (padrão: 5 tentativas / 15 min), chaveado por IP + e-mail. Sem lockout persistente de conta, conforme a task e o ADR-30.
+- **Limitações conhecidas:** (i) o limite é **por instância** — não é compartilhado entre réplicas; (ii) o estado se perde em restart; (iii) a chave usa o IP do socket (`getRemoteAddr()`), então atrás de um proxy reverso todos os clientes compartilham o IP do proxy (`X-Forwarded-For` exigiria configuração de proxy confiável).
+- **Decisão futura:** um backend compartilhado (ex.: Redis) para o rate limiting exigiria dependência nova → justificar em `ai/dependencies.md` ou ADR.

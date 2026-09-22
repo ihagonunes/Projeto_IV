@@ -2,7 +2,7 @@
 
 ## Status
 
-ACCEPTED
+ACCEPTED (emendado pela SPI-54 — ver *Emenda* ao final)
 
 ## Contexto
 
@@ -45,3 +45,29 @@ operações protegidas; a derivação aplica-se apenas à resolução do tenant 
   tenant (subdomínio, IdP/SSO ou seleção explícita na tela).
 - Restrição: o slug do tenant e o domínio de e-mail dos usuários devem ser
   consistentes enquanto esta decisão vigorar.
+
+## Emenda (SPI-54) — resolução pelo domínio cadastrado
+
+O risco de colisão/ambiguidade registrado acima foi **eliminado**: cada tenant
+passa a ter um **domínio de e-mail corporativo único**, persistido em
+`iam_tenants.email_domain` (migration `V007`), e a sobreposição é impedida no
+cadastro (`RegisterTenant` → `TenantDomainAlreadyExistsException` → HTTP 409).
+
+A resolução do tenant no login, quando o `tenantSlug` não é informado, passa a ser:
+
+1. slug explícito, se informado;
+2. **domínio de e-mail cadastrado** no tenant
+   (`TenantDomainRepository.findByEmailDomain`) — determinístico, pois o domínio
+   é único globalmente;
+3. fallback legado: primeiro rótulo do domínio como slug — **apenas** para
+   tenants que ainda não cadastraram domínio (legado).
+
+Consequências desta emenda:
+
+- Positivo: a resolução deixa de depender da heurística "primeiro rótulo";
+  um tenant cujo domínio não corresponda ao slug passa a ser resolvido
+  corretamente (coberto por `AuthenticateUserTest.shouldResolveTenantByRegisteredEmailDomain`).
+- Restrição: `emailDomain` passa a ser **obrigatório** no cadastro de tenant
+  (`POST /api/v1/tenants`); o onboarding/frontend precisa enviar o campo.
+- Restrição: tenants legados sem domínio continuam usando o passo 3 até que o
+  domínio seja cadastrado.

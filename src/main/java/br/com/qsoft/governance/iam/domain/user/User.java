@@ -22,7 +22,7 @@ public final class User {
     private final String email;
     private final String name;
     private HierarchyLevel hierarchyLevel;
-    private final UUID departmentId;
+    private UUID departmentId;
     private String passwordHash;
     private final Set<Permission> permissions;
     private UserStatus status;
@@ -166,6 +166,16 @@ public final class User {
             throw new IllegalArgumentException("hierarchyLevel não pode ser nulo.");
         }
         this.hierarchyLevel = newLevel;
+        this.updatedAt = Instant.now();
+        return this;
+    }
+
+    /**
+     * Altera o Department (referência cross-module por ID, ADR-05).
+     * {@code null} remove a associação com qualquer Department.
+     */
+    public User changeDepartment(UUID newDepartmentId) {
+        this.departmentId = newDepartmentId;
         this.updatedAt = Instant.now();
         return this;
     }

@@ -2,17 +2,25 @@ package br.com.qsoft.governance.iam.infrastructure;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import br.com.qsoft.governance.iam.api.model.Permission;
 import br.com.qsoft.governance.iam.application.ProvisionUser;
 import br.com.qsoft.governance.iam.application.ProvisionUserCommand;
 import br.com.qsoft.governance.iam.application.RegisterTenant;
 import br.com.qsoft.governance.iam.application.RegisterTenantCommand;
+import br.com.qsoft.governance.iam.application.port.RoleAssignmentRepository;
+import br.com.qsoft.governance.iam.application.port.RoleRepository;
 import br.com.qsoft.governance.iam.application.port.TenantRepository;
+import br.com.qsoft.governance.iam.application.port.UserRepository;
 import br.com.qsoft.governance.iam.domain.exception.TenantSlugAlreadyExistsException;
 import br.com.qsoft.governance.iam.domain.exception.UserEmailAlreadyExistsException;
+import br.com.qsoft.governance.iam.domain.rbac.Action;
+import br.com.qsoft.governance.iam.domain.rbac.Permission;
+import br.com.qsoft.governance.iam.domain.rbac.Resource;
+import br.com.qsoft.governance.iam.domain.rbac.Role;
+import br.com.qsoft.governance.iam.domain.rbac.RoleAssignment;
 import br.com.qsoft.governance.iam.domain.tenant.Tenant;
 import br.com.qsoft.governance.iam.domain.user.HierarchyLevel;
-import java.util.EnumSet;
+import br.com.qsoft.governance.iam.domain.user.User;
+import br.com.qsoft.governance.sharedkernel.id.RoleId;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,8 +39,11 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * Testes de segurança da camada HTTP (servidor real) com PostgreSQL real.
- * Cobre: 401 sem token, 403 sem permissão MANAGE_USERS, 201 com permissão e
+ * Cobre: 401 sem token, 403 sem permissão USER:MANAGE, 201 com permissão e
  * login por derivação de tenant (sem tenantSlug). Exige Docker.
+ *
+ * A autorização do endpoint de criação é feita pelo PermissionInterceptor via
+ * PolicyEvaluator (modelo RBAC granular — SPI-41).
  */
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
@@ -57,6 +68,7 @@ class ApiSecurityIT {
     private static final String ADMIN_EMAIL = "admin@secdemo.com";
     private static final String USER_EMAIL = "user@secdemo.com";
     private static final String PASSWORD = "secret123";
+    private static final String ROLE_NAME = "USER_MANAGER";
 
     @LocalServerPort
     int port;
@@ -70,6 +82,15 @@ class ApiSecurityIT {
     @Autowired
     TenantRepository tenantRepository;
 
+    @Autowired
+    UserRepository userRepository;
+
+    @Autowired
+    RoleRepository roleRepository;
+
+    @Autowired
+    RoleAssignmentRepository roleAssignmentRepository;
+
     private RestClient client;
 
     @BeforeEach
@@ -80,23 +101,37 @@ class ApiSecurityIT {
 
     private void ensureData() {
         try {
-            registerTenant.register(new RegisterTenantCommand(TENANT_SLUG, "Sec Demo"));
+            registerTenant.register(new RegisterTenantCommand(TENANT_SLUG, "Sec Demo", TENANT_SLUG + ".com"));
         } catch (TenantSlugAlreadyExistsException ignored) {
             // já criado por um teste anterior
         }
         Tenant tenant = tenantRepository.findBySlug(TENANT_SLUG).orElseThrow();
-        provisionIfAbsent(tenant, ADMIN_EMAIL, "Admin", HierarchyLevel.EXECUTIVE,
-            EnumSet.of(Permission.MANAGE_USERS, Permission.MANAGE_HIERARCHY));
-        provisionIfAbsent(tenant, USER_EMAIL, "User", HierarchyLevel.COLLABORATOR, Set.of());
+        User admin = provisionIfAbsent(tenant, ADMIN_EMAIL, "Admin", HierarchyLevel.EXECUTIVE);
+        provisionIfAbsent(tenant, USER_EMAIL, "User", HierarchyLevel.COLLABORATOR);
+
+        // Papel granular com USER:MANAGE atribuído ao admin (modelo RBAC — SPI-41).
+        Role role = roleRepository.findByTenantIdAndName(tenant.id(), ROLE_NAME)
+            .orElseGet(() -> {
+                Role created = Role.create(RoleId.random(), tenant.id(), ROLE_NAME);
+                created.grantPermission(Permission.of(Resource.USER, Action.MANAGE));
+                return roleRepository.save(created);
+            });
+        boolean alreadyAssigned = roleAssignmentRepository
+            .findByTenantIdAndUserId(tenant.id(), admin.id())
+            .stream()
+            .anyMatch(assignment -> assignment.roleId().equals(role.id()));
+        if (!alreadyAssigned) {
+            roleAssignmentRepository.save(
+                RoleAssignment.create(admin.id(), role.id(), tenant.id(), null));
+        }
     }
 
-    private void provisionIfAbsent(Tenant tenant, String email, String name,
-                                   HierarchyLevel level, Set<Permission> permissions) {
+    private User provisionIfAbsent(Tenant tenant, String email, String name, HierarchyLevel level) {
         try {
-            provisionUser.provision(new ProvisionUserCommand(
-                tenant.id(), email, name, level, PASSWORD, null, permissions));
+            return provisionUser.provision(new ProvisionUserCommand(
+                tenant.id(), email, name, level, PASSWORD, null, Set.of()));
         } catch (UserEmailAlreadyExistsException ignored) {
-            // já criado por um teste anterior
+            return userRepository.findByTenantIdAndEmail(tenant.id(), email).orElseThrow();
         }
     }
 
@@ -146,5 +181,19 @@ class ApiSecurityIT {
     @Test
     void shouldLoginWithoutTenantSlug() {
         assertThat(login(ADMIN_EMAIL)).isNotBlank();
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void shouldReturnEffectivePermissionsForCurrentUser() {
+        String token = login(ADMIN_EMAIL);
+
+        Map<?, ?> response = client.get().uri("/api/v1/usuarios/me/permissoes")
+            .header("Authorization", "Bearer " + token)
+            .retrieve().body(Map.class);
+
+        assertThat(response).isNotNull();
+        Iterable<String> permissions = (Iterable<String>) response.get("permissions");
+        assertThat(permissions).contains("USER:MANAGE");
     }
 }

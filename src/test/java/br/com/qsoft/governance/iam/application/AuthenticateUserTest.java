@@ -3,6 +3,7 @@ package br.com.qsoft.governance.iam.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import br.com.qsoft.governance.iam.application.port.TenantDomainRepository;
 import br.com.qsoft.governance.iam.application.port.TenantRepository;
 import br.com.qsoft.governance.iam.application.port.UserRepository;
 import br.com.qsoft.governance.iam.domain.exception.InvalidCredentialsException;
@@ -76,7 +77,25 @@ class AuthenticateUserTest {
         }
     };
 
-    private final AuthenticateUser useCase = new AuthenticateUser(tenantRepository, userRepository, encoder);
+    private final TenantDomainRepository tenantDomainRepository = new TenantDomainRepository() {
+        @Override
+        public Optional<Tenant> findByEmailDomain(String emailDomain) {
+            if (emailDomain == null) {
+                return Optional.empty();
+            }
+            return tenantsBySlug.values().stream()
+                .filter(tenant -> emailDomain.equals(tenant.emailDomain()))
+                .findFirst();
+        }
+
+        @Override
+        public boolean existsByEmailDomain(String emailDomain) {
+            return findByEmailDomain(emailDomain).isPresent();
+        }
+    };
+
+    private final AuthenticateUser useCase = new AuthenticateUser(
+        tenantRepository, tenantDomainRepository, userRepository, encoder);
 
     private Tenant activeTenant(String slug) {
         TenantId id = TenantId.random();
@@ -115,6 +134,26 @@ class AuthenticateUserTest {
 
         assertThat(result.tenantId()).isEqualTo(tenant.id());
         assertThat(result.email()).isEqualTo("ana@qsoft.com");
+    }
+
+    /**
+     * SPI-54 / ADR-32 (emendado): quando o tenantSlug não é informado, o tenant
+     * é resolvido pelo domínio de e-mail CADASTRADO — determinístico mesmo
+     * quando o slug não corresponde ao primeiro rótulo do domínio.
+     */
+    @Test
+    void shouldResolveTenantByRegisteredEmailDomain() {
+        TenantId id = TenantId.random();
+        Tenant tenant = Tenant.restore(id, "acme", "ACME", "acme-corp.com",
+            TenantStatus.ACTIVE, Instant.now(), Instant.now());
+        tenantsBySlug.put("acme", tenant);
+        activeUser(tenant, "ana@acme-corp.com", "secret123");
+
+        AuthenticatedUser result = useCase.login(
+            new LoginCommand(null, "ana@acme-corp.com", "secret123"));
+
+        assertThat(result.tenantId()).isEqualTo(tenant.id());
+        assertThat(result.email()).isEqualTo("ana@acme-corp.com");
     }
 
     @Test
