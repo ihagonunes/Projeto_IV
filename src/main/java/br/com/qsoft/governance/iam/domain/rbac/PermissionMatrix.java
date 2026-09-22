@@ -66,6 +66,7 @@ public final class PermissionMatrix {
 
         Set<Permission> executive = new HashSet<>(manager);
         executive.add(p(Resource.TENANT, Action.READ));
+        executive.add(p(Resource.TENANT, Action.MANAGE));
         executive.add(p(Resource.DEPARTMENT, Action.MANAGE));
         executive.add(p(Resource.ROLE, Action.MANAGE));
         executive.add(p(Resource.MODEL, Action.MANAGE));

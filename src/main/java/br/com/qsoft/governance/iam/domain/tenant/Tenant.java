@@ -12,7 +12,7 @@ public final class Tenant {
 
     private final TenantId id;
     private final String slug;
-    private final String name;
+    private String name;
     private TenantStatus status;
     private final Instant createdAt;
     private Instant updatedAt;
@@ -74,6 +74,19 @@ public final class Tenant {
             this.status = TenantStatus.INACTIVE;
             this.updatedAt = Instant.now();
         }
+        return this;
+    }
+
+    /**
+     * Edita o nome (dado cadastral) do tenant (SPI-52).
+     * O slug é imutável: identifica a organização na resolução do tenant.
+     */
+    public Tenant changeName(String newName) {
+        if (newName == null || newName.isBlank()) {
+            throw new IllegalArgumentException("name é obrigatório.");
+        }
+        this.name = newName.trim();
+        this.updatedAt = Instant.now();
         return this;
     }
 }

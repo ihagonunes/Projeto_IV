@@ -59,6 +59,8 @@ class PermissionMatrixTest {
             Permission.of(Resource.ROLE, Action.MANAGE))).isTrue();
         assertThat(PermissionMatrix.allows(HierarchyLevel.EXECUTIVE,
             Permission.of(Resource.TENANT, Action.READ))).isTrue();
+        assertThat(PermissionMatrix.allows(HierarchyLevel.EXECUTIVE,
+            Permission.of(Resource.TENANT, Action.MANAGE))).isTrue();
     }
 
     @Test
