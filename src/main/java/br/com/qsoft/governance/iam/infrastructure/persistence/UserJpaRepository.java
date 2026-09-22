@@ -3,8 +3,10 @@ package br.com.qsoft.governance.iam.infrastructure.persistence;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
-public interface UserJpaRepository extends JpaRepository<UserJpaEntity, UUID> {
+public interface UserJpaRepository extends JpaRepository<UserJpaEntity, UUID>,
+    JpaSpecificationExecutor<UserJpaEntity> {
 
     boolean existsByTenantIdAndEmail(UUID tenantId, String email);
 
