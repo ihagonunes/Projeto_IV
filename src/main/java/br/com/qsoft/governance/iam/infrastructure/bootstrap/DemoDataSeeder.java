@@ -9,6 +9,7 @@ import br.com.qsoft.governance.iam.application.port.RoleAssignmentRepository;
 import br.com.qsoft.governance.iam.application.port.RoleRepository;
 import br.com.qsoft.governance.iam.application.port.TenantRepository;
 import br.com.qsoft.governance.iam.application.port.UserRepository;
+import br.com.qsoft.governance.iam.domain.exception.TenantDomainAlreadyExistsException;
 import br.com.qsoft.governance.iam.domain.exception.TenantSlugAlreadyExistsException;
 import br.com.qsoft.governance.iam.domain.exception.UserEmailAlreadyExistsException;
 import br.com.qsoft.governance.iam.domain.rbac.Role;
@@ -79,8 +80,9 @@ public class DemoDataSeeder implements ApplicationRunner {
 
         try {
             registerTenant.register(new RegisterTenantCommand(TENANT_SLUG, "QSOFT Demo", EMAIL_DOMAIN));
-        } catch (TenantSlugAlreadyExistsException e) {
-            log.info("Tenant demo '{}' já existe.", TENANT_SLUG);
+        } catch (TenantSlugAlreadyExistsException | TenantDomainAlreadyExistsException e) {
+            log.info("Tenant demo '{}' já existe (ou o domínio '{}' já está em uso).",
+                TENANT_SLUG, EMAIL_DOMAIN);
         }
 
         Tenant tenant = tenantRepository.findBySlug(TENANT_SLUG).orElse(null);

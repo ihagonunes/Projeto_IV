@@ -22,13 +22,13 @@ public class TenantJpaEntity {
     @Column(name = "id", nullable = false)
     private UUID id;
 
-    @Column(name = "slug", nullable = false, unique = true, length = 100)
+    @Column(name = "slug", nullable = false, length = 100)
     private String slug;
 
     @Column(name = "name", nullable = false, length = 200)
     private String name;
 
-    @Column(name = "email_domain", length = 253, unique = true)
+    @Column(name = "email_domain", length = 253)
     private String emailDomain;
 
     @Enumerated(EnumType.STRING)
