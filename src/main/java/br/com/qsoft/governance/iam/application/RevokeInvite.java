@@ -8,6 +8,7 @@ import br.com.qsoft.governance.sharedkernel.id.InviteId;
 import br.com.qsoft.governance.sharedkernel.id.TenantId;
 import java.util.Objects;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Caso de uso de revogação de convite.
@@ -25,6 +26,7 @@ public class RevokeInvite {
         this.inviteRepository = inviteRepository;
     }
 
+    @Transactional
     public void revoke(RevokeInviteCommand command) {
         if (command == null) {
             throw new IllegalArgumentException("Command é obrigatório.");

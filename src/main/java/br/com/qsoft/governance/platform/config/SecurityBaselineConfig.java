@@ -1,7 +1,9 @@
 package br.com.qsoft.governance.platform.config;
 
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
@@ -12,12 +14,13 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import tools.jackson.databind.ObjectMapper;
 
 @Configuration
 public class SecurityBaselineConfig {
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    SecurityFilterChain securityFilterChain(HttpSecurity http, ObjectMapper objectMapper) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session ->
@@ -38,9 +41,9 @@ public class SecurityBaselineConfig {
             .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
             .exceptionHandling(exception -> exception
                 .authenticationEntryPoint((request, response, authException) ->
-                    writeJsonError(response, HttpStatus.UNAUTHORIZED.value(), "Não autenticado."))
+                    writeJsonError(response, objectMapper, HttpStatus.UNAUTHORIZED.value(), "Não autenticado."))
                 .accessDeniedHandler((request, response, accessDenied) ->
-                    writeJsonError(response, HttpStatus.FORBIDDEN.value(), "Acesso negado.")))
+                    writeJsonError(response, objectMapper, HttpStatus.FORBIDDEN.value(), "Acesso negado.")))
             .httpBasic(httpBasic -> httpBasic.disable())
             .formLogin(formLogin -> formLogin.disable())
             .logout(logout -> logout.disable())
@@ -54,11 +57,12 @@ public class SecurityBaselineConfig {
         return new BCryptPasswordEncoder();
     }
 
-    private static void writeJsonError(jakarta.servlet.http.HttpServletResponse response, int status, String message)
-        throws IOException {
+    /** Serializa o erro com Jackson — evita JSON inválido por concatenação de string. */
+    private static void writeJsonError(HttpServletResponse response, ObjectMapper objectMapper,
+                                       int status, String message) throws IOException {
         response.setStatus(status);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        response.getWriter().write("{\"message\":\"" + message + "\"}");
+        objectMapper.writeValue(response.getWriter(), Map.of("message", message));
     }
 }

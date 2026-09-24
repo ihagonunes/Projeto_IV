@@ -34,6 +34,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 public class UserRepositoryAdapter implements UserRepository, UserSearchRepository {
 
+    private static final char LIKE_ESCAPE = '\\';
+
     private final UserJpaRepository jpaRepository;
     private final UserJpaMapper mapper;
 
@@ -107,16 +109,30 @@ public class UserRepositoryAdapter implements UserRepository, UserSearchReposito
                 if (hasText(filter.name())) {
                     predicates.add(builder.like(
                         builder.lower(root.get("name").as(String.class)),
-                        "%" + filter.name().trim().toLowerCase() + "%"));
+                        likePattern(filter.name()), LIKE_ESCAPE));
                 }
                 if (hasText(filter.email())) {
                     predicates.add(builder.like(
                         builder.lower(root.get("email").as(String.class)),
-                        "%" + filter.email().trim().toLowerCase() + "%"));
+                        likePattern(filter.email()), LIKE_ESCAPE));
                 }
             }
             return builder.and(predicates.toArray(new Predicate[0]));
         };
+    }
+
+    /**
+     * Monta o padrão LIKE escapando os curingas digitados pelo usuário
+     * ({@code %}, {@code _} e {@code \}) para que a busca seja literal. O valor
+     * continua vinculado como parâmetro — não há injeção de SQL, apenas
+     * semântica de busca previsível.
+     */
+    private static String likePattern(String value) {
+        String escaped = value.trim().toLowerCase()
+            .replace("\\", "\\\\")
+            .replace("%", "\\%")
+            .replace("_", "\\_");
+        return "%" + escaped + "%";
     }
 
     private static boolean hasText(String value) {

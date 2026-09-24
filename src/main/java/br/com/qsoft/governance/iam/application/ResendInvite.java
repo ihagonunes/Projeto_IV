@@ -14,6 +14,7 @@ import java.util.Objects;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Caso de uso de reenvio de convite (SPI-59): gera um NOVO convite (token e
@@ -39,6 +40,11 @@ public class ResendInvite {
         this.ttlHours = ttlHours;
     }
 
+    /**
+     * Revoga o convite anterior e grava o novo em uma única transação: sem isso,
+     * uma falha no segundo {@code save} deixaria o convite revogado sem substituto.
+     */
+    @Transactional
     public Invite resend(ResendInviteCommand command) {
         if (command == null) {
             throw new IllegalArgumentException("Command é obrigatório.");
