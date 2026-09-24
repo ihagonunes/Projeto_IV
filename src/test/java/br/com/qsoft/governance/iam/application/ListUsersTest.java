@@ -1,77 +1,131 @@
 package br.com.qsoft.governance.iam.application;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import br.com.qsoft.governance.iam.application.port.UserRepository;
+import br.com.qsoft.governance.iam.application.port.UserSearchRepository;
 import br.com.qsoft.governance.iam.domain.user.HierarchyLevel;
 import br.com.qsoft.governance.iam.domain.user.User;
 import br.com.qsoft.governance.sharedkernel.id.TenantId;
 import br.com.qsoft.governance.sharedkernel.id.UserId;
+import br.com.qsoft.governance.sharedkernel.query.PageResult;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-import org.junit.jupiter.api.BeforeEach;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 class ListUsersTest {
 
-    private InMemoryUserRepository userRepository;
-    private ListUsers listUsers;
+    private final List<User> users = new ArrayList<>();
 
-    @BeforeEach
-    void setUp() {
-        userRepository = new InMemoryUserRepository();
-        listUsers = new ListUsers(userRepository);
+    /**
+     * Fake em memória da porta de busca: aplica os MESMOS filtros do adapter
+     * (tenant + hierarquia + departamento + nome + e-mail) e pagina o resultado.
+     */
+    private final UserSearchRepository userSearchRepository = (tenantId, filter, page, size) -> {
+        List<User> matched = users.stream()
+            .filter(user -> user.tenantId().equals(tenantId))
+            .filter(user -> filter.hierarchyLevel() == null
+                || user.hierarchyLevel() == filter.hierarchyLevel())
+            .filter(user -> filter.departmentId() == null
+                || filter.departmentId().equals(user.departmentId()))
+            .filter(user -> !hasText(filter.name())
+                || user.name().toLowerCase().contains(filter.name().trim().toLowerCase()))
+            .filter(user -> !hasText(filter.email())
+                || user.email().toLowerCase().contains(filter.email().trim().toLowerCase()))
+            .toList();
+        int from = Math.min(page * size, matched.size());
+        int to = Math.min(from + size, matched.size());
+        return new PageResult<>(matched.subList(from, to), matched.size(), page, size);
+    };
+
+    private final ListUsers useCase = new ListUsers(userSearchRepository);
+
+    private static boolean hasText(String value) {
+        return value != null && !value.isBlank();
+    }
+
+    private User userIn(TenantId tenantId, String email, String name, HierarchyLevel level,
+                        UUID departmentId) {
+        User user = User.create(UserId.random(), tenantId, email, name, level, departmentId);
+        users.add(user);
+        return user;
     }
 
     @Test
-    void shouldListUsersForGivenTenant() {
-        TenantId tenant1 = TenantId.random();
-        TenantId tenant2 = TenantId.random();
+    void shouldReturnOnlyUsersOfTheTenant() {
+        TenantId tenantId = TenantId.random();
+        userIn(tenantId, "ana@x.com", "Ana", HierarchyLevel.COLLABORATOR, null);
+        userIn(TenantId.random(), "outro@y.com", "Outro", HierarchyLevel.COLLABORATOR, null);
 
-        User user1 = User.create(UserId.random(), tenant1, "u1@t1.com", "User 1", HierarchyLevel.COLLABORATOR, null);
-        User user2 = User.create(UserId.random(), tenant1, "u2@t1.com", "User 2", HierarchyLevel.MANAGER, null);
-        User user3 = User.create(UserId.random(), tenant2, "u3@t2.com", "User 3", HierarchyLevel.EXECUTIVE, null);
+        PageResult<User> result = useCase.list(new ListUsersCommand(
+            tenantId, null, null, null, null, 0, 20));
 
-        userRepository.save(user1);
-        userRepository.save(user2);
-        userRepository.save(user3);
-
-        List<User> result = listUsers.list(new ListUsersQuery(tenant1, null, null));
-
-        assertEquals(2, result.size());
+        assertThat(result.content()).extracting(User::email).containsExactly("ana@x.com");
+        assertThat(result.totalElements()).isEqualTo(1);
     }
 
-    static class InMemoryUserRepository implements UserRepository {
-        private final java.util.Map<UserId, User> users = new java.util.HashMap<>();
+    @Test
+    void shouldFilterByHierarchyLevelAndDepartment() {
+        TenantId tenantId = TenantId.random();
+        UUID marketing = UUID.randomUUID();
+        userIn(tenantId, "gestor@x.com", "Gestor", HierarchyLevel.MANAGER, marketing);
+        userIn(tenantId, "colab@x.com", "Colab", HierarchyLevel.COLLABORATOR, marketing);
+        userIn(tenantId, "outro@x.com", "Outro", HierarchyLevel.MANAGER, UUID.randomUUID());
 
-        @Override
-        public User save(User user) {
-            users.put(user.id(), user);
-            return user;
+        PageResult<User> result = useCase.list(new ListUsersCommand(
+            tenantId, HierarchyLevel.MANAGER, marketing, null, null, 0, 20));
+
+        assertThat(result.content()).extracting(User::email).containsExactly("gestor@x.com");
+    }
+
+    @Test
+    void shouldFilterByNameAndEmail() {
+        TenantId tenantId = TenantId.random();
+        userIn(tenantId, "ana.silva@x.com", "Ana Silva", HierarchyLevel.COLLABORATOR, null);
+        userIn(tenantId, "bruno@x.com", "Bruno", HierarchyLevel.COLLABORATOR, null);
+
+        PageResult<User> byName = useCase.list(new ListUsersCommand(
+            tenantId, null, null, "silva", null, 0, 20));
+        PageResult<User> byEmail = useCase.list(new ListUsersCommand(
+            tenantId, null, null, null, "bruno@", 0, 20));
+
+        assertThat(byName.content()).extracting(User::email).containsExactly("ana.silva@x.com");
+        assertThat(byEmail.content()).extracting(User::email).containsExactly("bruno@x.com");
+    }
+
+    @Test
+    void shouldPaginate() {
+        TenantId tenantId = TenantId.random();
+        for (int i = 0; i < 5; i++) {
+            userIn(tenantId, "u" + i + "@x.com", "User " + i, HierarchyLevel.COLLABORATOR, null);
         }
 
-        @Override
-        public Optional<User> findById(UserId id) {
-            return Optional.ofNullable(users.get(id));
-        }
+        PageResult<User> first = useCase.list(new ListUsersCommand(
+            tenantId, null, null, null, null, 0, 2));
+        PageResult<User> second = useCase.list(new ListUsersCommand(
+            tenantId, null, null, null, null, 1, 2));
 
-        @Override
-        public Optional<User> findByTenantIdAndEmail(TenantId tenantId, String email) {
-            return users.values().stream()
-                .filter(u -> u.tenantId().equals(tenantId) && u.email().equalsIgnoreCase(email))
-                .findFirst();
-        }
+        assertThat(first.content()).hasSize(2);
+        assertThat(first.totalElements()).isEqualTo(5);
+        assertThat(first.totalPages()).isEqualTo(3);
+        assertThat(second.content()).hasSize(2);
+        assertThat(second.content()).doesNotContainAnyElementsOf(first.content());
+    }
 
-        @Override
-        public boolean existsByTenantIdAndEmail(TenantId tenantId, String email) {
-            return findByTenantIdAndEmail(tenantId, email).isPresent();
-        }
+    @Test
+    void shouldClampSizeToMaximum() {
+        TenantId tenantId = TenantId.random();
 
-        @Override
-        public List<User> findAllByTenantId(TenantId tenantId) {
-            return users.values().stream()
-                .filter(u -> u.tenantId().equals(tenantId))
-                .toList();
-        }
+        PageResult<User> result = useCase.list(new ListUsersCommand(
+            tenantId, null, null, null, null, 0, 9999));
+
+        assertThat(result.size()).isEqualTo(100);
+    }
+
+    @Test
+    void shouldRejectNullCommand() {
+        assertThatThrownBy(() -> useCase.list(null))
+            .isInstanceOf(IllegalArgumentException.class);
     }
 }

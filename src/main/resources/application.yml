@@ -10,7 +10,7 @@ spring:
   jpa:
     open-in-view: false
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     properties:
       hibernate:
         jdbc:
@@ -20,7 +20,6 @@ spring:
     enabled: true
     locations: classpath:db/migration
     baseline-on-migrate: true
-    validate-on-migrate: false
 
   jackson:
     time-zone: UTC
@@ -38,11 +37,27 @@ management:
       probes:
         enabled: true
 
+# OpenAPI/Swagger: habilitado por padrão (dev). Em produção, defina
+# OPENAPI_ENABLED=false para não expor a superfície da API.
+springdoc:
+  api-docs:
+    enabled: ${OPENAPI_ENABLED:true}
+  swagger-ui:
+    enabled: ${OPENAPI_ENABLED:true}
+
 app:
+  bootstrap:
+    # Seed de demonstração (tenant + admin) DESABILITADO por padrão.
+    # Para habilitar localmente: APP_BOOTSTRAP_DEMO_DATA=true e
+    # APP_BOOTSTRAP_DEMO_PASSWORD=<senha forte>.
+    demo-data: false
   security:
+    invite:
+      # Validade (em horas) do token de convite.
+      ttl-hours: 48
     jwt:
       # Segredo HMAC para assinatura/validação do JWT (ADR-30).
-      # Valor abaixo é apenas para DESENVOLVIMENTO LOCAL. Em produção,
-      # sobrescreva via variável de ambiente JWT_SECRET.
-      secret: ${JWT_SECRET:f4e3d2c1b0a0987612ab2384c5de6f70a1b2c3d4e5f60718293a4b5c6d7e8f90}
+      # OBRIGATÓRIO: defina a variável de ambiente JWT_SECRET (mínimo 32 chars).
+      # Sem valor, a aplicação falha no boot (não há default inseguro).
+      secret: ${JWT_SECRET:}
       ttl-minutes: 30

@@ -8,8 +8,8 @@ const router = express.Router();
 // Rotas de RENDER (páginas)
 // ---------------------------------------------------------------------------
 
-/** GET /admin/usuarios e /usuarios → painel admin de gestão de usuários */
-router.get(["/usuarios", "/admin/usuarios"], wrap(async (req, res) => {
+/** GET /admin/usuarios → painel admin de gestão de usuários */
+router.get("/admin/usuarios", wrap(async (req, res) => {
     res.render("usuarios/views/admin-usuarios", {
         titulo: "Gestão de Nível Hierárquico e Permissões - Administração",
         bodyClass: "auth-bg"
@@ -44,7 +44,7 @@ router.get("/onboarding/usuarios/manual", wrap(async (req, res) => {
 // Rotas de API-PROXY (chamam o Spring Boot via controller)
 // ---------------------------------------------------------------------------
 
-/** GET /api/usuarios → lista usuários com filtros opcionais (SPI-62) */
+/** GET /api/usuarios → lista usuários */
 router.get("/api/usuarios", wrap(usuariosController.listar));
 
 /** POST /api/usuarios → cria usuário */
@@ -53,16 +53,7 @@ router.post("/api/usuarios", wrap(usuariosController.criar));
 /** POST /api/usuarios/importar → importa planilha */
 router.post("/api/usuarios/importar", wrap(usuariosController.importar));
 
-/** PATCH /api/usuarios/:id → atualiza departamento, nível e permissão (SPI-63) */
-router.patch("/api/usuarios/:id", wrap(usuariosController.atualizar));
-
-/** PATCH /api/usuarios/:id/deactivate → desativa acesso do usuário (SPI-61) */
-router.patch("/api/usuarios/:id/deactivate", wrap(usuariosController.desativar));
-
-/** PATCH /api/usuarios/:id/reactivate → reativa acesso do usuário (SPI-61) */
-router.patch("/api/usuarios/:id/reactivate", wrap(usuariosController.reativar));
-
-/** POST /api/usuarios/:id/resend-invite → reenvia convite (SPI-59) */
-router.post("/api/usuarios/:id/resend-invite", wrap(usuariosController.reenviarConvite));
+/** PUT /api/usuarios/:id → atualiza nível/permissão */
+router.put("/api/usuarios/:id", wrap(usuariosController.atualizar));
 
 module.exports = router;

@@ -51,9 +51,7 @@ const app = express();
 
 // Slug do tenant exposto ao frontend (login/onboarding) como global,
 // injetado pelas views (window.QSOFT_TENANT_SLUG). Configurável via env.
-app.locals.qsoftTenantSlug = process.env.QSOFT_TENANT_SLUG || "manalistas";
-
-
+app.locals.qsoftTenantSlug = process.env.QSOFT_TENANT_SLUG || "";
 
 // Não queremos o header X-Powered-By
 app.disable("x-powered-by");

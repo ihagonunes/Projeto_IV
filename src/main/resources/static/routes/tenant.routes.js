@@ -8,6 +8,7 @@ const router = express.Router();
 // Rotas de RENDER (páginas)
 // ---------------------------------------------------------------------------
 
+
 /** GET /tenant → renderiza o step de cadastro do tenant */
 router.get("/tenant", wrap(async (req, res) => {
     res.render("tenant/views/tenant", {
@@ -39,22 +40,19 @@ router.get("/tenant/identidade-visual", wrap(async (req, res) => {
 /** GET /api/tenant → lista tenants */
 router.get("/api/tenant", wrap(tenantController.listar));
 
-/** POST /api/tenant → cria novo tenant (onboarding público) */
+/** POST /api/tenant → cria novo tenant */
 router.post("/api/tenant", wrap(tenantController.criar));
 
 /** GET /api/tenant/me → busca tenant atual */
 router.get("/api/tenant/me", wrap(tenantController.obterAtual));
 
-/** PATCH /api/tenant/me → atualiza dados cadastrais do tenant (SPI-52) */
-router.patch("/api/tenant/me", wrap(tenantController.atualizar));
+/** PUT /api/tenant/me → atualiza dados do tenant atual */
+router.put("/api/tenant/me", wrap(tenantController.atualizar));
 
-/** GET /api/tenant/branding → busca identidade visual */
-router.get("/api/tenant/branding", wrap(tenantController.obterBranding));
+/** GET /api/tenant/identidade-visual → busca identidade visual */
+router.get("/api/tenant/identidade-visual", wrap(tenantController.obterIdentidadeVisual));
 
-/** PATCH /api/tenant/branding → atualiza identidade visual (SPI-53) */
-router.patch("/api/tenant/branding", wrap(tenantController.atualizarBranding));
-
-/** PATCH /api/tenant/status → altera status ativo/inativo do tenant (SPI-57) */
-router.patch("/api/tenant/status", wrap(tenantController.alterarStatus));
+/** PUT /api/tenant/identidade-visual → atualiza identidade visual */
+router.put("/api/tenant/identidade-visual", wrap(tenantController.atualizarIdentidadeVisual));
 
 module.exports = router;

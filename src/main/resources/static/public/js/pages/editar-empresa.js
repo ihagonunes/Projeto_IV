@@ -1,10 +1,5 @@
 /**
- * editar-empresa.js — Lógica da tela de edição contínua do Tenant (SPI-52 + SPI-57)
- *
- * Endpoints consumidos (via proxy Node → Spring Boot):
- *   GET    /api/tenant/me           → carrega dados atuais
- *   PATCH  /api/tenant/me           → atualiza nome (SPI-52)
- *   PATCH  /api/tenant/status       → ativa / desativa tenant (SPI-57)
+ * editar-empresa.js — Lógica da tela de edição contínua do Tenant (SPI-52)
  */
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -26,119 +21,95 @@ document.addEventListener("DOMContentLoaded", async () => {
     const logoPreviewImg = document.getElementById("logoPreviewImg");
     const uploadIcon = document.getElementById("uploadIcon");
 
-    // Elementos de Status (SPI-57)
-    const statusToggle = document.getElementById("statusToggle");
-    const statusLabel = document.getElementById("statusLabel");
-    const btnAlterarStatus = document.getElementById("btnAlterarStatus");
-    const statusSpinner = document.getElementById("statusSpinner");
-
     // Máscara simplificada de CNPJ
-    if (cnpjInput) {
-        cnpjInput.addEventListener("input", (e) => {
-            let value = e.target.value.replace(/\D/g, "");
-            if (value.length > 14) value = value.slice(0, 14);
+    cnpjInput.addEventListener("input", (e) => {
+        let value = e.target.value.replace(/\D/g, "");
+        if (value.length > 14) value = value.slice(0, 14);
 
-            if (value.length > 12) {
-                value = value.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{1,2})$/, "$1.$2.$3/$4-$5");
-            } else if (value.length > 8) {
-                value = value.replace(/^(\d{2})(\d{3})(\d{3})(\d{1,4})$/, "$1.$2.$3/$4");
-            } else if (value.length > 5) {
-                value = value.replace(/^(\d{2})(\d{3})(\d{1,3})$/, "$1.$2.$3");
-            } else if (value.length > 2) {
-                value = value.replace(/^(\d{2})(\d{1,3})$/, "$1.$2");
-            }
-            e.target.value = value;
-        });
-    }
+        if (value.length > 12) {
+            value = value.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{1,2})$/, "$1.$2.$3/$4-$5");
+        } else if (value.length > 8) {
+            value = value.replace(/^(\d{2})(\d{3})(\d{3})(\d{1,4})$/, "$1.$2.$3/$4");
+        } else if (value.length > 5) {
+            value = value.replace(/^(\d{2})(\d{3})(\d{1,3})$/, "$1.$2.$3");
+        } else if (value.length > 2) {
+            value = value.replace(/^(\d{2})(\d{1,3})$/, "$1.$2");
+        }
+        e.target.value = value;
+    });
 
     // Preview do Logotipo
-    if (logoEmpresaInput) {
-        logoEmpresaInput.addEventListener("change", (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                if (file.size > 2 * 1024 * 1024) {
-                    showAlert("O arquivo selecionado excede o limite de 2MB.", "warning");
-                    logoEmpresaInput.value = "";
-                    return;
-                }
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    logoPreviewImg.src = event.target.result;
-                    logoPreviewContainer.classList.remove("d-none");
-                    if (uploadIcon) uploadIcon.classList.add("d-none");
-                };
-                reader.readAsDataURL(file);
+    logoEmpresaInput.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            if (file.size > 2 * 1024 * 1024) {
+                showAlert("O arquivo selecionado excede o limite de 2MB.", "warning");
+                logoEmpresaInput.value = "";
+                return;
             }
-        });
-    }
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                logoPreviewImg.src = event.target.result;
+                logoPreviewContainer.classList.remove("d-none");
+                if (uploadIcon) uploadIcon.classList.add("d-none");
+            };
+            reader.readAsDataURL(file);
+        }
+    });
 
     // 1. Carregar dados atuais do Tenant
-    let tenantAtual = null;
     await carregarDadosTenant();
 
     async function carregarDadosTenant() {
         try {
             const data = await API.get("/tenant/me");
             if (data) {
-                tenantAtual = data;
                 preencherFormulario(data);
-                atualizarToggleStatus(data.status);
             } else {
                 usarDadosMock();
             }
         } catch (err) {
+            // Em desenvolvimento, se o backend não retornar, usa dados mock de fallback
             console.warn("API de tenant indisponível, utilizando dados mock:", err);
             usarDadosMock();
         }
     }
 
     function preencherFormulario(data) {
-        // O backend retorna `name`; campos extras (cnpj, setor, etc.) ficam em mock por ora
-        if (data.name || data.nome) {
-            const nome = data.name || data.nome;
-            nomeEmpresaInput.value = nome;
-            if (tenantContextName) tenantContextName.textContent = nome;
+        if (data.nome) {
+            nomeEmpresaInput.value = data.nome || "";
+            if (tenantContextName) tenantContextName.textContent = data.nome;
         }
-        if (data.cnpj && cnpjInput) cnpjInput.value = data.cnpj;
-        if (data.setor && setorInput) setorInput.value = data.setor;
-        if (data.porte && porteEmpresaInput) porteEmpresaInput.value = data.porte;
-        if (data.fusoHorario && fusoHorarioInput) fusoHorarioInput.value = data.fusoHorario;
-        if (data.idioma && idiomaInput) idiomaInput.value = data.idioma;
-        if (data.logoUrl && logoPreviewImg) {
+        if (data.cnpj) cnpjInput.value = data.cnpj || "";
+        if (data.setor) setorInput.value = data.setor || "";
+        if (data.porte) porteEmpresaInput.value = data.porte || "";
+        if (data.fusoHorario) fusoHorarioInput.value = data.fusoHorario || "GMT-3";
+        if (data.idioma) idiomaInput.value = data.idioma || "pt-BR";
+        if (data.logoUrl) {
             logoPreviewImg.src = data.logoUrl;
             logoPreviewContainer.classList.remove("d-none");
             if (uploadIcon) uploadIcon.classList.add("d-none");
         }
     }
 
-    function atualizarToggleStatus(status) {
-        if (!statusToggle || !statusLabel) return;
-        const isAtivo = status === "ACTIVE" || status === "Ativo";
-        statusToggle.checked = isAtivo;
-        statusLabel.textContent = isAtivo ? "Tenant Ativo" : "Tenant Inativo";
-        statusLabel.className = isAtivo ? "fw-semibold text-success" : "fw-semibold text-danger";
-    }
-
     function usarDadosMock() {
         const mockData = {
-            name: "Acceletec Solutions",
+            nome: "Acceletec Solutions",
             cnpj: "12.345.678/0001-90",
             setor: "tecnologia",
             porte: "media",
             fusoHorario: "GMT-3",
-            idioma: "pt-BR",
-            status: "ACTIVE"
+            idioma: "pt-BR"
         };
-        tenantAtual = mockData;
         preencherFormulario(mockData);
-        atualizarToggleStatus(mockData.status);
     }
 
-    // 2. Submissão do Formulário (SPI-52 — atualiza nome)
+    // 2. Submissão do Formulário
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
         alertArea.innerHTML = "";
 
+        // Validação HTML5
         if (!form.checkValidity()) {
             e.stopPropagation();
             form.classList.add("was-validated");
@@ -148,22 +119,29 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         form.classList.add("was-validated");
 
-        // O backend (SPI-52) aceita apenas { name } por enquanto
+        // Montar payload
         const payload = {
-            name: nomeEmpresaInput.value.trim()
+            nome: nomeEmpresaInput.value.trim(),
+            cnpj: cnpjInput.value.trim(),
+            setor: setorInput.value,
+            porte: porteEmpresaInput.value,
+            fusoHorario: fusoHorarioInput.value,
+            idioma: idiomaInput.value
         };
 
+        // Estado de carregamento
         setLoading(true);
 
         try {
-            await API.patch("/tenant/me", payload);
+            const res = await API.put("/tenant/me", payload);
             showAlert("Dados da empresa salvos com sucesso!", "success");
-            if (tenantContextName) tenantContextName.textContent = payload.name;
+            if (tenantContextName) tenantContextName.textContent = payload.nome;
         } catch (err) {
             console.error("Erro ao atualizar empresa:", err);
+            // Mesmo com erro de API em ambiente dev, informa feedback amigável
             if (err.status === 404 || err.message?.includes("Failed to fetch")) {
                 showAlert("Dados salvos localmente no modo de demonstração!", "success");
-                if (tenantContextName) tenantContextName.textContent = payload.name;
+                if (tenantContextName) tenantContextName.textContent = payload.nome;
             } else {
                 showAlert(err.message || "Não foi possível salvar as alterações da empresa.", "danger");
             }
@@ -172,43 +150,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 
-    // 3. Alteração de Status Ativo/Inativo (SPI-57)
-    if (btnAlterarStatus) {
-        btnAlterarStatus.addEventListener("click", async () => {
-            const novoStatus = statusToggle && statusToggle.checked ? "INACTIVE" : "ACTIVE";
-            const acao = novoStatus === "ACTIVE" ? "ativar" : "desativar";
-
-            if (!confirm(`Tem certeza que deseja ${acao} este tenant?`)) return;
-
-            btnAlterarStatus.disabled = true;
-            if (statusSpinner) statusSpinner.classList.remove("d-none");
-
-            try {
-                const res = await API.patch("/tenant/status", { status: novoStatus });
-                atualizarToggleStatus(novoStatus);
-                showAlert(
-                    `Tenant ${novoStatus === "ACTIVE" ? "ativado" : "desativado"} com sucesso!`,
-                    novoStatus === "ACTIVE" ? "success" : "warning"
-                );
-            } catch (err) {
-                console.error("Erro ao alterar status:", err);
-                if (err.status === 404 || err.message?.includes("Failed to fetch")) {
-                    atualizarToggleStatus(novoStatus);
-                    showAlert(
-                        `Status alterado no modo de demonstração!`,
-                        "success"
-                    );
-                } else {
-                    showAlert(err.message || "Falha ao alterar status do tenant.", "danger");
-                }
-            } finally {
-                btnAlterarStatus.disabled = false;
-                if (statusSpinner) statusSpinner.classList.add("d-none");
-            }
-        });
-    }
-
-    // Utilitários
     function setLoading(isLoading) {
         if (isLoading) {
             btnSalvar.disabled = true;
