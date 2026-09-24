@@ -23,7 +23,9 @@ public class AuthExceptionHandler {
     @ExceptionHandler(TooManyLoginAttemptsException.class)
     public ResponseEntity<Map<String, String>> handleTooManyAttempts(TooManyLoginAttemptsException ex) {
         // SPI-67: bloqueio temporário por rate limiting — mensagem genérica.
-        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(Map.of("message", ex.getMessage()));
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+            .header("Retry-After", String.valueOf(ex.retryAfterSeconds()))
+            .body(Map.of("message", ex.getMessage()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

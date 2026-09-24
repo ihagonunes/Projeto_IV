@@ -118,6 +118,20 @@ class LoginRateLimitIT {
         }
     }
 
+    private String retryAfterHeader(String email, String password) {
+        try {
+            client.post().uri("/api/v1/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("email", email, "password", password))
+                .retrieve().toBodilessEntity();
+            return null;
+        } catch (RestClientResponseException e) {
+            return e.getResponseHeaders() == null
+                ? null
+                : e.getResponseHeaders().getFirst("Retry-After");
+        }
+    }
+
     @Test
     void shouldBlockTemporarilyAfterMaxInvalidAttempts() {
         String email = "blocked@ratedemo.com";
@@ -125,7 +139,11 @@ class LoginRateLimitIT {
         exhaust(email);
 
         assertThat(loginStatus(email, "senha-errada")).isEqualTo(429);
-        assertThat(loginStatus(email, "senha-errada")).isEqualTo(429);
+
+        // O 429 informa quando o cliente pode tentar novamente (RFC 6585).
+        String retryAfter = retryAfterHeader(email, "senha-errada");
+        assertThat(retryAfter).isNotNull();
+        assertThat(Long.parseLong(retryAfter)).isPositive();
     }
 
     @Test
