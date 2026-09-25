@@ -62,7 +62,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     async function carregarDadosTenant() {
         try {
-            const data = await API.get("/tenant/me");
+            const data = await API.get("/tenants/me");
             if (data) {
                 preencherFormulario(data);
             } else {
@@ -133,7 +133,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         setLoading(true);
 
         try {
-            const res = await API.put("/tenant/me", payload);
+            // O contrato do backend aceita apenas o nome cadastral (SPI-52).
+            // Os demais campos da tela ainda não estão modelados — não enviar
+            // silenciosamente o que o backend ignoraria.
+            const res = await API.put("/tenants/me", { name: payload.nome });
             showAlert("Dados da empresa salvos com sucesso!", "success");
             if (tenantContextName) tenantContextName.textContent = payload.nome;
         } catch (err) {

@@ -293,9 +293,11 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 // Tenta requisição ao endpoint protegido da API REST
                 try {
-                    await window.ApiClient.put(`/v1/usuarios/${id}/permissao`, payload);
+                    await window.ApiClient.post(`/v1/usuarios/${id}/nivel`, {
+                        hierarchyLevel: String(novoNivel).toUpperCase()
+                    });
                 } catch (apiErr) {
-                    console.info('[Front-end Fallback] Endpoint PUT /api/v1/usuarios/:id/permissao simulado localmente.', apiErr.message);
+                    console.info('[Front-end Fallback] Endpoint POST /api/v1/usuarios/:id/nivel simulado localmente.', apiErr.message);
                     
                     // Simula latência de rede de 400ms
                     await new Promise(resolve => setTimeout(resolve, 400));

@@ -40,7 +40,7 @@ async function importar(req, res, next) {
 /** PUT /api/usuarios/:id → atualiza nível/permissão do usuário */
 async function atualizar(req, res, next) {
     try {
-        const response = await api.put(`/usuarios/${req.params.id}`, req.body);
+        const response = await api.patch(`/usuarios/${req.params.id}`, req.body);
         res.status(response.status).json(response.data);
     } catch (err) {
         next(err);

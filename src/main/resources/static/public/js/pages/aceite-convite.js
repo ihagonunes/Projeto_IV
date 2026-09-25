@@ -123,7 +123,7 @@
 
             setLoading(true);
             try {
-                await ApiClient.post('/auth/aceitar-convite', {
+                await ApiClient.post('/v1/convites/aceitar', {
                     token: token,
                     nomeCompleto: nomeInput.value.trim(),
                     password: senhaInput.value
