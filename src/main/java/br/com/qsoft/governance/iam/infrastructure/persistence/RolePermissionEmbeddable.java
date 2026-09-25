@@ -1,7 +1,7 @@
 package br.com.qsoft.governance.iam.infrastructure.persistence;
 
-import br.com.qsoft.governance.iam.domain.rbac.Action;
-import br.com.qsoft.governance.iam.domain.rbac.Resource;
+import br.com.qsoft.governance.sharedkernel.rbac.Action;
+import br.com.qsoft.governance.sharedkernel.rbac.Resource;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.EnumType;

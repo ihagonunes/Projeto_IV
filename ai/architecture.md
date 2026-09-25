@@ -29,7 +29,7 @@ br.com.qsoft.governance
 └── infrastructure/
 ```
 
-Exceção: `sharedkernel` não segue layers de negócio; contém apenas tipos transversais em `id/`, `event/`, `tenant/` e `exception/`.
+Exceção: `sharedkernel` não segue layers de negócio; contém apenas tipos transversais em `id/`, `event/`, `tenant/`, `exception/` e `rbac/` (vocabulário `resource × action` — ADR-34).
 
 Direção interna:
 
@@ -43,8 +43,8 @@ Outro módulo pode acessar somente `<module>.api.*`.
 
 | Módulo | Ownership principal |
 |---|---|
-| sharedkernel | IDs, DomainEvent, TenantContext, exceções base |
-| iam | Tenant, User, autenticação, permissões, AuthorizationScope |
+| sharedkernel | IDs, DomainEvent, TenantContext, exceções base, vocabulário de autorização (`Resource`/`Action` — ADR-34) |
+| iam | Tenant, User, autenticação, permissões, AuthorizationScope, contrato `@RequiresPermission` |
 | department | Department, Area, UserAreaMembership, BudgetLimit, ModelPolicy |
 | project | Project mínimo |
 | aigateway | Provider, AITool, Model, credenciais por referência, completion |

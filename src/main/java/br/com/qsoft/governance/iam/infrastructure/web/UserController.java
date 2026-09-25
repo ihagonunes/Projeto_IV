@@ -1,5 +1,6 @@
 package br.com.qsoft.governance.iam.infrastructure.web;
 
+import br.com.qsoft.governance.iam.api.rbac.RequiresPermission;
 import br.com.qsoft.governance.iam.application.ChangeUserHierarchyLevel;
 import br.com.qsoft.governance.iam.application.ChangeUserHierarchyLevelCommand;
 import br.com.qsoft.governance.iam.application.ChangeUserStatus;
@@ -12,9 +13,9 @@ import br.com.qsoft.governance.iam.application.UpdateUser;
 import br.com.qsoft.governance.iam.application.UpdateUserCommand;
 import br.com.qsoft.governance.iam.application.rbac.EvaluationContext;
 import br.com.qsoft.governance.iam.application.rbac.PolicyEvaluator;
-import br.com.qsoft.governance.iam.domain.rbac.Action;
+import br.com.qsoft.governance.sharedkernel.rbac.Action;
 import br.com.qsoft.governance.iam.domain.rbac.Permission;
-import br.com.qsoft.governance.iam.domain.rbac.Resource;
+import br.com.qsoft.governance.sharedkernel.rbac.Resource;
 import br.com.qsoft.governance.iam.domain.user.HierarchyLevel;
 import br.com.qsoft.governance.iam.domain.user.User;
 import br.com.qsoft.governance.sharedkernel.id.UserId;

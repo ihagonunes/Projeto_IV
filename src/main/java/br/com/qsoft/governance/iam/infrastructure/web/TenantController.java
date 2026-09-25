@@ -1,5 +1,6 @@
 package br.com.qsoft.governance.iam.infrastructure.web;
 
+import br.com.qsoft.governance.iam.api.rbac.RequiresPermission;
 import br.com.qsoft.governance.iam.application.GetCurrentTenant;
 import br.com.qsoft.governance.iam.application.RegisterTenant;
 import br.com.qsoft.governance.iam.application.RegisterTenantCommand;
@@ -7,8 +8,8 @@ import br.com.qsoft.governance.iam.application.UpdateTenant;
 import br.com.qsoft.governance.iam.application.UpdateTenantBranding;
 import br.com.qsoft.governance.iam.application.UpdateTenantBrandingCommand;
 import br.com.qsoft.governance.iam.application.UpdateTenantCommand;
-import br.com.qsoft.governance.iam.domain.rbac.Action;
-import br.com.qsoft.governance.iam.domain.rbac.Resource;
+import br.com.qsoft.governance.sharedkernel.rbac.Action;
+import br.com.qsoft.governance.sharedkernel.rbac.Resource;
 import br.com.qsoft.governance.iam.domain.tenant.Tenant;
 import br.com.qsoft.governance.sharedkernel.tenant.TenantContext;
 import br.com.qsoft.governance.sharedkernel.tenant.TenantContextHolder;

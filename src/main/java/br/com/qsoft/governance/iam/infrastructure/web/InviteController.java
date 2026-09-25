@@ -1,5 +1,6 @@
 package br.com.qsoft.governance.iam.infrastructure.web;
 
+import br.com.qsoft.governance.iam.api.rbac.RequiresPermission;
 import br.com.qsoft.governance.iam.application.AcceptInvite;
 import br.com.qsoft.governance.iam.application.AcceptInviteCommand;
 import br.com.qsoft.governance.iam.application.CreateInvite;
@@ -10,8 +11,8 @@ import br.com.qsoft.governance.iam.application.ResendInviteCommand;
 import br.com.qsoft.governance.iam.application.RevokeInvite;
 import br.com.qsoft.governance.iam.application.RevokeInviteCommand;
 import br.com.qsoft.governance.iam.domain.invite.Invite;
-import br.com.qsoft.governance.iam.domain.rbac.Action;
-import br.com.qsoft.governance.iam.domain.rbac.Resource;
+import br.com.qsoft.governance.sharedkernel.rbac.Action;
+import br.com.qsoft.governance.sharedkernel.rbac.Resource;
 import br.com.qsoft.governance.iam.domain.user.User;
 import br.com.qsoft.governance.sharedkernel.id.InviteId;
 import br.com.qsoft.governance.sharedkernel.tenant.TenantContext;

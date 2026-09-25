@@ -37,6 +37,7 @@ Este arquivo é um índice. Leia somente o ADR relacionado à tarefa.
 | ADR-31 | Physical Modular Structure and Enforcement | ACCEPTED | `ai/adr/ADR-31-physical-modular-structure-and-enforcement.md` |
 | ADR-32 | Tenant resolution on login (email-domain fallback) | ACCEPTED (emendado pela SPI-54) | `ai/adr/ADR-32-tenant-resolution-on-login.md` |
 | ADR-33 | Modelo de autorização (RBAC por papéis por tenant) | ACCEPTED | `ai/adr/ADR-33-authorization-model-roles.md` |
+| ADR-34 | Contrato de autorização RBAC exposto a outros módulos | ACCEPTED | `ai/adr/ADR-34-rbac-authorization-contract-cross-module.md` |
 
 ## Decisões abertas (pendentes de ADR)
 
