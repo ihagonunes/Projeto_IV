@@ -22,14 +22,23 @@ public class TenantJpaEntity {
     @Column(name = "id", nullable = false)
     private UUID id;
 
-    @Column(name = "slug", nullable = false, unique = true, length = 100)
+    @Column(name = "slug", nullable = false, length = 100)
     private String slug;
 
     @Column(name = "name", nullable = false, length = 200)
     private String name;
 
-    @Column(name = "email_domain", length = 253, unique = true)
+    @Column(name = "email_domain", length = 253)
     private String emailDomain;
+
+    @Column(name = "logo_url", length = 500)
+    private String logoUrl;
+
+    @Column(name = "primary_color", length = 9)
+    private String primaryColor;
+
+    @Column(name = "secondary_color", length = 9)
+    private String secondaryColor;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
@@ -75,6 +84,30 @@ public class TenantJpaEntity {
 
     public void setEmailDomain(String emailDomain) {
         this.emailDomain = emailDomain;
+    }
+
+    public String getLogoUrl() {
+        return logoUrl;
+    }
+
+    public void setLogoUrl(String logoUrl) {
+        this.logoUrl = logoUrl;
+    }
+
+    public String getPrimaryColor() {
+        return primaryColor;
+    }
+
+    public void setPrimaryColor(String primaryColor) {
+        this.primaryColor = primaryColor;
+    }
+
+    public String getSecondaryColor() {
+        return secondaryColor;
+    }
+
+    public void setSecondaryColor(String secondaryColor) {
+        this.secondaryColor = secondaryColor;
     }
 
     public TenantStatus getStatus() {

@@ -7,6 +7,14 @@ import br.com.qsoft.governance.sharedkernel.id.TenantId;
 import java.util.Objects;
 import org.springframework.stereotype.Service;
 
+/**
+ * Caso de uso de edição da identidade visual (white-label) do tenant (SPI-53).
+ * <p>
+ * A AUTORIZAÇÃO (permissão granular TENANT:MANAGE) é aplicada no endpoint pelo
+ * {@code PermissionInterceptor} via {@code @RequiresPermission}. O tenant é
+ * SEMPRE o do contexto autenticado — nunca um id vindo do cliente (ADR-03).
+ * O formato das cores é validado no domínio ({@code Tenant.changeBranding}).
+ */
 @Service
 public class UpdateTenantBranding {
 
@@ -24,8 +32,7 @@ public class UpdateTenantBranding {
 
         Tenant tenant = tenantRepository.findById(tenantId)
             .orElseThrow(() -> new TenantNotFoundException(tenantId));
-
-        tenant.updateBranding(command.logoUrl(), command.primaryColor(), command.secondaryColor());
+        tenant.changeBranding(command.logoUrl(), command.primaryColor(), command.secondaryColor());
         return tenantRepository.save(tenant);
     }
 }

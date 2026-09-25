@@ -39,7 +39,7 @@ async function redefinirSenha(req, res, next) {
  */
 async function aceitarConvite(req, res, next) {
     try {
-        const response = await api.post("/auth/aceitar-convite", req.body);
+        const response = await api.post("/convites/aceitar", req.body);
         res.status(response.status).json(response.data);
     } catch (err) {
         next(err);

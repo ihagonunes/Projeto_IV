@@ -10,10 +10,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Interceptador HTTP que executa o {@link PolicyEvaluator} nas rotas anotadas
@@ -24,9 +26,11 @@ import org.springframework.web.servlet.HandlerInterceptor;
 public class PermissionInterceptor implements HandlerInterceptor {
 
     private final PolicyEvaluator policyEvaluator;
+    private final ObjectMapper objectMapper;
 
-    public PermissionInterceptor(PolicyEvaluator policyEvaluator) {
+    public PermissionInterceptor(PolicyEvaluator policyEvaluator, ObjectMapper objectMapper) {
         this.policyEvaluator = policyEvaluator;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -59,10 +63,11 @@ public class PermissionInterceptor implements HandlerInterceptor {
         return true;
     }
 
+    /** Serializa o erro com Jackson — evita JSON inválido por concatenação de string. */
     private void writeError(HttpServletResponse response, int status, String message) throws IOException {
         response.setStatus(status);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        response.getWriter().write("{\"message\":\"" + message.replace("\"", "'") + "\"}");
+        objectMapper.writeValue(response.getWriter(), Map.of("message", message));
     }
 }

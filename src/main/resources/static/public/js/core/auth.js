@@ -36,7 +36,7 @@
         };
         // tenantSlug: do chamador (ex.: onboarding) ou do slug injetado pelo BFF
         // (window.QSOFT_TENANT_SLUG). O backend exige tenantSlug no login (ADR-30).
-        var tenantSlug = (credentials && credentials.tenantSlug) || window.QSOFT_TENANT_SLUG || "manalistas";
+        var tenantSlug = (credentials && credentials.tenantSlug) || window.QSOFT_TENANT_SLUG;
         if (tenantSlug) {
             body.tenantSlug = tenantSlug;
         }

@@ -267,4 +267,74 @@ class TenantManagementIT {
 
         assertThat(loginStatus(ADMIN_EMAIL, ADMIN_PASSWORD)).isEqualTo(200);
     }
+
+    // ---------------------------------------------------------------- SPI-53
+
+    private Map<?, ?> getBranding(String token) {
+        return client.get().uri("/api/v1/tenants/me/identidade-visual")
+            .header("Authorization", "Bearer " + token)
+            .retrieve().body(Map.class);
+    }
+
+    private Map<?, ?> putBranding(String token, Map<String, Object> body) {
+        return client.put().uri("/api/v1/tenants/me/identidade-visual")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(body)
+            .retrieve().body(Map.class);
+    }
+
+    @Test
+    void shouldReturnBrandingOfCurrentTenant() {
+        String adminToken = login(ADMIN_EMAIL, ADMIN_PASSWORD);
+
+        // Estado limpo: o contexto Spring é compartilhado entre os testes da classe.
+        putBranding(adminToken, Map.of("logoUrl", "", "primaryColor", "", "secondaryColor", ""));
+        Map<?, ?> branding = getBranding(adminToken);
+
+        assertThat(branding).isNotNull();
+        assertThat(branding.get("tenantId")).isNotNull();
+        assertThat(branding.get("logoUrl")).isNull();
+        assertThat(branding.get("primaryColor")).isNull();
+    }
+
+    @Test
+    void shouldUpdateBranding() {
+        String adminToken = login(ADMIN_EMAIL, ADMIN_PASSWORD);
+
+        Map<?, ?> updated = putBranding(adminToken, Map.of(
+            "logoUrl", "https://cdn.example.com/logo.png",
+            "primaryColor", "#1a2b3c",
+            "secondaryColor", "#ffffff"));
+
+        assertThat(updated).isNotNull();
+        assertThat(updated.get("logoUrl")).isEqualTo("https://cdn.example.com/logo.png");
+        assertThat(updated.get("primaryColor")).isEqualTo("#1A2B3C");
+        assertThat(updated.get("secondaryColor")).isEqualTo("#FFFFFF");
+        assertThat(getBranding(adminToken).get("primaryColor")).isEqualTo("#1A2B3C");
+    }
+
+    @Test
+    void shouldRejectInvalidBrandingColor() {
+        String adminToken = login(ADMIN_EMAIL, ADMIN_PASSWORD);
+
+        try {
+            putBranding(adminToken, Map.of("primaryColor", "azul"));
+            throw new AssertionError("Esperado 400");
+        } catch (RestClientResponseException e) {
+            assertThat(e.getStatusCode().value()).isEqualTo(400);
+        }
+    }
+
+    @Test
+    void shouldRejectBrandingUpdateWithoutTenantManagePermission() {
+        String collaboratorToken = login("colab@tenantmgmt.com", ADMIN_PASSWORD);
+
+        try {
+            putBranding(collaboratorToken, Map.of("primaryColor", "#000000"));
+            throw new AssertionError("Esperado 403");
+        } catch (RestClientResponseException e) {
+            assertThat(e.getStatusCode().value()).isEqualTo(403);
+        }
+    }
 }

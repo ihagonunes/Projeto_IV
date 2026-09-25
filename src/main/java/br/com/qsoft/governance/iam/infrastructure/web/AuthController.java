@@ -44,7 +44,7 @@ public class AuthController {
                                               HttpServletRequest httpRequest) {
         String key = loginAttemptLimiter.key(request.email(), httpRequest.getRemoteAddr());
         if (loginAttemptLimiter.isBlocked(key)) {
-            throw new TooManyLoginAttemptsException();
+            throw new TooManyLoginAttemptsException(loginAttemptLimiter.retryAfterSeconds(key));
         }
 
         AuthenticatedUser user;

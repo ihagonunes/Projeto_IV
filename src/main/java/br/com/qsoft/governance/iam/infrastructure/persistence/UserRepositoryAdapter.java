@@ -1,16 +1,25 @@
 package br.com.qsoft.governance.iam.infrastructure.persistence;
 
 import br.com.qsoft.governance.iam.application.port.UserRepository;
+import br.com.qsoft.governance.iam.application.port.UserSearchFilter;
+import br.com.qsoft.governance.iam.application.port.UserSearchRepository;
 import br.com.qsoft.governance.iam.domain.user.User;
 import br.com.qsoft.governance.sharedkernel.id.TenantId;
 import br.com.qsoft.governance.sharedkernel.id.UserId;
+import br.com.qsoft.governance.sharedkernel.query.PageResult;
 import br.com.qsoft.governance.sharedkernel.tenant.TenantContext;
 import br.com.qsoft.governance.sharedkernel.tenant.TenantContextHolder;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.criteria.Predicate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import org.hibernate.Filter;
 import org.hibernate.Session;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,7 +32,9 @@ import org.springframework.transaction.annotation.Transactional;
  * (findByTenantIdAndEmail / existsByTenantIdAndEmail).
  */
 @Component
-public class UserRepositoryAdapter implements UserRepository {
+public class UserRepositoryAdapter implements UserRepository, UserSearchRepository {
+
+    private static final char LIKE_ESCAPE = '\\';
 
     private final UserJpaRepository jpaRepository;
     private final UserJpaMapper mapper;
@@ -72,12 +83,60 @@ public class UserRepositoryAdapter implements UserRepository {
 
     @Override
     @Transactional(readOnly = true)
-    public java.util.List<User> findAllByTenantId(TenantId tenantId) {
+    public PageResult<User> search(TenantId tenantId, UserSearchFilter filter, int page, int size) {
         applyTenantFilter();
-        return jpaRepository.findAllByTenantId(tenantId.value())
-            .stream()
-            .map(mapper::toDomain)
-            .toList();
+        Page<UserJpaEntity> result = jpaRepository.findAll(
+            tenantScopedSpecification(tenantId, filter), PageRequest.of(page, size));
+        List<User> users = result.getContent().stream().map(mapper::toDomain).toList();
+        return new PageResult<>(users, result.getTotalElements(), page, size);
+    }
+
+    /**
+     * Defesa primária de isolamento: o predicado por tenant_id é SEMPRE aplicado
+     * à consulta, além do filtro Hibernate (defesa secundária, ADR-03).
+     */
+    private Specification<UserJpaEntity> tenantScopedSpecification(TenantId tenantId, UserSearchFilter filter) {
+        return (root, query, builder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(builder.equal(root.get("tenantId"), tenantId.value()));
+            if (filter != null) {
+                if (filter.hierarchyLevel() != null) {
+                    predicates.add(builder.equal(root.get("hierarchyLevel"), filter.hierarchyLevel()));
+                }
+                if (filter.departmentId() != null) {
+                    predicates.add(builder.equal(root.get("departmentId"), filter.departmentId()));
+                }
+                if (hasText(filter.name())) {
+                    predicates.add(builder.like(
+                        builder.lower(root.get("name").as(String.class)),
+                        likePattern(filter.name()), LIKE_ESCAPE));
+                }
+                if (hasText(filter.email())) {
+                    predicates.add(builder.like(
+                        builder.lower(root.get("email").as(String.class)),
+                        likePattern(filter.email()), LIKE_ESCAPE));
+                }
+            }
+            return builder.and(predicates.toArray(new Predicate[0]));
+        };
+    }
+
+    /**
+     * Monta o padrão LIKE escapando os curingas digitados pelo usuário
+     * ({@code %}, {@code _} e {@code \}) para que a busca seja literal. O valor
+     * continua vinculado como parâmetro — não há injeção de SQL, apenas
+     * semântica de busca previsível.
+     */
+    private static String likePattern(String value) {
+        String escaped = value.trim().toLowerCase()
+            .replace("\\", "\\\\")
+            .replace("%", "\\%")
+            .replace("_", "\\_");
+        return "%" + escaped + "%";
+    }
+
+    private static boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 
     /**

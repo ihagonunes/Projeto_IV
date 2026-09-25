@@ -1,29 +1,28 @@
 package br.com.qsoft.governance.iam.infrastructure.web;
 
-import br.com.qsoft.governance.iam.api.model.AuthorizationResult;
-import br.com.qsoft.governance.iam.api.model.Permission;
-import br.com.qsoft.governance.iam.api.query.AuthorizationQuery;
 import br.com.qsoft.governance.iam.application.ChangeUserHierarchyLevel;
 import br.com.qsoft.governance.iam.application.ChangeUserHierarchyLevelCommand;
 import br.com.qsoft.governance.iam.application.ChangeUserStatus;
 import br.com.qsoft.governance.iam.application.ChangeUserStatusCommand;
-import br.com.qsoft.governance.iam.application.CreateUser;
-import br.com.qsoft.governance.iam.application.CreateUserCommand;
 import br.com.qsoft.governance.iam.application.ListUsers;
-import br.com.qsoft.governance.iam.application.ListUsersQuery;
-import br.com.qsoft.governance.iam.application.ResendUserInvite;
-import br.com.qsoft.governance.iam.application.ResendUserInviteCommand;
-import br.com.qsoft.governance.iam.application.UpdateUserProfile;
-import br.com.qsoft.governance.iam.application.UpdateUserProfileCommand;
-import br.com.qsoft.governance.iam.domain.exception.AuthorizationDeniedException;
+import br.com.qsoft.governance.iam.application.ListUsersCommand;
+import br.com.qsoft.governance.iam.application.ProvisionUser;
+import br.com.qsoft.governance.iam.application.ProvisionUserCommand;
+import br.com.qsoft.governance.iam.application.UpdateUser;
+import br.com.qsoft.governance.iam.application.UpdateUserCommand;
+import br.com.qsoft.governance.iam.application.rbac.EvaluationContext;
+import br.com.qsoft.governance.iam.application.rbac.PolicyEvaluator;
+import br.com.qsoft.governance.iam.domain.rbac.Action;
+import br.com.qsoft.governance.iam.domain.rbac.Permission;
+import br.com.qsoft.governance.iam.domain.rbac.Resource;
 import br.com.qsoft.governance.iam.domain.user.HierarchyLevel;
 import br.com.qsoft.governance.iam.domain.user.User;
-import br.com.qsoft.governance.iam.domain.user.UserStatus;
 import br.com.qsoft.governance.sharedkernel.id.UserId;
+import br.com.qsoft.governance.sharedkernel.query.PageResult;
 import br.com.qsoft.governance.sharedkernel.tenant.TenantContext;
 import br.com.qsoft.governance.sharedkernel.tenant.TenantContextHolder;
 import jakarta.validation.Valid;
-import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -39,135 +38,98 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * Endpoints de gestão de usuários (protegidos por JWT).
  * O tenant vem do contexto autenticado (nunca do corpo) e as permissões são
- * verificadas via AuthorizationQuery (ADR-03 / AGENTS.md).
+ * verificadas pelo {@link PermissionInterceptor} (via {@link RequiresPermission}).
  */
 @RestController
-@RequestMapping({"/api/v1/usuarios", "/api/v1/users"})
+@RequestMapping("/api/v1/usuarios")
 public class UserController {
 
-    private final CreateUser createUser;
+    private final ProvisionUser provisionUser;
     private final ChangeUserHierarchyLevel changeUserHierarchyLevel;
-    private final ListUsers listUsers;
-    private final UpdateUserProfile updateUserProfile;
     private final ChangeUserStatus changeUserStatus;
-    private final ResendUserInvite resendUserInvite;
-    private final AuthorizationQuery authorizationQuery;
+    private final ListUsers listUsers;
+    private final UpdateUser updateUser;
+    private final PolicyEvaluator policyEvaluator;
 
-    public UserController(CreateUser createUser,
+    public UserController(ProvisionUser provisionUser,
                           ChangeUserHierarchyLevel changeUserHierarchyLevel,
-                          ListUsers listUsers,
-                          UpdateUserProfile updateUserProfile,
                           ChangeUserStatus changeUserStatus,
-                          ResendUserInvite resendUserInvite,
-                          AuthorizationQuery authorizationQuery) {
-        this.createUser = createUser;
+                          ListUsers listUsers,
+                          UpdateUser updateUser,
+                          PolicyEvaluator policyEvaluator) {
+        this.provisionUser = provisionUser;
         this.changeUserHierarchyLevel = changeUserHierarchyLevel;
-        this.listUsers = listUsers;
-        this.updateUserProfile = updateUserProfile;
         this.changeUserStatus = changeUserStatus;
-        this.resendUserInvite = resendUserInvite;
-        this.authorizationQuery = authorizationQuery;
+        this.listUsers = listUsers;
+        this.updateUser = updateUser;
+        this.policyEvaluator = policyEvaluator;
     }
 
-    /** Lista usuários do tenant autenticado (SPI-62). Requer MANAGE_USERS. */
-    @GetMapping
-    public ResponseEntity<List<UserResponse>> list(@RequestParam(required = false) String search,
-                                                   @RequestParam(required = false) String status) {
-        TenantContext context = TenantContextHolder.require();
-        requirePermission(context, Permission.MANAGE_USERS, "listar usuários");
-
-        List<User> users = listUsers.list(new ListUsersQuery(context.tenantId(), search, status));
-        List<UserResponse> response = users.stream().map(UserResponse::from).toList();
-        return ResponseEntity.ok(response);
-    }
-
-    /** Cria usuário no tenant do contexto autenticado. Requer MANAGE_USERS. */
+    /** Cria usuário no tenant do contexto autenticado. Requer permissão USER:MANAGE. */
     @PostMapping
+    @RequiresPermission(resource = Resource.USER, action = Action.MANAGE)
     public ResponseEntity<UserResponse> create(@Valid @RequestBody UserRequest request) {
         TenantContext context = TenantContextHolder.require();
-        requirePermission(context, Permission.MANAGE_USERS, "criar usuários");
 
-        HierarchyLevel level = request.hierarchyLevel() != null ? request.hierarchyLevel() : HierarchyLevel.COLLABORATOR;
-
-        User user = createUser.create(new CreateUserCommand(
+        User user = provisionUser.provision(new ProvisionUserCommand(
             context.tenantId(),
             request.email(),
             request.name(),
-            level,
-            request.departmentId()
+            request.hierarchyLevel(),
+            request.password(),
+            request.departmentId(),
+            Set.of()
         ));
         return ResponseEntity.status(HttpStatus.CREATED).body(UserResponse.from(user));
     }
 
-    /** Atualiza departamento, nível hierárquico e papel administrativo do usuário (SPI-63). Requer MANAGE_USERS. */
+    /**
+     * Lista/busca usuários do tenant do contexto autenticado, de forma paginada e
+     * com filtros combináveis (SPI-62). Requer permissão USER:READ.
+     */
+    @GetMapping
+    @RequiresPermission(resource = Resource.USER, action = Action.READ)
+    public ResponseEntity<UserPageResponse> list(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) HierarchyLevel hierarchyLevel,
+            @RequestParam(required = false) UUID departmentId,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String email) {
+        TenantContext context = TenantContextHolder.require();
+        PageResult<User> result = listUsers.list(new ListUsersCommand(
+            context.tenantId(), hierarchyLevel, departmentId, name, email, page, size));
+        return ResponseEntity.ok(UserPageResponse.from(result));
+    }
+
+    /** Edita papel (HierarchyLevel) e Department de um usuário. Requer USER:MANAGE (SPI-63). */
     @PatchMapping("/{id}")
-    public ResponseEntity<UserResponse> updateProfile(@PathVariable UUID id,
-                                                      @RequestBody UpdateUserProfileRequest request) {
+    @RequiresPermission(resource = Resource.USER, action = Action.MANAGE)
+    public ResponseEntity<UserResponse> update(@PathVariable UUID id,
+                                               @Valid @RequestBody UpdateUserRequest request) {
         TenantContext context = TenantContextHolder.require();
-        requirePermission(context, Permission.MANAGE_USERS, "atualizar perfil do usuário");
-
-        User updatedUser = updateUserProfile.updateProfile(new UpdateUserProfileCommand(
-            context.tenantId(),
-            UserId.of(id),
-            request.departmentId(),
-            request.hierarchyLevel(),
-            request.isAdmin()
-        ));
-        return ResponseEntity.ok(UserResponse.from(updatedUser));
+        User user = updateUser.update(new UpdateUserCommand(
+            context.userId(), UserId.of(id), request.hierarchyLevel(), request.departmentId()));
+        return ResponseEntity.ok(UserResponse.from(user));
     }
 
-    /** Desativa o acesso de um usuário (SPI-61). Requer MANAGE_USERS. */
-    @PatchMapping("/{id}/deactivate")
-    public ResponseEntity<UserResponse> deactivate(@PathVariable UUID id) {
+    /**
+     * Desativa ou reativa um usuário (SPI-61). A desativação é lógica: o
+     * histórico é preservado e o usuário inativo não autentica. Requer USER:MANAGE.
+     */
+    @PatchMapping("/{id}/status")
+    @RequiresPermission(resource = Resource.USER, action = Action.MANAGE)
+    public ResponseEntity<UserResponse> changeStatus(@PathVariable UUID id,
+                                                     @Valid @RequestBody UserStatusRequest request) {
         TenantContext context = TenantContextHolder.require();
-        requirePermission(context, Permission.MANAGE_USERS, "desativar usuário");
-
-        User updatedUser = changeUserStatus.changeStatus(new ChangeUserStatusCommand(
-            context.tenantId(),
-            context.userId(),
-            UserId.of(id),
-            UserStatus.INACTIVE
-        ));
-        return ResponseEntity.ok(UserResponse.from(updatedUser));
+        User user = changeUserStatus.change(new ChangeUserStatusCommand(
+            context.userId(), UserId.of(id), request.status()));
+        return ResponseEntity.ok(UserResponse.from(user));
     }
 
-    /** Reativa o acesso de um usuário (SPI-61). Requer MANAGE_USERS. */
-    @PatchMapping("/{id}/reactivate")
-    public ResponseEntity<UserResponse> reactivate(@PathVariable UUID id) {
-        TenantContext context = TenantContextHolder.require();
-        requirePermission(context, Permission.MANAGE_USERS, "reativar usuário");
-
-        User updatedUser = changeUserStatus.changeStatus(new ChangeUserStatusCommand(
-            context.tenantId(),
-            context.userId(),
-            UserId.of(id),
-            UserStatus.ACTIVE
-        ));
-        return ResponseEntity.ok(UserResponse.from(updatedUser));
-    }
-
-    /** Reenvia convite expirado/pendente para um usuário (SPI-59). Requer MANAGE_USERS. */
-    @PostMapping({"/invites/{inviteId}/resend", "/{inviteId}/resend-invite"})
-    public ResponseEntity<UserResponse> resendInvite(@PathVariable String inviteId) {
-        TenantContext context = TenantContextHolder.require();
-        requirePermission(context, Permission.MANAGE_USERS, "reenviar convite");
-
-        UUID targetUuid;
-        try {
-            targetUuid = UUID.fromString(inviteId.replace("inv_", "").replace("usr_", ""));
-        } catch (IllegalArgumentException ex) {
-            targetUuid = UUID.nameUUIDFromBytes(inviteId.getBytes());
-        }
-
-        User updatedUser = resendUserInvite.resend(new ResendUserInviteCommand(
-            context.tenantId(),
-            UserId.of(targetUuid)
-        ));
-        return ResponseEntity.ok(UserResponse.from(updatedUser));
-    }
-
-    /** Altera o nível hierárquico de um usuário (compatibilidade retroativa). */
+    /** Altera o nível hierárquico de um usuário. Requer permissão USER:MANAGE (SPI-47). */
     @PostMapping("/{id}/nivel")
+    @RequiresPermission(resource = Resource.USER, action = Action.MANAGE)
     public ResponseEntity<UserResponse> changeHierarchyLevel(@PathVariable UUID id,
                                                              @Valid @RequestBody HierarchyLevelRequest request) {
         TenantContext context = TenantContextHolder.require();
@@ -179,12 +141,22 @@ public class UserController {
         return ResponseEntity.ok(UserResponse.from(user));
     }
 
-    private void requirePermission(TenantContext context, Permission permission, String action) {
-        AuthorizationResult authorization = authorizationQuery.checkPermission(context.userId(), permission);
-        if (!authorization.allowed()) {
-            throw new AuthorizationDeniedException(
-                authorization.denialReason() != null ? authorization.denialReason()
-                    : "Usuário não autorizado a " + action + ".");
-        }
+    /** Permissões efetivas do próprio usuário autenticado (SPI-44). */
+    @GetMapping("/me/permissoes")
+    public ResponseEntity<EffectivePermissionsResponse> myPermissions() {
+        TenantContext context = TenantContextHolder.require();
+        Set<Permission> permissions = policyEvaluator.effectivePermissions(
+            EvaluationContext.of(context.tenantId(), context.userId()));
+        return ResponseEntity.ok(EffectivePermissionsResponse.from(context.userId().value(), permissions));
+    }
+
+    /** Permissões efetivas de um usuário. Requer permissão USER:READ (SPI-44). */
+    @GetMapping("/{id}/permissoes")
+    @RequiresPermission(resource = Resource.USER, action = Action.READ)
+    public ResponseEntity<EffectivePermissionsResponse> userPermissions(@PathVariable UUID id) {
+        TenantContext context = TenantContextHolder.require();
+        Set<Permission> permissions = policyEvaluator.effectivePermissions(
+            new EvaluationContext(context.tenantId(), UserId.of(id), null));
+        return ResponseEntity.ok(EffectivePermissionsResponse.from(id, permissions));
     }
 }
