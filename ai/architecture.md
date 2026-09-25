@@ -61,7 +61,7 @@ Outro módulo pode acessar somente `<module>.api.*`.
 | iam | sharedkernel |
 | department | sharedkernel, iam |
 | project | sharedkernel, iam, department |
-| aigateway | sharedkernel, department |
+| aigateway | sharedkernel, iam, department |
 | chat | sharedkernel, iam, aigateway |
 | agentpolicies | sharedkernel, iam, department, aigateway |
 | observability | sharedkernel, iam, department |

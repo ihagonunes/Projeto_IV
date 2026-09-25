@@ -29,7 +29,7 @@ class ArchitectureRulesTest {
         "iam", Set.of(),
         "department", Set.of("iam"),
         "project", Set.of("iam", "department"),
-        "aigateway", Set.of("department"),
+        "aigateway", Set.of("iam", "department"),
         "chat", Set.of("iam", "aigateway"),
         "agentpolicies", Set.of("iam", "department", "aigateway"),
         "observability", Set.of("iam", "department"),
