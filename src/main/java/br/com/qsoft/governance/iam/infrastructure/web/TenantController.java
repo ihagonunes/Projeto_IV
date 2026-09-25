@@ -4,6 +4,8 @@ import br.com.qsoft.governance.iam.application.GetCurrentTenant;
 import br.com.qsoft.governance.iam.application.RegisterTenant;
 import br.com.qsoft.governance.iam.application.RegisterTenantCommand;
 import br.com.qsoft.governance.iam.application.UpdateTenant;
+import br.com.qsoft.governance.iam.application.UpdateTenantBranding;
+import br.com.qsoft.governance.iam.application.UpdateTenantBrandingCommand;
 import br.com.qsoft.governance.iam.application.UpdateTenantCommand;
 import br.com.qsoft.governance.iam.domain.rbac.Action;
 import br.com.qsoft.governance.iam.domain.rbac.Resource;
@@ -39,13 +41,16 @@ public class TenantController {
     private final RegisterTenant registerTenant;
     private final GetCurrentTenant getCurrentTenant;
     private final UpdateTenant updateTenant;
+    private final UpdateTenantBranding updateTenantBranding;
 
     public TenantController(RegisterTenant registerTenant,
                             GetCurrentTenant getCurrentTenant,
-                            UpdateTenant updateTenant) {
+                            UpdateTenant updateTenant,
+                            UpdateTenantBranding updateTenantBranding) {
         this.registerTenant = registerTenant;
         this.getCurrentTenant = getCurrentTenant;
         this.updateTenant = updateTenant;
+        this.updateTenantBranding = updateTenantBranding;
     }
 
     @PostMapping
@@ -69,5 +74,24 @@ public class TenantController {
         TenantContext context = TenantContextHolder.require();
         Tenant tenant = updateTenant.update(new UpdateTenantCommand(context.tenantId(), request.name()));
         return ResponseEntity.ok(TenantResponse.from(tenant));
+    }
+
+    /** Identidade visual (white-label) do tenant do contexto autenticado (SPI-53). */
+    @GetMapping("/me/identidade-visual")
+    public ResponseEntity<TenantBrandingResponse> currentBranding() {
+        TenantContext context = TenantContextHolder.require();
+        return ResponseEntity.ok(
+            TenantBrandingResponse.from(getCurrentTenant.current(context.tenantId())));
+    }
+
+    /** Atualiza a identidade visual do tenant do contexto autenticado (SPI-53). */
+    @PutMapping("/me/identidade-visual")
+    @RequiresPermission(resource = Resource.TENANT, action = Action.MANAGE)
+    public ResponseEntity<TenantBrandingResponse> updateBranding(
+            @Valid @RequestBody TenantBrandingRequest request) {
+        TenantContext context = TenantContextHolder.require();
+        Tenant tenant = updateTenantBranding.updateBranding(new UpdateTenantBrandingCommand(
+            context.tenantId(), request.logoUrl(), request.primaryColor(), request.secondaryColor()));
+        return ResponseEntity.ok(TenantBrandingResponse.from(tenant));
     }
 }

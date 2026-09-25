@@ -14,6 +14,9 @@ public final class TenantJpaMapper {
         entity.setSlug(tenant.slug());
         entity.setName(tenant.name());
         entity.setEmailDomain(tenant.emailDomain());
+        entity.setLogoUrl(tenant.logoUrl());
+        entity.setPrimaryColor(tenant.primaryColor());
+        entity.setSecondaryColor(tenant.secondaryColor());
         entity.setStatus(tenant.status());
         entity.setCreatedAt(tenant.createdAt());
         entity.setUpdatedAt(tenant.updatedAt());
@@ -26,6 +29,9 @@ public final class TenantJpaMapper {
             entity.getSlug(),
             entity.getName(),
             entity.getEmailDomain(),
+            entity.getLogoUrl(),
+            entity.getPrimaryColor(),
+            entity.getSecondaryColor(),
             entity.getStatus(),
             entity.getCreatedAt(),
             entity.getUpdatedAt()
