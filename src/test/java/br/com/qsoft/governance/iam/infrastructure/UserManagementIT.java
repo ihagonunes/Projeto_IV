@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -338,6 +339,36 @@ class UserManagementIT {
             throw new AssertionError("Esperado 403/404");
         } catch (RestClientResponseException e) {
             assertThat(e.getStatusCode().value()).isIn(403, 404);
+        }
+    }
+
+    // ---------------------------------------------------------------- convites (listagem)
+
+    @Test
+    void shouldListInvitesOfTenantWithoutExposingTokens() {
+        String adminToken = login(ADMIN_EMAIL, ADMIN_PASSWORD);
+        String invitedEmail = "listado@mgmtdemo.com";
+        createInvite(adminToken, invitedEmail);
+
+        List<Map<String, Object>> invites = client.get().uri("/api/v1/convites")
+            .header("Authorization", "Bearer " + adminToken)
+            .retrieve().body(new ParameterizedTypeReference<List<Map<String, Object>>>() {
+            });
+
+        assertThat(invites).isNotNull().isNotEmpty();
+        assertThat(invites).anySatisfy(invite ->
+            assertThat(invite.get("email")).isEqualTo(invitedEmail));
+        // O token (credencial de aceite) nunca deve aparecer em listagem.
+        assertThat(invites).allSatisfy(invite -> assertThat(invite).doesNotContainKey("token"));
+    }
+
+    @Test
+    void shouldRejectInviteListWithoutAuthentication() {
+        try {
+            client.get().uri("/api/v1/convites").retrieve().toBodilessEntity();
+            throw new AssertionError("Esperado 401");
+        } catch (RestClientResponseException e) {
+            assertThat(e.getStatusCode().value()).isEqualTo(401);
         }
     }
 }
