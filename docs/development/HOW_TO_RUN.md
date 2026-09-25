@@ -14,6 +14,18 @@ Guia prático para rodar a Plataforma de Governança de IA (Monólito Modular + 
 | **Frontend (BFF)** | Node + Express + EJS | `3000` | Serve as views e faz proxy de `/api/*` para o backend |
 | **Banco** | PostgreSQL | `5432` | Persistência; Flyway aplica as migrations |
 
+### Estado atual (baseline implementada)
+
+| Módulo | Situação |
+|---|---|
+| `iam` | ✅ Tenant, User, autenticação (JWT), RBAC por papéis, convites, status e identidade visual |
+| `department` | ✅ CRUD de departamentos + orçamento + contratos públicos |
+| `aigateway` | 🚧 Em andamento (catálogo Provider/Model; roteamento em construção) |
+| `sharedkernel` / `platform` | ✅ Tipos transversais e configuração |
+| `project`, `chat`, `observability`, `engagement`, `governancescore`, `agentpolicies` | ⏳ Planejados |
+
+Migrations Flyway: **`V001`–`V011`**. Testes: **149** unitários/arquitetura + **64** de integração.
+
 ---
 
 ## 1. Configurar o ambiente (uma vez)
@@ -40,7 +52,7 @@ Variáveis úteis (`.env`):
 
 ## 2. Rodar o backend
 
-As migrations Flyway (`V001`–`V004`) são aplicadas automaticamente na inicialização (`ddl-auto=validate`).
+As migrations Flyway (`V001`–`V011`) são aplicadas automaticamente na inicialização (`ddl-auto=validate`).
 
 ### Modo A — desenvolvimento local (PostgreSQL instalado)
 
@@ -57,19 +69,20 @@ As migrations Flyway (`V001`–`V004`) são aplicadas automaticamente na inicial
 
 Ou rode a classe `GovernanceApplication` pela IDE (importando o projeto Maven).
 
-### Modo B — ambiente reproduzível (Docker)
+### Modo B — backend em container (Docker)
+
+O repositório fornece um **`Dockerfile`** (build multi-stage: Maven → JRE 21). **Não há `docker-compose.yml`.**
 
 ```bash
-docker compose up --build
+docker build -t qsoft-governance .
+docker run --rm -p 8080:8080 \
+  -e DB_HOST=host.docker.internal -e DB_PORT=5432 \
+  -e DB_NAME=qsoft_governance -e DB_USER=qsoft -e DB_PASSWORD=change_me_local \
+  -e JWT_SECRET=<segredo-com-32-ou-mais-caracteres> \
+  qsoft-governance
 ```
 
-Sobe **PostgreSQL 18.6** + **backend**. Para parar:
-
-```bash
-docker compose down
-```
-
-> Com o backend no Docker, o frontend deve apontar `API_PROXY_TARGET` para a porta publicada do backend (ex.: `http://localhost:8080` se o `SERVER_PORT=8080`).
+> Os **testes de integração não usam esse container**: eles sobem um **PostgreSQL 18.6 via Testcontainers** em `mvn verify -Pintegration`.
 
 ---
 
@@ -103,15 +116,16 @@ Endpoints principais (prefixo `/api/v1`):
   ```bash
   curl -X POST http://localhost:8080/api/v1/tenants \
     -H "Content-Type: application/json" \
-    -d '{"slug":"qsoft","name":"QSOFT"}'
+    -d '{"slug":"qsoft","name":"QSOFT","emailDomain":"qsoft.com"}'
   ```
+  > `emailDomain` é **obrigatório e único globalmente** (SPI-54): identifica o domínio corporativo do tenant e é o que torna determinística a resolução do tenant no login.
 - **Login** (emite JWT Bearer). `tenantSlug` é opcional: se ausente, o tenant é derivado do domínio do e-mail:
   ```bash
   curl -X POST http://localhost:8080/api/v1/auth/login \
     -H "Content-Type: application/json" \
     -d '{"email":"admin@qsoft.com","password":"<senha>"}'
   ```
-- **Criar usuário** (endpoint **protegido** — exige JWT + permissão `MANAGE_USERS`; o tenant vem do token):
+- **Criar usuário** (endpoint **protegido** — exige JWT + permissão `USER:MANAGE`; o tenant vem do token):
   ```bash
   curl -X POST http://localhost:8080/api/v1/usuarios \
     -H "Authorization: Bearer <token>" \
@@ -123,10 +137,26 @@ Endpoints principais (prefixo `/api/v1`):
   curl http://localhost:8080/api/v1/... \
     -H "Authorization: Bearer <token>"
   ```
+- **Departamentos** (protegido — `DEPARTMENT:READ` / `DEPARTMENT:MANAGE`):
+  ```bash
+  curl -X POST http://localhost:8080/api/v1/departamentos \
+    -H "Authorization: Bearer <token>" -H "Content-Type: application/json" \
+    -d '{"name":"Marketing","description":"Time de marketing","monthlyBudget":"1500.00"}'
+  ```
+- **Convites** (`INVITE:MANAGE`): `POST /api/v1/convites`, `GET /api/v1/convites`,
+  `POST /api/v1/convites/{id}/reenviar`, `DELETE /api/v1/convites/{id}`; o aceite é público
+  (`POST /api/v1/convites/aceitar`).
+- **Tenant do contexto**: `GET`/`PUT /api/v1/tenants/me` e `GET`/`PUT /api/v1/tenants/me/identidade-visual`.
+- **Usuários**: `GET /api/v1/usuarios`, `PATCH /api/v1/usuarios/{id}`,
+  `PATCH /api/v1/usuarios/{id}/status`, `POST /api/v1/usuarios/{id}/nivel`,
+  `GET /api/v1/usuarios/me/permissoes`.
+
+> **Swagger/OpenAPI:** com a aplicação no ar, a superfície completa da API fica em
+> **http://localhost:8080/swagger-ui.html** (controlado por `OPENAPI_ENABLED`, `true` em dev).
 
 > **Dados de demonstração (opcional):** habilite `APP_BOOTSTRAP_DEMO_DATA=true` e `APP_BOOTSTRAP_DEMO_PASSWORD=<senha>` para o backend criar, na inicialização, o tenant `qsoft` e o admin `admin@qsoft.com`. Sem isso, o seed **não** roda (padrão seguro).
 >
-> **Importante:** o `POST /api/v1/usuarios` é **protegido** (JWT + `MANAGE_USERS`) e o `tenantId` vem do token — nunca do corpo. Para o primeiro usuário, use o seed de demonstração ou crie via migração/admin.
+> **Importante:** o `POST /api/v1/usuarios` é **protegido** (JWT + `USER:MANAGE`) e o `tenantId` vem do token — nunca do corpo. Para o primeiro usuário, use o seed de demonstração ou crie via migração/admin.
 
 ---
 
@@ -147,7 +177,7 @@ Endpoints principais (prefixo `/api/v1`):
 - **`node_modules` ausente** (erro ao rodar o front): `npm install`.
 - **App não sobe com erro de `JWT_SECRET`**: defina `JWT_SECRET` no `.env` com **32+ caracteres** (é obrigatório).
 - **Login retorna 400**: informe um `email` válido; o `tenantSlug` é opcional (derivado do domínio do e-mail).
-- **`POST /api/v1/usuarios` retorna 401/403**: o endpoint é protegido — envie `Authorization: Bearer <token>` de um usuário com a permissão `MANAGE_USERS`.
+- **`POST /api/v1/usuarios` retorna 401/403**: o endpoint é protegido — envie `Authorization: Bearer <token>` de um usuário com a permissão `USER:MANAGE`.
 - **Login falha / não há usuário**: habilite o seed demo (`APP_BOOTSTRAP_DEMO_DATA=true` + `APP_BOOTSTRAP_DEMO_PASSWORD`) ou crie o usuário pela API protegida.
 - **Schema vazio / `missing table [app_user]`**: confirme que a dependência `spring-boot-starter-flyway` está no `pom.xml` e `spring.flyway.enabled=true` (Flyway aplica as migrations na inicialização).
 - **ITs falham por falta de Docker**: inicie o Docker Desktop/Engine antes de `mvn verify -Pintegration`.
