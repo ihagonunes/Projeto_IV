@@ -86,4 +86,22 @@ class LoginAttemptLimiterTest {
 
         assertThat(limiter.key("  Ana@X.COM ", IP)).isEqualTo(limiter.key("ana@x.com", IP));
     }
+
+    /**
+     * A limpeza do mapa é amortizada (não uma varredura O(n) por tentativa).
+     * Mesmo após estourar o teto de chaves, o bloqueio continua funcionando.
+     */
+    @Test
+    void shouldKeepBlockingAfterManyDistinctKeys() {
+        LoginAttemptLimiter limiter = limiter(2, 15);
+        for (int i = 0; i < 10_001; i++) {
+            limiter.recordFailure(limiter.key("user" + i + "@x.com", IP));
+        }
+
+        String key = limiter.key("ana@x.com", IP);
+        limiter.recordFailure(key);
+        limiter.recordFailure(key);
+
+        assertThat(limiter.isBlocked(key)).isTrue();
+    }
 }
