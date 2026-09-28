@@ -68,3 +68,23 @@ O `observability` **apenas persiste/agrega** — nunca recalcula (ADR-13).
 O histórico analítico da QSOFT vive em tabelas `historical_*`, **sem FK** para as
 tabelas operacionais (ADR-26), acessado por um read model. A carga do dataset
 sintético (SPI-75) é tratada à parte.
+
+## Histórico analítico (SPI-75)
+
+O dataset sintético da QSOFT (17 tabelas: `ai_usage_logs`, `ai_billing`,
+`employees`, `projects`, `security_events`, …) é carregado no **schema
+`historical`** (migration `V014`), **sem FK** para as tabelas operacionais
+(ADR-26). É massa de teste/BI — não simula aggregates operacionais.
+
+**Carga:** `scripts/db/load-historical.ps1 -DumpPath <dump.sql>` — restaura o
+dump em um banco temporário e copia cada tabela para `historical.<tabela>`.
+
+**Isolamento de tenant:** o histórico usa `company_id` (dataset), que **não**
+corresponde ao `tenant_id` da plataforma. O loader aceita
+`-CompanyMapping "COMP-A=<tenant-uuid>"` e **reescreve `company_id` para o
+tenant_id**, de forma que o read model possa filtrar por tenant.
+
+**Acesso:** `HistoricalUsageAdapter` (`observability`) — consulta **nativa**
+sobre `historical.ai_usage_logs` **sempre com filtro explícito por
+`company_id = :tenantId`** (ADR-03). O histórico é somente leitura.
+
