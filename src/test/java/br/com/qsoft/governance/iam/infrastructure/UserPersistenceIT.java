@@ -123,7 +123,7 @@ class UserPersistenceIT {
         user.changeHierarchyLevel(HierarchyLevel.EXECUTIVE);
         userRepository.save(user);
 
-        User reloaded = userRepository.findById(user.id()).orElseThrow();
+        User reloaded = userRepository.findByIdUnscoped(user.id()).orElseThrow();
         assertThat(reloaded.hierarchyLevel()).isEqualTo(HierarchyLevel.EXECUTIVE);
     }
 

@@ -57,13 +57,22 @@ public class UserRepositoryAdapter implements UserRepository, UserSearchReposito
     @Override
     @Transactional(readOnly = true)
     public Optional<User> findById(UserId id) {
+        // SEMPRE tenant-scoped: o tenant vem do contexto autenticado (ADR-03).
+        // O caminho de autenticação (sem contexto) usa findByIdUnscoped.
         TenantContext context = TenantContextHolder.get();
-        if (context != null) {
-            // @Filter não se aplica ao find() por PK; restrição explícita por tenant.
-            return jpaRepository.findByIdAndTenantId(id.value(), context.tenantId().value())
-                .map(mapper::toDomain);
+        if (context == null) {
+            throw new IllegalStateException(
+                "TenantContext ausente: use findByIdUnscoped apenas no caminho de autenticação.");
         }
-        // Sem TenantContext (ex.: revalidação do token), consulta sem restrição.
+        // @Filter não se aplica ao find() por PK; restrição explícita por tenant.
+        return jpaRepository.findByIdAndTenantId(id.value(), context.tenantId().value())
+            .map(mapper::toDomain);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<User> findByIdUnscoped(UserId id) {
+        // Uso EXCLUSIVO do TenantContextFilter (o contexto ainda não existe).
         return jpaRepository.findById(id.value()).map(mapper::toDomain);
     }
 
