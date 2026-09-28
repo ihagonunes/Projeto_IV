@@ -4,15 +4,20 @@
 --         conjunto vazio implica default nulo.
 -- ADR-29: allowed_model_ids/default_model_id são referências CROSS-MODULE por ID
 --         (módulo aigateway), SEM FK. A FK da tabela de itens é intramódulo.
+-- tenant_id é referência cross-module por ID (módulo iam), SEM FK — garante o
+-- isolamento lógico da política (ADR-03).
 
 CREATE TABLE department_model_policies (
     department_id    UUID        NOT NULL,
+    tenant_id        UUID        NOT NULL,
     default_model_id UUID,
     created_at       TIMESTAMPTZ NOT NULL,
     updated_at       TIMESTAMPTZ NOT NULL,
 
     CONSTRAINT pk_department_model_policies PRIMARY KEY (department_id)
 );
+
+CREATE INDEX idx_department_model_policies_tenant ON department_model_policies (tenant_id);
 
 CREATE TABLE department_model_policy_allowed_models (
     department_id UUID NOT NULL,
