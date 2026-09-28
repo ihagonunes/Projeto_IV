@@ -7,6 +7,7 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 import org.hibernate.annotations.Filter;
@@ -43,6 +44,12 @@ public class ModelJpaEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     private ModelStatus status;
+
+    @Column(name = "input_price_per_1k", precision = 12, scale = 6)
+    private BigDecimal inputPricePer1k;
+
+    @Column(name = "output_price_per_1k", precision = 12, scale = 6)
+    private BigDecimal outputPricePer1k;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -92,6 +99,22 @@ public class ModelJpaEntity {
 
     public void setStatus(ModelStatus status) {
         this.status = status;
+    }
+
+    public BigDecimal getInputPricePer1k() {
+        return inputPricePer1k;
+    }
+
+    public void setInputPricePer1k(BigDecimal inputPricePer1k) {
+        this.inputPricePer1k = inputPricePer1k;
+    }
+
+    public BigDecimal getOutputPricePer1k() {
+        return outputPricePer1k;
+    }
+
+    public void setOutputPricePer1k(BigDecimal outputPricePer1k) {
+        this.outputPricePer1k = outputPricePer1k;
     }
 
     public Instant getCreatedAt() {

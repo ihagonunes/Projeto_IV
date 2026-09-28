@@ -112,7 +112,7 @@ class ResolveModelForUserTest {
     }
 
     private Model model(Provider provider, boolean available) {
-        Model model = Model.create(UUID.randomUUID(), tenantId, provider.id(), "gpt-4");
+        Model model = Model.create(UUID.randomUUID(), tenantId, provider.id(), "gpt-4", null, null);
         if (!available) {
             model.disable();
         }

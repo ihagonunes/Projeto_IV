@@ -86,7 +86,8 @@ public class AIGatewayCatalogController {
         TenantContext context = TenantContextHolder.require();
         return ResponseEntity.status(HttpStatus.CREATED).body(ModelResponse.from(
             createModel.create(new CreateModelCommand(
-                context.tenantId(), request.providerId(), request.name()))));
+                context.tenantId(), request.providerId(), request.name(),
+                request.inputPricePer1k(), request.outputPricePer1k()))));
     }
 
     @PatchMapping("/models/{id}/status")

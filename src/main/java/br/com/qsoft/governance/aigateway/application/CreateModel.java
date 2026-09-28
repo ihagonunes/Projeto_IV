@@ -39,7 +39,8 @@ public class CreateModel {
         if (modelRepository.existsByTenantIdAndName(tenantId, name)) {
             throw new ModelNameAlreadyExistsException(name);
         }
-        return modelRepository.save(Model.create(UUID.randomUUID(), tenantId, providerId, name));
+        return modelRepository.save(Model.create(UUID.randomUUID(), tenantId, providerId, name,
+            command.inputPricePer1k(), command.outputPricePer1k()));
     }
 
     private static String requireName(String name) {

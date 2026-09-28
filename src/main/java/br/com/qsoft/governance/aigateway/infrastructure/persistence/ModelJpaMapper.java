@@ -13,6 +13,8 @@ public final class ModelJpaMapper {
         entity.setProviderId(model.providerId());
         entity.setName(model.name());
         entity.setStatus(model.status());
+        entity.setInputPricePer1k(model.inputPricePer1k());
+        entity.setOutputPricePer1k(model.outputPricePer1k());
         entity.setCreatedAt(model.createdAt());
         entity.setUpdatedAt(model.updatedAt());
         return entity;
@@ -25,6 +27,8 @@ public final class ModelJpaMapper {
             entity.getProviderId(),
             entity.getName(),
             entity.getStatus(),
+            entity.getInputPricePer1k(),
+            entity.getOutputPricePer1k(),
             entity.getCreatedAt(),
             entity.getUpdatedAt()
         );
