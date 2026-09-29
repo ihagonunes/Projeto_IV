@@ -1,20 +1,21 @@
 package br.com.qsoft.governance.iam.infrastructure.web;
 
+import br.com.qsoft.governance.iam.api.rbac.RequiresPermission;
 import br.com.qsoft.governance.iam.application.ChangeUserHierarchyLevel;
 import br.com.qsoft.governance.iam.application.ChangeUserHierarchyLevelCommand;
 import br.com.qsoft.governance.iam.application.ChangeUserStatus;
 import br.com.qsoft.governance.iam.application.ChangeUserStatusCommand;
 import br.com.qsoft.governance.iam.application.ListUsers;
 import br.com.qsoft.governance.iam.application.ListUsersCommand;
-import br.com.qsoft.governance.iam.application.ProvisionUser;
-import br.com.qsoft.governance.iam.application.ProvisionUserCommand;
+import br.com.qsoft.governance.iam.application.CreateUser;
+import br.com.qsoft.governance.iam.application.CreateUserCommand;
 import br.com.qsoft.governance.iam.application.UpdateUser;
 import br.com.qsoft.governance.iam.application.UpdateUserCommand;
 import br.com.qsoft.governance.iam.application.rbac.EvaluationContext;
 import br.com.qsoft.governance.iam.application.rbac.PolicyEvaluator;
-import br.com.qsoft.governance.iam.domain.rbac.Action;
+import br.com.qsoft.governance.sharedkernel.rbac.Action;
 import br.com.qsoft.governance.iam.domain.rbac.Permission;
-import br.com.qsoft.governance.iam.domain.rbac.Resource;
+import br.com.qsoft.governance.sharedkernel.rbac.Resource;
 import br.com.qsoft.governance.iam.domain.user.HierarchyLevel;
 import br.com.qsoft.governance.iam.domain.user.User;
 import br.com.qsoft.governance.sharedkernel.id.UserId;
@@ -44,20 +45,20 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/usuarios")
 public class UserController {
 
-    private final ProvisionUser provisionUser;
+    private final CreateUser createUser;
     private final ChangeUserHierarchyLevel changeUserHierarchyLevel;
     private final ChangeUserStatus changeUserStatus;
     private final ListUsers listUsers;
     private final UpdateUser updateUser;
     private final PolicyEvaluator policyEvaluator;
 
-    public UserController(ProvisionUser provisionUser,
+    public UserController(CreateUser createUser,
                           ChangeUserHierarchyLevel changeUserHierarchyLevel,
                           ChangeUserStatus changeUserStatus,
                           ListUsers listUsers,
                           UpdateUser updateUser,
                           PolicyEvaluator policyEvaluator) {
-        this.provisionUser = provisionUser;
+        this.createUser = createUser;
         this.changeUserHierarchyLevel = changeUserHierarchyLevel;
         this.changeUserStatus = changeUserStatus;
         this.listUsers = listUsers;
@@ -71,14 +72,12 @@ public class UserController {
     public ResponseEntity<UserResponse> create(@Valid @RequestBody UserRequest request) {
         TenantContext context = TenantContextHolder.require();
 
-        User user = provisionUser.provision(new ProvisionUserCommand(
+        User user = createUser.create(new CreateUserCommand(
             context.tenantId(),
             request.email(),
             request.name(),
             request.hierarchyLevel(),
-            request.password(),
-            request.departmentId(),
-            Set.of()
+            request.departmentId()
         ));
         return ResponseEntity.status(HttpStatus.CREATED).body(UserResponse.from(user));
     }
@@ -109,7 +108,7 @@ public class UserController {
                                                @Valid @RequestBody UpdateUserRequest request) {
         TenantContext context = TenantContextHolder.require();
         User user = updateUser.update(new UpdateUserCommand(
-            context.userId(), UserId.of(id), request.hierarchyLevel(), request.departmentId()));
+            context.userId(), UserId.of(id), request.departmentId()));
         return ResponseEntity.ok(UserResponse.from(user));
     }
 

@@ -22,7 +22,7 @@
 |---|---|---|---|---|
 | POST | `/api/v1/auth/login` | `{ tenantSlug?, email, password }` | `{ token, tokenType }` | público |
 | POST | `/api/v1/tenants` | `{ slug, name, emailDomain }` | tenant | público (onboarding) |
-| POST | `/api/v1/usuarios` | `{ email, name, hierarchyLevel, password, departmentId? }` | usuário | `USER:MANAGE` |
+| POST | `/api/v1/usuarios` | `{ email, name, hierarchyLevel, departmentId? }` (sem senha — acesso via convite) | usuário | `USER:MANAGE` |
 | POST | `/api/v1/usuarios/{id}/nivel` | `{ hierarchyLevel }` | usuário | `USER:MANAGE` |
 | GET | `/api/v1/usuarios/me/permissoes` | — | `{ userId, permissions[] }` | autenticado |
 | GET | `/api/v1/usuarios/{id}/permissoes` | — | `{ userId, permissions[] }` | `USER:READ` |
@@ -85,7 +85,7 @@ Os `modules/*/*.controller.js` (axios → `/api/v1/...`) **nunca executam** porq
 | Recurso | Endpoint canônico proposto | Autorização |
 |---|---|---|
 | Listar usuários | ✅ `GET /api/v1/usuarios` (page/size, filtros `hierarchyLevel`, `departmentId`, `name`, `email`) | `USER:READ` |
-| Editar papel/departamento do usuário | ✅ `PATCH /api/v1/usuarios/{id}` `{ hierarchyLevel?, departmentId? }` | `USER:MANAGE` |
+| Editar **Department** do usuário | ✅ `PATCH /api/v1/usuarios/{id}` `{ departmentId }` — **só** o department; o papel/nível fica em `POST /usuarios/{id}/nivel` (ADR-33) | `USER:MANAGE` |
 | Desativar/reativar usuário | ✅ `PATCH /api/v1/usuarios/{id}/status` `{ status }` | `USER:MANAGE` |
 | Reenviar convite | ✅ `POST /api/v1/convites/{id}/reenviar` | `INVITE:MANAGE` |
 | Revogar convite | ✅ `DELETE /api/v1/convites/{id}` | `INVITE:MANAGE` |

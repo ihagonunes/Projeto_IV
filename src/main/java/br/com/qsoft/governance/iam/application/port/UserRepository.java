@@ -12,7 +12,25 @@ public interface UserRepository {
 
     User save(User user);
 
+    /**
+     * Busca por id <b>restrita ao tenant do contexto autenticado</b> (ADR-03).
+     * O tenant vem SEMPRE do {@code TenantContext} — nunca do cliente. Chamadas
+     * no caminho de autenticação (sem contexto) devem usar
+     * {@link #findByIdUnscoped(UserId)} explicitamente.
+     */
     Optional<User> findById(UserId id);
+
+    /**
+     * Busca por id <b>sem restrição de tenant</b> — uso <b>exclusivo</b> do
+     * caminho de autenticação ({@code TenantContextFilter}), onde o contexto
+     * ainda não foi estabelecido. Não usar em regras de negócio.
+     * <p>
+     * O default delega para {@link #findById(UserId)} por conveniência das
+     * implementações em memória (testes); o adapter de produção sobrescreve.
+     */
+    default Optional<User> findByIdUnscoped(UserId id) {
+        return findById(id);
+    }
 
     Optional<User> findByTenantIdAndEmail(TenantId tenantId, String email);
 

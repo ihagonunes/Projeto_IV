@@ -35,8 +35,8 @@ public class UpdateUser {
         UserId actor = Objects.requireNonNull(command.actorUserId(), "actorUserId");
         UserId target = Objects.requireNonNull(command.targetUserId(), "targetUserId");
 
-        if (command.hierarchyLevel() == null && command.departmentId() == null) {
-            throw new IllegalArgumentException("Informe hierarchyLevel e/ou departmentId.");
+        if (command.departmentId() == null) {
+            throw new IllegalArgumentException("Informe departmentId.");
         }
 
         User actorUser = userRepository.findById(actor)
@@ -50,12 +50,7 @@ public class UpdateUser {
                 "Usuário não autorizado a alterar usuário de outro tenant.");
         }
 
-        if (command.hierarchyLevel() != null) {
-            targetUser.changeHierarchyLevel(command.hierarchyLevel());
-        }
-        if (command.departmentId() != null) {
-            targetUser.changeDepartment(command.departmentId());
-        }
+        targetUser.changeDepartment(command.departmentId());
         return userRepository.save(targetUser);
     }
 }

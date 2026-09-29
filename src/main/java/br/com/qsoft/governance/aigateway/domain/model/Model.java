@@ -1,0 +1,170 @@
+package br.com.qsoft.governance.aigateway.domain.model;
+
+import br.com.qsoft.governance.sharedkernel.id.TenantId;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Instant;
+import java.util.Objects;
+import java.util.UUID;
+
+/**
+ * Modelo do catálogo do tenant. Referencia o Provider <b>por ID</b> (FK
+ * intramódulo — ADR-09/ADR-29) e não conhece o agregado Provider.
+ * <p>
+ * Carrega o preço por 1.000 tokens (entrada/saída) e calcula o custo estimado
+ * de uma requisição (ADR-13/SPI-72): o Gateway calcula o custo <b>uma vez</b> e
+ * o envia em {@code AIRequestCompleted}; o observability não recalcula.
+ */
+public final class Model {
+
+    private static final int NAME_MAX = 150;
+    private static final BigDecimal THOUSAND = BigDecimal.valueOf(1000);
+    private static final int COST_SCALE = 6;
+
+    private final UUID id;
+    private final TenantId tenantId;
+    private final UUID providerId;
+    private String name;
+    private ModelStatus status;
+    private BigDecimal inputPricePer1k;
+    private BigDecimal outputPricePer1k;
+    private final Instant createdAt;
+    private Instant updatedAt;
+
+    private Model(UUID id, TenantId tenantId, UUID providerId, String name, ModelStatus status,
+                  BigDecimal inputPricePer1k, BigDecimal outputPricePer1k,
+                  Instant createdAt, Instant updatedAt) {
+        this.id = Objects.requireNonNull(id, "id");
+        this.tenantId = Objects.requireNonNull(tenantId, "tenantId");
+        this.providerId = Objects.requireNonNull(providerId, "providerId");
+        this.name = Objects.requireNonNull(name, "name");
+        this.status = Objects.requireNonNull(status, "status");
+        this.inputPricePer1k = inputPricePer1k;
+        this.outputPricePer1k = outputPricePer1k;
+        this.createdAt = Objects.requireNonNull(createdAt, "createdAt");
+        this.updatedAt = Objects.requireNonNull(updatedAt, "updatedAt");
+    }
+
+    public static Model create(UUID id, TenantId tenantId, UUID providerId, String name,
+                               BigDecimal inputPricePer1k, BigDecimal outputPricePer1k) {
+        Instant now = Instant.now();
+        return new Model(id, tenantId, providerId, requireName(name), ModelStatus.AVAILABLE,
+            requirePrice(inputPricePer1k), requirePrice(outputPricePer1k), now, now);
+    }
+
+    public static Model restore(UUID id, TenantId tenantId, UUID providerId, String name,
+                                ModelStatus status, BigDecimal inputPricePer1k,
+                                BigDecimal outputPricePer1k, Instant createdAt, Instant updatedAt) {
+        return new Model(id, tenantId, providerId, name, status, inputPricePer1k, outputPricePer1k,
+            createdAt, updatedAt);
+    }
+
+    public UUID id() {
+        return id;
+    }
+
+    public TenantId tenantId() {
+        return tenantId;
+    }
+
+    public UUID providerId() {
+        return providerId;
+    }
+
+    public String name() {
+        return name;
+    }
+
+    public ModelStatus status() {
+        return status;
+    }
+
+    public BigDecimal inputPricePer1k() {
+        return inputPricePer1k;
+    }
+
+    public BigDecimal outputPricePer1k() {
+        return outputPricePer1k;
+    }
+
+    public Instant createdAt() {
+        return createdAt;
+    }
+
+    public Instant updatedAt() {
+        return updatedAt;
+    }
+
+    public boolean isAvailable() {
+        return status == ModelStatus.AVAILABLE;
+    }
+
+    public Model rename(String newName) {
+        this.name = requireName(newName);
+        return touch();
+    }
+
+    public Model changePrices(BigDecimal newInputPrice, BigDecimal newOutputPrice) {
+        this.inputPricePer1k = requirePrice(newInputPrice);
+        this.outputPricePer1k = requirePrice(newOutputPrice);
+        return touch();
+    }
+
+    public Model makeAvailable() {
+        if (status != ModelStatus.AVAILABLE) {
+            this.status = ModelStatus.AVAILABLE;
+            touch();
+        }
+        return this;
+    }
+
+    public Model disable() {
+        if (status != ModelStatus.DISABLED) {
+            this.status = ModelStatus.DISABLED;
+            touch();
+        }
+        return this;
+    }
+
+    /**
+     * Custo estimado (ADR-13/SPI-72):
+     * {@code (inputTokens/1000 * inputPrice) + (outputTokens/1000 * outputPrice)}.
+     * Preço nulo conta como zero (modelo sem preço definido).
+     */
+    public BigDecimal estimatedCost(long inputTokens, long outputTokens) {
+        if (inputTokens < 0 || outputTokens < 0) {
+            throw new IllegalArgumentException("tokens não podem ser negativos.");
+        }
+        BigDecimal input = inputPricePer1k == null ? BigDecimal.ZERO : inputPricePer1k;
+        BigDecimal output = outputPricePer1k == null ? BigDecimal.ZERO : outputPricePer1k;
+        return input.multiply(BigDecimal.valueOf(inputTokens))
+            .add(output.multiply(BigDecimal.valueOf(outputTokens)))
+            .divide(THOUSAND, COST_SCALE, RoundingMode.HALF_UP);
+    }
+
+    private Model touch() {
+        this.updatedAt = Instant.now();
+        return this;
+    }
+
+    private static String requireName(String name) {
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("name é obrigatório.");
+        }
+        String trimmed = name.trim();
+        if (trimmed.length() > NAME_MAX) {
+            throw new IllegalArgumentException("name deve ter no máximo " + NAME_MAX + " caracteres.");
+        }
+        return trimmed;
+    }
+
+    private static BigDecimal requirePrice(BigDecimal price) {
+        if (price == null) {
+            return null;
+        }
+        if (price.signum() < 0) {
+            throw new IllegalArgumentException("preço não pode ser negativo.");
+        }
+        return price;
+    }
+}

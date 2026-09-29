@@ -16,6 +16,10 @@ import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
+/**
+ * Edição do <b>Department</b> de um usuário (SPI-63). O papel/nível não é
+ * editado aqui — o modelo de autorização é por papéis por tenant (ADR-33).
+ */
 class UpdateUserTest {
 
     private final Map<UserId, User> usersById = new LinkedHashMap<>();
@@ -55,33 +59,19 @@ class UpdateUserTest {
     }
 
     @Test
-    void shouldUpdateHierarchyLevelAndDepartmentWithinSameTenant() {
+    void shouldUpdateDepartmentWithinSameTenant() {
         TenantId tenantId = TenantId.random();
         User actor = userIn(tenantId, "admin@x.com", HierarchyLevel.EXECUTIVE, null);
         User target = userIn(tenantId, "ana@x.com", HierarchyLevel.COLLABORATOR, null);
         UUID marketing = UUID.randomUUID();
 
-        User updated = useCase.update(new UpdateUserCommand(
-            actor.id(), target.id(), HierarchyLevel.MANAGER, marketing));
+        User updated = useCase.update(new UpdateUserCommand(actor.id(), target.id(), marketing));
 
-        assertThat(updated.hierarchyLevel()).isEqualTo(HierarchyLevel.MANAGER);
         assertThat(updated.departmentId()).isEqualTo(marketing);
         assertThat(userRepository.findById(target.id()).orElseThrow().departmentId())
             .isEqualTo(marketing);
-    }
-
-    @Test
-    void shouldUpdateOnlyProvidedFields() {
-        TenantId tenantId = TenantId.random();
-        User actor = userIn(tenantId, "admin@x.com", HierarchyLevel.EXECUTIVE, null);
-        UUID original = UUID.randomUUID();
-        User target = userIn(tenantId, "ana@x.com", HierarchyLevel.COLLABORATOR, original);
-
-        User updated = useCase.update(new UpdateUserCommand(
-            actor.id(), target.id(), HierarchyLevel.LEADER, null));
-
-        assertThat(updated.hierarchyLevel()).isEqualTo(HierarchyLevel.LEADER);
-        assertThat(updated.departmentId()).isEqualTo(original);
+        // O nível hierárquico não é alterado por este caso de uso.
+        assertThat(updated.hierarchyLevel()).isEqualTo(HierarchyLevel.COLLABORATOR);
     }
 
     @Test
@@ -89,8 +79,8 @@ class UpdateUserTest {
         User actor = userIn(TenantId.random(), "admin@a.com", HierarchyLevel.EXECUTIVE, null);
         User target = userIn(TenantId.random(), "ana@b.com", HierarchyLevel.COLLABORATOR, null);
 
-        assertThatThrownBy(() -> useCase.update(new UpdateUserCommand(
-            actor.id(), target.id(), HierarchyLevel.MANAGER, null)))
+        assertThatThrownBy(() -> useCase.update(
+            new UpdateUserCommand(actor.id(), target.id(), UUID.randomUUID())))
             .isInstanceOf(AuthorizationDeniedException.class);
     }
 
@@ -99,19 +89,18 @@ class UpdateUserTest {
         TenantId tenantId = TenantId.random();
         User actor = userIn(tenantId, "admin@x.com", HierarchyLevel.EXECUTIVE, null);
 
-        assertThatThrownBy(() -> useCase.update(new UpdateUserCommand(
-            actor.id(), UserId.random(), HierarchyLevel.MANAGER, null)))
+        assertThatThrownBy(() -> useCase.update(
+            new UpdateUserCommand(actor.id(), UserId.random(), UUID.randomUUID())))
             .isInstanceOf(UserNotFoundException.class);
     }
 
     @Test
-    void shouldRejectWhenNoFieldProvided() {
+    void shouldRejectMissingDepartment() {
         TenantId tenantId = TenantId.random();
         User actor = userIn(tenantId, "admin@x.com", HierarchyLevel.EXECUTIVE, null);
         User target = userIn(tenantId, "ana@x.com", HierarchyLevel.COLLABORATOR, null);
 
-        assertThatThrownBy(() -> useCase.update(new UpdateUserCommand(
-            actor.id(), target.id(), null, null)))
+        assertThatThrownBy(() -> useCase.update(new UpdateUserCommand(actor.id(), target.id(), null)))
             .isInstanceOf(IllegalArgumentException.class);
     }
 }

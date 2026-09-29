@@ -233,7 +233,7 @@ class UserManagementIT {
     // ---------------------------------------------------------------- SPI-63
 
     @Test
-    void shouldUpdateUserHierarchyLevelAndDepartment() {
+    void shouldUpdateUserDepartment() {
         String adminToken = login(ADMIN_EMAIL, ADMIN_PASSWORD);
         Tenant tenant = tenantRepository.findBySlug(TENANT_SLUG).orElseThrow();
         User target = userRepository.findByTenantIdAndEmail(tenant.id(), ADMIN_EMAIL).orElseThrow();
@@ -242,11 +242,12 @@ class UserManagementIT {
         Map<?, ?> updated = client.patch().uri("/api/v1/usuarios/" + target.id().value())
             .header("Authorization", "Bearer " + adminToken)
             .contentType(MediaType.APPLICATION_JSON)
-            .body(Map.of("hierarchyLevel", "MANAGER", "departmentId", departmentId.toString()))
+            .body(Map.of("departmentId", departmentId.toString()))
             .retrieve().body(Map.class);
 
         assertThat(updated).isNotNull();
-        assertThat(updated.get("hierarchyLevel")).isEqualTo("MANAGER");
+        // O PATCH edita o Department; o papel/nível NÃO é alterado por aqui (ADR-33).
+        assertThat(updated.get("departmentId")).isEqualTo(departmentId.toString());
     }
 
     @Test
@@ -260,7 +261,7 @@ class UserManagementIT {
             client.patch().uri("/api/v1/usuarios/" + foreign.id().value())
                 .header("Authorization", "Bearer " + adminToken)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(Map.of("hierarchyLevel", "MANAGER"))
+                .body(Map.of("departmentId", UUID.randomUUID().toString()))
                 .retrieve().toBodilessEntity();
             throw new AssertionError("Esperado 403/404");
         } catch (RestClientResponseException e) {
@@ -318,7 +319,7 @@ class UserManagementIT {
         // Desativa: o usuário deixa de autenticar, mas o registro é preservado.
         Map<?, ?> deactivated = changeStatus(adminToken, collaborator.id().value(), "INACTIVE");
         assertThat(deactivated.get("status")).isEqualTo("INACTIVE");
-        assertThat(userRepository.findById(collaborator.id())).isPresent();
+        assertThat(userRepository.findByIdUnscoped(collaborator.id())).isPresent();
         assertThat(loginStatus("colab@mgmtdemo.com", ADMIN_PASSWORD)).isEqualTo(401);
 
         // Reativa: o acesso é restaurado.

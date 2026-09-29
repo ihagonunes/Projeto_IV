@@ -1,5 +1,7 @@
 package br.com.qsoft.governance.iam.domain.rbac;
 
+import br.com.qsoft.governance.sharedkernel.rbac.Action;
+import br.com.qsoft.governance.sharedkernel.rbac.Resource;
 import java.util.Objects;
 
 /**

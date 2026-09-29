@@ -3,6 +3,8 @@ package br.com.qsoft.governance.iam.domain.rbac;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import br.com.qsoft.governance.iam.domain.user.HierarchyLevel;
+import br.com.qsoft.governance.sharedkernel.rbac.Action;
+import br.com.qsoft.governance.sharedkernel.rbac.Resource;
 import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 
@@ -61,6 +63,8 @@ class PermissionMatrixTest {
             Permission.of(Resource.TENANT, Action.READ))).isTrue();
         assertThat(PermissionMatrix.allows(HierarchyLevel.EXECUTIVE,
             Permission.of(Resource.TENANT, Action.MANAGE))).isTrue();
+        assertThat(PermissionMatrix.allows(HierarchyLevel.EXECUTIVE,
+            Permission.of(Resource.AI_TOOL, Action.MANAGE))).isTrue();
     }
 
     @Test

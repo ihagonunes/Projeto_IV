@@ -6,7 +6,7 @@ Contratos são Java APIs internas entre módulos. Não equivalem automaticamente
 
 | Módulo | Contratos públicos principais |
 |---|---|
-| iam | `IdentityQuery`, `AuthorizationQuery` |
+| iam | `IdentityQuery`, `AuthorizationQuery`, contrato de autorização RBAC (`@RequiresPermission` em `iam.api.rbac` — ADR-34) |
 | department | `OrganizationQuery`, `DepartmentBudgetQuery`, `DepartmentModelPolicyQuery` |
 | project | `ProjectQueryPort` |
 | aigateway | `AICompletionService`, `AIToolCatalogQuery`, catálogo administrativo |

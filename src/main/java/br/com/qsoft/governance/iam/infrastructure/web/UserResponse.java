@@ -12,6 +12,7 @@ public record UserResponse(
     String email,
     String name,
     String hierarchyLevel,
+    UUID departmentId,
     String status
 ) {
 
@@ -22,6 +23,7 @@ public record UserResponse(
             user.email(),
             user.name(),
             user.hierarchyLevel().name(),
+            user.departmentId(),
             user.status().name()
         );
     }

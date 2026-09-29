@@ -75,7 +75,7 @@ public class TenantContextFilter extends OncePerRequestFilter {
         if (tenant == null || tenant.status() != TenantStatus.ACTIVE) {
             return false;
         }
-        var user = userRepository.findById(userId).orElse(null);
+        var user = userRepository.findByIdUnscoped(userId).orElse(null);
         if (user == null || user.status() != UserStatus.ACTIVE) {
             return false;
         }

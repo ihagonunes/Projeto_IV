@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import br.com.qsoft.governance.sharedkernel.id.RoleId;
 import br.com.qsoft.governance.sharedkernel.id.TenantId;
+import br.com.qsoft.governance.sharedkernel.rbac.Action;
+import br.com.qsoft.governance.sharedkernel.rbac.Resource;
 import org.junit.jupiter.api.Test;
 
 class RoleTest {

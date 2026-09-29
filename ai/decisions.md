@@ -37,6 +37,7 @@ Este arquivo é um índice. Leia somente o ADR relacionado à tarefa.
 | ADR-31 | Physical Modular Structure and Enforcement | ACCEPTED | `ai/adr/ADR-31-physical-modular-structure-and-enforcement.md` |
 | ADR-32 | Tenant resolution on login (email-domain fallback) | ACCEPTED (emendado pela SPI-54) | `ai/adr/ADR-32-tenant-resolution-on-login.md` |
 | ADR-33 | Modelo de autorização (RBAC por papéis por tenant) | ACCEPTED | `ai/adr/ADR-33-authorization-model-roles.md` |
+| ADR-34 | Contrato de autorização RBAC exposto a outros módulos | ACCEPTED | `ai/adr/ADR-34-rbac-authorization-contract-cross-module.md` |
 
 ## Decisões abertas (pendentes de ADR)
 
@@ -71,3 +72,23 @@ Itens **identificados e ainda não decididos**. Não implementar antes de um ADR
 - **Implementado:** rate limiting do login **em memória** (`LoginAttemptLimiter`), por instância, em janela fixa (padrão: 5 tentativas / 15 min), chaveado por IP + e-mail. Sem lockout persistente de conta, conforme a task e o ADR-30.
 - **Limitações conhecidas:** (i) o limite é **por instância** — não é compartilhado entre réplicas; (ii) o estado se perde em restart; (iii) a chave usa o IP do socket (`getRemoteAddr()`), então atrás de um proxy reverso todos os clientes compartilham o IP do proxy (`X-Forwarded-For` exigiria configuração de proxy confiável).
 - **Decisão futura:** um backend compartilhado (ex.: Redis) para o rate limiting exigiria dependência nova → justificar em `ai/dependencies.md` ou ADR.
+
+## Simplificações de escopo (Sprint 2) — APLICADAS
+
+Cortes deliberados para reduzir complexidade e superfície de segurança, sem remover função do usuário.
+
+### 1. `PATCH /api/v1/usuarios/{id}` edita **apenas** o Department (não o papel/nível)
+
+- **Motivo:** o modelo de autorização é por **papéis por tenant** (ADR-33) e o `PolicyEvaluator` lê `iam_role_assignments` — **não** o `hierarchyLevel`. Deixar `hierarchyLevel` no PATCH dava a falsa impressão de mover privilégios.
+- **Efeito:** o corpo do PATCH é `{ departmentId }`. O nível continua em `POST /api/v1/usuarios/{id}/nivel`, como **rótulo organizacional**.
+- **Contrato alterado** — `UpdateUserRequest`/`UpdateUserCommand` e `UserResponse` (ganhou `departmentId`).
+
+### 2. `POST /api/v1/usuarios` **não** aceita senha
+
+- **Motivo:** o caminho legítimo para o usuário obter acesso é o **convite** (SPI-29/30), que define a senha no aceite. Aceitar senha no cadastro permitia ao administrador fixar/transmitir senha por canal inseguro.
+- **Efeito:** o payload é `{ email, name, hierarchyLevel, departmentId? }`; o endpoint usa `CreateUser` (sem senha). O usuário criado assim não autentica até aceitar um convite (ou passar por recuperação de senha, quando existir).
+
+### 3. `UserRepository.findById` é **sempre** tenant-scoped
+
+- **Motivo:** a assinatura antiga alternava entre filtrar e não filtrar conforme houvesse `TenantContext` — uma armadilha para callers futuros (ex.: job assíncrono, listener), que poderiam ler usuários de outro tenant.
+- **Efeito:** `findById` **exige** `TenantContext` (senão `IllegalStateException`); o caminho de autenticação usa `findByIdUnscoped` **explicitamente** (`TenantContextFilter`, onde o contexto ainda não existe).

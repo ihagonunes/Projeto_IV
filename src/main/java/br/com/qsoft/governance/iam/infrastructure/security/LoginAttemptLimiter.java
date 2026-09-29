@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -30,9 +31,13 @@ public class LoginAttemptLimiter {
 
     private static final int MAX_TRACKED_KEYS = 10_000;
 
+    /** Amortiza a varredura de limpeza: no máximo uma a cada N registros. */
+    private static final int PURGE_INTERVAL = 1_000;
+
     private final int maxAttempts;
     private final Duration window;
     private final Map<String, Attempts> attemptsByKey = new ConcurrentHashMap<>();
+    private final AtomicInteger writesSincePurge = new AtomicInteger();
 
     public LoginAttemptLimiter(
             @Value("${app.security.login-rate-limit.max-attempts:5}") int maxAttempts,
@@ -85,11 +90,21 @@ public class LoginAttemptLimiter {
         return attempts;
     }
 
-    /** Evita crescimento ilimitado do mapa em cenários de varredura de e-mails. */
+    /**
+     * Evita crescimento ilimitado do mapa em cenários de varredura de e-mails.
+     * A varredura é <b>amortizada</b>: quando o mapa passa do teto, ela ocorre no
+     * máximo uma vez a cada {@link #PURGE_INTERVAL} registros — sem isso, toda
+     * tentativa pagaria uma varredura O(n) do mapa inteiro (amplificador de carga
+     * sob ataque de enumeração).
+     */
     private void purgeIfNeeded(Instant now) {
         if (attemptsByKey.size() < MAX_TRACKED_KEYS) {
             return;
         }
+        if (writesSincePurge.incrementAndGet() < PURGE_INTERVAL) {
+            return;
+        }
+        writesSincePurge.set(0);
         attemptsByKey.entrySet().removeIf(entry -> entry.getValue().isExpired(now, window));
     }
 

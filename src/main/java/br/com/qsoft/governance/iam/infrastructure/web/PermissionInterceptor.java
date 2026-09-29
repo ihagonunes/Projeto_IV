@@ -1,6 +1,7 @@
 package br.com.qsoft.governance.iam.infrastructure.web;
 
 import br.com.qsoft.governance.iam.api.model.AuthorizationResult;
+import br.com.qsoft.governance.iam.api.rbac.RequiresPermission;
 import br.com.qsoft.governance.iam.application.rbac.EvaluationContext;
 import br.com.qsoft.governance.iam.application.rbac.PolicyEvaluator;
 import br.com.qsoft.governance.iam.domain.rbac.Permission;

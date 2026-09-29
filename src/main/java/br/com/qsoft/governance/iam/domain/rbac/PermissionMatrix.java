@@ -1,6 +1,8 @@
 package br.com.qsoft.governance.iam.domain.rbac;
 
 import br.com.qsoft.governance.iam.domain.user.HierarchyLevel;
+import br.com.qsoft.governance.sharedkernel.rbac.Action;
+import br.com.qsoft.governance.sharedkernel.rbac.Resource;
 import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -67,6 +69,7 @@ public final class PermissionMatrix {
         Set<Permission> executive = new HashSet<>(manager);
         executive.add(p(Resource.TENANT, Action.READ));
         executive.add(p(Resource.TENANT, Action.MANAGE));
+        executive.add(p(Resource.AI_TOOL, Action.MANAGE));
         executive.add(p(Resource.DEPARTMENT, Action.MANAGE));
         executive.add(p(Resource.ROLE, Action.MANAGE));
         executive.add(p(Resource.MODEL, Action.MANAGE));
