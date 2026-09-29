@@ -1,0 +1,96 @@
+<div class="container py-4" style="max-width: 1100px;">
+
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h1 class="h4 mb-1">Dashboard de uso</h1>
+            <p class="text-muted mb-0">Consumo de IA no seu escopo de acesso.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="/onboarding/departamentos/listar" class="btn btn-outline-secondary btn-sm">Departamentos</a>
+            <a href="/onboarding" class="btn btn-outline-secondary btn-sm">Onboarding</a>
+        </div>
+    </div>
+
+    <!-- Filtros (SPI-90/91) -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form id="dashboardFiltros" class="row g-3 align-items-end" novalidate>
+                <div class="col-md-3">
+                    <label class="form-label" for="filtroDe">De</label>
+                    <input type="date" class="form-control" id="filtroDe" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="filtroAte">Até</label>
+                    <input type="date" class="form-control" id="filtroAte" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="filtroDepartamento">Departamento</label>
+                    <select class="form-select" id="filtroDepartamento">
+                        <option value="">Todos (meu escopo)</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-primary w-100" type="submit">Aplicar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="dashboardMensagem" class="d-none"></div>
+
+    <!-- KPIs (SPI-92) -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="text-muted small">Requisições no período</div>
+                    <div class="fs-3 fw-semibold" id="kpiRequests">—</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="text-muted small">Usuários ativos</div>
+                    <div class="fs-3 fw-semibold" id="kpiActiveUsers">—</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="text-muted small">Custo estimado</div>
+                    <div class="fs-3 fw-semibold" id="kpiCusto">—</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Série temporal (SPI-88) -->
+    <div class="card mb-4">
+        <div class="card-header">Requisições por período</div>
+        <div class="card-body" id="graficoSeries"></div>
+    </div>
+
+    <!-- Custos por departamento (SPI-89) -->
+    <div class="card">
+        <div class="card-header">Tokens e custo por departamento</div>
+        <div class="table-responsive">
+            <table class="table mb-0 align-middle">
+                <thead>
+                    <tr>
+                        <th>Departamento</th>
+                        <th class="text-end">Requisições</th>
+                        <th class="text-end">Tokens (entrada/saída)</th>
+                        <th class="text-end">Custo estimado</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaCustos"></tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<script src="/public/js/core/api-client.js"></script>
+<script src="/public/js/pages/dashboard.js"></script>
