@@ -196,4 +196,124 @@ class AuthorizationQueryAdapterTest {
         assertThat(result.allowed()).isFalse();
         assertThat(result.denialReason()).isNotBlank();
     }
+
+    // =====================================================================
+    // Branches faltantes em checkPermission (branch 58.8% → ≥ 70%)
+    // =====================================================================
+
+    /** Usuário não encontrado → negado com motivo. */
+    @Test
+    void deve_negarPermissao_quando_usuarioNaoExiste() {
+        AuthorizationResult result =
+            authorizationQuery.checkPermission(UserId.random(), Permission.MANAGE_USERS);
+
+        assertThat(result.allowed()).isFalse();
+        assertThat(result.denialReason()).contains("não encontrado");
+    }
+
+    /** Usuário inativo → negado mesmo tendo permissão. */
+    @Test
+    void deve_negarPermissao_quando_usuarioInativo() {
+        Tenant tenant = activeTenant();
+        User user = userIn(tenant.id(), "inativo@qsoft.com", HierarchyLevel.EXECUTIVE,
+            Permission.MANAGE_USERS);
+        user.deactivate();
+        usersById.put(user.id(), user);
+
+        AuthorizationResult result =
+            authorizationQuery.checkPermission(user.id(), Permission.MANAGE_USERS);
+
+        assertThat(result.allowed()).isFalse();
+        assertThat(result.denialReason()).contains("inativo");
+    }
+
+    /** Tenant não encontrado → negado. */
+    @Test
+    void deve_negarPermissao_quando_tenantNaoExiste() {
+        // Usuário sem tenant registrado no repositório
+        User user = User.create(UserId.random(), TenantId.random(),
+            "orphan@x.com", "Orphan", HierarchyLevel.EXECUTIVE, null);
+        user.grantPermission(Permission.MANAGE_USERS);
+        usersById.put(user.id(), user);
+        // tenant NÃO é salvo em tenantsById
+
+        AuthorizationResult result =
+            authorizationQuery.checkPermission(user.id(), Permission.MANAGE_USERS);
+
+        assertThat(result.allowed()).isFalse();
+        assertThat(result.denialReason()).contains("inativo");
+    }
+
+    /** Tenant inativo → negado mesmo com user ACTIVE. */
+    @Test
+    void deve_negarPermissao_quando_tenantInativo() {
+        TenantId tenantId = TenantId.random();
+        Tenant inactiveTenant = Tenant.restore(tenantId, "off", "Off",
+            TenantStatus.INACTIVE, Instant.now(), Instant.now());
+        tenantsById.put(tenantId, inactiveTenant);
+
+        User user = User.create(UserId.random(), tenantId,
+            "user@off.com", "U", HierarchyLevel.EXECUTIVE, null);
+        user.grantPermission(Permission.MANAGE_USERS);
+        usersById.put(user.id(), user);
+
+        AuthorizationResult result =
+            authorizationQuery.checkPermission(user.id(), Permission.MANAGE_USERS);
+
+        assertThat(result.allowed()).isFalse();
+        assertThat(result.denialReason()).contains("inativo");
+    }
+
+    /** Usuário ativo com permissão e tenant ativo → autorizado. */
+    @Test
+    void deve_permitirPermissao_quando_usuarioEtenantAtivos() {
+        Tenant tenant = activeTenant();
+        User admin = userIn(tenant.id(), "admin@qsoft.com", HierarchyLevel.EXECUTIVE,
+            Permission.MANAGE_USERS);
+
+        AuthorizationResult result =
+            authorizationQuery.checkPermission(admin.id(), Permission.MANAGE_USERS);
+
+        assertThat(result.allowed()).isTrue();
+        assertThat(result.denialReason()).isNull();
+    }
+
+    // =====================================================================
+    // resolveScope — branches faltantes: LEADER, isAdmin
+    // =====================================================================
+
+    /** LEADER tem escopo DEPARTMENT (mesmo nível que MANAGER). */
+    @Test
+    void leaderShouldResolveDepartmentScope() {
+        Tenant tenant = activeTenant();
+        User leader = userIn(tenant.id(), "lider@qsoft.com", HierarchyLevel.LEADER);
+
+        AuthorizationScope scope = authorizationQuery.resolveScope(leader.id());
+
+        assertThat(scope).isEqualTo(AuthorizationScope.DEPARTMENT);
+    }
+
+    /** Admin (todas as permissões) sempre tem escopo TENANT, independente do nível hierárquico. */
+    @Test
+    void adminShouldResolveTenantScope() {
+        Tenant tenant = activeTenant();
+        User admin = userIn(tenant.id(), "admin@qsoft.com", HierarchyLevel.COLLABORATOR);
+        // Concede TODAS as permissões → isAdmin() = true
+        for (Permission p : Permission.values()) {
+            admin.grantPermission(p);
+        }
+        usersById.put(admin.id(), admin);
+
+        AuthorizationScope scope = authorizationQuery.resolveScope(admin.id());
+
+        assertThat(scope).isEqualTo(AuthorizationScope.TENANT);
+    }
+
+    /** Usuário não encontrado → scope padrão SELF (comportamento defensivo). */
+    @Test
+    void deve_retornarSelfScope_quando_usuarioNaoExiste() {
+        AuthorizationScope scope = authorizationQuery.resolveScope(UserId.random());
+
+        assertThat(scope).isEqualTo(AuthorizationScope.SELF);
+    }
 }

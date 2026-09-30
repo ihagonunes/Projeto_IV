@@ -193,4 +193,35 @@ class DepartmentUseCasesTest {
         assertThat(listDepartments.list(tenantId, null, null))
             .extracting(Department::name).containsExactly("Marketing");
     }
+
+    @Test
+    void shouldUpdateDescriptionOnly_quando_nomeNuloNoUpdate() {
+        TenantId tenantId = TenantId.random();
+        Department department = create(tenantId, "Marketing");
+
+        Department updated = updateDepartment.update(new UpdateDepartmentCommand(
+            tenantId, department.id(), null, "Nova descrição", null, null));
+
+        assertThat(updated.name()).isEqualTo("Marketing");
+        assertThat(updated.description()).isEqualTo("Nova descrição");
+    }
+
+    @Test
+    void shouldUpdateDescriptionOnly_quando_nomeEmBrancoNoUpdate() {
+        TenantId tenantId = TenantId.random();
+        Department department = create(tenantId, "Vendas");
+
+        Department updated = updateDepartment.update(new UpdateDepartmentCommand(
+            tenantId, department.id(), "   ", "desc atualizada", null, null));
+
+        assertThat(updated.name()).isEqualTo("Vendas");
+        assertThat(updated.description()).isEqualTo("desc atualizada");
+    }
+
+    @Test
+    void shouldRejectNullCommandOnUpdate() {
+        assertThatThrownBy(() -> updateDepartment.update(null))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("obrigatório");
+    }
 }
