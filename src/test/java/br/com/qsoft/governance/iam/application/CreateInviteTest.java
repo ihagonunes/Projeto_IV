@@ -153,4 +153,47 @@ class CreateInviteTest {
             tenantId, "  ", HierarchyLevel.COLLABORATOR, null)))
             .isInstanceOf(IllegalArgumentException.class);
     }
+
+    // =====================================================================
+    // Branches faltantes (branch 66.7% → ≥ 70%)
+    // =====================================================================
+
+    /** Command nulo → IllegalArgumentException imediato. */
+    @Test
+    void deve_lancarExcecao_quando_commandNulo() {
+        assertThatThrownBy(() -> useCase.create(null))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("obrigatório");
+    }
+
+    /** Tenant inativo → TenantNotFoundException (mesmo comportamento de inexistente). */
+    @Test
+    void deve_lancarExcecao_quando_tenantInativo() {
+        TenantId id = TenantId.random();
+        tenants.put(id, Tenant.restore(id, "off", "Off", TenantStatus.INACTIVE,
+            Instant.now(), Instant.now()));
+
+        assertThatThrownBy(() -> useCase.create(new CreateInviteCommand(
+            id, "ana@x.com", HierarchyLevel.COLLABORATOR, null)))
+            .isInstanceOf(TenantNotFoundException.class);
+    }
+
+    /** hierarchyLevel nulo → NullPointerException (requireNonNull do domínio). */
+    @Test
+    void deve_lancarExcecao_quando_hierarchyLevelNulo() {
+        TenantId tenantId = activeTenant();
+
+        assertThatThrownBy(() -> useCase.create(new CreateInviteCommand(
+            tenantId, "ana@x.com", null, null)))
+            .isInstanceOf(NullPointerException.class);
+    }
+
+    /** tenantId nulo → NullPointerException (requireNonNull do caso de uso). */
+    @Test
+    void deve_lancarExcecao_quando_tenantIdNulo() {
+        assertThatThrownBy(() -> useCase.create(new CreateInviteCommand(
+            null, "ana@x.com", HierarchyLevel.COLLABORATOR, null)))
+            .isInstanceOf(NullPointerException.class);
+    }
 }
+

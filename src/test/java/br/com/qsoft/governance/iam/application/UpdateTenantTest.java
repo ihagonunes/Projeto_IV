@@ -98,4 +98,20 @@ class UpdateTenantTest {
         assertThatThrownBy(() -> getCurrentTenant.current(TenantId.random()))
             .isInstanceOf(TenantNotFoundException.class);
     }
+
+    @Test
+    void shouldRejectNullName() {
+        Tenant tenant = tenant("qsoft", "QSOFT");
+
+        assertThatThrownBy(() -> updateTenant.update(new UpdateTenantCommand(tenant.id(), null)))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("name");
+    }
+
+    @Test
+    void shouldRejectNullCommand() {
+        assertThatThrownBy(() -> updateTenant.update(null))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("obrigatório");
+    }
 }

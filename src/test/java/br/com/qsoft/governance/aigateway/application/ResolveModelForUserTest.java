@@ -188,4 +188,12 @@ class ResolveModelForUserTest {
         assertThatThrownBy(() -> useCase.resolve(tenantId, userId, null))
             .isInstanceOf(ProviderInactiveException.class);
     }
+
+    @Test
+    void shouldRejectWhenDefaultModelIsNullInPolicy() {
+        policy = new ModelPolicyInfo(departmentId, Set.of(), null);
+
+        assertThatThrownBy(() -> useCase.resolve(tenantId, userId, null))
+            .isInstanceOf(NoModelConfiguredException.class);
+    }
 }

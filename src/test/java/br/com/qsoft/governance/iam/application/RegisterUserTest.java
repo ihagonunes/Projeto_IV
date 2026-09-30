@@ -346,4 +346,97 @@ class RegisterUserTest {
         // Assert extra: o usuário NÃO foi criado (nenhum INSERT ocorreu).
         assertThat(userRepository.existsByTenantIdAndEmail(tenant.id(), "ana@qsoft.com")).isFalse();
     }
+
+    // =====================================================================
+    // Branches faltantes em RegisterUser (branch 64.3% → ≥ 70%)
+    // =====================================================================
+
+    /** Command nulo → IllegalArgumentException imediato. */
+    @Test
+    void deve_lancarExcecao_quando_commandEhNulo() {
+        assertThatThrownBy(() -> useCase.register(null))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("obrigatório");
+    }
+
+    /** Email em branco → IllegalArgumentException antes de qualquer persistência. */
+    @Test
+    void deve_lancarExcecao_quando_emailEmBranco() {
+        Tenant tenant = activeTenant();
+        User admin = userIn(tenant.id(), "admin@qsoft.com",
+            HierarchyLevel.EXECUTIVE, Permission.MANAGE_USERS);
+
+        assertThatThrownBy(() -> useCase.register(new RegisterUserCommand(
+            admin.id(), tenant.id(), "  ", "Ana", HierarchyLevel.COLLABORATOR, null)))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("email");
+    }
+
+    /** Name em branco → IllegalArgumentException. */
+    @Test
+    void deve_lancarExcecao_quando_nomeEmBranco() {
+        Tenant tenant = activeTenant();
+        User admin = userIn(tenant.id(), "admin@qsoft.com",
+            HierarchyLevel.EXECUTIVE, Permission.MANAGE_USERS);
+
+        assertThatThrownBy(() -> useCase.register(new RegisterUserCommand(
+            admin.id(), tenant.id(), "ana@qsoft.com", "  ", HierarchyLevel.COLLABORATOR, null)))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("name");
+    }
+
+    /** Ator não encontrado → UserNotFoundException antes de checar permissão. */
+    @Test
+    void deve_lancarExcecao_quando_atorNaoExiste() {
+        Tenant tenant = activeTenant();
+        UserId atorInexistente = UserId.random();
+
+        assertThatThrownBy(() -> useCase.register(new RegisterUserCommand(
+            atorInexistente, tenant.id(), "ana@qsoft.com", "Ana",
+            HierarchyLevel.COLLABORATOR, null)))
+            .isInstanceOf(br.com.qsoft.governance.iam.domain.exception.UserNotFoundException.class);
+    }
+
+    /**
+     * Isolamento multi-tenant (ADR-03): ator tenta cadastrar usuário em tenant
+     * diferente do seu → AuthorizationDeniedException.
+     */
+    @Test
+    void deve_negarCadastro_quando_atorTentaCadastrarEmOutroTenant() {
+        Tenant meuTenant = activeTenant();
+        // Segundo tenant com ID diferente no mesmo banco fake
+        TenantId outroId = TenantId.random();
+        Tenant outroTenant = Tenant.restore(
+            outroId, "outro", "Outro", TenantStatus.ACTIVE,
+            Instant.now(), Instant.now());
+        tenantsById.put(outroId, outroTenant);
+
+        User admin = userIn(meuTenant.id(), "admin@qsoft.com",
+            HierarchyLevel.EXECUTIVE, Permission.MANAGE_USERS);
+
+        assertThatThrownBy(() -> useCase.register(new RegisterUserCommand(
+            admin.id(), outroId, "ana@outro.com", "Ana",
+            HierarchyLevel.COLLABORATOR, null)))
+            .isInstanceOf(AuthorizationDeniedException.class)
+            .hasMessageContaining("outro tenant");
+    }
+
+    /**
+     * Testa o branch de denialReason não-nulo:
+     * quando o AuthorizationQuery retorna deny COM razão explícita,
+     * essa razão é propagada no AuthorizationDeniedException.
+     */
+    @Test
+    void deve_propagarDenialReason_quando_autorizacaoNegadaComMotivo() {
+        Tenant tenant = activeTenant();
+        // Colaborador sem MANAGE_USERS → deny com motivo "Permissão negada: MANAGE_USERS."
+        User collaborator = userIn(tenant.id(), "colab@qsoft.com", HierarchyLevel.COLLABORATOR);
+
+        assertThatThrownBy(() -> useCase.register(new RegisterUserCommand(
+            collaborator.id(), tenant.id(), "nova@qsoft.com", "Nova",
+            HierarchyLevel.COLLABORATOR, null)))
+            .isInstanceOf(AuthorizationDeniedException.class)
+            .hasMessageContaining("MANAGE_USERS");
+    }
 }
+
