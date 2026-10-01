@@ -81,7 +81,7 @@ public class UsageRecordRepositoryAdapter implements UsageRecordRepository {
         };
     }
 
-    private void applyTenantFilter() {
+    void applyTenantFilter() {
         TenantContext context = TenantContextHolder.get();
         if (context == null) {
             return;
