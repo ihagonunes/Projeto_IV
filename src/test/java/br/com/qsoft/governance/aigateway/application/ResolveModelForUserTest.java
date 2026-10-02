@@ -196,4 +196,35 @@ class ResolveModelForUserTest {
         assertThatThrownBy(() -> useCase.resolve(tenantId, userId, null))
             .isInstanceOf(NoModelConfiguredException.class);
     }
+
+    @Test
+    void shouldRejectWhenModelNotFoundInRepository() {
+        UUID nonExistentModelId = UUID.randomUUID();
+        policy = new ModelPolicyInfo(departmentId, Set.of(nonExistentModelId), nonExistentModelId);
+
+        assertThatThrownBy(() -> useCase.resolve(tenantId, userId, nonExistentModelId))
+            .isInstanceOf(br.com.qsoft.governance.aigateway.domain.exception.ModelNotFoundException.class);
+    }
+
+    @Test
+    void shouldRejectWhenProviderNotFoundInRepository() {
+        Provider p = provider(true);
+        Model m = model(p, true);
+        policy = new ModelPolicyInfo(departmentId, Set.of(m.id()), m.id());
+
+        providers.remove(p.id());
+
+        assertThatThrownBy(() -> useCase.resolve(tenantId, userId, m.id()))
+            .isInstanceOf(br.com.qsoft.governance.aigateway.domain.exception.ProviderNotFoundException.class);
+    }
+
+    @Test
+    void shouldRejectWhenTenantMismatchInUserContext() {
+        TenantId otherTenant = TenantId.random();
+        policy = new ModelPolicyInfo(departmentId, Set.of(), null);
+
+        assertThatThrownBy(() -> useCase.resolve(otherTenant, userId, null))
+            .isInstanceOf(NoModelConfiguredException.class);
+    }
 }
+

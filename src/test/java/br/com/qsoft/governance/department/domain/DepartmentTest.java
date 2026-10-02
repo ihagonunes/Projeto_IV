@@ -1,12 +1,13 @@
 package br.com.qsoft.governance.department.domain;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 import br.com.qsoft.governance.sharedkernel.id.TenantId;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class DepartmentTest {
 
@@ -31,6 +32,23 @@ class DepartmentTest {
     @Test
     void shouldRejectBlankName() {
         assertThatThrownBy(() -> Department.create(UUID.randomUUID(), TENANT, "   ", null, null, null))
+            .isInstanceOf(IllegalArgumentException.class);
+
+        assertThatThrownBy(() -> Department.create(UUID.randomUUID(), TENANT, null, null, null, null))
+            .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void shouldRejectNameExceedingMax() {
+        String longName = "A".repeat(151);
+        assertThatThrownBy(() -> Department.create(UUID.randomUUID(), TENANT, longName, null, null, null))
+            .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void shouldRejectDescriptionExceedingMax() {
+        String longDesc = "B".repeat(501);
+        assertThatThrownBy(() -> Department.create(UUID.randomUUID(), TENANT, "Marketing", longDesc, null, null))
             .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -63,6 +81,11 @@ class DepartmentTest {
         Department department = department();
 
         assertThat(department.deactivate().status()).isEqualTo(DepartmentStatus.INACTIVE);
+        // Desativar novamente quando já INACTIVE
+        assertThat(department.deactivate().status()).isEqualTo(DepartmentStatus.INACTIVE);
+
+        assertThat(department.activate().status()).isEqualTo(DepartmentStatus.ACTIVE);
+        // Ativar novamente quando já ACTIVE
         assertThat(department.activate().status()).isEqualTo(DepartmentStatus.ACTIVE);
     }
 
@@ -76,5 +99,26 @@ class DepartmentTest {
         assertThat(department.name()).isEqualTo("Vendas");
         assertThat(department.leaderUserId()).isEqualTo(leader);
         assertThat(department.monthlyBudget()).isEqualByComparingTo("2000.00");
+    }
+
+    @Test
+    void shouldRestoreDepartment() {
+        UUID id = UUID.randomUUID();
+        UUID leader = UUID.randomUUID();
+        Instant now = Instant.now();
+        BigDecimal budget = new BigDecimal("1500.00");
+
+        Department restored = Department.restore(id, TENANT, "Financeiro", "Finanças", leader, budget,
+            DepartmentStatus.ACTIVE, now, now);
+
+        assertThat(restored.id()).isEqualTo(id);
+        assertThat(restored.tenantId()).isEqualTo(TENANT);
+        assertThat(restored.name()).isEqualTo("Financeiro");
+        assertThat(restored.description()).isEqualTo("Finanças");
+        assertThat(restored.leaderUserId()).isEqualTo(leader);
+        assertThat(restored.monthlyBudget()).isEqualTo(budget);
+        assertThat(restored.status()).isEqualTo(DepartmentStatus.ACTIVE);
+        assertThat(restored.createdAt()).isEqualTo(now);
+        assertThat(restored.updatedAt()).isEqualTo(now);
     }
 }

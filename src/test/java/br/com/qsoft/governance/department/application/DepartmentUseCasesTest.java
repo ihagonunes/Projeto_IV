@@ -107,6 +107,14 @@ class DepartmentUseCasesTest {
     }
 
     @Test
+    void shouldRejectNullNameOnCreate() {
+        assertThatThrownBy(() -> createDepartment.create(new CreateDepartmentCommand(
+            TenantId.random(), null, null, null, null)))
+            .isInstanceOf(IllegalArgumentException.class);
+    }
+
+
+    @Test
     void shouldUpdateDepartment() {
         TenantId tenantId = TenantId.random();
         Department department = create(tenantId, "Marketing");
@@ -224,4 +232,101 @@ class DepartmentUseCasesTest {
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("obrigatório");
     }
+
+    @Test
+    void shouldRejectNullCommandOnCreate() {
+        assertThatThrownBy(() -> createDepartment.create(null))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("obrigatório");
+    }
+
+    @Test
+    void shouldGetDepartmentById() {
+        TenantId tenantId = TenantId.random();
+        Department created = create(tenantId, "Financeiro");
+        GetDepartment getDepartment = new GetDepartment(departmentRepository);
+
+        Department found = getDepartment.get(tenantId, created.id());
+
+        assertThat(found.id()).isEqualTo(created.id());
+        assertThat(found.name()).isEqualTo("Financeiro");
+
+        assertThatThrownBy(() -> getDepartment.get(tenantId, UUID.randomUUID()))
+            .isInstanceOf(DepartmentNotFoundException.class);
+    }
+
+    @Test
+    void shouldMatchDescriptionOnListDepartments() {
+        TenantId tenantId = TenantId.random();
+        Department d = create(tenantId, "TI");
+        updateDepartment.update(new UpdateDepartmentCommand(tenantId, d.id(), "TI", "Suporte Tecnico Especializado", null, null));
+
+        List<Department> result = listDepartments.list(tenantId, "especializado", null);
+
+        assertThat(result).extracting(Department::name).containsExactly("TI");
+    }
+
+    @Test
+    void shouldConfigureModelPolicyNewAndUpdate() {
+        TenantId tenantId = TenantId.random();
+        Department dept = create(tenantId, "Engenharia");
+        UUID model1 = UUID.randomUUID();
+        UUID model2 = UUID.randomUUID();
+
+        Map<UUID, br.com.qsoft.governance.department.domain.modelpolicy.ModelPolicy> policies = new LinkedHashMap<>();
+        br.com.qsoft.governance.department.application.port.ModelPolicyRepository modelPolicyRepo =
+            new br.com.qsoft.governance.department.application.port.ModelPolicyRepository() {
+                @Override
+                public br.com.qsoft.governance.department.domain.modelpolicy.ModelPolicy save(
+                    br.com.qsoft.governance.department.domain.modelpolicy.ModelPolicy policy) {
+                    policies.put(policy.departmentId(), policy);
+                    return policy;
+                }
+
+                @Override
+                public Optional<br.com.qsoft.governance.department.domain.modelpolicy.ModelPolicy> findByTenantIdAndDepartmentId(
+                    TenantId t, UUID d) {
+                    return Optional.ofNullable(policies.get(d));
+                }
+            };
+
+        ConfigureModelPolicy configPolicy = new ConfigureModelPolicy(departmentRepository, modelPolicyRepo);
+
+        // First configure (new)
+        configPolicy.configure(tenantId, dept.id(), List.of(model1, model2), model1);
+        assertThat(policies.get(dept.id())).isNotNull();
+
+        // Second configure (update existing)
+        configPolicy.configure(tenantId, dept.id(), List.of(model1), model1);
+        assertThat(policies.get(dept.id()).allowedModelIds()).containsExactly(model1);
+
+        // Non existing department
+        assertThatThrownBy(() -> configPolicy.configure(tenantId, UUID.randomUUID(), List.of(model1), model1))
+            .isInstanceOf(DepartmentNotFoundException.class);
+    }
+
+    @Test
+    void shouldReturnAllActiveDepartmentsWhenSearchIsBlank() {
+        TenantId tenantId = TenantId.random();
+        create(tenantId, "RH");
+        create(tenantId, "Financeiro");
+
+        List<Department> result = listDepartments.list(tenantId, "   ", null);
+
+        assertThat(result).hasSize(2);
+    }
+
+    @Test
+    void shouldNotMatchSearchWhenDescriptionIsNull() {
+        TenantId tenantId = TenantId.random();
+        // Create department with null description
+        Department dept = createDepartment.create(new CreateDepartmentCommand(
+            tenantId, "Suporte", null, null, null));
+
+        List<Department> result = listDepartments.list(tenantId, "comercial", null);
+
+        assertThat(result).isEmpty();
+    }
 }
+
+
