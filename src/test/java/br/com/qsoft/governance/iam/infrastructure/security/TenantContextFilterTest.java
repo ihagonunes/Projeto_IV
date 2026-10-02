@@ -1,7 +1,5 @@
 package br.com.qsoft.governance.iam.infrastructure.security;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import br.com.qsoft.governance.iam.application.port.TenantRepository;
 import br.com.qsoft.governance.iam.application.port.UserRepository;
 import br.com.qsoft.governance.iam.domain.tenant.Tenant;
@@ -24,6 +22,8 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 class TenantContextFilterTest {
 
@@ -90,16 +90,20 @@ class TenantContextFilterTest {
         return tenant;
     }
 
-    private JwtAuthenticationToken jwtAuthentication(UserId userId, TenantId tenantId) {
+    private JwtAuthenticationToken jwtAuthentication(String subject, String tenantIdClaim) {
         Jwt jwt = Jwt.withTokenValue("token.a.b")
             .header("alg", "HS256")
             .header("typ", "JWT")
-            .subject(userId.value().toString())
-            .claim("tenant_id", tenantId.value().toString())
+            .subject(subject)
+            .claim("tenant_id", tenantIdClaim)
             .claim("iat", Instant.now())
             .claim("exp", Instant.now().plusSeconds(300))
             .build();
         return new JwtAuthenticationToken(jwt);
+    }
+
+    private JwtAuthenticationToken jwtAuthentication(UserId userId, TenantId tenantId) {
+        return jwtAuthentication(userId.value().toString(), tenantId.value().toString());
     }
 
     @Test
@@ -113,7 +117,6 @@ class TenantContextFilterTest {
         SecurityContextHolder.getContext().setAuthentication(jwtAuthentication(userId, tenantId));
         MockHttpServletResponse response = new MockHttpServletResponse();
 
-        // O contexto é propagado durante o processamento e limpo no finally.
         java.util.concurrent.atomic.AtomicReference<TenantContext> captured = new java.util.concurrent.atomic.AtomicReference<>();
         filter.doFilter(new MockHttpServletRequest(), response,
             (request, res) -> captured.set(TenantContextHolder.get()));
@@ -159,6 +162,71 @@ class TenantContextFilterTest {
 
         assertThat(response.getStatus()).isEqualTo(401);
         assertThat(TenantContextHolder.get()).isNull();
+        assertThat(chain.getRequest()).isNull();
+    }
+
+    @Test
+    void shouldRejectNullTenant() throws Exception {
+        TenantId tenantId = TenantId.random();
+        UserId userId = UserId.random();
+
+        SecurityContextHolder.getContext().setAuthentication(jwtAuthentication(userId, tenantId));
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        MockFilterChain chain = new MockFilterChain();
+
+        filter.doFilter(new MockHttpServletRequest(), response, chain);
+
+        assertThat(response.getStatus()).isEqualTo(401);
+        assertThat(chain.getRequest()).isNull();
+    }
+
+    @Test
+    void shouldRejectNullUser() throws Exception {
+        TenantId tenantId = TenantId.random();
+        UserId userId = UserId.random();
+        activeTenant(tenantId);
+
+        SecurityContextHolder.getContext().setAuthentication(jwtAuthentication(userId, tenantId));
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        MockFilterChain chain = new MockFilterChain();
+
+        filter.doFilter(new MockHttpServletRequest(), response, chain);
+
+        assertThat(response.getStatus()).isEqualTo(401);
+        assertThat(chain.getRequest()).isNull();
+    }
+
+    @Test
+    void shouldRejectCrossTenantMismatch() throws Exception {
+        TenantId tenantIdA = TenantId.random();
+        TenantId tenantIdB = TenantId.random();
+        UserId userId = UserId.random();
+        activeTenant(tenantIdA);
+        activeTenant(tenantIdB);
+
+        // Usuário pertence ao Tenant A, mas o token alega Tenant B
+        usersById.put(userId, User.create(userId, tenantIdA, "ana@qsoft.com", "Ana", HierarchyLevel.MANAGER, null));
+
+        SecurityContextHolder.getContext().setAuthentication(jwtAuthentication(userId, tenantIdB));
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        MockFilterChain chain = new MockFilterChain();
+
+        filter.doFilter(new MockHttpServletRequest(), response, chain);
+
+        assertThat(response.getStatus()).isEqualTo(401);
+        assertThat(chain.getRequest()).isNull();
+    }
+
+    @Test
+    void shouldRejectMalformedTokenClaims() throws Exception {
+        SecurityContextHolder.getContext().setAuthentication(jwtAuthentication("not-a-uuid", "not-a-uuid"));
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        MockFilterChain chain = new MockFilterChain();
+
+        filter.doFilter(new MockHttpServletRequest(), response, chain);
+
+        assertThat(response.getStatus()).isEqualTo(401);
+        assertThat(response.getErrorMessage()).isEqualTo("Token inválido.");
         assertThat(chain.getRequest()).isNull();
     }
 

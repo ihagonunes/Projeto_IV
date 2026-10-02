@@ -264,4 +264,56 @@ class PolicyEvaluatorTest {
 
         assertThat(evaluator.effectivePermissions(EvaluationContext.of(tenantId, userId))).isEmpty();
     }
+
+    @Test
+    void shouldDenyWhenUserDoesNotExist() {
+        TenantId tenantId = activeTenant();
+        UserId nonExistentUser = UserId.random();
+
+        var result = evaluator.evaluate(EvaluationContext.of(tenantId, nonExistentUser), manageUsers);
+        assertThat(result.allowed()).isFalse();
+        assertThat(result.denialReason()).isEqualTo("Usuário inexistente ou inativo.");
+    }
+
+    @Test
+    void shouldDenyWhenTenantDoesNotExist() {
+        TenantId nonExistentTenant = TenantId.random();
+        UserId userId = UserId.random();
+        users.put(userId, User.create(userId, nonExistentTenant, "test@x.com", "Test", HierarchyLevel.MANAGER, null));
+
+        var result = evaluator.evaluate(EvaluationContext.of(nonExistentTenant, userId), manageUsers);
+        assertThat(result.allowed()).isFalse();
+        assertThat(result.denialReason()).isEqualTo("Tenant inexistente ou inativo.");
+    }
+
+
+    @Test
+    void shouldIgnoreAssignmentWhenRoleDoesNotExist() {
+        TenantId tenantId = activeTenant();
+        UserId userId = activeUser(tenantId);
+        RoleId nonExistentRole = RoleId.random();
+        assign(tenantId, userId, nonExistentRole, null);
+
+        assertThat(evaluator.isAllowed(EvaluationContext.of(tenantId, userId), manageUsers)).isFalse();
+    }
+
+    @Test
+    void shouldThrowExceptionWhenContextOrPermissionIsNull() {
+        TenantId tenantId = activeTenant();
+        UserId userId = activeUser(tenantId);
+        EvaluationContext context = EvaluationContext.of(tenantId, userId);
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> evaluator.evaluate(null, manageUsers))
+            .isInstanceOf(NullPointerException.class)
+            .hasMessage("context é obrigatório.");
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> evaluator.evaluate(context, null))
+            .isInstanceOf(NullPointerException.class)
+            .hasMessage("permission é obrigatória.");
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> evaluator.effectivePermissions(null))
+            .isInstanceOf(NullPointerException.class)
+            .hasMessage("context é obrigatório.");
+    }
 }
+

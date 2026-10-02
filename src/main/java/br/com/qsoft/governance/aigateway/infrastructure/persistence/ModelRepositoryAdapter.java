@@ -73,7 +73,7 @@ public class ModelRepositoryAdapter implements ModelRepository {
         return jpaRepository.existsByTenantIdAndName(tenantId.value(), name);
     }
 
-    private void applyTenantFilter() {
+    void applyTenantFilter() {
         TenantContext context = TenantContextHolder.get();
         if (context == null) {
             return;

@@ -203,4 +203,37 @@ class AuthenticateUserTest {
         assertThatThrownBy(() -> useCase.login(new LoginCommand("qsoft", "sem@qsoft.com", "x")))
             .isInstanceOf(InvalidCredentialsException.class);
     }
+
+    @Test
+    void shouldRejectNullCommandAndInvalidEmailFormat() {
+        assertThatThrownBy(() -> useCase.login(null))
+            .isInstanceOf(IllegalArgumentException.class);
+
+        assertThatThrownBy(() -> useCase.login(new LoginCommand(null, "invalidemail", "x")))
+            .isInstanceOf(InvalidCredentialsException.class);
+
+        assertThatThrownBy(() -> useCase.login(new LoginCommand(null, "invalidemail@", "x")))
+            .isInstanceOf(InvalidCredentialsException.class);
+    }
+
+    @Test
+    void shouldRejectNonExistentUserInActiveTenant() {
+        activeTenant("qsoft");
+
+        assertThatThrownBy(() -> useCase.login(new LoginCommand("qsoft", "nonexistent@qsoft.com", "secret123")))
+            .isInstanceOf(InvalidCredentialsException.class);
+    }
+
+    @Test
+    void shouldDeriveSlugFromEmailWithoutDotInDomain() {
+        Tenant tenant = activeTenant("localhost");
+        activeUser(tenant, "admin@localhost", "secret123");
+
+        AuthenticatedUser result = useCase.login(new LoginCommand(null, "admin@localhost", "secret123"));
+
+        assertThat(result.tenantId()).isEqualTo(tenant.id());
+        assertThat(result.email()).isEqualTo("admin@localhost");
+    }
 }
+
+

@@ -87,21 +87,32 @@ class LoginAttemptLimiterTest {
         assertThat(limiter.key("  Ana@X.COM ", IP)).isEqualTo(limiter.key("ana@x.com", IP));
     }
 
-    /**
-     * A limpeza do mapa é amortizada (não uma varredura O(n) por tentativa).
-     * Mesmo após estourar o teto de chaves, o bloqueio continua funcionando.
-     */
     @Test
-    void shouldKeepBlockingAfterManyDistinctKeys() {
-        LoginAttemptLimiter limiter = limiter(2, 15);
-        for (int i = 0; i < 10_001; i++) {
+    void shouldHandleNullAndEmptyKeys() {
+        LoginAttemptLimiter limiter = limiter(3, 15);
+        assertThat(limiter.key(null, null)).isEqualTo("|");
+        assertThat(limiter.key("  ", "  ")).isEqualTo("|");
+    }
+
+    @Test
+    void shouldReturnZeroRetryAfterForUntrackedKey() {
+        LoginAttemptLimiter limiter = limiter(3, 15);
+        assertThat(limiter.retryAfterSeconds("unknownKey")).isZero();
+    }
+
+    @Test
+    void shouldPurgeExpiredEntriesWhenThresholdReached() {
+        LoginAttemptLimiter limiter = limiter(2, 0); // Window 0 minutes -> entries expire immediately
+        for (int i = 0; i < 10_000; i++) {
             limiter.recordFailure(limiter.key("user" + i + "@x.com", IP));
         }
 
-        String key = limiter.key("ana@x.com", IP);
-        limiter.recordFailure(key);
-        limiter.recordFailure(key);
+        // Trigger PURGE_INTERVAL iterations
+        for (int i = 0; i < 1_005; i++) {
+            limiter.recordFailure(limiter.key("user" + i + "@x.com", IP));
+        }
 
-        assertThat(limiter.isBlocked(key)).isTrue();
+        assertThat(limiter.isBlocked("user0@x.com")).isFalse();
     }
 }
+
