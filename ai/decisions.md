@@ -38,6 +38,11 @@ Este arquivo é um índice. Leia somente o ADR relacionado à tarefa.
 | ADR-32 | Tenant resolution on login (email-domain fallback) | ACCEPTED (emendado pela SPI-54) | `ai/adr/ADR-32-tenant-resolution-on-login.md` |
 | ADR-33 | Modelo de autorização (RBAC por papéis por tenant) | ACCEPTED | `ai/adr/ADR-33-authorization-model-roles.md` |
 | ADR-34 | Contrato de autorização RBAC exposto a outros módulos | ACCEPTED | `ai/adr/ADR-34-rbac-authorization-contract-cross-module.md` |
+| ADR-35 | Agente de políticas: recuperação de conhecimento e ferramentas (opção A) | ACCEPTED | `ai/adr/ADR-35-policy-agent-knowledge-retrieval.md` |
+| ADR-36 | Concessão com escopo como fonte única de autorização | ACCEPTED | `ai/adr/ADR-36-scoped-role-grants.md` |
+| ADR-37 | Provisionamento, delegação e revogação de concessões | ACCEPTED | `ai/adr/ADR-37-grant-provisioning-and-delegation.md` |
+| ADR-38 | Provider real, tentativas duráveis e entrega idempotente de uso | ACCEPTED | `ai/adr/ADR-38-ai-execution-attempts-and-usage-delivery.md` |
+| ADR-39 | Chat privado e recibo de execução | ACCEPTED | `ai/adr/ADR-39-private-chat-and-execution-receipt.md` |
 
 ## Decisões abertas (pendentes de ADR)
 
