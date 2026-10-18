@@ -19,12 +19,19 @@ Guia prático para rodar a Plataforma de Governança de IA (Monólito Modular + 
 | Módulo | Situação |
 |---|---|
 | `iam` | ✅ Tenant, User, autenticação (JWT), RBAC por papéis, convites, status e identidade visual |
-| `department` | ✅ CRUD de departamentos + orçamento + contratos públicos |
-| `aigateway` | 🚧 Em andamento (catálogo Provider/Model; roteamento em construção) |
+| `department` | ✅ CRUD de departamentos, orçamento mensal padrão, política de modelos e contratos públicos |
+| `aigateway` | ✅ Catálogo Provider/Model, preços e roteamento determinístico. 🚧 Provider real e completion: Sprint 3 (TASK-S3-C1) |
+| `observability` | ✅ Registro de uso, consulta, dashboard (uso e custo) e histórico QSOFT (schema `historical`) |
 | `sharedkernel` / `platform` | ✅ Tipos transversais e configuração |
-| `project`, `chat`, `observability`, `engagement`, `governancescore`, `agentpolicies` | ⏳ Planejados |
+| `chat`, `agentpolicies` | 🚧 Planejados para a Sprint 3 (`ai/tasks/sprint-03/`) |
+| `project`, `engagement`, `governancescore` | ⏳ Planejados |
 
-Migrations Flyway: **`V001`–`V011`**. Testes: **149** unitários/arquitetura + **64** de integração.
+Migrations Flyway: **`V001`–`V014`** (a Sprint 3 reserva V015–V019). Testes, em 18/10/2026: **717**
+unitários/arquitetura + **83** de integração.
+
+> Correção de autorização em andamento (Sprint 3): hoje um tenant criado por `POST /tenants` **não**
+> ganha nenhum usuário. O primeiro acesso só existe pelo seed de demonstração. Ver
+> `docs/review/VERIFICACAO_FASE0.md` (N01) e a TASK-S3-A4.
 
 ---
 
@@ -52,7 +59,7 @@ Variáveis úteis (`.env`):
 
 ## 2. Rodar o backend
 
-As migrations Flyway (`V001`–`V011`) são aplicadas automaticamente na inicialização (`ddl-auto=validate`).
+As migrations Flyway (`V001`–`V014`) são aplicadas automaticamente na inicialização (`ddl-auto=validate`).
 
 ### Modo A — desenvolvimento local (PostgreSQL instalado)
 
@@ -69,9 +76,23 @@ As migrations Flyway (`V001`–`V011`) são aplicadas automaticamente na inicial
 
 Ou rode a classe `GovernanceApplication` pela IDE (importando o projeto Maven).
 
-### Modo B — backend em container (Docker)
+### Modo B — Docker Compose (PostgreSQL + backend)
 
-O repositório fornece um **`Dockerfile`** (build multi-stage: Maven → JRE 21). **Não há `docker-compose.yml`.**
+O repositório tem um **`compose.yaml`** (PostgreSQL 18.6 + backend) e um **`Dockerfile`** (build
+multi-stage: Maven → JRE 21).
+
+```bash
+cp .env.example .env      # ajuste DB_* e JWT_SECRET
+docker compose up --build
+```
+
+> ⚠️ **Limitação conhecida:** o serviço `backend` do `compose.yaml` não repassa `JWT_SECRET`, e a
+> aplicação exige ≥ 32 caracteres para subir. Até o `compose.yaml` ser ajustado
+> (`AUDITORIA_DOCUMENTACAO.md`, item 2), o backend do compose provavelmente falha no boot
+> (inferido, não executado). Alternativas: `docker compose up postgres` + backend local (Modo A),
+> ou o container avulso abaixo.
+
+#### Backend em container avulso
 
 ```bash
 docker build -t qsoft-governance .
@@ -125,13 +146,21 @@ Endpoints principais (prefixo `/api/v1`):
     -H "Content-Type: application/json" \
     -d '{"email":"admin@qsoft.com","password":"<senha>"}'
   ```
-- **Criar usuário** (endpoint **protegido** — exige JWT + permissão `USER:MANAGE`; o tenant vem do token):
+- **Adicionar usuário: use o convite.** `POST /api/v1/usuarios` não aceita senha, e o usuário
+  criado por ele nunca consegue logar. Esse endpoint será removido na Sprint 3 (decisão 3,
+  TASK-S3-A7). O caminho correto:
   ```bash
-  curl -X POST http://localhost:8080/api/v1/usuarios \
-    -H "Authorization: Bearer <token>" \
+  # 1) o admin cria o convite (INVITE:MANAGE); a resposta traz o token uma única vez
+  curl -X POST http://localhost:8080/api/v1/convites \
+    -H "Authorization: Bearer <token>" -H "Content-Type: application/json" \
+    -d '{"email":"ana@qsoft.com","hierarchyLevel":"MANAGER"}'
+  # 2) a pessoa convidada aceita e define a senha (público)
+  curl -X POST http://localhost:8080/api/v1/convites/aceitar \
     -H "Content-Type: application/json" \
-    -d '{"email":"ana@qsoft.com","name":"Ana","hierarchyLevel":"MANAGER","password":"secret123"}'
+    -d '{"token":"<token-do-convite>","name":"Ana","password":"<senha>"}'
   ```
+  > **Limitação atual (N01):** o usuário convidado ainda **não** recebe papel. Ele consegue logar,
+  > mas recebe 403 nos endpoints protegidos até a TASK-S3-A5 (convite com concessão).
 - **Endpoints protegidos**: envie o token retornado:
   ```bash
   curl http://localhost:8080/api/v1/... \
@@ -156,7 +185,7 @@ Endpoints principais (prefixo `/api/v1`):
 
 > **Dados de demonstração (opcional):** habilite `APP_BOOTSTRAP_DEMO_DATA=true` e `APP_BOOTSTRAP_DEMO_PASSWORD=<senha>` para o backend criar, na inicialização, o tenant `qsoft` e o admin `admin@qsoft.com`. Sem isso, o seed **não** roda (padrão seguro).
 >
-> **Importante:** o `POST /api/v1/usuarios` é **protegido** (JWT + `USER:MANAGE`) e o `tenantId` vem do token — nunca do corpo. Para o primeiro usuário, use o seed de demonstração ou crie via migração/admin.
+> **Importante:** hoje, o único caminho para o primeiro usuário com acesso é o seed de demonstração. Depois da TASK-S3-A4, `POST /api/v1/tenants` passa a receber os dados do primeiro administrador.
 
 ---
 
@@ -177,8 +206,8 @@ Endpoints principais (prefixo `/api/v1`):
 - **`node_modules` ausente** (erro ao rodar o front): `npm install`.
 - **App não sobe com erro de `JWT_SECRET`**: defina `JWT_SECRET` no `.env` com **32+ caracteres** (é obrigatório).
 - **Login retorna 400**: informe um `email` válido; o `tenantSlug` é opcional (derivado do domínio do e-mail).
-- **`POST /api/v1/usuarios` retorna 401/403**: o endpoint é protegido — envie `Authorization: Bearer <token>` de um usuário com a permissão `USER:MANAGE`.
-- **Login falha / não há usuário**: habilite o seed demo (`APP_BOOTSTRAP_DEMO_DATA=true` + `APP_BOOTSTRAP_DEMO_PASSWORD`) ou crie o usuário pela API protegida.
+- **Usuário convidado recebe 403 em tudo**: limitação conhecida (N01). O convite ainda não atribui papel; a correção é a TASK-S3-A5.
+- **Login falha / não há usuário**: habilite o seed demo (`APP_BOOTSTRAP_DEMO_DATA=true` + `APP_BOOTSTRAP_DEMO_PASSWORD`). Um tenant criado por `POST /tenants` ainda não tem usuário (N01).
 - **Schema vazio / `missing table [app_user]`**: confirme que a dependência `spring-boot-starter-flyway` está no `pom.xml` e `spring.flyway.enabled=true` (Flyway aplica as migrations na inicialização).
 - **ITs falham por falta de Docker**: inicie o Docker Desktop/Engine antes de `mvn verify -Pintegration`.
 - **Portas em conflito (8080/3000/5432)**: altere `SERVER_PORT`, `PORT` e `DB_PORT` no `.env`.
@@ -189,5 +218,7 @@ Endpoints principais (prefixo `/api/v1`):
 
 - `README.md` — visão geral e baseline técnica.
 - `docs/development/ENVIRONMENT.md` — requisitos e modos de execução.
-- `docs/development/BOOTSTRAP.md` — bootstrap técnico e primeira feature sugerida.
+- `docs/development/BOOTSTRAP.md` — bootstrap técnico do starter (desatualizado; ver `docs/review/AUDITORIA_DOCUMENTACAO.md`, item 6).
+- `docs/development/CONTRATO_API_FRONT_BACK.md` — contrato REST atual entre front e backend.
+- `ai/tasks/sprint-03/INDEX.md` — plano da Sprint 3 em execução.
 - `docs/lessonslearned&Decisions.md` — decisões da implementação (auditar o que foi feito).

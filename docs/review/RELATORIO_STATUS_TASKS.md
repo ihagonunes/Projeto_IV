@@ -1,5 +1,16 @@
 # Relatório de Status das Tasks — SM_Projeto_IV (SPI)
 
+> **Nota de status (2026-10-18).** Partes deste relatório foram superadas por
+> `docs/review/VERIFICACAO_FASE0.md` §1C (reconciliação da Sprint 3 contra o código):
+>
+> | Item | Este relatório diz | Situação real |
+> |---|---|---|
+> | SPI-73 | ✅ | O endpoint existe, mas **não aplica escopo** (D5); fecha com a TASK-S3-A3. |
+> | SPI-74 | ✅ | Continua fechada, mas o N05 segue aberto; tratado na SPI-171. |
+> | SPI-94 | 🟠 parcial por falta de UI | O problema real é de autorização (D4: gestor sem depto vê o tenant). |
+> | SPI-92/93/95 | Front "não commitado" | Os arquivos do dashboard estão versionados. |
+> | Gap "convidados sem permissão" (§8, item 3) | — | Confirmado (N01); tratado em SPI-169 e SPI-46. |
+
 > **Data de referência:** 2026-09-28
 > **Branch analisada:** `IhanDevelopment`
 > **Baseline de código:** `ce927f0` (2026-09-27) + alterações não commitadas do dashboard

@@ -1,5 +1,7 @@
 # ADR-34 — Contrato de autorização RBAC exposto a outros módulos
 
+> ⚠️ **Emendado pelo ADR-36 (ACCEPTED, 2026-10-18).** `@RequiresPermission` ganha `targeting` (`TENANT_ONLY` por padrão; `BY_TARGET` exige checagem fina no caso de uso). Novos tipos `ScopeType`, `AccessTarget` e `VisibilityScope` entram no `sharedkernel.rbac`. A emenda formal entra pela TASK-S3-A10.
+
 ## Status
 
 ACCEPTED (aprovado — implementado em conjunto com o módulo `department`)

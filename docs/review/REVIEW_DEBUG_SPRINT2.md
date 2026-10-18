@@ -1,5 +1,14 @@
 # Revisão e Debug — Relatório consolidado
 
+> **Nota de status (2026-10-18).** Este relatório é anterior à `057fbea`.
+> - A linha de base "126 + 52" foi substituída por **717 unit + 83 IT** (`VERIFICACAO_FASE0.md`
+>   §1B).
+> - Da tabela "Frontend × Backend", só continua quebrado `identidade-visual.js`, que chama
+>   `/tenant/identidade-visual` (singular). Os demais itens foram corrigidos. Situação atual:
+>   `docs/development/CONTRATO_API_FRONT_BACK.md` §2.
+> - Os achados A1 (`hierarchyLevel` × RBAC) e M4 (senha em `POST /usuarios`) foram decididos: ADR-36,
+>   ADR-37 e a decisão 3 (`POST /usuarios` será removido).
+
 **Agentes:** `debug` (validação + fluxos alterados + endpoints do frontend) e `reviewer` (bugs/regressões/testes).
 **Método:** somente-leitura. Nenhuma alteração foi feita.
 **Baseline:** `mvn -B test` = 126 ✅ · `mvn -B verify -Pintegration` = 52 ITs ✅ (Docker OK na máquina).

@@ -1,5 +1,7 @@
 # ADR-04 — IAM
 
+> ⚠️ **Emendado pelos ADR-36 e ADR-37 (ACCEPTED, 2026-10-18).** "ADMIN = conjunto de permissões" e `AuthorizationScope` deixam de valer. O admin passa a ser o papel de sistema `TENANT_ADMIN`; o escopo pertence à concessão. A emenda formal entra pela TASK-S3-A10.
+
 ## Status
 
 ACCEPTED

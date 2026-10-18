@@ -1,8 +1,11 @@
-# Contrato de API — Frontend × Backend (reconciliação)
+# Contrato de API — Frontend × Backend
 
-> **Objetivo:** documentar o contrato REST entre o frontend (Express/EJS + JS de browser) e o backend (Spring Boot) e propor a **reconciliação pela Opção A**: o **backend é a fonte de verdade** e o **frontend se adapta** ao contrato canônico.
+> **Estado atual: 2026-10-18** (backend `b-ihago` @ `1a4e9ac`; produção igual à `057fbea`).
+> As §1 e §2 descrevem o contrato **vigente**. A partir da §3, o conteúdo é o **registro histórico**
+> da reconciliação de 27/09 (Opção A).
 >
-> **Status:** proposta (planejamento). Nenhuma alteração de código foi feita ainda.
+> Mudanças planejadas na Sprint 3: `ai/tasks/sprint-03/SPEC-01-autorizacao.md` §6–§7 e as SPECs
+> 02–05. A TASK-S3-A10 atualiza este arquivo quando elas forem entregues.
 
 ---
 
@@ -16,24 +19,88 @@
 
 ---
 
-## 2. Contrato canônico do backend (endpoints existentes)
+## 2. Contrato vigente do backend (33 endpoints)
 
-| Método | Caminho | Corpo (request) | Resposta | Autorização |
-|---|---|---|---|---|
-| POST | `/api/v1/auth/login` | `{ tenantSlug?, email, password }` | `{ token, tokenType }` | público |
-| POST | `/api/v1/tenants` | `{ slug, name, emailDomain }` | tenant | público (onboarding) |
-| POST | `/api/v1/usuarios` | `{ email, name, hierarchyLevel, departmentId? }` (sem senha — acesso via convite) | usuário | `USER:MANAGE` |
-| POST | `/api/v1/usuarios/{id}/nivel` | `{ hierarchyLevel }` | usuário | `USER:MANAGE` |
-| GET | `/api/v1/usuarios/me/permissoes` | — | `{ userId, permissions[] }` | autenticado |
-| GET | `/api/v1/usuarios/{id}/permissoes` | — | `{ userId, permissions[] }` | `USER:READ` |
-| POST | `/api/v1/convites` | `{ email, hierarchyLevel, departmentId? }` | convite (com `token`) | `INVITE:MANAGE` |
-| POST | `/api/v1/convites/aceitar` | `{ token, name?, password }` | usuário | público |
-| GET | `/actuator/health` | — | health | público |
-| GET | `/swagger-ui.html`, `/v3/api-docs` | — | Swagger/OpenAPI | público (desabilitável por `OPENAPI_ENABLED`) |
+Convenções:
+- `/api/v1/{recurso}`;
+- paginação `page`/`size` (0-based; padrão 20, máximo 100);
+- erros `{ "message": "..." }`;
+- sem token → 401; sem permissão no gate → 403; recurso de outro tenant → 404.
 
-Convenções: `/api/v1/{resource}` (plural), paginação `page`/`size` (0-based, default 20, máx 100), erros `{ "message": "..." }` sem vazar internals.
+O tenant vem sempre do JWT.
+
+### 2.1 Autenticação, tenant e usuários (`iam`)
+
+| Método | Caminho | Corpo | Autorização |
+|---|---|---|---|
+| POST | `/api/v1/auth/login` | `{ tenantSlug?, email, password }` → `{ token, tokenType }` | público |
+| POST | `/api/v1/tenants` | `{ slug, name, emailDomain }` | público (não cria usuário — N01) |
+| GET / PUT | `/api/v1/tenants/me` | PUT: `{ name }` | autenticado / `TENANT:MANAGE` |
+| GET / PUT | `/api/v1/tenants/me/identidade-visual` | PUT: `{ logoUrl, primaryColor, secondaryColor }` | autenticado / `TENANT:MANAGE` |
+| POST | `/api/v1/usuarios` | `{ email, name, hierarchyLevel, departmentId? }` (sem senha) | `USER:MANAGE` — **será removido** (TASK-S3-A7) |
+| GET | `/api/v1/usuarios` | filtros `hierarchyLevel`, `departmentId`, `name`, `email` | `USER:READ` |
+| PATCH | `/api/v1/usuarios/{id}` | `{ departmentId }` | `USER:MANAGE` |
+| PATCH | `/api/v1/usuarios/{id}/status` | `{ status }` | `USER:MANAGE` |
+| POST | `/api/v1/usuarios/{id}/nivel` | `{ hierarchyLevel }` (rótulo, sem efeito de autorização) | `USER:MANAGE` |
+| GET | `/api/v1/usuarios/me/permissoes` | → `{ userId, permissions: ["RESOURCE:ACTION"] }` | autenticado |
+| GET | `/api/v1/usuarios/{id}/permissoes` | idem | `USER:READ` |
+| GET / POST | `/api/v1/convites` | POST: `{ email, hierarchyLevel, departmentId? }` → inclui `token` | `INVITE:MANAGE` |
+| POST | `/api/v1/convites/{id}/reenviar` | — | `INVITE:MANAGE` |
+| DELETE | `/api/v1/convites/{id}` | — | `INVITE:MANAGE` |
+| POST | `/api/v1/convites/aceitar` | `{ token, name?, password }` | público |
+
+### 2.2 Departamentos (`department`)
+
+| Método | Caminho | Corpo | Autorização |
+|---|---|---|---|
+| GET / POST | `/api/v1/departamentos` | POST: `{ name, description?, monthlyBudget? }` | `DEPARTMENT:READ` / `DEPARTMENT:MANAGE` |
+| GET / PUT / DELETE | `/api/v1/departamentos/{id}` | DELETE é lógico (inativa) | `DEPARTMENT:READ` / `DEPARTMENT:MANAGE` |
+
+### 2.3 Catálogo de IA e roteamento (`aigateway`)
+
+| Método | Caminho | Autorização |
+|---|---|---|
+| GET / POST | `/api/v1/ai-gateway/providers` | `AI_TOOL:MANAGE` |
+| GET / POST | `/api/v1/ai-gateway/models` | `AI_TOOL:MANAGE` |
+| PATCH | `/api/v1/ai-gateway/models/{id}/status` | `AI_TOOL:MANAGE` |
+| PUT | `/api/v1/ai-gateway/departments/{id}/model-policy` | `AI_TOOL:MANAGE` |
+| GET | `/api/v1/ai-gateway/models/permitido?requestedModelId=` | autenticado (usa a lotação do usuário) |
+
+### 2.4 Uso e dashboard (`observability`)
+
+| Método | Caminho | Filtros | Autorização |
+|---|---|---|---|
+| GET | `/api/v1/observability/usage` | `departmentId`, `userId`, `from`, `to`, `page`, `size` | `USAGE:READ` — ⚠️ hoje **sem escopo** (D5; corrigido na TASK-S3-A3) |
+| GET | `/api/v1/observability/metrics/usage` | `from`, `to`, `departmentId`, `granularity` | `USAGE:READ` (escopo pelo rótulo; muda na A3) |
+| GET | `/api/v1/observability/metrics/costs` | `from`, `to`, `departmentId` | `USAGE:READ` (idem) |
+
+### 2.5 Infra
+
+| Método | Caminho | Autorização |
+|---|---|---|
+| GET | `/actuator/health` | público |
+| GET | `/swagger-ui.html`, `/v3/api-docs` | público (desligável por `OPENAPI_ENABLED`) |
+
+### 2.6 Chamadas do front em 18/10/2026
+
+O cliente do browser é `public/js/**`. Os controllers server-side `modules/*/*.controller.js`
+**nunca executam**: o proxy `app.use("/api", …)` (`app.js:76`) é registrado antes das rotas dos
+módulos (`app.js:135+`).
+
+| Arquivo | Chamada | Status |
+|---|---|---|
+| `core/auth.js` | `POST /api/v1/auth/login` | ✅ |
+| `pages/aceite-convite.js` | `POST /api/v1/convites/aceitar` | ✅ (corrigido desde 27/09) |
+| `pages/admin-convites.js` | `POST /api/v1/convites`, `POST …/{id}/reenviar`, `DELETE …/{id}` | ✅ |
+| `pages/admin-usuarios.js` | `GET /api/v1/usuarios`, `POST …/{id}/nivel` | ✅ (o papel exibido vem de `localStorage('simulatedUserRole')`, não do backend — TASK-S3-A9) |
+| `pages/editar-empresa.js` | `GET/PUT /api/v1/tenants/me` | ✅ |
+| `pages/identidade-visual.js` | `GET/PUT /api/v1/tenant/identidade-visual` | ❌ **path errado** (singular). Correto: `/api/v1/tenants/me/identidade-visual` |
+| `pages/dashboard.js` | `GET /api/v1/observability/metrics/usage` e `/costs` | ✅ |
+| `modules/*/*.controller.js` (server-side, inalcançável) | `/ia`, `/revisao`, `/revisao/confirmar`, `/auth/redefinir-senha`, `/usuarios/importar`, `GET /tenants` | ❌ não existem no backend; código morto |
 
 ---
+
+> **Registro histórico (27/09/2026).** O conteúdo abaixo mostra a reconciliação planejada naquela data. Vários itens já foram resolvidos; o estado atual está nas §1–§2.
 
 ## 3. Endpoints que o frontend consome hoje (e o status)
 

@@ -16,6 +16,9 @@
   - [ ] Departments → só os ids;
   - [ ] SelfOnly → 403.
 - [ ] O alerta é calculado na leitura: sem tabela nova, sem evento novo, sem bloquear nada (A105).
+- [ ] `ai/contracts.md` (linha `observability`):
+  - [ ] marca `BudgetStatusQueryPort` como implementado;
+  - [ ] registra que `AlertQueryPort` foi substituído pelo status calculado na leitura.
 - [ ] Testes unitários de todos os limites da SPEC-02 §6.
 - [ ] ITs:
   - [ ] MANAGER(A) vê só A;

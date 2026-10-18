@@ -21,6 +21,7 @@
 - [ ] `DepartmentBudgetQuery` estendido com `budgetFor` e `budgetsFor` e o record `BudgetLimitInfo`
       (SPEC-02 §2), resolvendo linha do mês > padrão > nenhum.
 - [ ] Testes unitários da resolução do mês.
+- [ ] `ai/contracts.md` (linha `department`) cita `DepartmentBudgetQuery.budgetFor/budgetsFor` e `BudgetLimitInfo`.
 - [ ] ITs:
   - [ ] upsert e histórico;
   - [ ] isolamento de tenant;

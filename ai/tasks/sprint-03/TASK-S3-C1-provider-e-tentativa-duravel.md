@@ -30,6 +30,13 @@
       log e prova isso.
 - [ ] Testes TR01, TR02, TR03, TR08, TR09, TR11 e TR12 verdes.
 - [ ] `ai/dependencies.md` registra: "provider via HTTP (`RestClient`), sem SDK".
+- [ ] `ai/contracts.md`, seção Completion, reescrita conforme a SPEC-03 §2.1:
+  - [ ] o `departmentId` sai do comando (resolvido no servidor);
+  - [ ] `requestId` gerado só pelo servidor;
+  - [ ] `costStatus` e as exceções públicas.
+- [ ] Emendas registradas, numa seção "Emenda (ADR-38)", sem alterar o Status:
+  - [ ] ADR-11: departamento resolvido no gateway; tentativa gravada antes da chamada;
+  - [ ] ADR-13: `UsageRecord` = consumo **conhecido**; custo desconhecido vive só na tentativa.
 
 ## Fora de escopo
 Job de reentrega, listener sem `catch` e `ON CONFLICT` (C2); endpoint RF047 (C3); chat (D1).

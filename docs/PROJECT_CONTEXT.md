@@ -1,5 +1,17 @@
 # PROJECT_CONTEXT — Estado Atual do Repositório
 
+> ⚠️ **SUPERADO (2026-10-18). Não use este arquivo como estado atual.**
+> Ele descreve o repositório em 14/09/2026. Desde então, entre outras mudanças:
+> - os módulos `department`, `aigateway` e `observability` foram implementados;
+> - as migrations vão até a V014;
+> - a suíte tem ~800 testes;
+> - os endpoints de negócio são protegidos por RBAC.
+>
+> Estado atual e verificado: `docs/review/VERIFICACAO_FASE0.md`.
+> Plano em execução: `ai/tasks/sprint-03/INDEX.md`.
+> Divergências da documentação: `docs/review/AUDITORIA_DOCUMENTACAO.md`.
+> O conteúdo abaixo fica só como registro histórico.
+
 > Contexto compacto e factual do estado atual do repositório, destinado a
 > planejamento técnico (ex.: uso como contexto para agentes com integração
 > Jira na descrição de tasks). Data de referência: 2026-09-14.

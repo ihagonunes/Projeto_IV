@@ -9,7 +9,10 @@
   - [ ] ADR-04: admin passa a ser o papel `TENANT_ADMIN`;
   - [ ] ADR-33: escopo explícito na concessão; corrigir o texto "não persistido na tupla";
   - [ ] ADR-34: `targeting`.
-- [ ] **Não** alterar o Status dos ADRs 36/37: quem os marca ACCEPTED é o responsável.
+- [ ] **Não** alterar o Status de nenhum ADR. Os ADRs 36/37 já estão ACCEPTED (18/10/2026); as emendas entram como seção nova.
+- [ ] Corrigir drift anterior (auditoria `docs/review/AUDITORIA_DOCUMENTACAO.md`): ADR-30,
+      `ai/architecture.md` (Segurança) e `ai/testing.md` passam a citar o ADR-32 (`tenantSlug`
+      opcional no login; tenant resolvido pelo domínio do e-mail).
 - [ ] `ai/contracts.md`: novo `AuthorizationQuery`, `Targeting` e tipos de `sharedkernel.rbac`.
 - [ ] `ai/architecture.md`:
   - [ ] ownership do `sharedkernel` e do `iam` atualizados;

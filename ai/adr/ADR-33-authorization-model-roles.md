@@ -1,5 +1,7 @@
 # ADR-33 — Modelo de autorização (RBAC por papéis por tenant)
 
+> ⚠️ **Emendado pelo ADR-36 (ACCEPTED, 2026-10-18).** A atribuição de papel passa a ter escopo explícito (`SELF`/`DEPARTMENT`/`TENANT`) persistido na concessão; o trecho "não persistido na tupla" deixa de valer. A trilha legada `user_permission` será removida. A emenda formal entra pela TASK-S3-A10.
+
 ## Status
 
 ACCEPTED
