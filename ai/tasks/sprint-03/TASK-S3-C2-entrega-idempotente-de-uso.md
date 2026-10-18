@@ -2,7 +2,7 @@
 
 ## Metadados
 - **Onda:** C · **Depende de:** C1
-- **Jira:** tarefa criada na C1 (N05); SPI-78 pode ser fechada citando TR04/TR05
+- **Jira:** **SPI-171** (N05); SPI-78 pode ser fechada citando TR04/TR05
 - **Módulos:** `aigateway` (publicador e job), `observability` (listener e `RecordUsage`)
 - **Spec:** `SPEC-03` §3 (passos 5–7), §5 (TR04–TR07)
 

@@ -35,7 +35,6 @@
 |---|---|---|
 | **Decisão 11** — provider concreto da demo | Só a configuração do provider real da demo. C1, C2, C3, D1 e E2 seguem com o adaptador `STUB`. | Endpoint compatível com OpenAI (OpenAI, Groq ou Ollama local); chave em variável de ambiente, fora do repo. |
 | Decisões 12, 13 e 14 (retentativa e retenção, custo de erro, RF047 com negadas) | Nada: C2 e C3 usam os valores padrão da SPEC-03 | Manter os valores padrão; retenção fica para depois. |
-| Chaves Jira das tarefas novas (§6) | Nomes de branch e commit | Criar no Jira e informar ao implementador. |
 | V020 (índice de performance) | Só a F2, e só se houver evidência | Avaliar quando a F2 trouxer os planos de execução. |
 
 ## 3. Ondas, ordem e dependências
@@ -139,21 +138,21 @@ F1 estende endpoints existentes, sem criar novos.
 | SPI-48 | Trazer para a sprint (backend em A6, tela em A9) | A6, A9 |
 | SPI-50 | Manter fechada; AZ01–AZ20 nas tarefas A | — |
 | SPI-51 | Trazer para a sprint | A10 |
-| **Nova** "Bootstrap do primeiro admin (N01)" | Criar | A4 |
-| **Nova** "Guardas de elevação na gestão de usuários (N03)" | Criar | A7 |
+| **SPI-169** — Bootstrap do primeiro admin (N01) | Criada em 18/10 | A4 |
+| **SPI-170** — Guardas de elevação na gestão de usuários (N03) | Criada em 18/10 | A7 |
 | SPI-54, 77, 78, 83, 85, 86, 90 | **Fechar** (já implementadas — VERIFICACAO 1C) | — |
 | SPI-73 | Manter aberta; fecha com A3 (hoje está sem escopo) | A3 |
 | SPI-94 / SPI-112 | Manter 94; fechar 112 como duplicata | A3 |
 | SPI-96 | Redefinir para DB01–DB04 | A3 |
 | SPI-74 | Manter fechada | — |
-| **Nova** "Tentativas duráveis de IA (N05/RF047)" | Criar | C1, C2, C3 |
+| **SPI-171** — Tentativas duráveis de IA (N05/RF047) | Criada em 18/10 | C1, C2, C3 |
 | SPI-127 | Redefinir: "cliente de provider via HTTP, sem SDK" | C1 |
 | SPI-97–100 / SPI-113–116 | Manter 97–100; fechar 113–116 como duplicatas | F1 |
 | SPI-95, SPI-101 / SPI-117 | Manter 95 e 101; fechar 117 | F2 (+ A9) |
 | SPI-118, 119, 122, 125 | Manter | B1 |
 | SPI-120, 123, 126 | Manter | B2 |
 | SPI-121, 124 | Manter | B3 |
-| **Nova** "Backend do chat corporativo" | Criar | D1 |
+| **SPI-172** — Backend do chat corporativo | Criada em 18/10 | D1 |
 | SPI-134, SPI-136 | Manter (Lyn) | D2 |
 | SPI-128, 129 | Redefinir (busca nativa, sem pgvector e sem embeddings) — se ADR-35 = A | E1 |
 | SPI-130 | Manter | E1, E2 |
@@ -182,6 +181,7 @@ F1 estende endpoints existentes, sem criar novos.
 ## 8. Arquivos deste diretório
 
 - `HANDOFF.md`: protocolo para o modelo implementador. Ler primeiro.
+- `KICKOFF_PROMPT.md`: prompts prontos para colar no modelo implementador (abertura e por tarefa) e a ordem sugerida das rodadas.
 - `SPEC-01-autorizacao.md`, `SPEC-02-orcamento.md`, `SPEC-03-execucao-ia.md`, `SPEC-04-chat.md`,
   `SPEC-05-agente-politicas.md`: especificações compartilhadas.
 - `TASK-S3-*.md`: um pacote por tarefa (PR).

@@ -24,7 +24,8 @@ Leia este arquivo inteiro antes de qualquer tarefa. Ele vale para **todas** as t
 ## 3. Regras de execução
 
 - **Uma tarefa = um incremento revisável.** Não misture tarefas.
-- Branch e commit seguem `AGENTS.md` §12, com a chave Jira informada pelo responsável. Exemplo:
+- Branch e commit seguem `AGENTS.md` §12. Use a **primeira** chave do campo **Jira** do packet
+  (quando houver "SPI-xx (redefinir)" e uma chave nova, prefira a chave nova). Exemplo:
   `feat/SPI-46-convite-com-concessao`, commit `feat(SPI-46): convite carrega a concessao`.
 - **Só crie branch, commit ou push se o responsável autorizar explicitamente.** O padrão é deixar
   as mudanças locais e entregar o relatório.

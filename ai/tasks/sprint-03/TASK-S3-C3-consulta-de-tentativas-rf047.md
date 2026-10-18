@@ -2,7 +2,7 @@
 
 ## Metadados
 - **Onda:** C · **Depende de:** C1, A2
-- **Jira:** tarefa criada na C1 (RF047)
+- **Jira:** **SPI-171** (RF047)
 - **Módulo proprietário:** `aigateway`
 - **Spec:** `SPEC-03` §4 (primeira linha), §5 (TR10)
 

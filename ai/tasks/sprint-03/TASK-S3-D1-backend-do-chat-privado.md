@@ -2,7 +2,7 @@
 
 ## Metadados
 - **Onda:** D (chat) · **Depende de:** ADR-39 ACCEPTED, A2 (teto CHAT), C1 (`AICompletionService`)
-- **Jira:** **criar** "Backend do chat corporativo (suporte à SPI-136)"; SPI-134 (parte de dados do recibo)
+- **Jira:** **SPI-172** (backend do chat corporativo, suporte à SPI-136); SPI-134 (parte de dados do recibo)
 - **Módulo proprietário:** `chat`
 - **Spec:** `SPEC-04-chat.md` (inteira)
 

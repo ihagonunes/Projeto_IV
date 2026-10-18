@@ -2,7 +2,7 @@
 
 ## Metadados
 - **Onda:** A · **Ordem:** 4 · **Depende de:** A1 (A2 recomendado)
-- **Jira:** **criar** "Bootstrap do primeiro administrador do tenant (N01)"; complementa SPI-50
+- **Jira:** **SPI-169** (bootstrap do primeiro admin, N01); complementa SPI-50
 - **Módulo proprietário:** `iam`
 - **Spec:** `SPEC-01` §7.1, §9, §11 (AZ01); ADR-37 itens 1 e 8
 

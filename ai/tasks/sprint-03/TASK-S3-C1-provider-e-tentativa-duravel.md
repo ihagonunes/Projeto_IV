@@ -7,7 +7,7 @@
   - **decisão 11** só para configurar o provider real da demo — o código e os testes usam o `STUB`.
 - **Jira:**
   - SPI-127 (redefinir: "cliente de provider sem SDK", em vez de Spring AI);
-  - **criar** "Registro durável de tentativas de IA (N05/RF047)";
+  - **SPI-171** (tentativas duráveis de IA, N05/RF047);
   - SPI-74 continua fechada.
 - **Módulo proprietário:** `aigateway`
 - **Spec:** `SPEC-03-execucao-ia.md` §1, §2, §3 (passos 1–4), §5 (TR01, TR02, TR03, TR08, TR09, TR11, TR12)

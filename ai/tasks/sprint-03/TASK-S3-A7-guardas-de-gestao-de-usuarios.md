@@ -2,7 +2,7 @@
 
 ## Metadados
 - **Onda:** A · **Ordem:** 7 · **Depende de:** A5, A6
-- **Jira:** **criar** "Guardas de elevação na gestão de usuários (N03)"; registrar reabertura parcial de SPI-63
+- **Jira:** **SPI-170** (guardas de elevação, N03); registrar reabertura parcial de SPI-63
 - **Módulo proprietário:** `iam`
 - **Spec:** `SPEC-01` §4 (`domina`, guardas), §6 (linhas de usuários), §11 (AZ05, AZ06, AZ08, AZ09, AZ14, AZ15, AZ16)
 
