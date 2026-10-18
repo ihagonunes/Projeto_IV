@@ -5,7 +5,11 @@
 - **Sprint:** SPI Sprint 2
 - **Chave:** `POPROJ-21` (pré-requisito — ver *Contexto*)
 - **História PO:** POPROJ-21 — Roteamento Determinístico e Modelos de IA
+<<<<<<< Updated upstream
 - **Status:** Aprovado — implementação em andamento
+=======
+- **Status:** Proposta (aguardando aprovação antes de codar)
+>>>>>>> Stashed changes
 - **Responsável:** Não atribuído
 - **Prioridade:** Alta
 - **Categorias:** `sprint-2`, `department`
@@ -33,7 +37,11 @@ Sem `department` não há "modelo permitido por departamento" (POPROJ-21), "cust
 
 ## Escopo INCLUÍDO (v1)
 
+<<<<<<< Updated upstream
 - **`Department`** — agregado raiz do módulo: `id`, `tenantId`, `name`, `description`, `leaderUserId` (referência cross-module por ID, sem FK — ADR-29), `monthlyBudget` (ADR-06), `status`, timestamps.
+=======
+- **`Department`** — agregado raiz do módulo: `id`, `tenantId`, `name`, `description`, `leaderUserId` (referência cross-module por ID, sem FK — ADR-29), `monthlyBudget` (ADR-06), timestamps.
+>>>>>>> Stashed changes
 - **`BudgetLimit`** — representado como atributo do departamento (`monthlyBudget`). ADR-06: *"Department é fonte de verdade de BudgetLimit mensal"*.
 - **CRUD REST** — `GET/POST /api/v1/departamentos`, `GET/PUT/DELETE /api/v1/departamentos/{id}` (contrato já esperado pelo frontend em `static/modules/departamentos/departamentos.controller.js`).
 - **Contratos públicos** (`department/api/query/`), consumidos por outros módulos via `module.api.*`:
@@ -66,17 +74,28 @@ CREATE TABLE department_departments (
     updated_at     TIMESTAMPTZ   NOT NULL,
 
     CONSTRAINT pk_department_departments PRIMARY KEY (id),
+<<<<<<< Updated upstream
     CONSTRAINT uq_department_departments_tenant_name UNIQUE (tenant_id, name)
+=======
+    CONSTRAINT uq_department_departments_tenant_name UNIQUE (tenant_id, name),
+    CONSTRAINT fk_department_departments_tenant FOREIGN KEY (tenant_id) REFERENCES iam_tenants (id)
+>>>>>>> Stashed changes
 );
 
 CREATE INDEX idx_department_departments_tenant ON department_departments (tenant_id);
 ```
 
 Notas:
+<<<<<<< Updated upstream
 - **Sem FK para `iam_tenants`**: `tenant_id` é referência **cross-module por ID** (o agregado `Tenant` pertence ao módulo `iam`). O ADR-29 é explícito — *"FKs apenas intramodule; cross-module por IDs/ports"* — portanto aqui **não há** `FOREIGN KEY`. O isolamento é garantido pela aplicação (predicado explícito por `tenant_id`) + índice.
 - `leader_user_id` também é referência cross-module **por ID, sem FK** (ADR-29).
 - `UNIQUE (tenant_id, name)` — nome único **dentro do tenant**.
 - `status` (`ACTIVE`/`INACTIVE`) para **remoção lógica** (ver *Decisões tomadas*).
+=======
+- **FK apenas intramódulo** (`tenant_id → iam_tenants`); `leader_user_id` é referência cross-module **por ID, sem FK** (ADR-29).
+- `UNIQUE (tenant_id, name)` — nome único **dentro do tenant**.
+- `status` (`ACTIVE`/`INACTIVE`) para permitir **remoção lógica** (ver *Decisões em aberto*).
+>>>>>>> Stashed changes
 
 ## API
 
@@ -94,10 +113,17 @@ Erros: `400` validação · `401` sem autenticação · `403` sem permissão · 
 
 ```text
 department/
+<<<<<<< Updated upstream
 ├── api/query/          OrganizationQuery, DepartmentBudgetQuery (+ DTOs em api/model)
 ├── domain/             Department (agregado), DepartmentStatus
 ├── application/        CreateDepartment, UpdateDepartment, DeleteDepartment,
 │   │                   GetDepartment, ListDepartments, *Command
+=======
+├── api/query/          OrganizationQuery, DepartmentBudgetQuery (+ DTOs)
+├── domain/             Department (agregado), DepartmentStatus
+├── application/        CreateDepartment, UpdateDepartment, DeleteDepartment,
+│   │                   GetDepartment, ListDepartment, *Command
+>>>>>>> Stashed changes
 │   └── port/           DepartmentRepository
 └── infrastructure/
     ├── persistence/    DepartmentJpaEntity, DepartmentJpaMapper, DepartmentJpaRepository,
@@ -129,12 +155,20 @@ department/
 7. `./scripts/check` e `./scripts/check-integration` verdes; revisão do diff.
 8. Atualizar `ai/architecture.md` (ownership/allowlist de `department`) se necessário.
 
+<<<<<<< Updated upstream
 ## Decisões tomadas (aprovadas)
 
 1. **Remoção:** `DELETE` é **remoção lógica** — `status = INACTIVE`. Evita referências órfãs em `app_user.department_id` (cross-module por ID, sem FK). A listagem padrão retorna apenas `ACTIVE`; `?status=INACTIVE` permite ver os removidos.
 2. **Nome da tabela:** `department_departments` (padrão `<módulo>_<agregado>`, como `iam_tenants`).
 3. **`monthlyBudget`:** **opcional** (`NUMERIC(15,2)` anulável) — nem todo departamento tem teto definido no MVP.
 4. **FK de `tenant_id`:** **não criar** — referência cross-module por ID (ADR-29).
+=======
+## Decisões em aberto (precisam de aval)
+
+1. **Remoção:** `DELETE` como **remoção lógica** (`status = INACTIVE`, recomendado — evita referências órfãs em `app_user.department_id`) **ou** física? Recomendação: lógica.
+2. **Nome da tabela:** `department_departments` (padrão `<módulo>_<agregado>` como `iam_tenants`) — confirmar, pois o banco remodelado de referência usa prefixo `department_*`.
+3. **`monthlyBudget` obrigatório?** Recomendação: opcional (nem todo departamento tem teto definido no MVP).
+>>>>>>> Stashed changes
 
 ## Regras transversais
 
