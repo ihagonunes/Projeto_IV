@@ -6,7 +6,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import br.com.qsoft.governance.iam.api.model.AuthorizationResult;
 import br.com.qsoft.governance.iam.api.model.Permission;
 import br.com.qsoft.governance.iam.api.query.AuthorizationQuery;
 import br.com.qsoft.governance.iam.application.port.InviteRepository;
@@ -15,8 +14,10 @@ import br.com.qsoft.governance.iam.application.port.TenantDomainRepository;
 import br.com.qsoft.governance.iam.application.port.TenantRepository;
 import br.com.qsoft.governance.iam.application.port.UserRepository;
 import br.com.qsoft.governance.iam.application.port.UserSearchRepository;
+import br.com.qsoft.governance.iam.application.rbac.DominancePolicy;
 import br.com.qsoft.governance.iam.application.rbac.GrantAuthority;
 import br.com.qsoft.governance.iam.application.rbac.ProvisionDefaultRoles;
+import br.com.qsoft.governance.iam.application.rbac.TenantAdminGuard;
 import br.com.qsoft.governance.iam.domain.exception.AuthorizationDeniedException;
 import br.com.qsoft.governance.iam.domain.exception.InvalidInviteException;
 import br.com.qsoft.governance.iam.domain.exception.TenantDomainAlreadyExistsException;
@@ -37,6 +38,9 @@ import br.com.qsoft.governance.sharedkernel.id.RoleId;
 import br.com.qsoft.governance.sharedkernel.id.TenantId;
 import br.com.qsoft.governance.sharedkernel.id.UserId;
 import br.com.qsoft.governance.sharedkernel.query.PageResult;
+import br.com.qsoft.governance.sharedkernel.rbac.Action;
+import br.com.qsoft.governance.sharedkernel.rbac.Resource;
+import br.com.qsoft.governance.sharedkernel.rbac.VisibilityScope;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -114,10 +118,17 @@ class IAMApplicationCoverageBoostTest {
     };
 
     private final GrantAuthority grantAuthority = mock(GrantAuthority.class);
+    private final DominancePolicy dominancePolicy = mock(DominancePolicy.class);
+    private final TenantAdminGuard tenantAdminGuard = mock(TenantAdminGuard.class);
+    private final AuthorizationQuery authorizationQuery = mock(AuthorizationQuery.class);
 
     @BeforeEach
     void allowDelegation() {
         when(grantAuthority.canGrantByInvite(any(), any(), any(), any())).thenReturn(true);
+        when(dominancePolicy.dominates(any(), any(), any())).thenReturn(true);
+        when(dominancePolicy.coversDepartment(any(), any(), any())).thenReturn(true);
+        when(authorizationQuery.visibilityFor(any(), any(), any(), any()))
+            .thenReturn(new VisibilityScope.TenantWide());
     }
 
     private Tenant createActiveTenant() {
@@ -136,7 +147,7 @@ class IAMApplicationCoverageBoostTest {
 
     @Test
     void testUpdateUserMissingBranches() {
-        UpdateUser useCase = new UpdateUser(userRepo);
+        UpdateUser useCase = new UpdateUser(userRepo, dominancePolicy);
 
         assertThatThrownBy(() -> useCase.update(null))
             .isInstanceOf(IllegalArgumentException.class);
@@ -241,7 +252,7 @@ class IAMApplicationCoverageBoostTest {
 
     @Test
     void testChangeUserHierarchyLevelMissingBranches() {
-        ChangeUserHierarchyLevel useCase = new ChangeUserHierarchyLevel(userRepo);
+        ChangeUserHierarchyLevel useCase = new ChangeUserHierarchyLevel(userRepo, dominancePolicy);
 
         assertThatThrownBy(() -> useCase.change(null))
             .isInstanceOf(IllegalArgumentException.class);
@@ -334,7 +345,8 @@ class IAMApplicationCoverageBoostTest {
 
     @Test
     void testChangeUserStatusMissingBranches() {
-        ChangeUserStatus useCase = new ChangeUserStatus(userRepo);
+        ChangeUserStatus useCase =
+            new ChangeUserStatus(userRepo, dominancePolicy, tenantAdminGuard);
 
         assertThatThrownBy(() -> useCase.change(null))
             .isInstanceOf(IllegalArgumentException.class);
@@ -342,10 +354,9 @@ class IAMApplicationCoverageBoostTest {
         Tenant t1 = createActiveTenant();
         User actor = createActiveUser(t1.id());
 
-        // Deactivating self
+        // Deactivating self → 403 (SPEC-01 §6)
         assertThatThrownBy(() -> useCase.change(new ChangeUserStatusCommand(actor.id(), actor.id(), UserStatus.INACTIVE)))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("próprio usuário");
+            .isInstanceOf(AuthorizationDeniedException.class);
 
         // Activating target user
         User target = User.create(UserId.random(), t1.id(), "other@test.com", "Other", HierarchyLevel.COLLABORATOR, null);
@@ -354,32 +365,6 @@ class IAMApplicationCoverageBoostTest {
 
         User updated = useCase.change(new ChangeUserStatusCommand(actor.id(), target.id(), UserStatus.ACTIVE));
         assertThat(updated.status()).isEqualTo(UserStatus.ACTIVE);
-    }
-
-    @Test
-    void testCreateUserMissingBranches() {
-        CreateUser useCase = new CreateUser(userRepo, tenantRepo);
-
-        assertThatThrownBy(() -> useCase.create(null))
-            .isInstanceOf(IllegalArgumentException.class);
-
-        Tenant t = createActiveTenant();
-        TenantId tenantId = t.id();
-
-        // Null vs Blank for email and name
-        assertThatThrownBy(() -> useCase.create(new CreateUserCommand(tenantId, null, "Name", HierarchyLevel.MANAGER, null)))
-            .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> useCase.create(new CreateUserCommand(tenantId, " ", "Name", HierarchyLevel.MANAGER, null)))
-            .isInstanceOf(IllegalArgumentException.class);
-
-        assertThatThrownBy(() -> useCase.create(new CreateUserCommand(tenantId, "a@b.com", null, HierarchyLevel.MANAGER, null)))
-            .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> useCase.create(new CreateUserCommand(tenantId, "a@b.com", " ", HierarchyLevel.MANAGER, null)))
-            .isInstanceOf(IllegalArgumentException.class);
-
-        createActiveUser(tenantId);
-        assertThatThrownBy(() -> useCase.create(new CreateUserCommand(tenantId, "user@test.com", "Name", HierarchyLevel.MANAGER, null)))
-            .isInstanceOf(UserEmailAlreadyExistsException.class);
     }
 
     @Test
@@ -422,61 +407,21 @@ class IAMApplicationCoverageBoostTest {
     @Test
     void testListUsersMissingBranches() {
         UserSearchRepository mockSearchRepo = (tenantId, filter, page, size) -> new PageResult<>(List.of(), 0L, page, size);
-        ListUsers useCase = new ListUsers(mockSearchRepo);
+        ListUsers useCase = new ListUsers(mockSearchRepo, authorizationQuery);
 
         assertThatThrownBy(() -> useCase.list(null))
             .isInstanceOf(IllegalArgumentException.class);
 
         TenantId t = TenantId.random();
-        PageResult<User> p1 = useCase.list(new ListUsersCommand(t, null, null, null, null, -5, 0));
+        UserId actor = UserId.random();
+        PageResult<User> p1 = useCase.list(
+            new ListUsersCommand(t, actor, null, null, null, null, -5, 0));
         assertThat(p1.page()).isZero();
         assertThat(p1.size()).isEqualTo(ListUsers.DEFAULT_SIZE);
 
-        PageResult<User> p2 = useCase.list(new ListUsersCommand(t, null, null, null, null, 1, 500));
+        PageResult<User> p2 = useCase.list(
+            new ListUsersCommand(t, actor, null, null, null, null, 1, 500));
         assertThat(p2.size()).isEqualTo(ListUsers.MAX_SIZE);
     }
 
-    @Test
-    void testRegisterUserMissingBranches() {
-        CreateUser createUserUseCase = new CreateUser(userRepo, tenantRepo);
-
-        AuthorizationQuery authQueryWithReason = mock(AuthorizationQuery.class);
-        when(authQueryWithReason.checkPermission(any(), any())).thenReturn(new AuthorizationResult(false, "Permissão negada por política"));
-
-        RegisterUser useCaseWithReason = new RegisterUser(userRepo, authQueryWithReason, createUserUseCase);
-
-        assertThatThrownBy(() -> useCaseWithReason.register(null))
-            .isInstanceOf(IllegalArgumentException.class);
-
-        Tenant t1 = createActiveTenant();
-        User actor = createActiveUser(t1.id());
-
-        // Null vs Blank for email and name
-        assertThatThrownBy(() -> useCaseWithReason.register(new RegisterUserCommand(actor.id(), t1.id(), null, "New", HierarchyLevel.COLLABORATOR, null)))
-            .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> useCaseWithReason.register(new RegisterUserCommand(actor.id(), t1.id(), "  ", "New", HierarchyLevel.COLLABORATOR, null)))
-            .isInstanceOf(IllegalArgumentException.class);
-
-        assertThatThrownBy(() -> useCaseWithReason.register(new RegisterUserCommand(actor.id(), t1.id(), "new@test.com", null, HierarchyLevel.COLLABORATOR, null)))
-            .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> useCaseWithReason.register(new RegisterUserCommand(actor.id(), t1.id(), "new@test.com", "  ", HierarchyLevel.COLLABORATOR, null)))
-            .isInstanceOf(IllegalArgumentException.class);
-
-        assertThatThrownBy(() -> useCaseWithReason.register(new RegisterUserCommand(actor.id(), t1.id(), "new@test.com", "New", null, null)))
-            .isInstanceOf(IllegalArgumentException.class);
-
-        // Denial with custom denialReason string
-        assertThatThrownBy(() -> useCaseWithReason.register(new RegisterUserCommand(actor.id(), t1.id(), "new@test.com", "New", HierarchyLevel.COLLABORATOR, null)))
-            .isInstanceOf(AuthorizationDeniedException.class)
-            .hasMessageContaining("Permissão negada por política");
-
-        // Denial without denialReason string (null denialReason)
-        AuthorizationQuery authQueryNoReason = mock(AuthorizationQuery.class);
-        when(authQueryNoReason.checkPermission(any(), any())).thenReturn(new AuthorizationResult(false, null));
-        RegisterUser useCaseNoReason = new RegisterUser(userRepo, authQueryNoReason, createUserUseCase);
-
-        assertThatThrownBy(() -> useCaseNoReason.register(new RegisterUserCommand(actor.id(), t1.id(), "new2@test.com", "New", HierarchyLevel.COLLABORATOR, null)))
-            .isInstanceOf(AuthorizationDeniedException.class)
-            .hasMessageContaining("Usuário não autorizado a cadastrar usuários.");
-    }
 }

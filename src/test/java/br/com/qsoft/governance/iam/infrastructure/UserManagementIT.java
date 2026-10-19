@@ -185,7 +185,10 @@ class UserManagementIT {
     void shouldUpdateUserDepartment() {
         String adminToken = login(ADMIN_EMAIL, ADMIN_PASSWORD);
         Tenant tenant = tenantRepository.findBySlug(TENANT_SLUG).orElseThrow();
-        User target = userRepository.findByTenantIdAndEmail(tenant.id(), ADMIN_EMAIL).orElseThrow();
+        // O admin altera OUTRO usuário (não a si próprio): prova o efeito correto.
+        User target = userRepository
+            .findByTenantIdAndEmail(tenant.id(), "colab@mgmtdemo.com").orElseThrow();
+        User admin = userRepository.findByTenantIdAndEmail(tenant.id(), ADMIN_EMAIL).orElseThrow();
         UUID departmentId = UUID.randomUUID();
 
         Map<?, ?> updated = client.patch().uri("/api/v1/usuarios/" + target.id().value())
@@ -197,6 +200,18 @@ class UserManagementIT {
         assertThat(updated).isNotNull();
         // O PATCH edita o Department; o papel/nível NÃO é alterado por aqui (ADR-33).
         assertThat(updated.get("departmentId")).isEqualTo(departmentId.toString());
+
+        // Auto-alteração (ator = alvo) → 403 (SPEC-01 §4).
+        try {
+            client.patch().uri("/api/v1/usuarios/" + admin.id().value())
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("departmentId", UUID.randomUUID().toString()))
+                .retrieve().toBodilessEntity();
+            throw new AssertionError("Esperado 403 para auto-alteração");
+        } catch (RestClientResponseException e) {
+            assertThat(e.getStatusCode().value()).isEqualTo(403);
+        }
     }
 
     @Test

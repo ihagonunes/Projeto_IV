@@ -116,6 +116,16 @@ public class UserRepositoryAdapter implements UserRepository, UserSearchReposito
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(builder.equal(root.get("tenantId"), tenantId.value()));
             if (filter != null) {
+                // Recorte de visibilidade (derivado de visibilityFor — nunca do cliente).
+                if (filter.visibleUserId() != null && filter.visibleDepartmentIds().isEmpty()) {
+                    predicates.add(builder.equal(root.get("id"), filter.visibleUserId()));
+                } else if (filter.visibleUserId() != null) {
+                    predicates.add(builder.or(
+                        root.get("departmentId").in(filter.visibleDepartmentIds()),
+                        builder.equal(root.get("id"), filter.visibleUserId())));
+                } else if (!filter.visibleDepartmentIds().isEmpty()) {
+                    predicates.add(root.get("departmentId").in(filter.visibleDepartmentIds()));
+                }
                 if (filter.hierarchyLevel() != null) {
                     predicates.add(builder.equal(root.get("hierarchyLevel"), filter.hierarchyLevel()));
                 }

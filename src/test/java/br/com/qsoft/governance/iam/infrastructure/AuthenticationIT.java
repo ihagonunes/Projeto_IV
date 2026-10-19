@@ -5,8 +5,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import br.com.qsoft.governance.iam.application.AuthenticateUser;
 import br.com.qsoft.governance.iam.application.AuthenticatedUser;
-import br.com.qsoft.governance.iam.application.CreateUser;
-import br.com.qsoft.governance.iam.application.CreateUserCommand;
+import br.com.qsoft.governance.iam.application.ProvisionUser;
+import br.com.qsoft.governance.iam.application.ProvisionUserCommand;
 import br.com.qsoft.governance.iam.application.LoginCommand;
 import br.com.qsoft.governance.iam.application.RegisterTenant;
 import br.com.qsoft.governance.iam.application.RegisterTenantCommand;
@@ -51,7 +51,7 @@ class AuthenticationIT {
     RegisterTenant registerTenant;
 
     @Autowired
-    CreateUser createUser;
+    ProvisionUser provisionUser;
 
     @Autowired
     AuthenticateUser authenticateUser;
@@ -71,10 +71,7 @@ class AuthenticationIT {
     @Test
     void shouldLoginWithValidCredentials() {
         Tenant tenant = tenant("auth");
-        User user = createUser.create(new CreateUserCommand(
-            tenant.id(), "ana@auth.com", "Ana", HierarchyLevel.MANAGER, null));
-        user.setPasswordHash(passwordEncoder.encode("secret123"));
-        userRepository.save(user);
+        User user = provisionUser.provision(new ProvisionUserCommand(tenant.id(), "ana@auth.com", "Ana", HierarchyLevel.MANAGER, "secret123", null, java.util.Set.of()));
 
         AuthenticatedUser result =
             authenticateUser.login(new LoginCommand(tenant.slug(), "ana@auth.com", "secret123"));
@@ -87,10 +84,7 @@ class AuthenticationIT {
     @Test
     void shouldRejectWrongPassword() {
         Tenant tenant = tenant("auth");
-        User user = createUser.create(new CreateUserCommand(
-            tenant.id(), "bob@auth.com", "Bob", HierarchyLevel.COLLABORATOR, null));
-        user.setPasswordHash(passwordEncoder.encode("secret123"));
-        userRepository.save(user);
+        User user = provisionUser.provision(new ProvisionUserCommand(tenant.id(), "bob@auth.com", "Bob", HierarchyLevel.COLLABORATOR, "secret123", null, java.util.Set.of()));
 
         assertThatThrownBy(() -> authenticateUser.login(new LoginCommand(tenant.slug(), "bob@auth.com", "errada")))
             .isInstanceOf(InvalidCredentialsException.class);

@@ -42,6 +42,13 @@ public class RoleRepositoryAdapter implements RoleRepository {
     }
 
     @Override
+    @Transactional
+    public Optional<Role> findByTenantIdAndNameForUpdate(TenantId tenantId, String name) {
+        return jpaRepository.findByTenantIdAndNameForUpdate(tenantId.value(), name)
+            .map(mapper::toDomain);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public boolean existsByTenantIdAndName(TenantId tenantId, String name) {
         return jpaRepository.existsByTenantIdAndName(tenantId.value(), name);

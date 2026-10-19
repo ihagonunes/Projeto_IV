@@ -13,7 +13,6 @@ import br.com.qsoft.governance.sharedkernel.id.TenantId;
 import br.com.qsoft.governance.sharedkernel.id.UserId;
 import br.com.qsoft.governance.sharedkernel.rbac.Action;
 import br.com.qsoft.governance.sharedkernel.rbac.Resource;
-import br.com.qsoft.governance.sharedkernel.rbac.ScopeType;
 import java.util.Objects;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -103,14 +102,6 @@ public class GrantAuthority {
     }
 
     private boolean scopeContains(RoleAssignment grant, SystemRole target, UUID departmentId) {
-        if (grant.scopeType() == ScopeType.TENANT) {
-            return true;
-        }
-        if (grant.scopeType() == ScopeType.DEPARTMENT
-            && target.scope() != ScopeType.TENANT
-            && Objects.equals(departmentId, grant.departmentId())) {
-            return true;
-        }
-        return false;
+        return ScopeCoverage.contains(grant, target, departmentId);
     }
 }

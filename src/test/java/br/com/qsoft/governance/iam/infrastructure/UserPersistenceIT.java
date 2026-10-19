@@ -3,8 +3,8 @@ package br.com.qsoft.governance.iam.infrastructure;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import br.com.qsoft.governance.iam.application.CreateUser;
-import br.com.qsoft.governance.iam.application.CreateUserCommand;
+import br.com.qsoft.governance.iam.application.ProvisionUser;
+import br.com.qsoft.governance.iam.application.ProvisionUserCommand;
 import br.com.qsoft.governance.iam.application.RegisterTenant;
 import br.com.qsoft.governance.iam.application.RegisterTenantCommand;
 import br.com.qsoft.governance.iam.application.port.UserRepository;
@@ -18,6 +18,7 @@ import br.com.qsoft.governance.sharedkernel.id.TenantId;
 import br.com.qsoft.governance.sharedkernel.id.UserId;
 import br.com.qsoft.governance.sharedkernel.tenant.TenantContext;
 import br.com.qsoft.governance.sharedkernel.tenant.TenantContextHolder;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,7 +31,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * Teste de integração com PostgreSQL real (Testcontainers) + Flyway (V001/V002):
- * valida a persistência do User dentro do tenant e o isolamento entre tenants.
+ * persistência de usuário, unicidade por tenant e leitura tenant-scoped.
  */
 @Testcontainers
 @SpringBootTest(classes = br.com.qsoft.governance.GovernanceApplication.class)
@@ -54,7 +55,7 @@ class UserPersistenceIT {
     RegisterTenant registerTenant;
 
     @Autowired
-    CreateUser createUser;
+    ProvisionUser provisionUser;
 
     @Autowired
     UserRepository userRepository;
@@ -65,12 +66,16 @@ class UserPersistenceIT {
             slug, prefix, slug + ".example", "Admin", "admin@" + slug + ".example", "secret123"));
     }
 
+    private User provision(Tenant tenant, String email, String name, HierarchyLevel level) {
+        return provisionUser.provision(new ProvisionUserCommand(
+            tenant.id(), email, name, level, "secret123", null, Set.of()));
+    }
+
     @Test
     void shouldPersistUserWithinTenant() {
         Tenant tenant = newTenant("acme");
 
-        User user = createUser.create(new CreateUserCommand(
-            tenant.id(), "ana@acme.com", "Ana", HierarchyLevel.MANAGER, null));
+        User user = provision(tenant, "ana@acme.com", "Ana", HierarchyLevel.MANAGER);
 
         assertThat(user.id()).isNotNull();
         assertThat(user.status()).isEqualTo(UserStatus.ACTIVE);
@@ -85,11 +90,9 @@ class UserPersistenceIT {
     @Test
     void shouldRejectDuplicateEmailInSameTenant() {
         Tenant tenant = newTenant("dup");
-        createUser.create(new CreateUserCommand(
-            tenant.id(), "ana@dup.com", "Ana", HierarchyLevel.MANAGER, null));
+        provision(tenant, "ana@dup.com", "Ana", HierarchyLevel.MANAGER);
 
-        assertThatThrownBy(() -> createUser.create(new CreateUserCommand(
-            tenant.id(), "ana@dup.com", "Outra", HierarchyLevel.LEADER, null)))
+        assertThatThrownBy(() -> provision(tenant, "ana@dup.com", "Outra", HierarchyLevel.LEADER))
             .isInstanceOf(UserEmailAlreadyExistsException.class);
     }
 
@@ -98,10 +101,8 @@ class UserPersistenceIT {
         Tenant tenantA = newTenant("at");
         Tenant tenantB = newTenant("bt");
 
-        createUser.create(new CreateUserCommand(
-            tenantA.id(), "ana@x.com", "Ana", HierarchyLevel.MANAGER, null));
-        User inB = createUser.create(new CreateUserCommand(
-            tenantB.id(), "ana@x.com", "Ana", HierarchyLevel.MANAGER, null));
+        provision(tenantA, "ana@x.com", "Ana", HierarchyLevel.MANAGER);
+        User inB = provision(tenantB, "ana@x.com", "Ana", HierarchyLevel.MANAGER);
 
         assertThat(inB.tenantId()).isEqualTo(tenantB.id());
         assertThat(userRepository.findByTenantIdAndEmail(tenantB.id(), "ana@x.com")).isPresent();
@@ -109,17 +110,16 @@ class UserPersistenceIT {
 
     @Test
     void shouldRejectUnknownTenant() {
-        assertThatThrownBy(() -> createUser.create(new CreateUserCommand(
-            TenantId.random(),
-            "ana@x.com", "Ana", HierarchyLevel.MANAGER, null)))
+        assertThatThrownBy(() -> provisionUser.provision(new ProvisionUserCommand(
+            TenantId.random(), "ana@x.com", "Ana", HierarchyLevel.MANAGER,
+            "secret123", null, Set.of())))
             .isInstanceOf(TenantNotFoundException.class);
     }
 
     @Test
     void shouldPersistHierarchyLevelChange() {
         Tenant tenant = newTenant("hier");
-        User user = createUser.create(new CreateUserCommand(
-            tenant.id(), "ana@hier.com", "Ana", HierarchyLevel.COLLABORATOR, null));
+        User user = provision(tenant, "ana@hier.com", "Ana", HierarchyLevel.COLLABORATOR);
 
         user.changeHierarchyLevel(HierarchyLevel.EXECUTIVE);
         userRepository.save(user);
@@ -132,18 +132,13 @@ class UserPersistenceIT {
     void shouldNotReadOtherTenantUserWhenContextIsSet() {
         Tenant tenantA = newTenant("isoA");
         Tenant tenantB = newTenant("isoB");
-        User userA = createUser.create(new CreateUserCommand(
-            tenantA.id(), "ana@iso.com", "Ana", HierarchyLevel.MANAGER, null));
-        User userB = createUser.create(new CreateUserCommand(
-            tenantB.id(), "bob@iso.com", "Bob", HierarchyLevel.MANAGER, null));
+        User userA = provision(tenantA, "ana@iso.com", "Ana", HierarchyLevel.MANAGER);
+        User userB = provision(tenantB, "bob@iso.com", "Bob", HierarchyLevel.MANAGER);
 
-        // Contexto autenticado do tenant A (vem do JWT, nunca do cliente).
         TenantContextHolder.set(new TenantContext(tenantA.id(), UserId.random()));
         try {
             assertThat(userRepository.findById(userA.id())).isPresent();
-            // Usuário do Tenant B é invisível sob o contexto do Tenant A.
             assertThat(userRepository.findById(userB.id())).isEmpty();
-            // A busca por e-mail do Tenant B também retorna vazio (isolamento).
             assertThat(userRepository.findByTenantIdAndEmail(tenantB.id(), "bob@iso.com")).isEmpty();
         } finally {
             TenantContextHolder.clear();

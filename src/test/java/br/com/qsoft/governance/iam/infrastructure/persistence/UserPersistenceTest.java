@@ -257,7 +257,9 @@ class UserPersistenceTest {
             HierarchyLevel.MANAGER,
             deptId,
             "  John\\_%  ",
-            "  john@qsoft.com  "
+            "  john@qsoft.com  ",
+            null,
+            null
         );
 
         User user = createSampleUserWith(UserId.random(), tenantId);
@@ -293,7 +295,9 @@ class UserPersistenceTest {
             HierarchyLevel.LEADER,
             deptId,
             "  Alice\\_%  ",
-            "  alice@qsoft.com  "
+            "  alice@qsoft.com  ",
+            null,
+            null
         );
 
         org.mockito.ArgumentCaptor<Specification<UserJpaEntity>> captor =
@@ -361,6 +365,8 @@ class UserPersistenceTest {
             null,
             null,
             "   ",
+            null,
+            null,
             null
         );
 

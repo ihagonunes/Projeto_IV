@@ -4,8 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import br.com.qsoft.governance.iam.domain.tenant.Tenant;
 import br.com.qsoft.governance.iam.domain.user.HierarchyLevel;
+import br.com.qsoft.governance.iam.domain.user.User;
 import br.com.qsoft.governance.iam.support.TestTenants;
+import br.com.qsoft.governance.sharedkernel.id.UserId;
 import java.util.Map;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,12 +24,9 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
- * Testes de segurança da camada HTTP (servidor real) com PostgreSQL real.
- * Cobre: 401 sem token, 403 sem permissão USER:MANAGE, 201 com permissão e
- * login por derivação de tenant (sem tenantSlug). Exige Docker.
- *
- * A autorização do endpoint de criação é feita pelo PermissionInterceptor via
- * PolicyEvaluator (concessões com escopo — ADR-36).
+ * Testes de segurança da camada HTTP (servidor real) com PostgreSQL real:
+ * 401 sem token, 403 sem USER:READ e login por derivação de tenant (sem
+ * tenantSlug). Exige Docker.
  */
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
@@ -77,14 +77,8 @@ class ApiSecurityIT {
         return response == null ? null : (String) response.get("token");
     }
 
-    private int createUser(String token, String email) {
-        var spec = client.post().uri("/api/v1/usuarios")
-            .contentType(MediaType.APPLICATION_JSON)
-            .body(Map.of(
-                "email", email,
-                "name", "Novo Usuário",
-                "hierarchyLevel", "COLLABORATOR",
-                "password", PASSWORD));
+    private int listUsersStatus(String token) {
+        var spec = client.get().uri("/api/v1/usuarios");
         if (token != null) {
             spec = spec.header("Authorization", "Bearer " + token);
         }
@@ -96,20 +90,20 @@ class ApiSecurityIT {
     }
 
     @Test
-    void shouldRejectCreateUserWithoutToken() {
-        assertThat(createUser(null, "sem-token@secdemo.com")).isEqualTo(401);
+    void shouldRejectListUsersWithoutToken() {
+        assertThat(listUsersStatus(null)).isEqualTo(401);
     }
 
     @Test
-    void shouldRejectCreateUserWithoutManageUsersPermission() {
+    void shouldRejectListUsersWithoutUserReadPermission() {
         String token = login(USER_EMAIL);
-        assertThat(createUser(token, "sem-permissao@secdemo.com")).isEqualTo(403);
+        assertThat(listUsersStatus(token)).isEqualTo(403);
     }
 
     @Test
-    void shouldCreateUserWithManageUsersPermission() {
+    void shouldListUsersWithUserReadPermission() {
         String token = login(ADMIN_EMAIL);
-        assertThat(createUser(token, "com-permissao@secdemo.com")).isEqualTo(201);
+        assertThat(listUsersStatus(token)).isEqualTo(200);
     }
 
     @Test

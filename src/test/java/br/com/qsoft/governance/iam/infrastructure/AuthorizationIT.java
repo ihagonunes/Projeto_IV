@@ -67,10 +67,11 @@ class AuthorizationIT {
         Tenant tenant = testTenants.ensureTenant(
             TENANT_SLUG, "RBAC Demo", "Admin", ADMIN_EMAIL, PASSWORD);
         UserId adminId = testTenants.admin(tenant, ADMIN_EMAIL).id();
-        targetId = adminId.value();
 
-        testTenants.ensureMember(tenant, adminId, USER_EMAIL, "User", PASSWORD,
+        // O alvo é OUTRO usuário: ator = alvo agora é 403 (SPEC-01 §4).
+        var user = testTenants.ensureMember(tenant, adminId, USER_EMAIL, "User", PASSWORD,
             HierarchyLevel.COLLABORATOR, null, "COLLABORATOR");
+        targetId = user.id().value();
 
         // MANAGER com concessão DEPARTMENT e USER:MANAGE — cenário AZ19.
         testTenants.ensureMember(tenant, adminId, MANAGER_EMAIL, "Manager", PASSWORD,

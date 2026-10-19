@@ -74,24 +74,14 @@ class IAMApplicationRecordsTest {
     }
 
     @Test
-    void testCreateUserCommand() {
-        TenantId tenantId = TenantId.random();
-        UUID deptId = UUID.randomUUID();
-        CreateUserCommand cmd = new CreateUserCommand(
-            tenantId, "ana@qsoft.com", "Ana", HierarchyLevel.MANAGER, deptId);
-
-        assertThat(cmd.tenantId()).isEqualTo(tenantId);
-        assertThat(cmd.email()).isEqualTo("ana@qsoft.com");
-        assertThat(cmd.name()).isEqualTo("Ana");
-        assertThat(cmd.hierarchyLevel()).isEqualTo(HierarchyLevel.MANAGER);
-        assertThat(cmd.departmentId()).isEqualTo(deptId);
-    }
-
-    @Test
     void testListUsersCommand() {
         TenantId tenantId = TenantId.random();
+        UserId actor = UserId.random();
         UUID deptId = UUID.randomUUID();
-        ListUsersCommand cmd = new ListUsersCommand(tenantId, HierarchyLevel.MANAGER, deptId, "Ana", "ana@qsoft.com", 0, 10);
+        ListUsersCommand cmd = new ListUsersCommand(
+            tenantId, actor, HierarchyLevel.MANAGER, deptId, "Ana", "ana@qsoft.com", 0, 10);
+
+        assertThat(cmd.actor()).isEqualTo(actor);
 
         assertThat(cmd.tenantId()).isEqualTo(tenantId);
         assertThat(cmd.hierarchyLevel()).isEqualTo(HierarchyLevel.MANAGER);
@@ -134,23 +124,6 @@ class IAMApplicationRecordsTest {
         assertThat(cmd.name()).isEqualTo("QSOFT Inc");
         assertThat(cmd.emailDomain()).isEqualTo("qsoft.com");
         assertThat(cmd.adminEmail()).isEqualTo("admin@qsoft.com");
-    }
-
-    @Test
-    void testRegisterUserCommand() {
-        UserId actorUserId = UserId.random();
-        TenantId tenantId = TenantId.random();
-        UUID deptId = UUID.randomUUID();
-
-        RegisterUserCommand cmd = new RegisterUserCommand(
-            actorUserId, tenantId, "admin@qsoft.com", "Admin", HierarchyLevel.MANAGER, deptId);
-
-        assertThat(cmd.actorUserId()).isEqualTo(actorUserId);
-        assertThat(cmd.tenantId()).isEqualTo(tenantId);
-        assertThat(cmd.email()).isEqualTo("admin@qsoft.com");
-        assertThat(cmd.name()).isEqualTo("Admin");
-        assertThat(cmd.hierarchyLevel()).isEqualTo(HierarchyLevel.MANAGER);
-        assertThat(cmd.departmentId()).isEqualTo(deptId);
     }
 
     @Test

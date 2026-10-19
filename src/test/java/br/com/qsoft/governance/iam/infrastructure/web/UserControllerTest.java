@@ -12,12 +12,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import br.com.qsoft.governance.iam.application.AssignRole;
 import br.com.qsoft.governance.iam.application.ChangeUserHierarchyLevel;
 import br.com.qsoft.governance.iam.application.ChangeUserStatus;
-import br.com.qsoft.governance.iam.application.CreateUser;
 import br.com.qsoft.governance.iam.application.ListUsers;
 import br.com.qsoft.governance.iam.application.RevokeRoleAssignment;
 import br.com.qsoft.governance.iam.application.UpdateUser;
+import br.com.qsoft.governance.iam.application.port.UserRepository;
 import br.com.qsoft.governance.iam.application.rbac.PolicyEvaluator;
-import br.com.qsoft.governance.iam.domain.exception.UserEmailAlreadyExistsException;
 import br.com.qsoft.governance.iam.domain.exception.UserNotFoundException;
 import br.com.qsoft.governance.iam.domain.rbac.Permission;
 import br.com.qsoft.governance.iam.domain.user.HierarchyLevel;
@@ -32,6 +31,7 @@ import br.com.qsoft.governance.sharedkernel.tenant.TenantContext;
 import br.com.qsoft.governance.sharedkernel.tenant.TenantContextHolder;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
@@ -47,7 +47,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
  */
 class UserControllerTest {
 
-    private CreateUser createUser;
     private ChangeUserHierarchyLevel changeUserHierarchyLevel;
     private ChangeUserStatus changeUserStatus;
     private ListUsers listUsers;
@@ -55,11 +54,11 @@ class UserControllerTest {
     private PolicyEvaluator policyEvaluator;
     private AssignRole assignRole;
     private RevokeRoleAssignment revokeRoleAssignment;
+    private UserRepository userRepository;
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
-        createUser = mock(CreateUser.class);
         changeUserHierarchyLevel = mock(ChangeUserHierarchyLevel.class);
         changeUserStatus = mock(ChangeUserStatus.class);
         listUsers = mock(ListUsers.class);
@@ -67,10 +66,11 @@ class UserControllerTest {
         policyEvaluator = mock(PolicyEvaluator.class);
         assignRole = mock(AssignRole.class);
         revokeRoleAssignment = mock(RevokeRoleAssignment.class);
+        userRepository = mock(UserRepository.class);
 
         UserController controller = new UserController(
-            createUser, changeUserHierarchyLevel, changeUserStatus,
-            listUsers, updateUser, policyEvaluator, assignRole, revokeRoleAssignment);
+            changeUserHierarchyLevel, changeUserStatus, listUsers, updateUser,
+            policyEvaluator, assignRole, revokeRoleAssignment, userRepository);
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
             .setControllerAdvice(new UserApiExceptionHandler())
             .build();
@@ -80,8 +80,6 @@ class UserControllerTest {
     void tearDown() {
         TenantContextHolder.clear();
     }
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
 
     private void setContext(TenantId tenantId) {
         TenantContextHolder.set(new TenantContext(tenantId, UserId.random()));
@@ -95,63 +93,12 @@ class UserControllerTest {
         );
     }
 
-    // ── POST /api/v1/usuarios ─────────────────────────────────────────────────
-
-    @Test
-    void deve_retornar201_quando_criarUsuarioComSucesso() throws Exception {
-        TenantId tenantId = TenantId.random();
-        setContext(tenantId);
-        when(createUser.create(any())).thenReturn(sampleUser(tenantId));
-
-        mockMvc.perform(post("/api/v1/usuarios")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"email\":\"dev@qsoft.com\",\"name\":\"Dev\",\"hierarchyLevel\":\"COLLABORATOR\"}"))
-            .andExpect(status().isCreated())
-            .andExpect(jsonPath("$.email").value("dev@qsoft.com"));
-    }
-
-    @Test
-    void deve_retornar409_quando_emailJaExiste() throws Exception {
-        setContext(TenantId.random());
-        when(createUser.create(any()))
-            .thenThrow(new UserEmailAlreadyExistsException("dev@qsoft.com"));
-
-        mockMvc.perform(post("/api/v1/usuarios")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"email\":\"dev@qsoft.com\",\"name\":\"Dev\",\"hierarchyLevel\":\"COLLABORATOR\"}"))
-            .andExpect(status().isConflict())
-            .andExpect(jsonPath("$.message").exists());
-    }
-
-    @Test
-    void deve_retornar400_quando_emailInvalidoAoCriarUsuario() throws Exception {
-        setContext(TenantId.random());
-
-        mockMvc.perform(post("/api/v1/usuarios")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"email\":\"invalido\",\"name\":\"Dev\",\"hierarchyLevel\":\"COLLABORATOR\"}"))
-            .andExpect(status().isBadRequest())
-            .andExpect(jsonPath("$.message").exists());
-    }
-
-    @Test
-    void deve_retornar401_quando_criarUsuarioSemContexto() throws Exception {
-        // TenantContextHolder vazio → require() lança IllegalStateException → handler → 401
-        mockMvc.perform(post("/api/v1/usuarios")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"email\":\"dev@qsoft.com\",\"name\":\"Dev\",\"hierarchyLevel\":\"COLLABORATOR\"}"))
-            .andExpect(status().isUnauthorized());
-    }
-
-    // ── GET /api/v1/usuarios ──────────────────────────────────────────────────
-
     @Test
     void deve_retornar200_quando_listarUsuarios() throws Exception {
         TenantId tenantId = TenantId.random();
         setContext(tenantId);
         User user = sampleUser(tenantId);
-        when(listUsers.list(any())).thenReturn(
-            new PageResult<>(List.of(user), 1L, 0, 20));
+        when(listUsers.list(any())).thenReturn(new PageResult<>(List.of(user), 1L, 0, 20));
 
         mockMvc.perform(get("/api/v1/usuarios"))
             .andExpect(status().isOk())
@@ -159,18 +106,15 @@ class UserControllerTest {
             .andExpect(jsonPath("$.totalElements").value(1));
     }
 
-    // ── PATCH /api/v1/usuarios/{id} ───────────────────────────────────────────
-
     @Test
     void deve_retornar200_quando_atualizarUsuario() throws Exception {
         TenantId tenantId = TenantId.random();
         setContext(tenantId);
         when(updateUser.update(any())).thenReturn(sampleUser(tenantId));
 
-        UUID deptId = UUID.randomUUID();
         mockMvc.perform(patch("/api/v1/usuarios/" + UUID.randomUUID())
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"departmentId\":\"" + deptId + "\"}"))
+                .content("{\"departmentId\":\"" + UUID.randomUUID() + "\"}"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.email").value("dev@qsoft.com"));
     }
@@ -178,18 +122,14 @@ class UserControllerTest {
     @Test
     void deve_retornar404_quando_usuarioNaoEncontrado() throws Exception {
         setContext(TenantId.random());
-        when(updateUser.update(any()))
-            .thenThrow(new UserNotFoundException(UserId.random()));
+        when(updateUser.update(any())).thenThrow(new UserNotFoundException(UserId.random()));
 
-        UUID deptId = UUID.randomUUID();
         mockMvc.perform(patch("/api/v1/usuarios/" + UUID.randomUUID())
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"departmentId\":\"" + deptId + "\"}"))
+                .content("{\"departmentId\":\"" + UUID.randomUUID() + "\"}"))
             .andExpect(status().isNotFound())
             .andExpect(jsonPath("$.message").exists());
     }
-
-    // ── PATCH /api/v1/usuarios/{id}/status ────────────────────────────────────
 
     @Test
     void deve_retornar200_quando_alterarStatusDoUsuario() throws Exception {
@@ -203,8 +143,6 @@ class UserControllerTest {
             .andExpect(status().isOk());
     }
 
-    // ── POST /api/v1/usuarios/{id}/nivel ──────────────────────────────────────
-
     @Test
     void deve_retornar200_quando_alterarNivelHierarquico() throws Exception {
         TenantId tenantId = TenantId.random();
@@ -217,14 +155,12 @@ class UserControllerTest {
             .andExpect(status().isOk());
     }
 
-    // ── GET /api/v1/usuarios/me/permissoes ────────────────────────────────────
-
     @Test
     void deve_retornar200_quando_buscarPermissoesDoProprioUsuario() throws Exception {
         TenantId tenantId = TenantId.random();
         UserId userId = UserId.random();
         TenantContextHolder.set(new TenantContext(tenantId, userId));
-        when(policyEvaluator.effectivePermissions(any()))
+        when(policyEvaluator.effectivePermissions(any(TenantId.class), any(UserId.class)))
             .thenReturn(Set.of(Permission.of(Resource.USER, Action.READ)));
 
         mockMvc.perform(get("/api/v1/usuarios/me/permissoes"))
@@ -233,17 +169,47 @@ class UserControllerTest {
             .andExpect(jsonPath("$.permissions").isArray());
     }
 
-    // ── GET /api/v1/usuarios/{id}/permissoes ──────────────────────────────────
-
     @Test
-    void deve_retornar200_quando_buscarPermissoesDeOutroUsuario() throws Exception {
+    void deve_retornar200_quando_buscarPermissoesDeOutroUsuarioPermitido() throws Exception {
         TenantId tenantId = TenantId.random();
         setContext(tenantId);
-        UUID targetId = UUID.randomUUID();
-        when(policyEvaluator.effectivePermissions(any())).thenReturn(Set.of());
+        UserId targetId = UserId.random();
+        User target = User.restore(targetId, tenantId, "alvo@qsoft.com", "Alvo",
+            HierarchyLevel.COLLABORATOR, UUID.randomUUID(), "hash", Set.of(),
+            UserStatus.ACTIVE, Instant.now(), Instant.now());
+        when(userRepository.findByTenantIdAndId(tenantId, targetId)).thenReturn(Optional.of(target));
+        when(policyEvaluator.isAllowed(any(), any(), any(), any(), any())).thenReturn(true);
+        when(policyEvaluator.effectivePermissions(any(TenantId.class), any(UserId.class)))
+            .thenReturn(Set.of());
 
-        mockMvc.perform(get("/api/v1/usuarios/" + targetId + "/permissoes"))
+        mockMvc.perform(get("/api/v1/usuarios/" + targetId.value() + "/permissoes"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.userId").value(targetId.toString()));
+            .andExpect(jsonPath("$.userId").value(targetId.value().toString()));
+    }
+
+    @Test
+    void deve_retornar403_quandoSemAcessoAsPermissoesDoAlvo() throws Exception {
+        TenantId tenantId = TenantId.random();
+        setContext(tenantId);
+        UserId targetId = UserId.random();
+        User target = User.restore(targetId, tenantId, "alvo@qsoft.com", "Alvo",
+            HierarchyLevel.COLLABORATOR, UUID.randomUUID(), "hash", Set.of(),
+            UserStatus.ACTIVE, Instant.now(), Instant.now());
+        when(userRepository.findByTenantIdAndId(tenantId, targetId)).thenReturn(Optional.of(target));
+        when(policyEvaluator.isAllowed(any(), any(), any(), any(), any())).thenReturn(false);
+
+        mockMvc.perform(get("/api/v1/usuarios/" + targetId.value() + "/permissoes"))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void deve_retornar404_quandoAlvoDeOutroTenant() throws Exception {
+        TenantId tenantId = TenantId.random();
+        setContext(tenantId);
+        UserId targetId = UserId.random();
+        when(userRepository.findByTenantIdAndId(tenantId, targetId)).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/v1/usuarios/" + targetId.value() + "/permissoes"))
+            .andExpect(status().isNotFound());
     }
 }

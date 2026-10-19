@@ -16,5 +16,14 @@ public interface RoleRepository {
 
     Optional<Role> findByTenantIdAndName(TenantId tenantId, String name);
 
+    /**
+     * Igual a {@link #findByTenantIdAndName}, mas com <b>lock pessimista</b> na
+     * linha (usada pela guarda do último administrador). O default delega sem
+     * lock para as implementações em memória (testes).
+     */
+    default Optional<Role> findByTenantIdAndNameForUpdate(TenantId tenantId, String name) {
+        return findByTenantIdAndName(tenantId, name);
+    }
+
     boolean existsByTenantIdAndName(TenantId tenantId, String name);
 }

@@ -2,8 +2,8 @@ package br.com.qsoft.governance.iam.infrastructure;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import br.com.qsoft.governance.iam.application.CreateUser;
-import br.com.qsoft.governance.iam.application.CreateUserCommand;
+import br.com.qsoft.governance.iam.application.ProvisionUser;
+import br.com.qsoft.governance.iam.application.ProvisionUserCommand;
 import br.com.qsoft.governance.iam.application.RegisterTenant;
 import br.com.qsoft.governance.iam.application.RegisterTenantCommand;
 import br.com.qsoft.governance.iam.application.port.RoleAssignmentRepository;
@@ -51,7 +51,7 @@ class RolePersistenceIT {
     RegisterTenant registerTenant;
 
     @Autowired
-    CreateUser createUser;
+    ProvisionUser provisionUser;
 
     @Autowired
     RoleRepository roleRepository;
@@ -104,8 +104,7 @@ class RolePersistenceIT {
     @Test
     void shouldPersistRoleAssignment() {
         Tenant tenant = newTenant();
-        User user = createUser.create(new CreateUserCommand(
-            tenant.id(), "assign@rbac.com", "Assign", HierarchyLevel.MANAGER, null));
+        User user = provisionUser.provision(new ProvisionUserCommand(tenant.id(), "assign@rbac.com", "Assign", HierarchyLevel.MANAGER, "secret123", null, java.util.Set.of()));
         Role role = roleRepository.findByTenantIdAndName(tenant.id(), "EXECUTIVE").orElseThrow();
 
         RoleAssignment saved = roleAssignmentRepository.save(RoleAssignment.grant(
