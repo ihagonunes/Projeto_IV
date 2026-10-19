@@ -32,6 +32,16 @@ public interface UserRepository {
         return findById(id);
     }
 
+    /**
+     * Busca por (tenant, id) com filtro explícito de tenant, sem depender do
+     * {@code TenantContext} (útil no caminho público do aceite de convite, que
+     * revalida a autoridade do convidante). O default delega para
+     * {@link #findById(UserId)} nas implementações em memória (testes).
+     */
+    default Optional<User> findByTenantIdAndId(TenantId tenantId, UserId id) {
+        return findById(id);
+    }
+
     Optional<User> findByTenantIdAndEmail(TenantId tenantId, String email);
 
     boolean existsByTenantIdAndEmail(TenantId tenantId, String email);

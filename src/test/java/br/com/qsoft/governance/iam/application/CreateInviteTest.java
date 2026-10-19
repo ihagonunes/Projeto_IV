@@ -2,11 +2,16 @@ package br.com.qsoft.governance.iam.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import br.com.qsoft.governance.iam.application.port.InviteRepository;
 import br.com.qsoft.governance.iam.application.port.RoleRepository;
 import br.com.qsoft.governance.iam.application.port.TenantRepository;
 import br.com.qsoft.governance.iam.application.port.UserRepository;
+import br.com.qsoft.governance.iam.application.rbac.GrantAuthority;
+import br.com.qsoft.governance.iam.domain.exception.AuthorizationDeniedException;
 import br.com.qsoft.governance.iam.domain.exception.TenantNotFoundException;
 import br.com.qsoft.governance.iam.domain.exception.UserEmailAlreadyExistsException;
 import br.com.qsoft.governance.iam.domain.invite.Invite;
@@ -25,6 +30,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class CreateInviteTest {
@@ -132,8 +139,16 @@ class CreateInviteTest {
         }
     };
 
+    private final GrantAuthority grantAuthority = mock(GrantAuthority.class);
+
     private final CreateInvite useCase =
-        new CreateInvite(tenantRepository, userRepository, roleRepository, inviteRepository, 48);
+        new CreateInvite(tenantRepository, userRepository, roleRepository, inviteRepository,
+            grantAuthority, 48);
+
+    @BeforeEach
+    void allowDelegation() {
+        when(grantAuthority.canGrantByInvite(any(), any(), any(), any())).thenReturn(true);
+    }
 
     private TenantId activeTenant() {
         TenantId id = TenantId.random();
@@ -149,7 +164,7 @@ class CreateInviteTest {
         TenantId tenantId = activeTenant();
 
         IssuedInvite issued = useCase.create(new CreateInviteCommand(
-            tenantId, "ana@x.com", HierarchyLevel.COLLABORATOR, null, null));
+            tenantId, "ana@x.com", "COLLABORATOR", null, null, UUID.randomUUID()));
 
         Invite invite = issued.invite();
         assertThat(invite.id()).isNotNull();
@@ -168,14 +183,14 @@ class CreateInviteTest {
             "ana@x.com", "Ana", HierarchyLevel.COLLABORATOR, null));
 
         assertThatThrownBy(() -> useCase.create(new CreateInviteCommand(
-            tenantId, "ana@x.com", HierarchyLevel.COLLABORATOR, null, null)))
+            tenantId, "ana@x.com", "COLLABORATOR", null, null, UUID.randomUUID())))
             .isInstanceOf(UserEmailAlreadyExistsException.class);
     }
 
     @Test
     void shouldRejectUnknownTenant() {
         assertThatThrownBy(() -> useCase.create(new CreateInviteCommand(
-            TenantId.random(), "ana@x.com", HierarchyLevel.COLLABORATOR, null, null)))
+            TenantId.random(), "ana@x.com", "COLLABORATOR", null, null, UUID.randomUUID())))
             .isInstanceOf(TenantNotFoundException.class);
     }
 
@@ -184,15 +199,29 @@ class CreateInviteTest {
         TenantId tenantId = activeTenant();
 
         assertThatThrownBy(() -> useCase.create(new CreateInviteCommand(
-            tenantId, "  ", HierarchyLevel.COLLABORATOR, null, null)))
+            tenantId, "  ", "COLLABORATOR", null, null, UUID.randomUUID())))
             .isInstanceOf(IllegalArgumentException.class);
     }
 
-    // =====================================================================
-    // Branches faltantes (branch 66.7% → ≥ 70%)
-    // =====================================================================
+    @Test
+    void shouldRejectDepartmentalRoleWithoutDepartment() {
+        TenantId tenantId = activeTenant();
 
-    /** Command nulo → IllegalArgumentException imediato. */
+        assertThatThrownBy(() -> useCase.create(new CreateInviteCommand(
+            tenantId, "ana@x.com", "MANAGER", null, null, UUID.randomUUID())))
+            .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void shouldRejectWhenActorCannotGrant() {
+        TenantId tenantId = activeTenant();
+        when(grantAuthority.canGrantByInvite(any(), any(), any(), any())).thenReturn(false);
+
+        assertThatThrownBy(() -> useCase.create(new CreateInviteCommand(
+            tenantId, "ana@x.com", "COLLABORATOR", null, null, UUID.randomUUID())))
+            .isInstanceOf(AuthorizationDeniedException.class);
+    }
+
     @Test
     void deve_lancarExcecao_quando_commandNulo() {
         assertThatThrownBy(() -> useCase.create(null))
@@ -200,7 +229,6 @@ class CreateInviteTest {
             .hasMessageContaining("obrigatório");
     }
 
-    /** Tenant inativo → TenantNotFoundException (mesmo comportamento de inexistente). */
     @Test
     void deve_lancarExcecao_quando_tenantInativo() {
         TenantId id = TenantId.random();
@@ -208,25 +236,23 @@ class CreateInviteTest {
             Instant.now(), Instant.now()));
 
         assertThatThrownBy(() -> useCase.create(new CreateInviteCommand(
-            id, "ana@x.com", HierarchyLevel.COLLABORATOR, null, null)))
+            id, "ana@x.com", "COLLABORATOR", null, null, UUID.randomUUID())))
             .isInstanceOf(TenantNotFoundException.class);
     }
 
-    /** hierarchyLevel nulo → NullPointerException (requireNonNull do domínio). */
     @Test
-    void deve_lancarExcecao_quando_hierarchyLevelNulo() {
+    void deve_lancarExcecao_quando_roleKeyNulo() {
         TenantId tenantId = activeTenant();
 
         assertThatThrownBy(() -> useCase.create(new CreateInviteCommand(
-            tenantId, "ana@x.com", null, null, null)))
-            .isInstanceOf(NullPointerException.class);
+            tenantId, "ana@x.com", null, null, null, UUID.randomUUID())))
+            .isInstanceOf(IllegalArgumentException.class);
     }
 
-    /** tenantId nulo → NullPointerException (requireNonNull do caso de uso). */
     @Test
     void deve_lancarExcecao_quando_tenantIdNulo() {
         assertThatThrownBy(() -> useCase.create(new CreateInviteCommand(
-            null, "ana@x.com", HierarchyLevel.COLLABORATOR, null, null)))
+            null, "ana@x.com", "COLLABORATOR", null, null, UUID.randomUUID())))
             .isInstanceOf(NullPointerException.class);
     }
 }

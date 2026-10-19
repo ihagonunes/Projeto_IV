@@ -102,7 +102,7 @@ class UserManagementIT {
         return client.post().uri("/api/v1/convites")
             .header("Authorization", "Bearer " + token)
             .contentType(MediaType.APPLICATION_JSON)
-            .body(Map.of("email", email, "hierarchyLevel", "COLLABORATOR"))
+            .body(Map.of("email", email, "roleKey", "COLLABORATOR"))
             .retrieve().body(Map.class);
     }
 

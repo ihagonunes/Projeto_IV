@@ -72,7 +72,7 @@ class InviteFlowIT {
         return client.post().uri("/api/v1/convites")
             .header("Authorization", "Bearer " + token)
             .contentType(MediaType.APPLICATION_JSON)
-            .body(Map.of("email", email, "hierarchyLevel", "COLLABORATOR"))
+            .body(Map.of("email", email, "roleKey", "COLLABORATOR"))
             .retrieve().body(Map.class);
     }
 
@@ -119,7 +119,7 @@ class InviteFlowIT {
         try {
             client.post().uri("/api/v1/convites")
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(Map.of("email", "x@invitedemo.com", "hierarchyLevel", "COLLABORATOR"))
+                .body(Map.of("email", "x@invitedemo.com", "roleKey", "COLLABORATOR"))
                 .retrieve().toBodilessEntity();
             throw new AssertionError("Esperado 401/403");
         } catch (RestClientResponseException e) {

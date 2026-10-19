@@ -64,10 +64,11 @@ class IAMApplicationRecordsTest {
         TenantId tenantId = TenantId.random();
         UUID deptId = UUID.randomUUID();
         CreateInviteCommand cmd = new CreateInviteCommand(
-            tenantId, "ana@qsoft.com", HierarchyLevel.MANAGER, deptId, null);
+            tenantId, "ana@qsoft.com", "MANAGER", deptId, HierarchyLevel.MANAGER, null);
 
         assertThat(cmd.tenantId()).isEqualTo(tenantId);
         assertThat(cmd.email()).isEqualTo("ana@qsoft.com");
+        assertThat(cmd.roleKey()).isEqualTo("MANAGER");
         assertThat(cmd.hierarchyLevel()).isEqualTo(HierarchyLevel.MANAGER);
         assertThat(cmd.departmentId()).isEqualTo(deptId);
     }
@@ -156,7 +157,7 @@ class IAMApplicationRecordsTest {
     void testResendInviteCommand() {
         TenantId tenantId = TenantId.random();
         InviteId inviteId = InviteId.random();
-        ResendInviteCommand cmd = new ResendInviteCommand(tenantId, inviteId);
+        ResendInviteCommand cmd = new ResendInviteCommand(tenantId, inviteId, UserId.random());
 
         assertThat(cmd.tenantId()).isEqualTo(tenantId);
         assertThat(cmd.inviteId()).isEqualTo(inviteId);
@@ -166,7 +167,7 @@ class IAMApplicationRecordsTest {
     void testRevokeInviteCommand() {
         TenantId tenantId = TenantId.random();
         InviteId inviteId = InviteId.random();
-        RevokeInviteCommand cmd = new RevokeInviteCommand(tenantId, inviteId);
+        RevokeInviteCommand cmd = new RevokeInviteCommand(tenantId, inviteId, UserId.random());
 
         assertThat(cmd.tenantId()).isEqualTo(tenantId);
         assertThat(cmd.inviteId()).isEqualTo(inviteId);

@@ -95,7 +95,7 @@ public class TestTenants {
             IssuedInvite issued = null;
             try {
                 issued = createInvite.create(new CreateInviteCommand(
-                    tenant.id(), email, level, departmentId, inviterId.value()));
+                    tenant.id(), email, roleKey, departmentId, level, inviterId.value()));
             } catch (UserEmailAlreadyExistsException ignored) {
                 // corrida: recriado por outro teste
             }

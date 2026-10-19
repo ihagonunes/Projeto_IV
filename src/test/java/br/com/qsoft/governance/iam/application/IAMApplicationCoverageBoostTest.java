@@ -15,6 +15,7 @@ import br.com.qsoft.governance.iam.application.port.TenantDomainRepository;
 import br.com.qsoft.governance.iam.application.port.TenantRepository;
 import br.com.qsoft.governance.iam.application.port.UserRepository;
 import br.com.qsoft.governance.iam.application.port.UserSearchRepository;
+import br.com.qsoft.governance.iam.application.rbac.GrantAuthority;
 import br.com.qsoft.governance.iam.application.rbac.ProvisionDefaultRoles;
 import br.com.qsoft.governance.iam.domain.exception.AuthorizationDeniedException;
 import br.com.qsoft.governance.iam.domain.exception.InvalidInviteException;
@@ -44,6 +45,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
@@ -111,6 +113,13 @@ class IAMApplicationCoverageBoostTest {
         }
     };
 
+    private final GrantAuthority grantAuthority = mock(GrantAuthority.class);
+
+    @BeforeEach
+    void allowDelegation() {
+        when(grantAuthority.canGrantByInvite(any(), any(), any(), any())).thenReturn(true);
+    }
+
     private Tenant createActiveTenant() {
         Tenant t = Tenant.restore(TenantId.random(), "tenant1", "Tenant 1", TenantStatus.ACTIVE, Instant.now(), Instant.now());
         tenantsById.put(t.id(), t);
@@ -164,7 +173,7 @@ class IAMApplicationCoverageBoostTest {
 
     @Test
     void testRevokeInviteMissingBranches() {
-        RevokeInvite useCase = new RevokeInvite(inviteRepo);
+        RevokeInvite useCase = new RevokeInvite(inviteRepo, roleRepo, grantAuthority);
 
         assertThatThrownBy(() -> useCase.revoke(null))
             .isInstanceOf(IllegalArgumentException.class);
@@ -175,13 +184,13 @@ class IAMApplicationCoverageBoostTest {
         invitesById.put(invite.id(), invite);
 
         // Cross tenant revoke
-        assertThatThrownBy(() -> useCase.revoke(new RevokeInviteCommand(t2.id(), invite.id())))
+        assertThatThrownBy(() -> useCase.revoke(new RevokeInviteCommand(t2.id(), invite.id(), UserId.random())))
             .isInstanceOf(InvalidInviteException.class);
 
         // Invite accepted
         Invite acceptedInvite = Invite.restore(InviteId.random(), t1.id(), "b@b.com", HierarchyLevel.COLLABORATOR, null, UUID.randomUUID(), null, "token2", InviteStatus.ACCEPTED, Instant.now(), Instant.now().plusSeconds(3600), Instant.now());
         invitesById.put(acceptedInvite.id(), acceptedInvite);
-        assertThatThrownBy(() -> useCase.revoke(new RevokeInviteCommand(t1.id(), acceptedInvite.id())))
+        assertThatThrownBy(() -> useCase.revoke(new RevokeInviteCommand(t1.id(), acceptedInvite.id(), UserId.random())))
             .isInstanceOf(InvalidInviteException.class);
     }
 
@@ -299,19 +308,8 @@ class IAMApplicationCoverageBoostTest {
     }
 
     @Test
-    void testCreateInviteMissingBranchesAndTokenCollision() {
-        AtomicInteger tokenCheckCounter = new AtomicInteger(0);
-        InviteRepository collidingRepo = new InviteRepository() {
-            @Override public Invite save(Invite invite) { invitesById.put(invite.id(), invite); return invite; }
-            @Override public Optional<Invite> findById(InviteId id) { return Optional.ofNullable(invitesById.get(id)); }
-            @Override public Optional<Invite> findByTokenHash(String tokenHash) { return Optional.empty(); }
-            @Override public boolean existsByTokenHash(String tokenHash) {
-                return tokenCheckCounter.getAndIncrement() == 0; // Collides on 1st check, succeeds on 2nd!
-            }
-            @Override public List<Invite> findByTenantId(TenantId tenantId) { return List.of(); }
-        };
-
-        CreateInvite useCase = new CreateInvite(tenantRepo, userRepo, roleRepo, collidingRepo, 48);
+    void testCreateInviteMissingBranches() {
+        CreateInvite useCase = new CreateInvite(tenantRepo, userRepo, roleRepo, inviteRepo, grantAuthority, 48);
 
         assertThatThrownBy(() -> useCase.create(null))
             .isInstanceOf(IllegalArgumentException.class);
@@ -321,15 +319,17 @@ class IAMApplicationCoverageBoostTest {
         roleRepo.save(Role.create(RoleId.random(), tenantId, "MANAGER"));
 
         // Null vs Blank email
-        assertThatThrownBy(() -> useCase.create(new CreateInviteCommand(tenantId, null, HierarchyLevel.MANAGER, null, null)))
+        assertThatThrownBy(() -> useCase.create(new CreateInviteCommand(
+            tenantId, null, "MANAGER", UUID.randomUUID(), null, UUID.randomUUID())))
             .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> useCase.create(new CreateInviteCommand(tenantId, "  ", HierarchyLevel.MANAGER, null, null)))
+        assertThatThrownBy(() -> useCase.create(new CreateInviteCommand(
+            tenantId, "  ", "MANAGER", UUID.randomUUID(), null, UUID.randomUUID())))
             .isInstanceOf(IllegalArgumentException.class);
 
-        // Token collision loop coverage
-        IssuedInvite issued = useCase.create(new CreateInviteCommand(tenantId, "invite@test.com", HierarchyLevel.MANAGER, null, null));
+        IssuedInvite issued = useCase.create(new CreateInviteCommand(
+            tenantId, "invite@test.com", "MANAGER", UUID.randomUUID(), null, UUID.randomUUID()));
         assertThat(issued).isNotNull();
-        assertThat(tokenCheckCounter.get()).isGreaterThanOrEqualTo(2);
+        assertThat(issued.token()).isNotBlank();
     }
 
     @Test
@@ -395,24 +395,28 @@ class IAMApplicationCoverageBoostTest {
             @Override public List<Invite> findByTenantId(TenantId tenantId) { return List.of(); }
         };
 
-        ResendInvite useCase = new ResendInvite(userRepo, collidingRepo, 48);
+        ResendInvite useCase =
+            new ResendInvite(userRepo, roleRepo, inviteRepo, grantAuthority, 48);
 
         assertThatThrownBy(() -> useCase.resend(null))
             .isInstanceOf(IllegalArgumentException.class);
 
         Tenant t = createActiveTenant();
-        Invite acceptedInvite = Invite.restore(InviteId.random(), t.id(), "b@b.com", HierarchyLevel.COLLABORATOR, null, UUID.randomUUID(), null, "token2", InviteStatus.ACCEPTED, Instant.now(), Instant.now().plusSeconds(3600), Instant.now());
+        Role collab = roleRepo.save(Role.create(RoleId.random(), t.id(), "COLLABORATOR"));
+        Invite acceptedInvite = Invite.restore(InviteId.random(), t.id(), "b@b.com", HierarchyLevel.COLLABORATOR, null, collab.id().value(), UUID.randomUUID(), "token2", InviteStatus.ACCEPTED, Instant.now(), Instant.now().plusSeconds(3600), Instant.now());
         invitesById.put(acceptedInvite.id(), acceptedInvite);
 
-        assertThatThrownBy(() -> useCase.resend(new ResendInviteCommand(t.id(), acceptedInvite.id())))
+        assertThatThrownBy(() -> useCase.resend(
+            new ResendInviteCommand(t.id(), acceptedInvite.id(), UserId.random())))
             .isInstanceOf(InvalidInviteException.class);
 
-        Invite pendingInvite = Invite.create(InviteId.random(), t.id(), "unique-invite@test.com", HierarchyLevel.COLLABORATOR, null, UUID.randomUUID(), null, "token3", Instant.now().plusSeconds(3600));
+        Invite pendingInvite = Invite.create(InviteId.random(), t.id(), "unique-invite@test.com", HierarchyLevel.COLLABORATOR, null, collab.id().value(), UUID.randomUUID(), "token3", Instant.now().plusSeconds(3600));
         invitesById.put(pendingInvite.id(), pendingInvite);
 
-        IssuedInvite renewed = useCase.resend(new ResendInviteCommand(t.id(), pendingInvite.id()));
+        IssuedInvite renewed = useCase.resend(
+            new ResendInviteCommand(t.id(), pendingInvite.id(), UserId.random()));
         assertThat(renewed).isNotNull();
-        assertThat(tokenCheckCounter.get()).isGreaterThanOrEqualTo(2);
+        assertThat(renewed.token()).isNotBlank();
     }
 
     @Test

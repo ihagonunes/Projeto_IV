@@ -1,6 +1,8 @@
 package br.com.qsoft.governance.iam.infrastructure.web;
 
+import br.com.qsoft.governance.iam.domain.exception.AuthorizationDeniedException;
 import br.com.qsoft.governance.iam.domain.exception.InvalidInviteException;
+import br.com.qsoft.governance.iam.domain.exception.InviteAuthorityLostException;
 import br.com.qsoft.governance.iam.domain.exception.TenantNotFoundException;
 import br.com.qsoft.governance.iam.domain.exception.UserEmailAlreadyExistsException;
 import java.util.Map;
@@ -29,6 +31,18 @@ public class InviteApiExceptionHandler {
     @ExceptionHandler(TenantNotFoundException.class)
     public ResponseEntity<Map<String, String>> handleTenantNotFound(TenantNotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", ex.getMessage()));
+    }
+
+    /** Convite cuja concessão não é permitida ao ator no momento. */
+    @ExceptionHandler(InviteAuthorityLostException.class)
+    public ResponseEntity<Map<String, String>> handleAuthorityLost(InviteAuthorityLostException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("message", ex.getMessage()));
+    }
+
+    /** Ator sem permissão de conceder o papel/escopo pedido. */
+    @ExceptionHandler(AuthorizationDeniedException.class)
+    public ResponseEntity<Map<String, String>> handleDenied(AuthorizationDeniedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", ex.getMessage()));
     }
 
     @ExceptionHandler({ MethodArgumentNotValidException.class, IllegalArgumentException.class })

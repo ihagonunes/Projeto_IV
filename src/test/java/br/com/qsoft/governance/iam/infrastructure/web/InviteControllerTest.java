@@ -106,7 +106,7 @@ class InviteControllerTest {
     void deve_retornar200_quando_listarConvitesComContexto() throws Exception {
         TenantId tenantId = TenantId.random();
         TenantContextHolder.set(new TenantContext(tenantId, UserId.random()));
-        when(listInvites.list(tenantId)).thenReturn(List.of(sampleInvite(tenantId)));
+        when(listInvites.list(any(), any())).thenReturn(List.of(sampleInvite(tenantId)));
 
         mockMvc.perform(get("/api/v1/convites"))
             .andExpect(status().isOk())
@@ -123,7 +123,7 @@ class InviteControllerTest {
 
         mockMvc.perform(post("/api/v1/convites")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"email\":\"dev@qsoft.com\",\"hierarchyLevel\":\"COLLABORATOR\"}"))
+                .content("{\"email\":\"dev@qsoft.com\",\"roleKey\":\"COLLABORATOR\"}"))
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.token").value("tok-abc"));
     }
@@ -134,7 +134,7 @@ class InviteControllerTest {
 
         mockMvc.perform(post("/api/v1/convites")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"email\":\"invalido\",\"hierarchyLevel\":\"COLLABORATOR\"}"))
+                .content("{\"email\":\"invalido\",\"roleKey\":\"COLLABORATOR\"}"))
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.message").exists());
     }
@@ -147,7 +147,7 @@ class InviteControllerTest {
 
         mockMvc.perform(post("/api/v1/convites")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"email\":\"dev@qsoft.com\",\"hierarchyLevel\":\"COLLABORATOR\"}"))
+                .content("{\"email\":\"dev@qsoft.com\",\"roleKey\":\"COLLABORATOR\"}"))
             .andExpect(status().isConflict())
             .andExpect(jsonPath("$.message").exists());
     }

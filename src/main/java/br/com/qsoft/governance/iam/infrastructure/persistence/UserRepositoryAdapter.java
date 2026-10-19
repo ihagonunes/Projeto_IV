@@ -78,6 +78,13 @@ public class UserRepositoryAdapter implements UserRepository, UserSearchReposito
 
     @Override
     @Transactional(readOnly = true)
+    public Optional<User> findByTenantIdAndId(TenantId tenantId, UserId id) {
+        // Filtro explícito por tenant, sem depender do TenantContext (aceite de convite).
+        return jpaRepository.findByIdAndTenantId(id.value(), tenantId.value()).map(mapper::toDomain);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Optional<User> findByTenantIdAndEmail(TenantId tenantId, String email) {
         applyTenantFilter();
         return jpaRepository.findByTenantIdAndEmail(tenantId.value(), email).map(mapper::toDomain);
