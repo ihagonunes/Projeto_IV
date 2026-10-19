@@ -11,23 +11,28 @@ import br.com.qsoft.governance.iam.domain.rbac.RoleAssignment;
 import br.com.qsoft.governance.iam.domain.tenant.TenantStatus;
 import br.com.qsoft.governance.iam.domain.user.User;
 import br.com.qsoft.governance.iam.domain.user.UserStatus;
+import br.com.qsoft.governance.sharedkernel.id.TenantId;
+import br.com.qsoft.governance.sharedkernel.id.UserId;
+import br.com.qsoft.governance.sharedkernel.rbac.AccessTarget;
+import br.com.qsoft.governance.sharedkernel.rbac.Action;
+import br.com.qsoft.governance.sharedkernel.rbac.Resource;
+import br.com.qsoft.governance.sharedkernel.rbac.ScopeType;
+import br.com.qsoft.governance.sharedkernel.rbac.VisibilityScope;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
 /**
- * Policy evaluator: motor centralizado de avaliação de permissão.
- *
- * ALLOW quando: Tenant ACTIVE AND User ACTIVE AND sameTenant AND existe uma
- * atribuição (policy) de papel, aplicável ao contexto, cujo papel contém a
- * permissão (resource × action).
- *
- * Escopo de Department: uma atribuição com {@code departmentId} definido só se
- * aplica quando o {@code departmentId} do contexto é igual; uma atribuição
- * sem departamento (tenant-wide) aplica-se sempre.
+ * Policy evaluator: motor centralizado de avaliação de autorização (ADR-36).
+ * <p>
+ * Pré-condição comum: usuário ACTIVE, mesmo tenant e tenant ACTIVE. Caso
+ * contrário, nega. As concessões aplicáveis são as concessões ATIVAS do ator no
+ * tenant, cujo papel pertença ao mesmo tenant e contenha a permissão (match
+ * exato). São lidas do banco a cada chamada, sem cache.
  */
 @Service
 public class PolicyEvaluator {
@@ -47,6 +52,70 @@ public class PolicyEvaluator {
         this.roleAssignmentRepository = roleAssignmentRepository;
     }
 
+    // =====================================================================
+    // Avaliação com alvo (ADR-36 §3)
+    // =====================================================================
+
+    /**
+     * Decisão fina: alguma concessão aplicável cobre o alvo (com o teto de
+     * recurso aplicado).
+     */
+    public boolean isAllowed(TenantId tenantId, UserId actor, Resource resource, Action action,
+                             AccessTarget target) {
+        Objects.requireNonNull(tenantId, "tenantId é obrigatório.");
+        Objects.requireNonNull(actor, "actor é obrigatório.");
+        Objects.requireNonNull(resource, "resource é obrigatório.");
+        Objects.requireNonNull(action, "action é obrigatório.");
+        Objects.requireNonNull(target, "target é obrigatório.");
+        return applicableGrants(tenantId, actor, Permission.of(resource, action)).stream()
+            .anyMatch(grant -> coversWithCeiling(grant, resource, target));
+    }
+
+    /**
+     * Gate {@code TENANT_ONLY}: exige alguma concessão aplicável cujo escopo
+     * efetivo seja TENANT.
+     */
+    public boolean gateTenantOnly(TenantId tenantId, UserId actor, Resource resource, Action action) {
+        return applicableGrants(tenantId, actor, Permission.of(resource, action)).stream()
+            .anyMatch(grant -> effectiveScope(grant, resource) == ScopeType.TENANT);
+    }
+
+    /**
+     * Gate {@code BY_TARGET}: exige qualquer concessão ativa aplicável; a
+     * checagem fina do alvo é responsabilidade do caso de uso.
+     */
+    public boolean gateByTarget(TenantId tenantId, UserId actor, Resource resource, Action action) {
+        return !applicableGrants(tenantId, actor, Permission.of(resource, action)).isEmpty();
+    }
+
+    /** Escopo de visibilidade para consultas agregadas (ADR-36 §3). */
+    public VisibilityScope visibilityFor(TenantId tenantId, UserId actor, Resource resource, Action action) {
+        List<RoleAssignment> grants = applicableGrants(tenantId, actor, Permission.of(resource, action));
+        if (grants.isEmpty()) {
+            return new VisibilityScope.None();
+        }
+        if (grants.stream().anyMatch(grant -> effectiveScope(grant, resource) == ScopeType.TENANT)) {
+            return new VisibilityScope.TenantWide();
+        }
+        Set<UUID> departments = grants.stream()
+            .filter(grant -> effectiveScope(grant, resource) == ScopeType.DEPARTMENT)
+            .map(RoleAssignment::departmentId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toUnmodifiableSet());
+        if (!departments.isEmpty()) {
+            return new VisibilityScope.Departments(departments, actor);
+        }
+        return new VisibilityScope.SelfOnly(actor);
+    }
+
+    // =====================================================================
+    // Trilha legada (mantida até a remoção em S3-A8)
+    // =====================================================================
+
+    /**
+     * @deprecated substituído por {@link #isAllowed(TenantId, UserId, Resource, Action, AccessTarget)}.
+     */
+    @Deprecated(forRemoval = true)
     public AuthorizationResult evaluate(EvaluationContext context, Permission permission) {
         Objects.requireNonNull(context, "context é obrigatório.");
         Objects.requireNonNull(permission, "permission é obrigatória.");
@@ -63,6 +132,8 @@ public class PolicyEvaluator {
             "Permissão negada: " + permission.resource() + ":" + permission.action() + ".");
     }
 
+    /** @deprecated substituído pela decisão por alvo (ADR-36). */
+    @Deprecated(forRemoval = true)
     public boolean isAllowed(EvaluationContext context, Permission permission) {
         return evaluate(context, permission).allowed();
     }
@@ -100,13 +171,70 @@ public class PolicyEvaluator {
         }
         List<Role> roles = new ArrayList<>();
         for (RoleAssignment assignment :
-            roleAssignmentRepository.findByTenantIdAndUserId(context.tenantId(), context.userId())) {
+            roleAssignmentRepository.findActiveByTenantIdAndUserId(context.tenantId(), context.userId())) {
             if (assignment.isDepartmentScoped()
                 && !Objects.equals(assignment.departmentId(), context.departmentId())) {
                 continue;
             }
-            roleRepository.findById(assignment.roleId()).ifPresent(roles::add);
+            roleRepository.findById(assignment.roleId())
+                .filter(role -> role.tenantId().equals(context.tenantId()))
+                .ifPresent(roles::add);
         }
         return roles;
+    }
+
+    // =====================================================================
+    // Helpers do modelo com escopo
+    // =====================================================================
+
+    /**
+     * Concessões aplicáveis: ativas, do ator no tenant, cujo papel pertence ao
+     * mesmo tenant (defesa contra papel de outro tenant) e contém a permissão.
+     */
+    private List<RoleAssignment> applicableGrants(TenantId tenantId, UserId actor, Permission permission) {
+        if (!contextValid(tenantId, actor)) {
+            return List.of();
+        }
+        List<RoleAssignment> grants = new ArrayList<>();
+        for (RoleAssignment grant :
+            roleAssignmentRepository.findActiveByTenantIdAndUserId(tenantId, actor)) {
+            Role role = roleRepository.findById(grant.roleId()).orElse(null);
+            if (role == null) {
+                continue;
+            }
+            if (!role.tenantId().equals(tenantId)) {
+                continue;
+            }
+            if (!role.hasPermission(permission)) {
+                continue;
+            }
+            grants.add(grant);
+        }
+        return grants;
+    }
+
+    private boolean contextValid(TenantId tenantId, UserId actor) {
+        User user = userRepository.findById(actor).orElse(null);
+        if (user == null || user.status() != UserStatus.ACTIVE) {
+            return false;
+        }
+        if (!user.tenantId().equals(tenantId)) {
+            return false;
+        }
+        var tenant = tenantRepository.findById(tenantId).orElse(null);
+        return tenant != null && tenant.status() == TenantStatus.ACTIVE;
+    }
+
+    /** Teto por recurso: CHAT tem escopo efetivo SELF, qualquer que seja a concessão. */
+    private ScopeType effectiveScope(RoleAssignment grant, Resource resource) {
+        return resource == Resource.CHAT ? ScopeType.SELF : grant.scopeType();
+    }
+
+    private boolean coversWithCeiling(RoleAssignment grant, Resource resource, AccessTarget target) {
+        if (resource == Resource.CHAT) {
+            return target instanceof AccessTarget.OwnedTarget owned
+                && Objects.equals(owned.owner(), grant.userId());
+        }
+        return grant.covers(target);
     }
 }

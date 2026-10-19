@@ -6,29 +6,51 @@ import br.com.qsoft.governance.iam.api.model.Permission;
 import br.com.qsoft.governance.iam.api.query.AuthorizationQuery;
 import br.com.qsoft.governance.iam.application.port.TenantRepository;
 import br.com.qsoft.governance.iam.application.port.UserRepository;
+import br.com.qsoft.governance.iam.application.rbac.PolicyEvaluator;
 import br.com.qsoft.governance.iam.domain.tenant.TenantStatus;
 import br.com.qsoft.governance.iam.domain.user.User;
 import br.com.qsoft.governance.iam.domain.user.UserStatus;
+import br.com.qsoft.governance.sharedkernel.id.TenantId;
 import br.com.qsoft.governance.sharedkernel.id.UserId;
+import br.com.qsoft.governance.sharedkernel.rbac.AccessTarget;
+import br.com.qsoft.governance.sharedkernel.rbac.Action;
+import br.com.qsoft.governance.sharedkernel.rbac.Resource;
+import br.com.qsoft.governance.sharedkernel.rbac.VisibilityScope;
 import org.springframework.stereotype.Component;
 
 /**
- * Adapter que satisfaz o contrato público AuthorizationQuery do IAM.
- * Autorização determinística: Tenant ACTIVE + User ACTIVE + permissão concedida.
- * "ADMIN" corresponde ao conjunto completo de permissões (ADR-04).
+ * Adapter que satisfaz o contrato público {@link AuthorizationQuery} do IAM.
+ * As decisões com escopo delegam ao {@link PolicyEvaluator} (ADR-36). Os
+ * métodos legados continuam disponíveis (até a remoção em S3-A8).
  */
 @Component
 public class AuthorizationQueryAdapter implements AuthorizationQuery {
 
     private final UserRepository userRepository;
     private final TenantRepository tenantRepository;
+    private final PolicyEvaluator policyEvaluator;
 
-    public AuthorizationQueryAdapter(UserRepository userRepository, TenantRepository tenantRepository) {
+    public AuthorizationQueryAdapter(UserRepository userRepository,
+                                     TenantRepository tenantRepository,
+                                     PolicyEvaluator policyEvaluator) {
         this.userRepository = userRepository;
         this.tenantRepository = tenantRepository;
+        this.policyEvaluator = policyEvaluator;
     }
 
     @Override
+    public boolean isAllowed(TenantId tenantId, UserId actor, Resource resource, Action action,
+                             AccessTarget target) {
+        return policyEvaluator.isAllowed(tenantId, actor, resource, action, target);
+    }
+
+    @Override
+    public VisibilityScope visibilityFor(TenantId tenantId, UserId actor, Resource resource, Action action) {
+        return policyEvaluator.visibilityFor(tenantId, actor, resource, action);
+    }
+
+    @Override
+    @Deprecated(forRemoval = true)
     public AuthorizationResult checkPermission(UserId userId, Permission permission) {
         User user = userRepository.findById(userId).orElse(null);
         if (user == null) {
@@ -48,6 +70,7 @@ public class AuthorizationQueryAdapter implements AuthorizationQuery {
     }
 
     @Override
+    @Deprecated(forRemoval = true)
     public AuthorizationScope resolveScope(UserId userId) {
         User user = userRepository.findById(userId).orElse(null);
         if (user == null) {

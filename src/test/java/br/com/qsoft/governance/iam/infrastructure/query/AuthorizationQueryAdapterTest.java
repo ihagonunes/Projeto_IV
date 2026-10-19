@@ -1,12 +1,14 @@
 package br.com.qsoft.governance.iam.infrastructure.query;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import br.com.qsoft.governance.iam.api.model.AuthorizationResult;
 import br.com.qsoft.governance.iam.api.model.AuthorizationScope;
 import br.com.qsoft.governance.iam.api.model.Permission;
 import br.com.qsoft.governance.iam.application.port.TenantRepository;
 import br.com.qsoft.governance.iam.application.port.UserRepository;
+import br.com.qsoft.governance.iam.application.rbac.PolicyEvaluator;
 import br.com.qsoft.governance.iam.domain.tenant.Tenant;
 import br.com.qsoft.governance.iam.domain.tenant.TenantStatus;
 import br.com.qsoft.governance.iam.domain.user.HierarchyLevel;
@@ -94,8 +96,10 @@ class AuthorizationQueryAdapterTest {
     };
 
     // O OBJETO SOB TESTE: o adapter REAL, com os fakes injetados.
+    // O PolicyEvaluator é mockado: estes testes cobrem a trilha legada
+    // (checkPermission/resolveScope), que não o utiliza.
     private final AuthorizationQueryAdapter authorizationQuery =
-        new AuthorizationQueryAdapter(userRepository, tenantRepository);
+        new AuthorizationQueryAdapter(userRepository, tenantRepository, mock(PolicyEvaluator.class));
 
     // ---------------------------------------------------------------------
     // Helpers (mesma técnica dos testes de caso de uso)

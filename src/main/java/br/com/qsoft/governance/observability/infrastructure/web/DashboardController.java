@@ -1,6 +1,7 @@
 package br.com.qsoft.governance.observability.infrastructure.web;
 
 import br.com.qsoft.governance.iam.api.rbac.RequiresPermission;
+import br.com.qsoft.governance.iam.api.rbac.Targeting;
 import br.com.qsoft.governance.observability.application.DashboardQueryCommand;
 import br.com.qsoft.governance.observability.application.QueryCostMetrics;
 import br.com.qsoft.governance.observability.application.QueryUsageMetrics;
@@ -42,7 +43,8 @@ public class DashboardController {
 
     /** Série temporal de requisições + usuários ativos (SPI-88). */
     @GetMapping("/usage")
-    @RequiresPermission(resource = Resource.USAGE, action = Action.READ)
+    @RequiresPermission(resource = Resource.USAGE, action = Action.READ,
+        targeting = Targeting.BY_TARGET)
     public ResponseEntity<UsageMetricsResponse> usage(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
@@ -56,7 +58,8 @@ public class DashboardController {
 
     /** Tokens e custo por departamento (SPI-89). */
     @GetMapping("/costs")
-    @RequiresPermission(resource = Resource.USAGE, action = Action.READ)
+    @RequiresPermission(resource = Resource.USAGE, action = Action.READ,
+        targeting = Targeting.BY_TARGET)
     public ResponseEntity<List<DepartmentCostResponse>> costs(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,

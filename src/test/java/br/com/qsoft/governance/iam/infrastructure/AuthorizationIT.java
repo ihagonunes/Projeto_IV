@@ -61,6 +61,7 @@ class AuthorizationIT {
     private static final String TENANT_SLUG = "rbacdemo";
     private static final String ADMIN_EMAIL = "admin@rbacdemo.com";
     private static final String USER_EMAIL = "user@rbacdemo.com";
+    private static final String MANAGER_EMAIL = "manager@rbacdemo.com";
     private static final String PASSWORD = "secret123";
 
     @LocalServerPort
@@ -102,19 +103,24 @@ class AuthorizationIT {
         Tenant tenant = tenantRepository.findBySlug(TENANT_SLUG).orElseThrow();
         User admin = provisionIfAbsent(tenant, ADMIN_EMAIL, HierarchyLevel.EXECUTIVE);
         provisionIfAbsent(tenant, USER_EMAIL, HierarchyLevel.COLLABORATOR);
+        User manager = provisionIfAbsent(tenant, MANAGER_EMAIL, HierarchyLevel.MANAGER);
         targetId = admin.id().value();
 
         // O papel de sistema EXECUTIVE contém USER:MANAGE (ADR-36).
-        Role executive = roleRepository
-            .findByTenantIdAndName(tenant.id(), HierarchyLevel.EXECUTIVE.name())
-            .orElseThrow();
+        assignIfAbsent(tenant, admin, HierarchyLevel.EXECUTIVE.name(), null);
+
+        // MANAGER com concessão DEPARTMENT e USER:MANAGE — para o cenário AZ19.
+        assignIfAbsent(tenant, manager, "MANAGER", UUID.randomUUID());
+    }
+
+    private void assignIfAbsent(Tenant tenant, User user, String roleName, UUID departmentId) {
+        Role role = roleRepository.findByTenantIdAndName(tenant.id(), roleName).orElseThrow();
         boolean assigned = roleAssignmentRepository
-            .findByTenantIdAndUserId(tenant.id(), admin.id())
+            .findByTenantIdAndUserId(tenant.id(), user.id())
             .stream()
-            .anyMatch(assignment -> assignment.roleId().equals(executive.id()));
+            .anyMatch(assignment -> assignment.roleId().equals(role.id()));
         if (!assigned) {
-            roleAssignmentRepository.save(RoleAssignment.grant(
-                admin.id(), executive, null,
+            roleAssignmentRepository.save(RoleAssignment.grant(user.id(), role, departmentId,
                 br.com.qsoft.governance.iam.domain.rbac.GrantOrigin.MIGRATION, null,
                 java.time.Instant.now()));
         }
@@ -166,5 +172,14 @@ class AuthorizationIT {
     @Test
     void shouldRejectChangeWithoutToken() {
         assertThat(changeLevel(null, targetId, "EXECUTIVE")).isEqualTo(401);
+    }
+
+    /**
+     * AZ19: endpoint TENANT_ONLY (USER:MANAGE) rejeita concessão DEPARTMENT.
+     */
+    @Test
+    void az19DepartmentScopedGrantIsRejectedOnTenantOnlyEndpoint() {
+        String token = login(MANAGER_EMAIL);
+        assertThat(changeLevel(token, targetId, "LEADER")).isEqualTo(403);
     }
 }

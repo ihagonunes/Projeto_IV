@@ -9,6 +9,7 @@ import br.com.qsoft.governance.iam.application.port.UserRepository;
 import br.com.qsoft.governance.sharedkernel.rbac.Action;
 import br.com.qsoft.governance.iam.domain.rbac.Permission;
 import br.com.qsoft.governance.sharedkernel.rbac.Resource;
+import br.com.qsoft.governance.iam.domain.rbac.GrantOrigin;
 import br.com.qsoft.governance.iam.domain.rbac.Role;
 import br.com.qsoft.governance.iam.domain.rbac.RoleAssignment;
 import br.com.qsoft.governance.iam.domain.tenant.Tenant;
@@ -19,6 +20,9 @@ import br.com.qsoft.governance.sharedkernel.id.RoleAssignmentId;
 import br.com.qsoft.governance.sharedkernel.id.RoleId;
 import br.com.qsoft.governance.sharedkernel.id.TenantId;
 import br.com.qsoft.governance.sharedkernel.id.UserId;
+import br.com.qsoft.governance.sharedkernel.rbac.AccessTarget;
+import br.com.qsoft.governance.sharedkernel.rbac.ScopeType;
+import br.com.qsoft.governance.sharedkernel.rbac.VisibilityScope;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -309,6 +313,130 @@ class PolicyEvaluatorTest {
         assign(tenantId, userId, nonExistentRole, null);
 
         assertThat(evaluator.isAllowed(EvaluationContext.of(tenantId, userId), manageUsers)).isFalse();
+    }
+
+    // =====================================================================
+    // ADR-36 §3 — avaliação com alvo, gate por escopo e visibilidade
+    // =====================================================================
+
+    /** AZ10: concessão SELF com MANAGE não cobre alvo departamental. */
+    @Test
+    void az10SelfGrantWithManageDoesNotCoverDepartmentTarget() {
+        TenantId tenantId = activeTenant();
+        UserId userId = activeUser(tenantId);
+        Role role = roleWith(tenantId, manageUsers, "COLLABORATOR");
+        assign(tenantId, userId, role, null);
+
+        assertThat(evaluator.isAllowed(tenantId, userId, Resource.USER, Action.MANAGE,
+            new AccessTarget.DepartmentTarget(UUID.randomUUID()))).isFalse();
+        assertThat(evaluator.isAllowed(tenantId, userId, Resource.USER, Action.MANAGE,
+            new AccessTarget.OwnedTarget(userId, null))).isTrue();
+    }
+
+    /** AZ12: EXECUTIVE (TENANT) não lê o CHAT de outro — teto CHAT = SELF. */
+    @Test
+    void az12ExecutiveCannotReadAnotherUsersChat() {
+        TenantId tenantId = activeTenant();
+        UserId userId = activeUser(tenantId);
+        Role role = roleWith(tenantId, Permission.of(Resource.CHAT, Action.READ), "EXECUTIVE");
+        assign(tenantId, userId, role, null);
+
+        assertThat(evaluator.isAllowed(tenantId, userId, Resource.CHAT, Action.READ,
+            new AccessTarget.OwnedTarget(UserId.random(), null))).isFalse();
+        assertThat(evaluator.isAllowed(tenantId, userId, Resource.CHAT, Action.READ,
+            new AccessTarget.OwnedTarget(userId, null))).isTrue();
+    }
+
+    /** AZ12: TENANT_ADMIN não tem CHAT (nem no gate, nem na decisão por alvo). */
+    @Test
+    void az12TenantAdminHasNoChatPermission() {
+        TenantId tenantId = activeTenant();
+        UserId userId = activeUser(tenantId);
+        Role role = roleWith(tenantId, null, "TENANT_ADMIN");
+        assign(tenantId, userId, role, null);
+
+        assertThat(evaluator.gateByTarget(tenantId, userId, Resource.CHAT, Action.READ)).isFalse();
+        assertThat(evaluator.isAllowed(tenantId, userId, Resource.CHAT, Action.READ,
+            new AccessTarget.TenantTarget())).isFalse();
+    }
+
+    @Test
+    void visibilityIsNoneWithoutApplicableGrant() {
+        TenantId tenantId = activeTenant();
+        UserId userId = activeUser(tenantId);
+
+        assertThat(evaluator.visibilityFor(tenantId, userId, Resource.USER, Action.READ))
+            .isEqualTo(new VisibilityScope.None());
+    }
+
+    @Test
+    void visibilityIsSelfOnlyForSelfGrant() {
+        TenantId tenantId = activeTenant();
+        UserId userId = activeUser(tenantId);
+        Role role = roleWith(tenantId, Permission.of(Resource.USER, Action.READ), "COLLABORATOR");
+        assign(tenantId, userId, role, null);
+
+        assertThat(evaluator.visibilityFor(tenantId, userId, Resource.USER, Action.READ))
+            .isEqualTo(new VisibilityScope.SelfOnly(userId));
+    }
+
+    @Test
+    void visibilityIsDepartmentsForDepartmentalGrants() {
+        TenantId tenantId = activeTenant();
+        UserId userId = activeUser(tenantId);
+        UUID departmentA = UUID.randomUUID();
+        UUID departmentB = UUID.randomUUID();
+        Role roleA = roleWith(tenantId, Permission.of(Resource.USER, Action.READ), "MANAGER");
+        assign(tenantId, userId, roleA, departmentA);
+        Role roleB = roleWith(tenantId, Permission.of(Resource.USER, Action.READ), "MANAGER");
+        assign(tenantId, userId, roleB, departmentB);
+
+        VisibilityScope scope = evaluator.visibilityFor(tenantId, userId, Resource.USER, Action.READ);
+        assertThat(scope).isInstanceOf(VisibilityScope.Departments.class);
+        assertThat(((VisibilityScope.Departments) scope).ids())
+            .containsExactlyInAnyOrder(departmentA, departmentB);
+    }
+
+    @Test
+    void visibilityIsTenantWideWhenAnyGrantIsTenantScoped() {
+        TenantId tenantId = activeTenant();
+        UserId userId = activeUser(tenantId);
+        Role departmentRole = roleWith(tenantId, Permission.of(Resource.USER, Action.READ), "MANAGER");
+        assign(tenantId, userId, departmentRole, UUID.randomUUID());
+        Role tenantRole = roleWith(tenantId, Permission.of(Resource.USER, Action.READ), "EXECUTIVE");
+        assign(tenantId, userId, tenantRole, null);
+
+        assertThat(evaluator.visibilityFor(tenantId, userId, Resource.USER, Action.READ))
+            .isEqualTo(new VisibilityScope.TenantWide());
+    }
+
+    @Test
+    void revokedGrantIsIgnored() {
+        TenantId tenantId = activeTenant();
+        UserId userId = activeUser(tenantId);
+        Role role = roleWith(tenantId, Permission.of(Resource.USER, Action.READ), "EXECUTIVE");
+        RoleAssignment grant = RoleAssignment.grant(
+            userId, role, null, GrantOrigin.MIGRATION, null, Instant.now());
+        assignments.add(grant.revoke(userId, Instant.now()));
+
+        assertThat(evaluator.gateByTarget(tenantId, userId, Resource.USER, Action.READ)).isFalse();
+        assertThat(evaluator.visibilityFor(tenantId, userId, Resource.USER, Action.READ))
+            .isEqualTo(new VisibilityScope.None());
+    }
+
+    @Test
+    void roleFromAnotherTenantIsIgnored() {
+        TenantId tenantId = activeTenant();
+        TenantId otherTenant = activeTenant();
+        UserId userId = activeUser(tenantId);
+        Role foreignRole = Role.create(RoleId.random(), otherTenant, "EXECUTIVE");
+        foreignRole.grantPermission(Permission.of(Resource.USER, Action.READ));
+        roles.put(foreignRole.id(), foreignRole);
+        // Estado inconsistente: concessão do tenant do ator com papel de outro tenant.
+        assignments.add(new RoleAssignment(RoleAssignmentId.random(), userId, foreignRole.id(),
+            tenantId, ScopeType.SELF, null, GrantOrigin.MIGRATION, null, Instant.now(), null, null));
+
+        assertThat(evaluator.gateByTarget(tenantId, userId, Resource.USER, Action.READ)).isFalse();
     }
 
     @Test

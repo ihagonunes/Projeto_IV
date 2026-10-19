@@ -7,9 +7,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import br.com.qsoft.governance.iam.api.model.AuthorizationResult;
 import br.com.qsoft.governance.iam.api.rbac.RequiresPermission;
-import br.com.qsoft.governance.iam.application.rbac.EvaluationContext;
+import br.com.qsoft.governance.iam.api.rbac.Targeting;
 import br.com.qsoft.governance.iam.application.rbac.PolicyEvaluator;
 import br.com.qsoft.governance.sharedkernel.id.TenantId;
 import br.com.qsoft.governance.sharedkernel.id.UserId;
@@ -31,9 +30,9 @@ import org.springframework.web.method.HandlerMethod;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * Testes unitários do {@link PermissionInterceptor}.
- * Exercita os branches: handler não-HandlerMethod, sem @RequiresPermission,
- * sem TenantContext (401), sem permissão (403), e com permissão (pass-through).
+ * Testes unitários do {@link PermissionInterceptor}: handler não-HandlerMethod,
+ * sem @RequiresPermission, sem TenantContext (401), gate TENANT_ONLY e
+ * BY_TARGET (403/pass-through).
  */
 @ExtendWith(MockitoExtension.class)
 class PermissionInterceptorTest {
@@ -59,17 +58,27 @@ class PermissionInterceptorTest {
         TenantContextHolder.clear();
     }
 
-    // ── handler não é HandlerMethod → deixa passar ────────────────────────────
+    private HandlerMethod annotated(Targeting targeting) {
+        HandlerMethod handler = mock(HandlerMethod.class);
+        RequiresPermission annotation = mock(RequiresPermission.class);
+        when(annotation.resource()).thenReturn(Resource.USER);
+        when(annotation.action()).thenReturn(Action.MANAGE);
+        when(annotation.targeting()).thenReturn(targeting);
+        when(handler.getMethodAnnotation(RequiresPermission.class)).thenReturn(annotation);
+        return handler;
+    }
+
+    private void withContext() {
+        TenantContextHolder.set(new TenantContext(TenantId.random(), UserId.random()));
+    }
 
     @Test
     void deve_retornarTrue_quando_handlerNaoEHandlerMethod() throws Exception {
         boolean result = interceptor.preHandle(request, response, "not-a-handler-method");
 
         assertThat(result).isTrue();
-        verify(policyEvaluator, never()).evaluate(any(), any());
+        verify(policyEvaluator, never()).gateTenantOnly(any(), any(), any(), any());
     }
-
-    // ── handler sem @RequiresPermission → deixa passar ────────────────────────
 
     @Test
     void deve_retornarTrue_quando_metodoSemAnotacaoRequiresPermission() throws Exception {
@@ -79,16 +88,14 @@ class PermissionInterceptorTest {
         boolean result = interceptor.preHandle(request, response, handler);
 
         assertThat(result).isTrue();
-        verify(policyEvaluator, never()).evaluate(any(), any());
+        verify(policyEvaluator, never()).gateTenantOnly(any(), any(), any(), any());
     }
-
-    // ── sem TenantContext → 401 ───────────────────────────────────────────────
 
     @Test
     void deve_retornarFalse_e_escrever401_quando_semContextoAutenticado() throws Exception {
         HandlerMethod handler = mock(HandlerMethod.class);
-        RequiresPermission annotation = mock(RequiresPermission.class);
-        when(handler.getMethodAnnotation(RequiresPermission.class)).thenReturn(annotation);
+        when(handler.getMethodAnnotation(RequiresPermission.class))
+            .thenReturn(mock(RequiresPermission.class));
 
         StringWriter sw = new StringWriter();
         when(response.getWriter()).thenReturn(new PrintWriter(sw));
@@ -98,84 +105,45 @@ class PermissionInterceptorTest {
         assertThat(result).isFalse();
         verify(response).setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         assertThat(sw.toString()).contains("Não autenticado");
-        verify(policyEvaluator, never()).evaluate(any(), any());
+        verify(policyEvaluator, never()).gateTenantOnly(any(), any(), any(), any());
     }
 
-    // ── com contexto mas sem permissão → 403 ─────────────────────────────────
-
     @Test
-    void deve_retornarFalse_e_escrever403_quando_semPermissao() throws Exception {
-        TenantId tenantId = TenantId.random();
-        UserId userId = UserId.random();
-        TenantContextHolder.set(new TenantContext(tenantId, userId));
-
-        HandlerMethod handler = mock(HandlerMethod.class);
-        RequiresPermission annotation = mock(RequiresPermission.class);
-        when(annotation.resource()).thenReturn(Resource.USER);
-        when(annotation.action()).thenReturn(Action.MANAGE);
-        when(handler.getMethodAnnotation(RequiresPermission.class)).thenReturn(annotation);
-
-        when(policyEvaluator.evaluate(any(EvaluationContext.class), any()))
-            .thenReturn(AuthorizationResult.deny("Sem permissão."));
+    void deve_retornarFalse_e_escrever403_quando_tenantOnlySemEscopoTenant() throws Exception {
+        withContext();
+        when(policyEvaluator.gateTenantOnly(any(), any(), any(), any())).thenReturn(false);
 
         StringWriter sw = new StringWriter();
         when(response.getWriter()).thenReturn(new PrintWriter(sw));
 
-        boolean result = interceptor.preHandle(request, response, handler);
+        boolean result = interceptor.preHandle(request, response, annotated(Targeting.TENANT_ONLY));
 
         assertThat(result).isFalse();
         verify(response).setStatus(HttpServletResponse.SC_FORBIDDEN);
-        assertThat(sw.toString()).contains("Sem permissão");
+        assertThat(sw.toString()).contains("USER:MANAGE");
     }
 
-    // ── com contexto e com permissão → pass-through ──────────────────────────
-
     @Test
-    void deve_retornarTrue_quando_comPermissao() throws Exception {
-        TenantId tenantId = TenantId.random();
-        UserId userId = UserId.random();
-        TenantContextHolder.set(new TenantContext(tenantId, userId));
+    void deve_retornarTrue_quando_tenantOnlyComEscopoTenant() throws Exception {
+        withContext();
+        when(policyEvaluator.gateTenantOnly(any(), any(), any(), any())).thenReturn(true);
 
-        HandlerMethod handler = mock(HandlerMethod.class);
-        RequiresPermission annotation = mock(RequiresPermission.class);
-        when(annotation.resource()).thenReturn(Resource.USER);
-        when(annotation.action()).thenReturn(Action.MANAGE);
-        when(handler.getMethodAnnotation(RequiresPermission.class)).thenReturn(annotation);
-
-        when(policyEvaluator.evaluate(any(EvaluationContext.class), any()))
-            .thenReturn(AuthorizationResult.allow());
-
-        boolean result = interceptor.preHandle(request, response, handler);
+        boolean result = interceptor.preHandle(request, response, annotated(Targeting.TENANT_ONLY));
 
         assertThat(result).isTrue();
         verify(response, never()).setStatus(any(int.class));
+        verify(policyEvaluator, never()).gateByTarget(any(), any(), any(), any());
     }
 
-    // ── 403 com denialReason nulo → mensagem padrão ──────────────────────────
-
     @Test
-    void deve_usarMensagemPadrao_quando_denialReasonNulo() throws Exception {
-        TenantId tenantId = TenantId.random();
-        UserId userId = UserId.random();
-        TenantContextHolder.set(new TenantContext(tenantId, userId));
+    void deve_usarGateByTarget_quando_annotacaoByTarget() throws Exception {
+        withContext();
+        when(policyEvaluator.gateByTarget(any(), any(), any(), any())).thenReturn(true);
 
-        HandlerMethod handler = mock(HandlerMethod.class);
-        RequiresPermission annotation = mock(RequiresPermission.class);
-        when(annotation.resource()).thenReturn(Resource.USER);
-        when(annotation.action()).thenReturn(Action.READ);
-        when(handler.getMethodAnnotation(RequiresPermission.class)).thenReturn(annotation);
+        boolean result = interceptor.preHandle(request, response, annotated(Targeting.BY_TARGET));
 
-        // denied com reason null
-        when(policyEvaluator.evaluate(any(EvaluationContext.class), any()))
-            .thenReturn(AuthorizationResult.deny(null));
-
-        StringWriter sw = new StringWriter();
-        when(response.getWriter()).thenReturn(new PrintWriter(sw));
-
-        boolean result = interceptor.preHandle(request, response, handler);
-
-        assertThat(result).isFalse();
-        verify(response).setStatus(HttpServletResponse.SC_FORBIDDEN);
-        assertThat(sw.toString()).contains("Acesso negado");
+        assertThat(result).isTrue();
+        verify(policyEvaluator).gateByTarget(any(), any(), any(), any());
+        verify(policyEvaluator, never()).gateTenantOnly(any(), any(), any(), any());
     }
 }

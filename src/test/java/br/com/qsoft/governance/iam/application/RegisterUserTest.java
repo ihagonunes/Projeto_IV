@@ -162,6 +162,24 @@ class RegisterUserTest {
         public AuthorizationScope resolveScope(UserId userId) {
             return AuthorizationScope.SELF;
         }
+
+        // Novos métodos do contrato (ADR-36) — não usados por este teste.
+        @Override
+        public boolean isAllowed(br.com.qsoft.governance.sharedkernel.id.TenantId tenantId,
+                                 UserId actor,
+                                 br.com.qsoft.governance.sharedkernel.rbac.Resource resource,
+                                 br.com.qsoft.governance.sharedkernel.rbac.Action action,
+                                 br.com.qsoft.governance.sharedkernel.rbac.AccessTarget target) {
+            return false;
+        }
+
+        @Override
+        public br.com.qsoft.governance.sharedkernel.rbac.VisibilityScope visibilityFor(
+                br.com.qsoft.governance.sharedkernel.id.TenantId tenantId, UserId actor,
+                br.com.qsoft.governance.sharedkernel.rbac.Resource resource,
+                br.com.qsoft.governance.sharedkernel.rbac.Action action) {
+            return new br.com.qsoft.governance.sharedkernel.rbac.VisibilityScope.None();
+        }
     };
 
     // CASO DE USO SOB TESTE (a classe REAL de produção)

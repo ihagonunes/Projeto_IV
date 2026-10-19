@@ -1,10 +1,8 @@
 package br.com.qsoft.governance.iam.infrastructure.web;
 
-import br.com.qsoft.governance.iam.api.model.AuthorizationResult;
 import br.com.qsoft.governance.iam.api.rbac.RequiresPermission;
-import br.com.qsoft.governance.iam.application.rbac.EvaluationContext;
+import br.com.qsoft.governance.iam.api.rbac.Targeting;
 import br.com.qsoft.governance.iam.application.rbac.PolicyEvaluator;
-import br.com.qsoft.governance.iam.domain.rbac.Permission;
 import br.com.qsoft.governance.sharedkernel.tenant.TenantContext;
 import br.com.qsoft.governance.sharedkernel.tenant.TenantContextHolder;
 import jakarta.servlet.http.HttpServletRequest;
@@ -21,7 +19,8 @@ import tools.jackson.databind.ObjectMapper;
 /**
  * Interceptador HTTP que executa o {@link PolicyEvaluator} nas rotas anotadas
  * com {@link RequiresPermission}. Sem contexto autenticado → 401; sem permissão
- * → 403.
+ * → 403. O gate é fechado por padrão ({@link Targeting#TENANT_ONLY}); só
+ * endpoints com checagem fina no caso de uso declaram {@link Targeting#BY_TARGET}.
  */
 @Component
 public class PermissionInterceptor implements HandlerInterceptor {
@@ -52,13 +51,15 @@ public class PermissionInterceptor implements HandlerInterceptor {
             return false;
         }
 
-        Permission permission = Permission.of(annotation.resource(), annotation.action());
-        AuthorizationResult result = policyEvaluator.evaluate(
-            EvaluationContext.of(context.tenantId(), context.userId()), permission);
+        boolean allowed = annotation.targeting() == Targeting.BY_TARGET
+            ? policyEvaluator.gateByTarget(
+                context.tenantId(), context.userId(), annotation.resource(), annotation.action())
+            : policyEvaluator.gateTenantOnly(
+                context.tenantId(), context.userId(), annotation.resource(), annotation.action());
 
-        if (!result.allowed()) {
+        if (!allowed) {
             writeError(response, HttpServletResponse.SC_FORBIDDEN,
-                result.denialReason() != null ? result.denialReason() : "Acesso negado.");
+                "Permissão negada: " + annotation.resource() + ":" + annotation.action() + ".");
             return false;
         }
         return true;

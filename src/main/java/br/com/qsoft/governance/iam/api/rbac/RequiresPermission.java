@@ -23,4 +23,10 @@ public @interface RequiresPermission {
     Resource resource();
 
     Action action();
+
+    /**
+     * Modo de avaliação do gate (ADR-36). Fechado por padrão: sem explicitar
+     * {@link Targeting#BY_TARGET}, exige concessão de escopo TENANT.
+     */
+    Targeting targeting() default Targeting.TENANT_ONLY;
 }
