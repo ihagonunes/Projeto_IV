@@ -61,7 +61,8 @@ class RolePersistenceIT {
 
     private Tenant newTenant() {
         String slug = "rbac-" + UUID.randomUUID();
-        return registerTenant.register(new RegisterTenantCommand(slug, "RBAC Demo", slug + ".example"));
+        return registerTenant.register(new RegisterTenantCommand(
+            slug, "RBAC Demo", slug + ".example", "Admin", "admin@" + slug + ".example", "secret123"));
     }
 
     @Test

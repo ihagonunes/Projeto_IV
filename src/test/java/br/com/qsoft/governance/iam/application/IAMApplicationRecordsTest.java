@@ -127,10 +127,12 @@ class IAMApplicationRecordsTest {
 
     @Test
     void testRegisterTenantCommand() {
-        RegisterTenantCommand cmd = new RegisterTenantCommand("qsoft", "QSOFT Inc", "qsoft.com");
+        RegisterTenantCommand cmd = new RegisterTenantCommand(
+            "qsoft", "QSOFT Inc", "qsoft.com", "Admin", "admin@qsoft.com", "secret123");
         assertThat(cmd.slug()).isEqualTo("qsoft");
         assertThat(cmd.name()).isEqualTo("QSOFT Inc");
         assertThat(cmd.emailDomain()).isEqualTo("qsoft.com");
+        assertThat(cmd.adminEmail()).isEqualTo("admin@qsoft.com");
     }
 
     @Test

@@ -104,7 +104,8 @@ class TokenExpirationIT {
     private Tenant ensureTenant() {
         try {
             return registerTenant.register(
-                new RegisterTenantCommand(TENANT_SLUG, "Expire Demo", TENANT_SLUG + ".com"));
+                new RegisterTenantCommand(TENANT_SLUG, "Expire Demo", TENANT_SLUG + ".com",
+                    "Admin", "admin@" + TENANT_SLUG + ".com", "secret123"));
         } catch (TenantSlugAlreadyExistsException ignored) {
             return tenantRepository.findBySlug(TENANT_SLUG).orElseThrow();
         }

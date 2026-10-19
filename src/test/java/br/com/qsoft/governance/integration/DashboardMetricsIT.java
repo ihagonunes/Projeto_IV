@@ -9,25 +9,15 @@ import br.com.qsoft.governance.aigateway.application.CreateModelCommand;
 import br.com.qsoft.governance.aigateway.application.CreateProvider;
 import br.com.qsoft.governance.aigateway.application.CreateProviderCommand;
 import br.com.qsoft.governance.aigateway.domain.model.Model;
-import br.com.qsoft.governance.iam.application.ProvisionUser;
-import br.com.qsoft.governance.iam.application.ProvisionUserCommand;
-import br.com.qsoft.governance.iam.application.RegisterTenant;
-import br.com.qsoft.governance.iam.application.RegisterTenantCommand;
-import br.com.qsoft.governance.iam.application.port.RoleAssignmentRepository;
-import br.com.qsoft.governance.iam.application.port.RoleRepository;
 import br.com.qsoft.governance.iam.application.port.TenantRepository;
 import br.com.qsoft.governance.iam.application.port.UserRepository;
-import br.com.qsoft.governance.iam.domain.exception.TenantSlugAlreadyExistsException;
-import br.com.qsoft.governance.iam.domain.exception.UserEmailAlreadyExistsException;
-import br.com.qsoft.governance.iam.domain.rbac.Role;
-import br.com.qsoft.governance.iam.domain.rbac.RoleAssignment;
 import br.com.qsoft.governance.iam.domain.tenant.Tenant;
 import br.com.qsoft.governance.iam.domain.user.HierarchyLevel;
 import br.com.qsoft.governance.iam.domain.user.User;
+import br.com.qsoft.governance.iam.support.TestTenants;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -78,22 +68,10 @@ class DashboardMetricsIT {
     int port;
 
     @Autowired
-    RegisterTenant registerTenant;
-
-    @Autowired
-    ProvisionUser provisionUser;
-
-    @Autowired
     TenantRepository tenantRepository;
 
     @Autowired
     UserRepository userRepository;
-
-    @Autowired
-    RoleRepository roleRepository;
-
-    @Autowired
-    RoleAssignmentRepository roleAssignmentRepository;
 
     @Autowired
     CreateProvider createProvider;
@@ -103,6 +81,9 @@ class DashboardMetricsIT {
 
     @Autowired
     CompleteAIRequest completeAIRequest;
+
+    @Autowired
+    TestTenants testTenants;
 
     private RestClient client;
     private Tenant tenant;
@@ -126,37 +107,7 @@ class DashboardMetricsIT {
     }
 
     private Tenant ensureTenant() {
-        try {
-            registerTenant.register(new RegisterTenantCommand(SLUG, "Dash Demo", SLUG + ".com"));
-        } catch (TenantSlugAlreadyExistsException ignored) {
-            // já criado por um teste anterior
-        }
-        Tenant t = tenantRepository.findBySlug(SLUG).orElseThrow();
-        assignRole(provisionIfAbsent(t, ADMIN_EMAIL, HierarchyLevel.EXECUTIVE, null),
-            HierarchyLevel.EXECUTIVE);
-        return t;
-    }
-
-    private User provisionIfAbsent(Tenant t, String email, HierarchyLevel level, UUID departmentId) {
-        try {
-            return provisionUser.provision(new ProvisionUserCommand(
-                t.id(), email, "User", level, PASSWORD, departmentId, Set.of()));
-        } catch (UserEmailAlreadyExistsException ignored) {
-            return userRepository.findByTenantIdAndEmail(t.id(), email).orElseThrow();
-        }
-    }
-
-    private void assignRole(User user, HierarchyLevel level) {
-        Role role = roleRepository.findByTenantIdAndName(user.tenantId(), level.name()).orElseThrow();
-        boolean assigned = roleAssignmentRepository
-            .findByTenantIdAndUserId(user.tenantId(), user.id()).stream()
-            .anyMatch(a -> a.roleId().equals(role.id()));
-        if (!assigned) {
-            roleAssignmentRepository.save(RoleAssignment.grant(
-                user.id(), role, user.departmentId(),
-                br.com.qsoft.governance.iam.domain.rbac.GrantOrigin.MIGRATION, null,
-                java.time.Instant.now()));
-        }
+        return testTenants.ensureTenant(SLUG, "Dash Demo", "Admin", ADMIN_EMAIL, PASSWORD);
     }
 
     private String login(String email) {
@@ -232,10 +183,10 @@ class DashboardMetricsIT {
     @Test
     void managerShouldSeeOnlyOwnDepartmentEvenRequestingAnother() {
         User admin = userRepository.findByTenantIdAndEmail(tenant.id(), ADMIN_EMAIL).orElseThrow();
-        User manager = provisionIfAbsent(tenant, MANAGER_EMAIL, HierarchyLevel.MANAGER, marketingDepartment);
-        // A concessão precisa ser TENANT-scoped para passar o gate USAGE:READ do endpoint
-        // legado (o escopo de visibilidade do dashboard ainda vem do rótulo via SPI-94).
-        assignRole(manager, HierarchyLevel.EXECUTIVE);
+        // Concessão TENANT-scoped (EXECUTIVE) para passar o gate USAGE:READ do endpoint
+        // legado; o escopo de visibilidade do dashboard ainda vem do rótulo (MANAGER) via SPI-94.
+        testTenants.ensureMember(tenant, admin.id(), MANAGER_EMAIL, "User", PASSWORD,
+            HierarchyLevel.MANAGER, marketingDepartment, "EXECUTIVE");
         usage(admin, marketingDepartment, 1000, 2000);
         usage(admin, salesDepartment, 500, 500);
 
@@ -253,8 +204,8 @@ class DashboardMetricsIT {
     @Test
     void collaboratorShouldSeeOnlyOwnUsage() {
         User admin = userRepository.findByTenantIdAndEmail(tenant.id(), ADMIN_EMAIL).orElseThrow();
-        User collaborator = provisionIfAbsent(tenant, COLLAB_EMAIL, HierarchyLevel.COLLABORATOR, marketingDepartment);
-        assignRole(collaborator, HierarchyLevel.COLLABORATOR);
+        User collaborator = testTenants.ensureMember(tenant, admin.id(), COLLAB_EMAIL, "User",
+            PASSWORD, HierarchyLevel.COLLABORATOR, marketingDepartment, "COLLABORATOR");
         usage(admin, marketingDepartment, 1000, 2000);
         usage(collaborator, marketingDepartment, 10, 20);
 

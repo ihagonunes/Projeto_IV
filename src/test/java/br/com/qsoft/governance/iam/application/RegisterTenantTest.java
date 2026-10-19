@@ -2,6 +2,7 @@ package br.com.qsoft.governance.iam.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
 
 import br.com.qsoft.governance.iam.application.port.RoleRepository;
 import br.com.qsoft.governance.iam.application.port.TenantDomainRepository;
@@ -100,12 +101,18 @@ class RegisterTenantTest {
     }
 
     private RegisterTenant useCase() {
-        return new RegisterTenant(repository(), domainRepository(), provisionDefaultRoles);
+        return new RegisterTenant(repository(), domainRepository(), provisionDefaultRoles,
+            mock(BootstrapTenantAdmin.class));
+    }
+
+    private RegisterTenantCommand command(String slug, String name, String emailDomain) {
+        return new RegisterTenantCommand(slug, name, emailDomain,
+            "Admin", "admin@" + (emailDomain == null ? "x.com" : emailDomain), "secret123");
     }
 
     @Test
     void shouldRegisterTenantAsActive() {
-        Tenant tenant = useCase().register(new RegisterTenantCommand("qsoft", "QSOFT", "qsoft.com"));
+        Tenant tenant = useCase().register(command("qsoft", "QSOFT", "qsoft.com"));
 
         assertThat(tenant).isNotNull();
         assertThat(tenant.id()).isNotNull();
@@ -116,7 +123,7 @@ class RegisterTenantTest {
 
     @Test
     void shouldProvisionDefaultRolesForNewTenant() {
-        Tenant tenant = useCase().register(new RegisterTenantCommand("qsoft", "QSOFT", "qsoft.com"));
+        Tenant tenant = useCase().register(command("qsoft", "QSOFT", "qsoft.com"));
 
         assertThat(roles).hasSize(5);
         assertThat(roles).extracting(Role::name)
@@ -128,40 +135,55 @@ class RegisterTenantTest {
     @Test
     void shouldRejectDuplicateSlug() {
         RegisterTenant useCase = useCase();
-        useCase.register(new RegisterTenantCommand("qsoft", "QSOFT", "qsoft.com"));
+        useCase.register(command("qsoft", "QSOFT", "qsoft.com"));
 
-        assertThatThrownBy(() -> useCase.register(new RegisterTenantCommand("qsoft", "Outra", "outra.com")))
+        assertThatThrownBy(() -> useCase.register(command("qsoft", "Outra", "outra.com")))
             .isInstanceOf(TenantSlugAlreadyExistsException.class);
     }
 
     @Test
     void shouldRejectDuplicateEmailDomain() {
         RegisterTenant useCase = useCase();
-        useCase.register(new RegisterTenantCommand("qsoft", "QSOFT", "qsoft.com"));
+        useCase.register(command("qsoft", "QSOFT", "qsoft.com"));
 
-        assertThatThrownBy(() -> useCase.register(
-            new RegisterTenantCommand("outra", "Outra", "qsoft.com")))
+        assertThatThrownBy(() -> useCase.register(command("outra", "Outra", "qsoft.com")))
             .isInstanceOf(TenantDomainAlreadyExistsException.class);
     }
 
     @Test
     void shouldNormalizeEmailDomain() {
-        Tenant tenant = useCase().register(
-            new RegisterTenantCommand("qsoft", "QSOFT", "  @QSOFT.COM "));
+        RegisterTenantCommand cmd = new RegisterTenantCommand(
+            "qsoft", "QSOFT", "  @QSOFT.COM ", "Admin", "admin@qsoft.com", "secret123");
+        Tenant tenant = useCase().register(cmd);
 
         assertThat(tenant.emailDomain()).isEqualTo("qsoft.com");
     }
 
     @Test
     void shouldRejectBlankEmailDomain() {
-        assertThatThrownBy(() -> useCase().register(
-            new RegisterTenantCommand("qsoft", "QSOFT", "   ")))
+        assertThatThrownBy(() -> useCase().register(new RegisterTenantCommand(
+            "qsoft", "QSOFT", "   ", "Admin", "admin@qsoft.com", "secret123")))
             .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void shouldRejectBlankSlug() {
-        assertThatThrownBy(() -> useCase().register(new RegisterTenantCommand("  ", "QSOFT", "qsoft.com")))
+        assertThatThrownBy(() -> useCase().register(new RegisterTenantCommand(
+            "  ", "QSOFT", "qsoft.com", "Admin", "admin@qsoft.com", "secret123")))
+            .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void shouldRejectAdminEmailOutsideDomain() {
+        assertThatThrownBy(() -> useCase().register(new RegisterTenantCommand(
+            "qsoft", "QSOFT", "qsoft.com", "Admin", "admin@outro.com", "secret123")))
+            .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void shouldRejectShortAdminPassword() {
+        assertThatThrownBy(() -> useCase().register(new RegisterTenantCommand(
+            "qsoft", "QSOFT", "qsoft.com", "Admin", "admin@qsoft.com", "curta")))
             .isInstanceOf(IllegalArgumentException.class);
     }
 }

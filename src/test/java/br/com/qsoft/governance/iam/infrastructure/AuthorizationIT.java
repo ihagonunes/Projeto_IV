@@ -2,23 +2,11 @@ package br.com.qsoft.governance.iam.infrastructure;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import br.com.qsoft.governance.iam.application.ProvisionUser;
-import br.com.qsoft.governance.iam.application.ProvisionUserCommand;
-import br.com.qsoft.governance.iam.application.RegisterTenant;
-import br.com.qsoft.governance.iam.application.RegisterTenantCommand;
-import br.com.qsoft.governance.iam.application.port.RoleAssignmentRepository;
-import br.com.qsoft.governance.iam.application.port.RoleRepository;
-import br.com.qsoft.governance.iam.application.port.TenantRepository;
-import br.com.qsoft.governance.iam.application.port.UserRepository;
-import br.com.qsoft.governance.iam.domain.exception.TenantSlugAlreadyExistsException;
-import br.com.qsoft.governance.iam.domain.exception.UserEmailAlreadyExistsException;
-import br.com.qsoft.governance.iam.domain.rbac.Role;
-import br.com.qsoft.governance.iam.domain.rbac.RoleAssignment;
 import br.com.qsoft.governance.iam.domain.tenant.Tenant;
 import br.com.qsoft.governance.iam.domain.user.HierarchyLevel;
-import br.com.qsoft.governance.iam.domain.user.User;
+import br.com.qsoft.governance.sharedkernel.id.UserId;
+import br.com.qsoft.governance.iam.support.TestTenants;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -68,22 +56,7 @@ class AuthorizationIT {
     int port;
 
     @Autowired
-    RegisterTenant registerTenant;
-
-    @Autowired
-    ProvisionUser provisionUser;
-
-    @Autowired
-    TenantRepository tenantRepository;
-
-    @Autowired
-    UserRepository userRepository;
-
-    @Autowired
-    RoleRepository roleRepository;
-
-    @Autowired
-    RoleAssignmentRepository roleAssignmentRepository;
+    TestTenants testTenants;
 
     private RestClient client;
     private UUID targetId;
@@ -91,48 +64,17 @@ class AuthorizationIT {
     @BeforeEach
     void setUp() {
         client = RestClient.builder().baseUrl("http://localhost:" + port).build();
-        ensureData();
-    }
+        Tenant tenant = testTenants.ensureTenant(
+            TENANT_SLUG, "RBAC Demo", "Admin", ADMIN_EMAIL, PASSWORD);
+        UserId adminId = testTenants.admin(tenant, ADMIN_EMAIL).id();
+        targetId = adminId.value();
 
-    private void ensureData() {
-        try {
-            registerTenant.register(new RegisterTenantCommand(TENANT_SLUG, "RBAC Demo", TENANT_SLUG + ".com"));
-        } catch (TenantSlugAlreadyExistsException ignored) {
-            // já criado por um teste anterior
-        }
-        Tenant tenant = tenantRepository.findBySlug(TENANT_SLUG).orElseThrow();
-        User admin = provisionIfAbsent(tenant, ADMIN_EMAIL, HierarchyLevel.EXECUTIVE);
-        provisionIfAbsent(tenant, USER_EMAIL, HierarchyLevel.COLLABORATOR);
-        User manager = provisionIfAbsent(tenant, MANAGER_EMAIL, HierarchyLevel.MANAGER);
-        targetId = admin.id().value();
+        testTenants.ensureMember(tenant, adminId, USER_EMAIL, "User", PASSWORD,
+            HierarchyLevel.COLLABORATOR, null, "COLLABORATOR");
 
-        // O papel de sistema EXECUTIVE contém USER:MANAGE (ADR-36).
-        assignIfAbsent(tenant, admin, HierarchyLevel.EXECUTIVE.name(), null);
-
-        // MANAGER com concessão DEPARTMENT e USER:MANAGE — para o cenário AZ19.
-        assignIfAbsent(tenant, manager, "MANAGER", UUID.randomUUID());
-    }
-
-    private void assignIfAbsent(Tenant tenant, User user, String roleName, UUID departmentId) {
-        Role role = roleRepository.findByTenantIdAndName(tenant.id(), roleName).orElseThrow();
-        boolean assigned = roleAssignmentRepository
-            .findByTenantIdAndUserId(tenant.id(), user.id())
-            .stream()
-            .anyMatch(assignment -> assignment.roleId().equals(role.id()));
-        if (!assigned) {
-            roleAssignmentRepository.save(RoleAssignment.grant(user.id(), role, departmentId,
-                br.com.qsoft.governance.iam.domain.rbac.GrantOrigin.MIGRATION, null,
-                java.time.Instant.now()));
-        }
-    }
-
-    private User provisionIfAbsent(Tenant tenant, String email, HierarchyLevel level) {
-        try {
-            return provisionUser.provision(new ProvisionUserCommand(
-                tenant.id(), email, email, level, PASSWORD, null, Set.of()));
-        } catch (UserEmailAlreadyExistsException ignored) {
-            return userRepository.findByTenantIdAndEmail(tenant.id(), email).orElseThrow();
-        }
+        // MANAGER com concessão DEPARTMENT e USER:MANAGE — cenário AZ19.
+        testTenants.ensureMember(tenant, adminId, MANAGER_EMAIL, "Manager", PASSWORD,
+            HierarchyLevel.MANAGER, UUID.randomUUID(), "MANAGER");
     }
 
     private String login(String email) {

@@ -2,24 +2,12 @@ package br.com.qsoft.governance.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import br.com.qsoft.governance.iam.application.ProvisionUser;
-import br.com.qsoft.governance.iam.application.ProvisionUserCommand;
-import br.com.qsoft.governance.iam.application.RegisterTenant;
-import br.com.qsoft.governance.iam.application.RegisterTenantCommand;
-import br.com.qsoft.governance.iam.application.port.RoleAssignmentRepository;
-import br.com.qsoft.governance.iam.application.port.RoleRepository;
 import br.com.qsoft.governance.iam.application.port.TenantRepository;
-import br.com.qsoft.governance.iam.application.port.UserRepository;
-import br.com.qsoft.governance.iam.domain.exception.TenantSlugAlreadyExistsException;
-import br.com.qsoft.governance.iam.domain.exception.UserEmailAlreadyExistsException;
-import br.com.qsoft.governance.iam.domain.rbac.Role;
-import br.com.qsoft.governance.iam.domain.rbac.RoleAssignment;
 import br.com.qsoft.governance.iam.domain.tenant.Tenant;
 import br.com.qsoft.governance.iam.domain.user.HierarchyLevel;
-import br.com.qsoft.governance.iam.domain.user.User;
+import br.com.qsoft.governance.iam.support.TestTenants;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -71,64 +59,23 @@ class AIGatewayRoutingIT {
     int port;
 
     @Autowired
-    RegisterTenant registerTenant;
-
-    @Autowired
-    ProvisionUser provisionUser;
-
-    @Autowired
     TenantRepository tenantRepository;
 
     @Autowired
-    UserRepository userRepository;
-
-    @Autowired
-    RoleRepository roleRepository;
-
-    @Autowired
-    RoleAssignmentRepository roleAssignmentRepository;
+    TestTenants testTenants;
 
     private RestClient client;
 
     @BeforeEach
     void setUp() {
         client = RestClient.builder().baseUrl("http://localhost:" + port).build();
-        ensureTenant(TENANT_SLUG, "AI GW Demo", ADMIN_EMAIL);
-        ensureTenant(OTHER_SLUG, "AI GW Other", "admin@aigwother.com");
+        testTenants.ensureTenant(TENANT_SLUG, "AI GW Demo", "Admin", ADMIN_EMAIL, ADMIN_PASSWORD);
+        testTenants.ensureTenant(OTHER_SLUG, "AI GW Other", "Admin", "admin@aigwother.com", ADMIN_PASSWORD);
     }
 
-    private void ensureTenant(String slug, String name, String adminEmail) {
-        try {
-            registerTenant.register(new RegisterTenantCommand(slug, name, slug + ".com"));
-        } catch (TenantSlugAlreadyExistsException ignored) {
-            // já criado por um teste anterior
-        }
-        Tenant tenant = tenantRepository.findBySlug(slug).orElseThrow();
-        User admin = provisionIfAbsent(tenant, adminEmail, null);
-
-        // TENANT_ADMIN contém DEPARTMENT:MANAGE e AI_TOOL:MANAGE (ADR-36).
-        Role tenantAdmin = roleRepository
-            .findByTenantIdAndName(tenant.id(), "TENANT_ADMIN")
-            .orElseThrow();
-        boolean assigned = roleAssignmentRepository
-            .findByTenantIdAndUserId(tenant.id(), admin.id())
-            .stream()
-            .anyMatch(assignment -> assignment.roleId().equals(tenantAdmin.id()));
-        if (!assigned) {
-            roleAssignmentRepository.save(RoleAssignment.grant(admin.id(), tenantAdmin, null,
-                    br.com.qsoft.governance.iam.domain.rbac.GrantOrigin.MIGRATION, null,
-                    java.time.Instant.now()));
-        }
-    }
-
-    private User provisionIfAbsent(Tenant tenant, String email, UUID departmentId) {
-        try {
-            return provisionUser.provision(new ProvisionUserCommand(
-                tenant.id(), email, "User", HierarchyLevel.COLLABORATOR,
-                ADMIN_PASSWORD, departmentId, Set.of()));
-        } catch (UserEmailAlreadyExistsException ignored) {
-            return userRepository.findByTenantIdAndEmail(tenant.id(), email).orElseThrow();
-        }
+    private void ensureDepartmentUser(Tenant tenant, String email, UUID departmentId) {
+        testTenants.ensureMember(tenant, testTenants.admin(tenant, ADMIN_EMAIL).id(),
+            email, "User", ADMIN_PASSWORD, HierarchyLevel.COLLABORATOR, departmentId, "COLLABORATOR");
     }
 
     private String login(String email, String password) {
@@ -198,7 +145,7 @@ class AIGatewayRoutingIT {
         // Usuário do departamento (com o modelo permitido).
         Tenant tenant = tenantRepository.findBySlug(TENANT_SLUG).orElseThrow();
         String userEmail = "dev" + UUID.randomUUID() + "@aigwdemo.com";
-        provisionIfAbsent(tenant, userEmail, departmentId);
+        ensureDepartmentUser(tenant, userEmail, departmentId);
         String userToken = login(userEmail, ADMIN_PASSWORD);
 
         // Default (sem requestedModelId) e requested permitido resolvem o mesmo modelo.
@@ -220,7 +167,7 @@ class AIGatewayRoutingIT {
 
         Tenant tenant = tenantRepository.findBySlug(TENANT_SLUG).orElseThrow();
         String userEmail = "vendas" + UUID.randomUUID() + "@aigwdemo.com";
-        provisionIfAbsent(tenant, userEmail, departmentId);
+        ensureDepartmentUser(tenant, userEmail, departmentId);
         String userToken = login(userEmail, ADMIN_PASSWORD);
 
         assertThat(status(HttpMethod.GET,
@@ -243,7 +190,7 @@ class AIGatewayRoutingIT {
 
         Tenant tenant = tenantRepository.findBySlug(TENANT_SLUG).orElseThrow();
         String userEmail = "ti" + UUID.randomUUID() + "@aigwdemo.com";
-        provisionIfAbsent(tenant, userEmail, departmentId);
+        ensureDepartmentUser(tenant, userEmail, departmentId);
         String userToken = login(userEmail, ADMIN_PASSWORD);
 
         assertThat(status(HttpMethod.GET, "/api/v1/ai-gateway/models/permitido", userToken, null))

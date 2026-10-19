@@ -61,7 +61,8 @@ class UserPersistenceIT {
 
     private Tenant newTenant(String prefix) {
         String slug = prefix + "-" + UUID.randomUUID();
-        return registerTenant.register(new RegisterTenantCommand(slug, prefix, slug + ".example"));
+        return registerTenant.register(new RegisterTenantCommand(
+            slug, prefix, slug + ".example", "Admin", "admin@" + slug + ".example", "secret123"));
     }
 
     @Test

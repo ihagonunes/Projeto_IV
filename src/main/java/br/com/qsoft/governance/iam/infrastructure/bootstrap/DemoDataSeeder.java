@@ -1,24 +1,9 @@
 package br.com.qsoft.governance.iam.infrastructure.bootstrap;
 
-import br.com.qsoft.governance.iam.api.model.Permission;
-import br.com.qsoft.governance.iam.application.ProvisionUser;
-import br.com.qsoft.governance.iam.application.ProvisionUserCommand;
 import br.com.qsoft.governance.iam.application.RegisterTenant;
 import br.com.qsoft.governance.iam.application.RegisterTenantCommand;
-import br.com.qsoft.governance.iam.application.port.RoleAssignmentRepository;
-import br.com.qsoft.governance.iam.application.port.RoleRepository;
-import br.com.qsoft.governance.iam.application.port.TenantRepository;
-import br.com.qsoft.governance.iam.application.port.UserRepository;
 import br.com.qsoft.governance.iam.domain.exception.TenantDomainAlreadyExistsException;
 import br.com.qsoft.governance.iam.domain.exception.TenantSlugAlreadyExistsException;
-import br.com.qsoft.governance.iam.domain.exception.UserEmailAlreadyExistsException;
-import br.com.qsoft.governance.iam.domain.rbac.GrantOrigin;
-import br.com.qsoft.governance.iam.domain.rbac.Role;
-import br.com.qsoft.governance.iam.domain.rbac.RoleAssignment;
-import br.com.qsoft.governance.iam.domain.tenant.Tenant;
-import br.com.qsoft.governance.iam.domain.user.HierarchyLevel;
-import br.com.qsoft.governance.iam.domain.user.User;
-import java.util.EnumSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,11 +16,10 @@ import org.springframework.stereotype.Component;
  * Seeder de dados de DEMONSTRAÇÃO — DESABILITADO por padrão.
  * Só executa quando {@code app.bootstrap.demo-data=true} E
  * {@code app.bootstrap.demo-password} está definido (sem senha hardcoded).
- * Cria, se ausente, o tenant "qsoft" e o usuário admin "admin@qsoft.com",
- * atribuindo ao admin o papel padrão EXECUTIVE (modelo RBAC granular).
- *
- * Nota: reside no módulo IAM (e não em platform) para não criar o ciclo de
- * dependências iam <-> platform (ArchUnit).
+ * <p>
+ * Usa o mesmo caso de uso de produção do onboarding (ADR-37 item 8):
+ * {@link RegisterTenant} cria o tenant, os papéis de sistema e o admin com
+ * concessão {@code TENANT_ADMIN}/BOOTSTRAP. Idempotente por slug/domínio.
  */
 @Component
 @ConditionalOnProperty(name = "app.bootstrap.demo-data", havingValue = "true")
@@ -48,26 +32,11 @@ public class DemoDataSeeder implements ApplicationRunner {
     public static final String EMAIL_DOMAIN = "qsoft.com";
 
     private final RegisterTenant registerTenant;
-    private final TenantRepository tenantRepository;
-    private final ProvisionUser provisionUser;
-    private final UserRepository userRepository;
-    private final RoleRepository roleRepository;
-    private final RoleAssignmentRepository roleAssignmentRepository;
     private final String demoPassword;
 
     public DemoDataSeeder(RegisterTenant registerTenant,
-                          TenantRepository tenantRepository,
-                          ProvisionUser provisionUser,
-                          UserRepository userRepository,
-                          RoleRepository roleRepository,
-                          RoleAssignmentRepository roleAssignmentRepository,
                           @Value("${app.bootstrap.demo-password:}") String demoPassword) {
         this.registerTenant = registerTenant;
-        this.tenantRepository = tenantRepository;
-        this.provisionUser = provisionUser;
-        this.userRepository = userRepository;
-        this.roleRepository = roleRepository;
-        this.roleAssignmentRepository = roleAssignmentRepository;
         this.demoPassword = demoPassword;
     }
 
@@ -80,54 +49,12 @@ public class DemoDataSeeder implements ApplicationRunner {
         }
 
         try {
-            registerTenant.register(new RegisterTenantCommand(TENANT_SLUG, "QSOFT Demo", EMAIL_DOMAIN));
+            registerTenant.register(new RegisterTenantCommand(
+                TENANT_SLUG, "QSOFT Demo", EMAIL_DOMAIN, "Administrador", ADMIN_EMAIL, demoPassword));
+            log.info("Tenant demo '{}' e admin criados.", TENANT_SLUG);
         } catch (TenantSlugAlreadyExistsException | TenantDomainAlreadyExistsException e) {
             log.info("Tenant demo '{}' já existe (ou o domínio '{}' já está em uso).",
                 TENANT_SLUG, EMAIL_DOMAIN);
-        }
-
-        Tenant tenant = tenantRepository.findBySlug(TENANT_SLUG).orElse(null);
-        if (tenant == null) {
-            log.warn("Não foi possível criar o tenant demo '{}'.", TENANT_SLUG);
-            return;
-        }
-
-        User admin = provisionAdmin(tenant);
-        assignExecutiveRole(tenant, admin);
-    }
-
-    private User provisionAdmin(Tenant tenant) {
-        try {
-            User created = provisionUser.provision(new ProvisionUserCommand(
-                tenant.id(), ADMIN_EMAIL, "Administrador", HierarchyLevel.EXECUTIVE,
-                demoPassword, null, EnumSet.allOf(Permission.class)));
-            log.info("Usuário demo criado: {}.", ADMIN_EMAIL);
-            return created;
-        } catch (UserEmailAlreadyExistsException e) {
-            log.info("Usuário demo '{}' já existe.", ADMIN_EMAIL);
-            return userRepository.findByTenantIdAndEmail(tenant.id(), ADMIN_EMAIL).orElse(null);
-        }
-    }
-
-    private void assignExecutiveRole(Tenant tenant, User admin) {
-        if (admin == null) {
-            return;
-        }
-        Role executive = roleRepository
-            .findByTenantIdAndName(tenant.id(), HierarchyLevel.EXECUTIVE.name())
-            .orElse(null);
-        if (executive == null) {
-            log.warn("Papel padrão EXECUTIVE não encontrado para o tenant demo.");
-            return;
-        }
-        boolean alreadyAssigned = roleAssignmentRepository
-            .findByTenantIdAndUserId(tenant.id(), admin.id())
-            .stream()
-            .anyMatch(assignment -> assignment.roleId().equals(executive.id()));
-        if (!alreadyAssigned) {
-            roleAssignmentRepository.save(RoleAssignment.grant(
-                admin.id(), executive, null, GrantOrigin.MIGRATION, null, java.time.Instant.now()));
-            log.info("Papel EXECUTIVE atribuído ao admin demo.");
         }
     }
 }

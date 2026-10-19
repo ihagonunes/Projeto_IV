@@ -81,7 +81,9 @@ class TenantControllerTest {
 
         mockMvc.perform(post("/api/v1/tenants")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"slug\":\"qsoft\",\"name\":\"QSOFT\",\"emailDomain\":\"qsoft.com\"}"))
+                .content("{\"slug\":\"qsoft\",\"name\":\"QSOFT\",\"emailDomain\":\"qsoft.com\","
+                    + "\"adminName\":\"Admin\",\"adminEmail\":\"admin@qsoft.com\","
+                    + "\"adminPassword\":\"secret123\"}"))
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.slug").value("qsoft"));
     }
@@ -93,7 +95,9 @@ class TenantControllerTest {
 
         mockMvc.perform(post("/api/v1/tenants")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"slug\":\"qsoft\",\"name\":\"QSOFT\",\"emailDomain\":\"qsoft.com\"}"))
+                .content("{\"slug\":\"qsoft\",\"name\":\"QSOFT\",\"emailDomain\":\"qsoft.com\","
+                    + "\"adminName\":\"Admin\",\"adminEmail\":\"admin@qsoft.com\","
+                    + "\"adminPassword\":\"secret123\"}"))
             .andExpect(status().isConflict())
             .andExpect(jsonPath("$.message").exists());
     }
@@ -105,7 +109,9 @@ class TenantControllerTest {
 
         mockMvc.perform(post("/api/v1/tenants")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"slug\":\"qsoft\",\"name\":\"QSOFT\",\"emailDomain\":\"qsoft.com\"}"))
+                .content("{\"slug\":\"qsoft\",\"name\":\"QSOFT\",\"emailDomain\":\"qsoft.com\","
+                    + "\"adminName\":\"Admin\",\"adminEmail\":\"admin@qsoft.com\","
+                    + "\"adminPassword\":\"secret123\"}"))
             .andExpect(status().isConflict())
             .andExpect(jsonPath("$.message").exists());
     }
@@ -114,7 +120,9 @@ class TenantControllerTest {
     void deve_retornar400_quando_slugEmBranco() throws Exception {
         mockMvc.perform(post("/api/v1/tenants")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"slug\":\"\",\"name\":\"QSOFT\",\"emailDomain\":\"qsoft.com\"}"))
+                .content("{\"slug\":\"\",\"name\":\"QSOFT\",\"emailDomain\":\"qsoft.com\","
+                    + "\"adminName\":\"Admin\",\"adminEmail\":\"admin@qsoft.com\","
+                    + "\"adminPassword\":\"secret123\"}"))
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.message").exists());
     }
@@ -123,7 +131,9 @@ class TenantControllerTest {
     void deve_retornar400_quando_emailDomainInvalido() throws Exception {
         mockMvc.perform(post("/api/v1/tenants")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"slug\":\"qsoft\",\"name\":\"QSOFT\",\"emailDomain\":\"nao_e_dominio\"}"))
+                .content("{\"slug\":\"qsoft\",\"name\":\"QSOFT\",\"emailDomain\":\"nao_e_dominio\","
+                    + "\"adminName\":\"Admin\",\"adminEmail\":\"admin@qsoft.com\","
+                    + "\"adminPassword\":\"secret123\"}"))
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.message").exists());
     }

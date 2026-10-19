@@ -53,7 +53,8 @@ class TenantPersistenceIT {
     void shouldPersistTenant() {
         String slug = "acme-" + UUID.randomUUID();
 
-        Tenant tenant = registerTenant.register(new RegisterTenantCommand(slug, "ACME", slug + ".example"));
+        Tenant tenant = registerTenant.register(new RegisterTenantCommand(
+            slug, "ACME", slug + ".example", "Admin", "admin@" + slug + ".example", "secret123"));
 
         assertThat(tenant.id()).isNotNull();
         assertThat(tenant.status()).isEqualTo(TenantStatus.ACTIVE);
@@ -71,20 +72,23 @@ class TenantPersistenceIT {
     void shouldRejectDuplicateEmailDomain() {
         String slug = "dom-" + UUID.randomUUID();
         String domain = slug + ".example";
-        registerTenant.register(new RegisterTenantCommand(slug, "Dom", domain));
+        registerTenant.register(new RegisterTenantCommand(
+            slug, "Dom", domain, "Admin", "admin@" + domain, "secret123"));
 
         String otherSlug = "dom2-" + UUID.randomUUID();
         assertThatThrownBy(() -> registerTenant.register(
-            new RegisterTenantCommand(otherSlug, "Dom2", domain)))
+            new RegisterTenantCommand(otherSlug, "Dom2", domain, "Admin", "admin@" + domain, "secret123")))
             .isInstanceOf(TenantDomainAlreadyExistsException.class);
     }
 
     @Test
     void shouldRejectDuplicateSlug() {
         String slug = "dup-" + UUID.randomUUID();
-        registerTenant.register(new RegisterTenantCommand(slug, "Dup", slug + ".example"));
+        registerTenant.register(new RegisterTenantCommand(
+            slug, "Dup", slug + ".example", "Admin", "admin@" + slug + ".example", "secret123"));
 
-        assertThatThrownBy(() -> registerTenant.register(new RegisterTenantCommand(slug, "Dup2", slug + ".example")))
+        assertThatThrownBy(() -> registerTenant.register(new RegisterTenantCommand(
+            slug, "Dup2", slug + ".example", "Admin", "admin2@" + slug + ".example", "secret123")))
             .isInstanceOf(TenantSlugAlreadyExistsException.class);
     }
 

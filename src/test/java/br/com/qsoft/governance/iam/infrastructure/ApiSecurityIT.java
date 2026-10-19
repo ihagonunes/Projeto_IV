@@ -2,23 +2,10 @@ package br.com.qsoft.governance.iam.infrastructure;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import br.com.qsoft.governance.iam.application.ProvisionUser;
-import br.com.qsoft.governance.iam.application.ProvisionUserCommand;
-import br.com.qsoft.governance.iam.application.RegisterTenant;
-import br.com.qsoft.governance.iam.application.RegisterTenantCommand;
-import br.com.qsoft.governance.iam.application.port.RoleAssignmentRepository;
-import br.com.qsoft.governance.iam.application.port.RoleRepository;
-import br.com.qsoft.governance.iam.application.port.TenantRepository;
-import br.com.qsoft.governance.iam.application.port.UserRepository;
-import br.com.qsoft.governance.iam.domain.exception.TenantSlugAlreadyExistsException;
-import br.com.qsoft.governance.iam.domain.exception.UserEmailAlreadyExistsException;
-import br.com.qsoft.governance.iam.domain.rbac.Role;
-import br.com.qsoft.governance.iam.domain.rbac.RoleAssignment;
 import br.com.qsoft.governance.iam.domain.tenant.Tenant;
 import br.com.qsoft.governance.iam.domain.user.HierarchyLevel;
-import br.com.qsoft.governance.iam.domain.user.User;
+import br.com.qsoft.governance.iam.support.TestTenants;
 import java.util.Map;
-import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,7 +26,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * login por derivação de tenant (sem tenantSlug). Exige Docker.
  *
  * A autorização do endpoint de criação é feita pelo PermissionInterceptor via
- * PolicyEvaluator (modelo RBAC granular — SPI-41).
+ * PolicyEvaluator (concessões com escopo — ADR-36).
  */
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
@@ -69,64 +56,17 @@ class ApiSecurityIT {
     int port;
 
     @Autowired
-    RegisterTenant registerTenant;
-
-    @Autowired
-    ProvisionUser provisionUser;
-
-    @Autowired
-    TenantRepository tenantRepository;
-
-    @Autowired
-    UserRepository userRepository;
-
-    @Autowired
-    RoleRepository roleRepository;
-
-    @Autowired
-    RoleAssignmentRepository roleAssignmentRepository;
+    TestTenants testTenants;
 
     private RestClient client;
 
     @BeforeEach
     void setUp() {
         client = RestClient.builder().baseUrl("http://localhost:" + port).build();
-        ensureData();
-    }
-
-    private void ensureData() {
-        try {
-            registerTenant.register(new RegisterTenantCommand(TENANT_SLUG, "Sec Demo", TENANT_SLUG + ".com"));
-        } catch (TenantSlugAlreadyExistsException ignored) {
-            // já criado por um teste anterior
-        }
-        Tenant tenant = tenantRepository.findBySlug(TENANT_SLUG).orElseThrow();
-        User admin = provisionIfAbsent(tenant, ADMIN_EMAIL, "Admin", HierarchyLevel.EXECUTIVE);
-        provisionIfAbsent(tenant, USER_EMAIL, "User", HierarchyLevel.COLLABORATOR);
-
-        // O papel de sistema EXECUTIVE contém USER:MANAGE (ADR-36).
-        Role executive = roleRepository
-            .findByTenantIdAndName(tenant.id(), HierarchyLevel.EXECUTIVE.name())
-            .orElseThrow();
-        boolean alreadyAssigned = roleAssignmentRepository
-            .findByTenantIdAndUserId(tenant.id(), admin.id())
-            .stream()
-            .anyMatch(assignment -> assignment.roleId().equals(executive.id()));
-        if (!alreadyAssigned) {
-            roleAssignmentRepository.save(RoleAssignment.grant(
-                admin.id(), executive, null,
-                br.com.qsoft.governance.iam.domain.rbac.GrantOrigin.MIGRATION, null,
-                java.time.Instant.now()));
-        }
-    }
-
-    private User provisionIfAbsent(Tenant tenant, String email, String name, HierarchyLevel level) {
-        try {
-            return provisionUser.provision(new ProvisionUserCommand(
-                tenant.id(), email, name, level, PASSWORD, null, Set.of()));
-        } catch (UserEmailAlreadyExistsException ignored) {
-            return userRepository.findByTenantIdAndEmail(tenant.id(), email).orElseThrow();
-        }
+        Tenant tenant = testTenants.ensureTenant(
+            TENANT_SLUG, "Sec Demo", "Admin", ADMIN_EMAIL, PASSWORD);
+        testTenants.ensureMember(tenant, testTenants.admin(tenant, ADMIN_EMAIL).id(),
+            USER_EMAIL, "User", PASSWORD, HierarchyLevel.COLLABORATOR, null, "COLLABORATOR");
     }
 
     private String login(String email) {

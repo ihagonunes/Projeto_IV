@@ -2,24 +2,14 @@ package br.com.qsoft.governance.iam.infrastructure;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import br.com.qsoft.governance.iam.application.ProvisionUser;
-import br.com.qsoft.governance.iam.application.ProvisionUserCommand;
-import br.com.qsoft.governance.iam.application.RegisterTenant;
-import br.com.qsoft.governance.iam.application.RegisterTenantCommand;
-import br.com.qsoft.governance.iam.application.port.RoleAssignmentRepository;
-import br.com.qsoft.governance.iam.application.port.RoleRepository;
 import br.com.qsoft.governance.iam.application.port.TenantRepository;
 import br.com.qsoft.governance.iam.application.port.UserRepository;
-import br.com.qsoft.governance.iam.domain.exception.TenantSlugAlreadyExistsException;
-import br.com.qsoft.governance.iam.domain.exception.UserEmailAlreadyExistsException;
-import br.com.qsoft.governance.iam.domain.rbac.Role;
-import br.com.qsoft.governance.iam.domain.rbac.RoleAssignment;
 import br.com.qsoft.governance.iam.domain.tenant.Tenant;
 import br.com.qsoft.governance.iam.domain.user.HierarchyLevel;
 import br.com.qsoft.governance.iam.domain.user.User;
+import br.com.qsoft.governance.iam.support.TestTenants;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -69,72 +59,29 @@ class UserManagementIT {
     int port;
 
     @Autowired
-    RegisterTenant registerTenant;
-
-    @Autowired
-    ProvisionUser provisionUser;
-
-    @Autowired
     TenantRepository tenantRepository;
 
     @Autowired
     UserRepository userRepository;
 
     @Autowired
-    RoleRepository roleRepository;
-
-    @Autowired
-    RoleAssignmentRepository roleAssignmentRepository;
+    TestTenants testTenants;
 
     private RestClient client;
 
     @BeforeEach
     void setUp() {
         client = RestClient.builder().baseUrl("http://localhost:" + port).build();
-        ensureTenant(TENANT_SLUG, "Mgmt Demo", ADMIN_EMAIL, ADMIN_PASSWORD);
-        ensureTenant(OTHER_SLUG, "Other Demo", "admin@otherdemo.com", ADMIN_PASSWORD);
-        ensureUser(TENANT_SLUG, "colab@mgmtdemo.com");
-        ensureUser(OTHER_SLUG, "foreign@otherdemo.com");
-    }
-
-    private void ensureTenant(String slug, String name, String adminEmail, String password) {
-        try {
-            registerTenant.register(new RegisterTenantCommand(slug, name, slug + ".com"));
-        } catch (TenantSlugAlreadyExistsException ignored) {
-            // já criado por um teste anterior
-        }
-        Tenant tenant = tenantRepository.findBySlug(slug).orElseThrow();
-        User admin = provisionIfAbsent(tenant, adminEmail, password);
-
-        // O papel padrão EXECUTIVE contém USER:READ e USER:MANAGE (matriz padrão).
-        Role executive = roleRepository
-            .findByTenantIdAndName(tenant.id(), HierarchyLevel.EXECUTIVE.name())
-            .orElseThrow();
-        boolean assigned = roleAssignmentRepository
-            .findByTenantIdAndUserId(tenant.id(), admin.id())
-            .stream()
-            .anyMatch(assignment -> assignment.roleId().equals(executive.id()));
-        if (!assigned) {
-            roleAssignmentRepository.save(
-                RoleAssignment.grant(admin.id(), executive, null,
-                    br.com.qsoft.governance.iam.domain.rbac.GrantOrigin.MIGRATION, null,
-                    java.time.Instant.now()));
-        }
-    }
-
-    private void ensureUser(String slug, String email) {
-        Tenant tenant = tenantRepository.findBySlug(slug).orElseThrow();
-        provisionIfAbsent(tenant, email, ADMIN_PASSWORD);
-    }
-
-    private User provisionIfAbsent(Tenant tenant, String email, String password) {
-        try {
-            return provisionUser.provision(new ProvisionUserCommand(
-                tenant.id(), email, "User", HierarchyLevel.COLLABORATOR,
-                password, null, Set.of()));
-        } catch (UserEmailAlreadyExistsException ignored) {
-            return userRepository.findByTenantIdAndEmail(tenant.id(), email).orElseThrow();
-        }
+        Tenant tenant = testTenants.ensureTenant(
+            TENANT_SLUG, "Mgmt Demo", "Admin", ADMIN_EMAIL, ADMIN_PASSWORD);
+        Tenant other = testTenants.ensureTenant(
+            OTHER_SLUG, "Other Demo", "Admin", "admin@otherdemo.com", ADMIN_PASSWORD);
+        testTenants.ensureMember(tenant, testTenants.admin(tenant, ADMIN_EMAIL).id(),
+            "colab@mgmtdemo.com", "Colab", ADMIN_PASSWORD,
+            HierarchyLevel.COLLABORATOR, null, "COLLABORATOR");
+        testTenants.ensureMember(other, testTenants.admin(other, "admin@otherdemo.com").id(),
+            "foreign@otherdemo.com", "Foreign", ADMIN_PASSWORD,
+            HierarchyLevel.COLLABORATOR, null, "COLLABORATOR");
     }
 
     private String login(String email, String password) {

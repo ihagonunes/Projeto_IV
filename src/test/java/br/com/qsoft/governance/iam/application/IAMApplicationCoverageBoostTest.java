@@ -256,35 +256,45 @@ class IAMApplicationCoverageBoostTest {
     @Test
     void testRegisterTenantMissingBranches() {
         ProvisionDefaultRoles rolesMock = mock(ProvisionDefaultRoles.class);
-        RegisterTenant useCase = new RegisterTenant(tenantRepo, domainRepo, rolesMock);
+        RegisterTenant useCase = new RegisterTenant(tenantRepo, domainRepo, rolesMock,
+            mock(br.com.qsoft.governance.iam.application.BootstrapTenantAdmin.class));
 
         assertThatThrownBy(() -> useCase.register(null))
             .isInstanceOf(IllegalArgumentException.class);
 
         // Null vs Blank for slug, name, emailDomain
-        assertThatThrownBy(() -> useCase.register(new RegisterTenantCommand(null, "Name", "domain.com")))
+        assertThatThrownBy(() -> useCase.register(new RegisterTenantCommand(
+            null, "Name", "domain.com", "Admin", "admin@domain.com", "secret123")))
             .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> useCase.register(new RegisterTenantCommand("  ", "Name", "domain.com")))
-            .isInstanceOf(IllegalArgumentException.class);
-
-        assertThatThrownBy(() -> useCase.register(new RegisterTenantCommand("slug", null, "domain.com")))
-            .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> useCase.register(new RegisterTenantCommand("slug", "  ", "domain.com")))
+        assertThatThrownBy(() -> useCase.register(new RegisterTenantCommand(
+            "  ", "Name", "domain.com", "Admin", "admin@domain.com", "secret123")))
             .isInstanceOf(IllegalArgumentException.class);
 
-        assertThatThrownBy(() -> useCase.register(new RegisterTenantCommand("slug", "Name", null)))
+        assertThatThrownBy(() -> useCase.register(new RegisterTenantCommand(
+            "slug", null, "domain.com", "Admin", "admin@domain.com", "secret123")))
             .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> useCase.register(new RegisterTenantCommand("slug", "Name", "  ")))
+        assertThatThrownBy(() -> useCase.register(new RegisterTenantCommand(
+            "slug", "  ", "domain.com", "Admin", "admin@domain.com", "secret123")))
             .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> useCase.register(new RegisterTenantCommand("slug", "Name", "@")))
+
+        assertThatThrownBy(() -> useCase.register(new RegisterTenantCommand(
+            "slug", "Name", null, "Admin", "admin@domain.com", "secret123")))
+            .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> useCase.register(new RegisterTenantCommand(
+            "slug", "Name", "  ", "Admin", "admin@domain.com", "secret123")))
+            .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> useCase.register(new RegisterTenantCommand(
+            "slug", "Name", "@", "Admin", "admin@domain.com", "secret123")))
             .isInstanceOf(IllegalArgumentException.class);
 
         createActiveTenant();
-        assertThatThrownBy(() -> useCase.register(new RegisterTenantCommand("tenant1", "Name", "domain.com")))
+        assertThatThrownBy(() -> useCase.register(new RegisterTenantCommand(
+            "tenant1", "Name", "domain.com", "Admin", "admin@domain.com", "secret123")))
             .isInstanceOf(TenantSlugAlreadyExistsException.class);
 
         domainsMap.put("domain.com", Tenant.create(TenantId.random(), "t2", "T2", "domain.com"));
-        assertThatThrownBy(() -> useCase.register(new RegisterTenantCommand("new-slug", "Name", "domain.com")))
+        assertThatThrownBy(() -> useCase.register(new RegisterTenantCommand(
+            "new-slug", "Name", "domain.com", "Admin", "admin@domain.com", "secret123")))
             .isInstanceOf(TenantDomainAlreadyExistsException.class);
     }
 
