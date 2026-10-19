@@ -16,7 +16,9 @@ public final class InviteJpaMapper {
         entity.setEmail(invite.email());
         entity.setHierarchyLevel(invite.hierarchyLevel());
         entity.setDepartmentId(invite.departmentId());
-        entity.setToken(invite.token());
+        entity.setRoleId(invite.roleId());
+        entity.setInvitedBy(invite.invitedBy());
+        entity.setTokenHash(invite.tokenHash());
         entity.setStatus(invite.status());
         entity.setCreatedAt(invite.createdAt());
         entity.setExpiresAt(invite.expiresAt());
@@ -31,7 +33,9 @@ public final class InviteJpaMapper {
             entity.getEmail(),
             entity.getHierarchyLevel(),
             entity.getDepartmentId(),
-            entity.getToken(),
+            entity.getRoleId(),
+            entity.getInvitedBy(),
+            entity.getTokenHash(),
             entity.getStatus(),
             entity.getCreatedAt(),
             entity.getExpiresAt(),

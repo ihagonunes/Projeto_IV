@@ -42,7 +42,9 @@ class InvitePersistenceTest {
         entity.setEmail("invitee@qsoft.com");
         entity.setHierarchyLevel(HierarchyLevel.COLLABORATOR);
         entity.setDepartmentId(deptId);
-        entity.setToken("token123");
+        entity.setRoleId(UUID.randomUUID());
+        entity.setInvitedBy(UUID.randomUUID());
+        entity.setTokenHash("token123");
         entity.setStatus(InviteStatus.PENDING);
         entity.setCreatedAt(now);
         entity.setExpiresAt(now.plusSeconds(3600));
@@ -53,7 +55,7 @@ class InvitePersistenceTest {
         assertThat(entity.getEmail()).isEqualTo("invitee@qsoft.com");
         assertThat(entity.getHierarchyLevel()).isEqualTo(HierarchyLevel.COLLABORATOR);
         assertThat(entity.getDepartmentId()).isEqualTo(deptId);
-        assertThat(entity.getToken()).isEqualTo("token123");
+        assertThat(entity.getTokenHash()).isEqualTo("token123");
         assertThat(entity.getStatus()).isEqualTo(InviteStatus.PENDING);
         assertThat(entity.getCreatedAt()).isEqualTo(now);
         assertThat(entity.getExpiresAt()).isEqualTo(now.plusSeconds(3600));
@@ -68,12 +70,15 @@ class InvitePersistenceTest {
         UUID deptId = UUID.randomUUID();
         Instant now = Instant.now();
 
+        UUID roleId = UUID.randomUUID();
         Invite invite = Invite.restore(
             inviteId,
             tenantId,
             "user@qsoft.com",
             HierarchyLevel.MANAGER,
             deptId,
+            roleId,
+            null,
             "tok-abc",
             InviteStatus.ACCEPTED,
             now,
@@ -83,7 +88,7 @@ class InvitePersistenceTest {
 
         InviteJpaEntity entity = mapper.toEntity(invite);
         assertThat(entity.getId()).isEqualTo(inviteId.value());
-        assertThat(entity.getToken()).isEqualTo("tok-abc");
+        assertThat(entity.getTokenHash()).isEqualTo("tok-abc");
 
         Invite restored = mapper.toDomain(entity);
         assertThat(restored.id()).isEqualTo(inviteId);
@@ -91,7 +96,8 @@ class InvitePersistenceTest {
         assertThat(restored.email()).isEqualTo("user@qsoft.com");
         assertThat(restored.hierarchyLevel()).isEqualTo(HierarchyLevel.MANAGER);
         assertThat(restored.departmentId()).isEqualTo(deptId);
-        assertThat(restored.token()).isEqualTo("tok-abc");
+        assertThat(restored.roleId()).isEqualTo(roleId);
+        assertThat(restored.tokenHash()).isEqualTo("tok-abc");
         assertThat(restored.status()).isEqualTo(InviteStatus.ACCEPTED);
         assertThat(restored.createdAt()).isEqualTo(now);
         assertThat(restored.expiresAt()).isEqualTo(now.plusSeconds(3600));
@@ -121,21 +127,21 @@ class InvitePersistenceTest {
     }
 
     @Test
-    void deve_buscarPorToken() {
+    void deve_buscarPorTokenHash() {
         Invite invite = createSampleInvite();
         InviteJpaEntity entity = new InviteJpaMapper().toEntity(invite);
 
-        when(jpaRepository.findByToken("token-123")).thenReturn(Optional.of(entity));
+        when(jpaRepository.findByTokenHash("token-123")).thenReturn(Optional.of(entity));
 
-        Optional<Invite> result = adapter.findByToken("token-123");
+        Optional<Invite> result = adapter.findByTokenHash("token-123");
         assertThat(result).isPresent();
-        assertThat(result.get().token()).isEqualTo("token-123");
+        assertThat(result.get().tokenHash()).isEqualTo("token-123");
     }
 
     @Test
-    void deve_verificarExistsByToken() {
-        when(jpaRepository.existsByToken("token-123")).thenReturn(true);
-        assertThat(adapter.existsByToken("token-123")).isTrue();
+    void deve_verificarExistsByTokenHash() {
+        when(jpaRepository.existsByTokenHash("token-123")).thenReturn(true);
+        assertThat(adapter.existsByTokenHash("token-123")).isTrue();
     }
 
     @Test
@@ -161,6 +167,8 @@ class InvitePersistenceTest {
             tenantId,
             "user@qsoft.com",
             HierarchyLevel.COLLABORATOR,
+            null,
+            UUID.randomUUID(),
             null,
             "token-123",
             Instant.now().plusSeconds(3600)

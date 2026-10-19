@@ -35,7 +35,7 @@ public class AcceptInvite {
         String name = (command.name() == null || command.name().isBlank())
             ? null : command.name().trim();
 
-        Invite invite = inviteRepository.findByToken(token)
+        Invite invite = inviteRepository.findByTokenHash(InviteTokenHasher.sha256Hex(token))
             .orElseThrow(InvalidInviteException::new);
 
         // Rejeita reutilização e convite expirado.

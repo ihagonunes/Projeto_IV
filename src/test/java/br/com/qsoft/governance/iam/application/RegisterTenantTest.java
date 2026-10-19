@@ -118,9 +118,10 @@ class RegisterTenantTest {
     void shouldProvisionDefaultRolesForNewTenant() {
         Tenant tenant = useCase().register(new RegisterTenantCommand("qsoft", "QSOFT", "qsoft.com"));
 
-        assertThat(roles).hasSize(4);
+        assertThat(roles).hasSize(5);
         assertThat(roles).extracting(Role::name)
-            .containsExactlyInAnyOrder("COLLABORATOR", "LEADER", "MANAGER", "EXECUTIVE");
+            .containsExactlyInAnyOrder(
+                "COLLABORATOR", "LEADER", "MANAGER", "EXECUTIVE", "TENANT_ADMIN");
         assertThat(roles).allMatch(r -> r.tenantId().equals(tenant.id()));
     }
 

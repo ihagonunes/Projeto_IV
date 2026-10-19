@@ -152,8 +152,10 @@ class DashboardMetricsIT {
             .findByTenantIdAndUserId(user.tenantId(), user.id()).stream()
             .anyMatch(a -> a.roleId().equals(role.id()));
         if (!assigned) {
-            roleAssignmentRepository.save(
-                RoleAssignment.create(user.id(), role.id(), user.tenantId(), null));
+            roleAssignmentRepository.save(RoleAssignment.grant(
+                user.id(), role, user.departmentId(),
+                br.com.qsoft.governance.iam.domain.rbac.GrantOrigin.MIGRATION, null,
+                java.time.Instant.now()));
         }
     }
 
@@ -231,7 +233,9 @@ class DashboardMetricsIT {
     void managerShouldSeeOnlyOwnDepartmentEvenRequestingAnother() {
         User admin = userRepository.findByTenantIdAndEmail(tenant.id(), ADMIN_EMAIL).orElseThrow();
         User manager = provisionIfAbsent(tenant, MANAGER_EMAIL, HierarchyLevel.MANAGER, marketingDepartment);
-        assignRole(manager, HierarchyLevel.MANAGER);
+        // A concessão precisa ser TENANT-scoped para passar o gate USAGE:READ do endpoint
+        // legado (o escopo de visibilidade do dashboard ainda vem do rótulo via SPI-94).
+        assignRole(manager, HierarchyLevel.EXECUTIVE);
         usage(admin, marketingDepartment, 1000, 2000);
         usage(admin, salesDepartment, 500, 500);
 

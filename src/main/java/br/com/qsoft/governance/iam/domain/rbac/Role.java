@@ -5,6 +5,7 @@ import br.com.qsoft.governance.sharedkernel.id.TenantId;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -51,6 +52,14 @@ public final class Role {
 
     public String name() {
         return name;
+    }
+
+    /**
+     * Papel de sistema derivado do nome (ADR-36). Vazio se o nome não
+     * corresponder a um papel de sistema.
+     */
+    public Optional<SystemRole> systemRole() {
+        return SystemRole.fromKey(name);
     }
 
     public Set<Permission> permissions() {

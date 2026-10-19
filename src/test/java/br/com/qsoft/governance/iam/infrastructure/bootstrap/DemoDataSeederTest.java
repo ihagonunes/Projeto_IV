@@ -203,7 +203,9 @@ class DemoDataSeederTest {
             registerTenant, tenantRepository, provisionUser, userRepository,
             roleRepository, roleAssignmentRepository, "secret123");
 
-        RoleAssignment existingAssignment = RoleAssignment.create(adminId, roleId, tenantId, null);
+        RoleAssignment existingAssignment = RoleAssignment.grant(
+            adminId, executiveRole, null,
+            br.com.qsoft.governance.iam.domain.rbac.GrantOrigin.MIGRATION, null, java.time.Instant.now());
 
         when(registerTenant.register(any(RegisterTenantCommand.class))).thenReturn(demoTenant);
         when(tenantRepository.findBySlug("qsoft")).thenReturn(Optional.of(demoTenant));

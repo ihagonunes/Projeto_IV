@@ -106,16 +106,18 @@ class AIGatewayRoutingIT {
         Tenant tenant = tenantRepository.findBySlug(slug).orElseThrow();
         User admin = provisionIfAbsent(tenant, adminEmail, null);
 
-        Role executive = roleRepository
-            .findByTenantIdAndName(tenant.id(), HierarchyLevel.EXECUTIVE.name())
+        // TENANT_ADMIN contém DEPARTMENT:MANAGE e AI_TOOL:MANAGE (ADR-36).
+        Role tenantAdmin = roleRepository
+            .findByTenantIdAndName(tenant.id(), "TENANT_ADMIN")
             .orElseThrow();
         boolean assigned = roleAssignmentRepository
             .findByTenantIdAndUserId(tenant.id(), admin.id())
             .stream()
-            .anyMatch(assignment -> assignment.roleId().equals(executive.id()));
+            .anyMatch(assignment -> assignment.roleId().equals(tenantAdmin.id()));
         if (!assigned) {
-            roleAssignmentRepository.save(
-                RoleAssignment.create(admin.id(), executive.id(), tenant.id(), null));
+            roleAssignmentRepository.save(RoleAssignment.grant(admin.id(), tenantAdmin, null,
+                    br.com.qsoft.governance.iam.domain.rbac.GrantOrigin.MIGRATION, null,
+                    java.time.Instant.now()));
         }
     }
 

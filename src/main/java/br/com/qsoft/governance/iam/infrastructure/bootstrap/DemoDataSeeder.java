@@ -12,6 +12,7 @@ import br.com.qsoft.governance.iam.application.port.UserRepository;
 import br.com.qsoft.governance.iam.domain.exception.TenantDomainAlreadyExistsException;
 import br.com.qsoft.governance.iam.domain.exception.TenantSlugAlreadyExistsException;
 import br.com.qsoft.governance.iam.domain.exception.UserEmailAlreadyExistsException;
+import br.com.qsoft.governance.iam.domain.rbac.GrantOrigin;
 import br.com.qsoft.governance.iam.domain.rbac.Role;
 import br.com.qsoft.governance.iam.domain.rbac.RoleAssignment;
 import br.com.qsoft.governance.iam.domain.tenant.Tenant;
@@ -124,8 +125,8 @@ public class DemoDataSeeder implements ApplicationRunner {
             .stream()
             .anyMatch(assignment -> assignment.roleId().equals(executive.id()));
         if (!alreadyAssigned) {
-            roleAssignmentRepository.save(
-                RoleAssignment.create(admin.id(), executive.id(), tenant.id(), null));
+            roleAssignmentRepository.save(RoleAssignment.grant(
+                admin.id(), executive, null, GrantOrigin.MIGRATION, null, java.time.Instant.now()));
             log.info("Papel EXECUTIVE atribuído ao admin demo.");
         }
     }

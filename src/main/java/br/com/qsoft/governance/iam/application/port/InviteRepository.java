@@ -15,9 +15,9 @@ public interface InviteRepository {
 
     Optional<Invite> findById(InviteId id);
 
-    Optional<Invite> findByToken(String token);
+    Optional<Invite> findByTokenHash(String tokenHash);
 
-    boolean existsByToken(String token);
+    boolean existsByTokenHash(String tokenHash);
 
     List<Invite> findByTenantId(TenantId tenantId);
 }

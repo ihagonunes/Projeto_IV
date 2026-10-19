@@ -64,7 +64,7 @@ class IAMApplicationRecordsTest {
         TenantId tenantId = TenantId.random();
         UUID deptId = UUID.randomUUID();
         CreateInviteCommand cmd = new CreateInviteCommand(
-            tenantId, "ana@qsoft.com", HierarchyLevel.MANAGER, deptId);
+            tenantId, "ana@qsoft.com", HierarchyLevel.MANAGER, deptId, null);
 
         assertThat(cmd.tenantId()).isEqualTo(tenantId);
         assertThat(cmd.email()).isEqualTo("ana@qsoft.com");

@@ -1,9 +1,8 @@
 package br.com.qsoft.governance.iam.application.rbac;
 
 import br.com.qsoft.governance.iam.application.port.RoleRepository;
-import br.com.qsoft.governance.iam.domain.rbac.PermissionMatrix;
 import br.com.qsoft.governance.iam.domain.rbac.Role;
-import br.com.qsoft.governance.iam.domain.user.HierarchyLevel;
+import br.com.qsoft.governance.iam.domain.rbac.SystemRole;
 import br.com.qsoft.governance.sharedkernel.id.RoleId;
 import br.com.qsoft.governance.sharedkernel.id.TenantId;
 import java.util.ArrayList;
@@ -12,9 +11,9 @@ import java.util.Objects;
 import org.springframework.stereotype.Service;
 
 /**
- * Persiste a matriz de permissões PADRÃO (SPI-43): cria, para um tenant, um
- * papel por nível hierárquico (COLLABORATOR, LEADER, MANAGER, EXECUTIVE) com as
- * permissões definidas pela {@link PermissionMatrix}.
+ * Persiste os papéis de SISTEMA padrão (SPI-43/ADR-36): cria, para um tenant,
+ * os cinco papéis (COLLABORATOR, LEADER, MANAGER, EXECUTIVE, TENANT_ADMIN) com
+ * as permissões definidas por {@link SystemRole}.
  *
  * Operação idempotente por (tenant, nome): não recria papéis já existentes.
  */
@@ -31,13 +30,13 @@ public class ProvisionDefaultRoles {
         Objects.requireNonNull(tenantId, "tenantId é obrigatório.");
 
         List<Role> provisioned = new ArrayList<>();
-        for (HierarchyLevel level : HierarchyLevel.values()) {
-            String name = level.name();
+        for (SystemRole systemRole : SystemRole.values()) {
+            String name = systemRole.name();
             if (roleRepository.existsByTenantIdAndName(tenantId, name)) {
                 continue;
             }
             Role role = Role.create(RoleId.random(), tenantId, name);
-            PermissionMatrix.permissionsFor(level).forEach(role::grantPermission);
+            systemRole.permissions().forEach(role::grantPermission);
             provisioned.add(roleRepository.save(role));
         }
         return provisioned;

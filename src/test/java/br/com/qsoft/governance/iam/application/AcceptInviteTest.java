@@ -53,7 +53,7 @@ class AcceptInviteTest {
     private final InviteRepository inviteRepository = new InviteRepository() {
         @Override
         public Invite save(Invite invite) {
-            invitesByToken.put(invite.token(), invite);
+            invitesByToken.put(invite.tokenHash(), invite);
             savedInvites.add(invite);
             return invite;
         }
@@ -62,12 +62,12 @@ class AcceptInviteTest {
             return invitesByToken.values().stream().filter(i -> i.id().equals(id)).findFirst();
         }
         @Override
-        public Optional<Invite> findByToken(String token) {
-            return Optional.ofNullable(invitesByToken.get(token));
+        public Optional<Invite> findByTokenHash(String tokenHash) {
+            return Optional.ofNullable(invitesByToken.get(tokenHash));
         }
         @Override
-        public boolean existsByToken(String token) {
-            return invitesByToken.containsKey(token);
+        public boolean existsByTokenHash(String tokenHash) {
+            return invitesByToken.containsKey(tokenHash);
         }
         @Override
         public List<Invite> findByTenantId(TenantId tid) {
@@ -127,24 +127,29 @@ class AcceptInviteTest {
         tenantsById.put(tenantId, t);
     }
 
+    private String hash(String rawToken) {
+        return InviteTokenHasher.sha256Hex(rawToken);
+    }
+
     private Invite pendingInvite(String token, Instant expiresAt) {
         Invite invite = Invite.create(InviteId.random(), tenantId, "convidado@qsoft.com",
-            HierarchyLevel.COLLABORATOR, null, token, expiresAt);
-        invitesByToken.put(token, invite);
+            HierarchyLevel.COLLABORATOR, null, UUID.randomUUID(), null, hash(token), expiresAt);
+        invitesByToken.put(hash(token), invite);
         return invite;
     }
 
     private Invite expiredInvite(String token) {
         return Invite.restore(InviteId.random(), tenantId, "exp@qsoft.com",
-            HierarchyLevel.COLLABORATOR, null, token, InviteStatus.PENDING,
-            Instant.now().minusSeconds(7200), Instant.now().minusSeconds(3600), null);
+            HierarchyLevel.COLLABORATOR, null, UUID.randomUUID(), null, hash(token),
+            InviteStatus.PENDING, Instant.now().minusSeconds(7200),
+            Instant.now().minusSeconds(3600), null);
     }
 
     private Invite alreadyAcceptedInvite(String token) {
         return Invite.restore(InviteId.random(), tenantId, "used@qsoft.com",
-            HierarchyLevel.COLLABORATOR, null, token, InviteStatus.ACCEPTED,
-            Instant.now().minusSeconds(7200), Instant.now().plusSeconds(3600),
-            Instant.now().minusSeconds(1800));
+            HierarchyLevel.COLLABORATOR, null, UUID.randomUUID(), null, hash(token),
+            InviteStatus.ACCEPTED, Instant.now().minusSeconds(7200),
+            Instant.now().plusSeconds(3600), Instant.now().minusSeconds(1800));
     }
 
     // ── Testes ────────────────────────────────────────────────────────────────
@@ -263,7 +268,7 @@ class AcceptInviteTest {
 
     @Test
     void deve_lancarExcecao_quando_conviteExpirado() {
-        invitesByToken.put(VALID_TOKEN, expiredInvite(VALID_TOKEN));
+        invitesByToken.put(hash(VALID_TOKEN), expiredInvite(VALID_TOKEN));
 
         assertThatThrownBy(() ->
             useCase.accept(new AcceptInviteCommand(VALID_TOKEN, null, VALID_PASS)))
@@ -274,7 +279,7 @@ class AcceptInviteTest {
 
     @Test
     void deve_lancarExcecao_quando_conviteJaAceito() {
-        invitesByToken.put(VALID_TOKEN, alreadyAcceptedInvite(VALID_TOKEN));
+        invitesByToken.put(hash(VALID_TOKEN), alreadyAcceptedInvite(VALID_TOKEN));
 
         assertThatThrownBy(() ->
             useCase.accept(new AcceptInviteCommand(VALID_TOKEN, null, VALID_PASS)))

@@ -17,9 +17,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Caso de uso de reenvio de convite (SPI-59): gera um NOVO convite (token e
- * expiração novos) a partir de um convite existente não aceito, revogando o
- * anterior — sem duplicar o registro de usuário.
+ * Caso de uso de reenvio de convite (SPI-59): gera um NOVO token (guardado como
+ * hash) e nova expiração a partir de um convite existente não aceito, revogando
+ * o anterior — sem duplicar o registro de usuário. Os vínculos de concessão do
+ * convite ({@code roleId}/{@code invitedBy}) são preservados.
  * <p>
  * A AUTORIZAÇÃO (INVITE:MANAGE) é aplicada no endpoint via
  * {@code @RequiresPermission}. O escopo de tenant é validado aqui (ADR-03):
@@ -45,7 +46,7 @@ public class ResendInvite {
      * uma falha no segundo {@code save} deixaria o convite revogado sem substituto.
      */
     @Transactional
-    public Invite resend(ResendInviteCommand command) {
+    public IssuedInvite resend(ResendInviteCommand command) {
         if (command == null) {
             throw new IllegalArgumentException("Command é obrigatório.");
         }
@@ -67,6 +68,7 @@ public class ResendInvite {
         previous.revoke();
         inviteRepository.save(previous);
 
+        String rawToken = generateToken();
         Instant expiresAt = Instant.now().plus(Duration.ofHours(ttlHours));
         Invite renewed = Invite.create(
             InviteId.random(),
@@ -74,17 +76,19 @@ public class ResendInvite {
             previous.email(),
             previous.hierarchyLevel(),
             previous.departmentId(),
-            generateToken(),
+            previous.roleId(),
+            previous.invitedBy(),
+            InviteTokenHasher.sha256Hex(rawToken),
             expiresAt
         );
-        return inviteRepository.save(renewed);
+        return new IssuedInvite(inviteRepository.save(renewed), rawToken);
     }
 
     private String generateToken() {
         String token;
         do {
             token = UUID.randomUUID().toString().replace("-", "");
-        } while (inviteRepository.existsByToken(token));
+        } while (inviteRepository.existsByTokenHash(InviteTokenHasher.sha256Hex(token)));
         return token;
     }
 }

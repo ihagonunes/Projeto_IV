@@ -12,15 +12,11 @@ import br.com.qsoft.governance.iam.application.port.TenantRepository;
 import br.com.qsoft.governance.iam.application.port.UserRepository;
 import br.com.qsoft.governance.iam.domain.exception.TenantSlugAlreadyExistsException;
 import br.com.qsoft.governance.iam.domain.exception.UserEmailAlreadyExistsException;
-import br.com.qsoft.governance.sharedkernel.rbac.Action;
-import br.com.qsoft.governance.iam.domain.rbac.Permission;
-import br.com.qsoft.governance.sharedkernel.rbac.Resource;
 import br.com.qsoft.governance.iam.domain.rbac.Role;
 import br.com.qsoft.governance.iam.domain.rbac.RoleAssignment;
 import br.com.qsoft.governance.iam.domain.tenant.Tenant;
 import br.com.qsoft.governance.iam.domain.user.HierarchyLevel;
 import br.com.qsoft.governance.iam.domain.user.User;
-import br.com.qsoft.governance.sharedkernel.id.RoleId;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -66,7 +62,6 @@ class AuthorizationIT {
     private static final String ADMIN_EMAIL = "admin@rbacdemo.com";
     private static final String USER_EMAIL = "user@rbacdemo.com";
     private static final String PASSWORD = "secret123";
-    private static final String ROLE_NAME = "USER_MANAGER";
 
     @LocalServerPort
     int port;
@@ -109,19 +104,19 @@ class AuthorizationIT {
         provisionIfAbsent(tenant, USER_EMAIL, HierarchyLevel.COLLABORATOR);
         targetId = admin.id().value();
 
-        Role role = roleRepository.findByTenantIdAndName(tenant.id(), ROLE_NAME)
-            .orElseGet(() -> {
-                Role created = Role.create(RoleId.random(), tenant.id(), ROLE_NAME);
-                created.grantPermission(Permission.of(Resource.USER, Action.MANAGE));
-                return roleRepository.save(created);
-            });
+        // O papel de sistema EXECUTIVE contém USER:MANAGE (ADR-36).
+        Role executive = roleRepository
+            .findByTenantIdAndName(tenant.id(), HierarchyLevel.EXECUTIVE.name())
+            .orElseThrow();
         boolean assigned = roleAssignmentRepository
             .findByTenantIdAndUserId(tenant.id(), admin.id())
             .stream()
-            .anyMatch(assignment -> assignment.roleId().equals(role.id()));
+            .anyMatch(assignment -> assignment.roleId().equals(executive.id()));
         if (!assigned) {
-            roleAssignmentRepository.save(
-                RoleAssignment.create(admin.id(), role.id(), tenant.id(), null));
+            roleAssignmentRepository.save(RoleAssignment.grant(
+                admin.id(), executive, null,
+                br.com.qsoft.governance.iam.domain.rbac.GrantOrigin.MIGRATION, null,
+                java.time.Instant.now()));
         }
     }
 

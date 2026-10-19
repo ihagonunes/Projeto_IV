@@ -33,7 +33,8 @@ class ListInvitesTest {
     @Test
     void deve_listar_convites_do_tenant() {
         Invite invite = Invite.create(
-            InviteId.random(), tenantId, "user@qsoft.com", HierarchyLevel.COLLABORATOR, null, "token123", Instant.now().plusSeconds(86400));
+            InviteId.random(), tenantId, "user@qsoft.com", HierarchyLevel.COLLABORATOR, null,
+            java.util.UUID.randomUUID(), null, "token123", Instant.now().plusSeconds(86400));
 
         when(inviteRepository.findByTenantId(tenantId)).thenReturn(List.of(invite));
 

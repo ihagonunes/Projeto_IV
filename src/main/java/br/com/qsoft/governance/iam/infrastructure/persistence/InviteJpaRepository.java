@@ -7,9 +7,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface InviteJpaRepository extends JpaRepository<InviteJpaEntity, UUID> {
 
-    Optional<InviteJpaEntity> findByToken(String token);
+    Optional<InviteJpaEntity> findByTokenHash(String tokenHash);
 
-    boolean existsByToken(String token);
+    boolean existsByTokenHash(String tokenHash);
 
     List<InviteJpaEntity> findByTenantId(UUID tenantId);
 }

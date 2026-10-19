@@ -4,17 +4,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import br.com.qsoft.governance.iam.application.port.InviteRepository;
+import br.com.qsoft.governance.iam.application.port.RoleRepository;
 import br.com.qsoft.governance.iam.application.port.TenantRepository;
 import br.com.qsoft.governance.iam.application.port.UserRepository;
 import br.com.qsoft.governance.iam.domain.exception.TenantNotFoundException;
 import br.com.qsoft.governance.iam.domain.exception.UserEmailAlreadyExistsException;
 import br.com.qsoft.governance.iam.domain.invite.Invite;
 import br.com.qsoft.governance.iam.domain.invite.InviteStatus;
+import br.com.qsoft.governance.iam.domain.rbac.Role;
 import br.com.qsoft.governance.iam.domain.tenant.Tenant;
 import br.com.qsoft.governance.iam.domain.tenant.TenantStatus;
 import br.com.qsoft.governance.iam.domain.user.HierarchyLevel;
 import br.com.qsoft.governance.iam.domain.user.User;
 import br.com.qsoft.governance.sharedkernel.id.InviteId;
+import br.com.qsoft.governance.sharedkernel.id.RoleId;
 import br.com.qsoft.governance.sharedkernel.id.TenantId;
 import br.com.qsoft.governance.sharedkernel.id.UserId;
 import java.time.Instant;
@@ -29,6 +32,7 @@ class CreateInviteTest {
     private final Map<TenantId, Tenant> tenants = new LinkedHashMap<>();
     private final Map<String, User> users = new LinkedHashMap<>();
     private final Map<String, Invite> invitesByToken = new LinkedHashMap<>();
+    private final Map<String, Role> roles = new LinkedHashMap<>();
 
     private final TenantRepository tenantRepository = new TenantRepository() {
         @Override
@@ -76,10 +80,33 @@ class CreateInviteTest {
         }
     };
 
+    private final RoleRepository roleRepository = new RoleRepository() {
+        @Override
+        public Role save(Role role) {
+            roles.put(role.tenantId() + "|" + role.name(), role);
+            return role;
+        }
+
+        @Override
+        public Optional<Role> findById(RoleId id) {
+            return roles.values().stream().filter(r -> r.id().equals(id)).findFirst();
+        }
+
+        @Override
+        public Optional<Role> findByTenantIdAndName(TenantId tenantId, String name) {
+            return Optional.ofNullable(roles.get(tenantId + "|" + name));
+        }
+
+        @Override
+        public boolean existsByTenantIdAndName(TenantId tenantId, String name) {
+            return roles.containsKey(tenantId + "|" + name);
+        }
+    };
+
     private final InviteRepository inviteRepository = new InviteRepository() {
         @Override
         public Invite save(Invite invite) {
-            invitesByToken.put(invite.token(), invite);
+            invitesByToken.put(invite.tokenHash(), invite);
             return invite;
         }
 
@@ -89,26 +116,31 @@ class CreateInviteTest {
         }
 
         @Override
-        public Optional<Invite> findByToken(String token) {
-            return Optional.ofNullable(invitesByToken.get(token));
+        public Optional<Invite> findByTokenHash(String tokenHash) {
+            return Optional.ofNullable(invitesByToken.get(tokenHash));
         }
 
         @Override
-        public boolean existsByToken(String token) {
-            return invitesByToken.containsKey(token);
+        public boolean existsByTokenHash(String tokenHash) {
+            return invitesByToken.containsKey(tokenHash);
         }
 
         @Override
         public List<Invite> findByTenantId(TenantId tenantId) {
-            return invitesByToken.values().stream().filter(i -> i.tenantId().equals(tenantId)).toList();
+            return invitesByToken.values().stream()
+                .filter(i -> i.tenantId().equals(tenantId)).toList();
         }
     };
 
-    private final CreateInvite useCase = new CreateInvite(tenantRepository, userRepository, inviteRepository, 48);
+    private final CreateInvite useCase =
+        new CreateInvite(tenantRepository, userRepository, roleRepository, inviteRepository, 48);
 
     private TenantId activeTenant() {
         TenantId id = TenantId.random();
-        tenants.put(id, Tenant.restore(id, "t-" + id, "Tenant", TenantStatus.ACTIVE, Instant.now(), Instant.now()));
+        tenants.put(id, Tenant.restore(id, "t-" + id, "Tenant",
+            TenantStatus.ACTIVE, Instant.now(), Instant.now()));
+        roles.put(id + "|COLLABORATOR", Role.create(RoleId.random(), id, "COLLABORATOR"));
+        roles.put(id + "|MANAGER", Role.create(RoleId.random(), id, "MANAGER"));
         return id;
     }
 
@@ -116,14 +148,16 @@ class CreateInviteTest {
     void shouldCreateInviteWithTokenAndExpiration() {
         TenantId tenantId = activeTenant();
 
-        Invite invite = useCase.create(new CreateInviteCommand(
-            tenantId, "ana@x.com", HierarchyLevel.COLLABORATOR, null));
+        IssuedInvite issued = useCase.create(new CreateInviteCommand(
+            tenantId, "ana@x.com", HierarchyLevel.COLLABORATOR, null, null));
 
+        Invite invite = issued.invite();
         assertThat(invite.id()).isNotNull();
         assertThat(invite.tenantId()).isEqualTo(tenantId);
         assertThat(invite.email()).isEqualTo("ana@x.com");
         assertThat(invite.status()).isEqualTo(InviteStatus.PENDING);
-        assertThat(invite.token()).isNotBlank();
+        assertThat(invite.tokenHash()).isNotBlank();
+        assertThat(issued.token()).isNotBlank();
         assertThat(invite.expiresAt()).isAfter(Instant.now());
     }
 
@@ -134,14 +168,14 @@ class CreateInviteTest {
             "ana@x.com", "Ana", HierarchyLevel.COLLABORATOR, null));
 
         assertThatThrownBy(() -> useCase.create(new CreateInviteCommand(
-            tenantId, "ana@x.com", HierarchyLevel.COLLABORATOR, null)))
+            tenantId, "ana@x.com", HierarchyLevel.COLLABORATOR, null, null)))
             .isInstanceOf(UserEmailAlreadyExistsException.class);
     }
 
     @Test
     void shouldRejectUnknownTenant() {
         assertThatThrownBy(() -> useCase.create(new CreateInviteCommand(
-            TenantId.random(), "ana@x.com", HierarchyLevel.COLLABORATOR, null)))
+            TenantId.random(), "ana@x.com", HierarchyLevel.COLLABORATOR, null, null)))
             .isInstanceOf(TenantNotFoundException.class);
     }
 
@@ -150,7 +184,7 @@ class CreateInviteTest {
         TenantId tenantId = activeTenant();
 
         assertThatThrownBy(() -> useCase.create(new CreateInviteCommand(
-            tenantId, "  ", HierarchyLevel.COLLABORATOR, null)))
+            tenantId, "  ", HierarchyLevel.COLLABORATOR, null, null)))
             .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -174,7 +208,7 @@ class CreateInviteTest {
             Instant.now(), Instant.now()));
 
         assertThatThrownBy(() -> useCase.create(new CreateInviteCommand(
-            id, "ana@x.com", HierarchyLevel.COLLABORATOR, null)))
+            id, "ana@x.com", HierarchyLevel.COLLABORATOR, null, null)))
             .isInstanceOf(TenantNotFoundException.class);
     }
 
@@ -184,7 +218,7 @@ class CreateInviteTest {
         TenantId tenantId = activeTenant();
 
         assertThatThrownBy(() -> useCase.create(new CreateInviteCommand(
-            tenantId, "ana@x.com", null, null)))
+            tenantId, "ana@x.com", null, null, null)))
             .isInstanceOf(NullPointerException.class);
     }
 
@@ -192,8 +226,7 @@ class CreateInviteTest {
     @Test
     void deve_lancarExcecao_quando_tenantIdNulo() {
         assertThatThrownBy(() -> useCase.create(new CreateInviteCommand(
-            null, "ana@x.com", HierarchyLevel.COLLABORATOR, null)))
+            null, "ana@x.com", HierarchyLevel.COLLABORATOR, null, null)))
             .isInstanceOf(NullPointerException.class);
     }
 }
-

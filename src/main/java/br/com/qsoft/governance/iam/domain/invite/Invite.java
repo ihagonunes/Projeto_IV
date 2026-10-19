@@ -9,9 +9,11 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * Convite de usuário para um tenant: e-mail, nível hierárquico (papel) e
- * Department opcional (referência por ID), com token aleatório e expiração.
- * O domínio não depende de Spring/JPA (ADR-31).
+ * Convite de usuário para um tenant: e-mail, rótulo hierárquico, Department
+ * opcional (referência por ID), o papel concedido ({@code roleId}) e quem
+ * convidou ({@code invitedBy}). O token é persistido apenas como hash
+ * ({@code tokenHash}); o token puro é devolvido uma única vez a quem convida
+ * (ADR-37). O domínio não depende de Spring/JPA (ADR-31).
  */
 public final class Invite {
 
@@ -20,21 +22,25 @@ public final class Invite {
     private final String email;
     private final HierarchyLevel hierarchyLevel;
     private final UUID departmentId;
-    private final String token;
+    private final UUID roleId;
+    private final UUID invitedBy;
+    private final String tokenHash;
     private InviteStatus status;
     private final Instant createdAt;
     private final Instant expiresAt;
     private Instant acceptedAt;
 
     private Invite(InviteId id, TenantId tenantId, String email, HierarchyLevel hierarchyLevel,
-                   UUID departmentId, String token, InviteStatus status,
-                   Instant createdAt, Instant expiresAt, Instant acceptedAt) {
+                   UUID departmentId, UUID roleId, UUID invitedBy, String tokenHash,
+                   InviteStatus status, Instant createdAt, Instant expiresAt, Instant acceptedAt) {
         this.id = Objects.requireNonNull(id, "id");
         this.tenantId = Objects.requireNonNull(tenantId, "tenantId");
         this.email = requireEmail(email);
         this.hierarchyLevel = Objects.requireNonNull(hierarchyLevel, "hierarchyLevel");
         this.departmentId = departmentId;
-        this.token = Objects.requireNonNull(token, "token");
+        this.roleId = roleId;
+        this.invitedBy = invitedBy;
+        this.tokenHash = Objects.requireNonNull(tokenHash, "tokenHash");
         this.status = Objects.requireNonNull(status, "status");
         this.createdAt = Objects.requireNonNull(createdAt, "createdAt");
         this.expiresAt = Objects.requireNonNull(expiresAt, "expiresAt");
@@ -43,17 +49,18 @@ public final class Invite {
 
     public static Invite create(InviteId id, TenantId tenantId, String email,
                                 HierarchyLevel hierarchyLevel, UUID departmentId,
-                                String token, Instant expiresAt) {
-        return new Invite(id, tenantId, email, hierarchyLevel, departmentId, token,
-            InviteStatus.PENDING, Instant.now(), expiresAt, null);
+                                UUID roleId, UUID invitedBy, String tokenHash, Instant expiresAt) {
+        Objects.requireNonNull(roleId, "roleId é obrigatório em convite pendente.");
+        return new Invite(id, tenantId, email, hierarchyLevel, departmentId, roleId, invitedBy,
+            tokenHash, InviteStatus.PENDING, Instant.now(), expiresAt, null);
     }
 
     public static Invite restore(InviteId id, TenantId tenantId, String email,
                                  HierarchyLevel hierarchyLevel, UUID departmentId,
-                                 String token, InviteStatus status, Instant createdAt,
-                                 Instant expiresAt, Instant acceptedAt) {
-        return new Invite(id, tenantId, email, hierarchyLevel, departmentId, token,
-            status, createdAt, expiresAt, acceptedAt);
+                                 UUID roleId, UUID invitedBy, String tokenHash, InviteStatus status,
+                                 Instant createdAt, Instant expiresAt, Instant acceptedAt) {
+        return new Invite(id, tenantId, email, hierarchyLevel, departmentId, roleId, invitedBy,
+            tokenHash, status, createdAt, expiresAt, acceptedAt);
     }
 
     public InviteId id() {
@@ -76,8 +83,17 @@ public final class Invite {
         return departmentId;
     }
 
-    public String token() {
-        return token;
+    public UUID roleId() {
+        return roleId;
+    }
+
+    public UUID invitedBy() {
+        return invitedBy;
+    }
+
+    /** Hash SHA-256 (hex) do token; o token puro nunca é persistido. */
+    public String tokenHash() {
+        return tokenHash;
     }
 
     public InviteStatus status() {

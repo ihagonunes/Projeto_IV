@@ -132,7 +132,9 @@ class UsageLoggingIT {
             .anyMatch(assignment -> assignment.roleId().equals(executive.id()));
         if (!assigned) {
             roleAssignmentRepository.save(
-                RoleAssignment.create(admin.id(), executive.id(), tenant.id(), null));
+                RoleAssignment.grant(admin.id(), executive, null,
+                    br.com.qsoft.governance.iam.domain.rbac.GrantOrigin.MIGRATION, null,
+                    java.time.Instant.now()));
         }
         return tenant;
     }

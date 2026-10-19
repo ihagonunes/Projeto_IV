@@ -16,7 +16,6 @@ import br.com.qsoft.governance.iam.domain.rbac.RoleAssignment;
 import br.com.qsoft.governance.iam.domain.tenant.Tenant;
 import br.com.qsoft.governance.iam.domain.user.HierarchyLevel;
 import br.com.qsoft.governance.iam.domain.user.User;
-import br.com.qsoft.governance.sharedkernel.id.RoleId;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,28 +67,26 @@ class RolePersistenceIT {
     @Test
     void shouldPersistRoleWithPermissions() {
         Tenant tenant = newTenant();
-        Role role = Role.create(RoleId.random(), tenant.id(), "ADMIN");
-        role.grantPermission(Permission.of(Resource.USER, Action.MANAGE));
+        // A V015 restringe iam_roles aos papéis de sistema; reusa um deles.
+        Role role = roleRepository.findByTenantIdAndName(tenant.id(), "MANAGER").orElseThrow();
         role.grantPermission(Permission.of(Resource.TENANT, Action.READ));
 
         Role saved = roleRepository.save(role);
         Role found = roleRepository.findById(saved.id()).orElseThrow();
 
-        assertThat(found.name()).isEqualTo("ADMIN");
+        assertThat(found.name()).isEqualTo("MANAGER");
         assertThat(found.tenantId()).isEqualTo(tenant.id());
-        assertThat(found.permissions()).containsExactlyInAnyOrder(
+        assertThat(found.permissions()).contains(
             Permission.of(Resource.USER, Action.MANAGE),
             Permission.of(Resource.TENANT, Action.READ));
     }
 
     @Test
-    void shouldDetectDuplicateNameWithinTenant() {
+    void shouldDetectExistingSystemRoleNamesWithinTenant() {
         Tenant tenant = newTenant();
-        String name = "CUSTOM-" + UUID.randomUUID();
-        roleRepository.save(Role.create(RoleId.random(), tenant.id(), name));
 
-        assertThat(roleRepository.existsByTenantIdAndName(tenant.id(), name)).isTrue();
-        assertThat(roleRepository.existsByTenantIdAndName(tenant.id(), "OUTRO")).isFalse();
+        assertThat(roleRepository.existsByTenantIdAndName(tenant.id(), "COLLABORATOR")).isTrue();
+        assertThat(roleRepository.existsByTenantIdAndName(tenant.id(), "NAO_EXISTE")).isFalse();
     }
 
     @Test
@@ -100,6 +97,7 @@ class RolePersistenceIT {
         assertThat(roleRepository.existsByTenantIdAndName(tenant.id(), "LEADER")).isTrue();
         assertThat(roleRepository.existsByTenantIdAndName(tenant.id(), "MANAGER")).isTrue();
         assertThat(roleRepository.existsByTenantIdAndName(tenant.id(), "EXECUTIVE")).isTrue();
+        assertThat(roleRepository.existsByTenantIdAndName(tenant.id(), "TENANT_ADMIN")).isTrue();
     }
 
     @Test
@@ -107,13 +105,17 @@ class RolePersistenceIT {
         Tenant tenant = newTenant();
         User user = createUser.create(new CreateUserCommand(
             tenant.id(), "assign@rbac.com", "Assign", HierarchyLevel.MANAGER, null));
-        Role role = roleRepository.save(Role.create(RoleId.random(), tenant.id(), "CUSTOM-" + UUID.randomUUID()));
+        Role role = roleRepository.findByTenantIdAndName(tenant.id(), "EXECUTIVE").orElseThrow();
 
-        RoleAssignment saved = roleAssignmentRepository.save(
-            RoleAssignment.create(user.id(), role.id(), tenant.id(), null));
+        RoleAssignment saved = roleAssignmentRepository.save(RoleAssignment.grant(
+            user.id(), role, null,
+            br.com.qsoft.governance.iam.domain.rbac.GrantOrigin.MIGRATION, null,
+            java.time.Instant.now()));
 
         assertThat(roleAssignmentRepository.findById(saved.id())).isPresent();
         assertThat(roleAssignmentRepository.findByTenantIdAndUserId(tenant.id(), user.id()))
+            .hasSize(1);
+        assertThat(roleAssignmentRepository.findActiveByTenantIdAndUserId(tenant.id(), user.id()))
             .hasSize(1);
     }
 }

@@ -18,7 +18,7 @@ class InviteTest {
 
     private Invite invite(Instant expiresAt) {
         return Invite.create(InviteId.random(), tenantId, "ana@x.com",
-            HierarchyLevel.COLLABORATOR, null, "token-123", expiresAt);
+            HierarchyLevel.COLLABORATOR, null, UUID.randomUUID(), null, "token-123", expiresAt);
     }
 
     @Test
@@ -28,7 +28,7 @@ class InviteTest {
         assertThat(invite.status()).isEqualTo(InviteStatus.PENDING);
         assertThat(invite.isPending()).isTrue();
         assertThat(invite.email()).isEqualTo("ana@x.com");
-        assertThat(invite.token()).isEqualTo("token-123");
+        assertThat(invite.tokenHash()).isEqualTo("token-123");
         assertThat(invite.acceptedAt()).isNull();
         assertThat(invite.createdAt()).isNotNull();
     }
@@ -66,7 +66,8 @@ class InviteTest {
     @Test
     void shouldRejectBlankEmail() {
         assertThatThrownBy(() -> Invite.create(InviteId.random(), tenantId, "  ",
-            HierarchyLevel.COLLABORATOR, null, "t", Instant.now().plusSeconds(60)))
+            HierarchyLevel.COLLABORATOR, null, UUID.randomUUID(), null, "t",
+            Instant.now().plusSeconds(60)))
             .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -89,6 +90,8 @@ class InviteTest {
             "  user@domain.com  ",
             HierarchyLevel.COLLABORATOR,
             UUID.randomUUID(),
+            UUID.randomUUID(),
+            null,
             "token-123",
             Instant.now().plusSeconds(3600)
         );
@@ -104,6 +107,8 @@ class InviteTest {
             null,
             HierarchyLevel.COLLABORATOR,
             UUID.randomUUID(),
+            UUID.randomUUID(),
+            null,
             "token-123",
             Instant.now().plusSeconds(3600)
         ))
@@ -119,6 +124,8 @@ class InviteTest {
             "",
             HierarchyLevel.COLLABORATOR,
             UUID.randomUUID(),
+            UUID.randomUUID(),
+            null,
             "token-123",
             Instant.now().plusSeconds(3600)
         ))
@@ -134,6 +141,8 @@ class InviteTest {
             "   ",
             HierarchyLevel.COLLABORATOR,
             UUID.randomUUID(),
+            UUID.randomUUID(),
+            null,
             "token-123",
             Instant.now().plusSeconds(3600)
         ))
@@ -149,6 +158,8 @@ class InviteTest {
             "user@domain.com",
             HierarchyLevel.COLLABORATOR,
             UUID.randomUUID(),
+            UUID.randomUUID(),
+            null,
             "token-123",
             Instant.now().plusSeconds(3600)
         );
@@ -168,6 +179,8 @@ class InviteTest {
             "user@domain.com",
             HierarchyLevel.COLLABORATOR,
             UUID.randomUUID(),
+            UUID.randomUUID(),
+            null,
             "token-123",
             now.plusSeconds(3600)
         );

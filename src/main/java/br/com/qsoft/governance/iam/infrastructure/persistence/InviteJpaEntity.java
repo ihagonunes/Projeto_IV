@@ -35,8 +35,14 @@ public class InviteJpaEntity {
     @Column(name = "department_id")
     private UUID departmentId;
 
-    @Column(name = "token", nullable = false, unique = true, length = 64)
-    private String token;
+    @Column(name = "role_id")
+    private UUID roleId;
+
+    @Column(name = "invited_by")
+    private UUID invitedBy;
+
+    @Column(name = "token_hash", nullable = false, unique = true, length = 64)
+    private String tokenHash;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
@@ -95,12 +101,28 @@ public class InviteJpaEntity {
         this.departmentId = departmentId;
     }
 
-    public String getToken() {
-        return token;
+    public UUID getRoleId() {
+        return roleId;
     }
 
-    public void setToken(String token) {
-        this.token = token;
+    public void setRoleId(UUID roleId) {
+        this.roleId = roleId;
+    }
+
+    public UUID getInvitedBy() {
+        return invitedBy;
+    }
+
+    public void setInvitedBy(UUID invitedBy) {
+        this.invitedBy = invitedBy;
+    }
+
+    public String getTokenHash() {
+        return tokenHash;
+    }
+
+    public void setTokenHash(String tokenHash) {
+        this.tokenHash = tokenHash;
     }
 
     public InviteStatus getStatus() {

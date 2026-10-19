@@ -46,6 +46,15 @@ public class RoleAssignmentRepositoryAdapter implements RoleAssignmentRepository
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<RoleAssignment> findActiveByTenantIdAndUserId(TenantId tenantId, UserId userId) {
+        return jpaRepository.findByTenantIdAndUserIdAndRevokedAtIsNull(tenantId.value(), userId.value())
+            .stream()
+            .map(mapper::toDomain)
+            .toList();
+    }
+
+    @Override
     @Transactional
     public void deleteById(RoleAssignmentId id) {
         jpaRepository.deleteById(id.value());

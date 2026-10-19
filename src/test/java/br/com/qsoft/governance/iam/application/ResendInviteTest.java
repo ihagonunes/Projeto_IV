@@ -65,13 +65,14 @@ class ResendInviteTest {
         }
 
         @Override
-        public Optional<Invite> findByToken(String token) {
-            return invitesById.values().stream().filter(i -> i.token().equals(token)).findFirst();
+        public Optional<Invite> findByTokenHash(String tokenHash) {
+            return invitesById.values().stream()
+                .filter(i -> i.tokenHash().equals(tokenHash)).findFirst();
         }
 
         @Override
-        public boolean existsByToken(String token) {
-            return invitesById.values().stream().anyMatch(i -> i.token().equals(token));
+        public boolean existsByTokenHash(String tokenHash) {
+            return invitesById.values().stream().anyMatch(i -> i.tokenHash().equals(tokenHash));
         }
 
         @Override
@@ -86,7 +87,8 @@ class ResendInviteTest {
 
     private Invite inviteIn(TenantId tenantId, String email, Instant expiresAt) {
         Invite invite = Invite.create(InviteId.random(), tenantId, email,
-            HierarchyLevel.COLLABORATOR, null, "token-" + email, expiresAt);
+            HierarchyLevel.COLLABORATOR, null, java.util.UUID.randomUUID(), null,
+            "hash-" + email, expiresAt);
         invitesById.put(invite.id(), invite);
         return invite;
     }
@@ -96,13 +98,14 @@ class ResendInviteTest {
         TenantId tenantId = TenantId.random();
         Invite expired = inviteIn(tenantId, "ana@x.com", Instant.now().minusSeconds(3600));
 
-        Invite renewed = useCase.resend(new ResendInviteCommand(tenantId, expired.id()));
+        IssuedInvite renewed = useCase.resend(new ResendInviteCommand(tenantId, expired.id()));
 
-        assertThat(renewed.id()).isNotEqualTo(expired.id());
-        assertThat(renewed.email()).isEqualTo("ana@x.com");
-        assertThat(renewed.status()).isEqualTo(InviteStatus.PENDING);
-        assertThat(renewed.token()).isNotEqualTo(expired.token());
-        assertThat(renewed.expiresAt()).isAfter(Instant.now());
+        assertThat(renewed.invite().id()).isNotEqualTo(expired.id());
+        assertThat(renewed.invite().email()).isEqualTo("ana@x.com");
+        assertThat(renewed.invite().status()).isEqualTo(InviteStatus.PENDING);
+        assertThat(renewed.invite().tokenHash()).isNotEqualTo(expired.tokenHash());
+        assertThat(renewed.token()).isNotBlank();
+        assertThat(renewed.invite().expiresAt()).isAfter(Instant.now());
         assertThat(invitesById.get(expired.id()).status()).isEqualTo(InviteStatus.REVOKED);
     }
 

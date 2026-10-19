@@ -37,14 +37,14 @@ public class InviteRepositoryAdapter implements InviteRepository {
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<Invite> findByToken(String token) {
-        return jpaRepository.findByToken(token).map(mapper::toDomain);
+    public Optional<Invite> findByTokenHash(String tokenHash) {
+        return jpaRepository.findByTokenHash(tokenHash).map(mapper::toDomain);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public boolean existsByToken(String token) {
-        return jpaRepository.existsByToken(token);
+    public boolean existsByTokenHash(String tokenHash) {
+        return jpaRepository.existsByTokenHash(tokenHash);
     }
 
     @Override

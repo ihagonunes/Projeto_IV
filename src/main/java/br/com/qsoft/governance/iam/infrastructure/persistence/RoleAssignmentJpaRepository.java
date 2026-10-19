@@ -7,4 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface RoleAssignmentJpaRepository extends JpaRepository<RoleAssignmentJpaEntity, UUID> {
 
     List<RoleAssignmentJpaEntity> findByTenantIdAndUserId(UUID tenantId, UUID userId);
+
+    List<RoleAssignmentJpaEntity> findByTenantIdAndUserIdAndRevokedAtIsNull(
+        UUID tenantId, UUID userId);
 }

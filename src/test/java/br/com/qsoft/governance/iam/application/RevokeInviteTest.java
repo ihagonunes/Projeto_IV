@@ -34,13 +34,14 @@ class RevokeInviteTest {
         }
 
         @Override
-        public Optional<Invite> findByToken(String token) {
-            return invitesById.values().stream().filter(i -> i.token().equals(token)).findFirst();
+        public Optional<Invite> findByTokenHash(String tokenHash) {
+            return invitesById.values().stream()
+                .filter(i -> i.tokenHash().equals(tokenHash)).findFirst();
         }
 
         @Override
-        public boolean existsByToken(String token) {
-            return invitesById.values().stream().anyMatch(i -> i.token().equals(token));
+        public boolean existsByTokenHash(String tokenHash) {
+            return invitesById.values().stream().anyMatch(i -> i.tokenHash().equals(tokenHash));
         }
 
         @Override
@@ -55,7 +56,8 @@ class RevokeInviteTest {
 
     private Invite inviteIn(TenantId tenantId, String email) {
         Invite invite = Invite.create(InviteId.random(), tenantId, email,
-            HierarchyLevel.COLLABORATOR, null, "token-" + email, Instant.now().plusSeconds(3600));
+            HierarchyLevel.COLLABORATOR, null, java.util.UUID.randomUUID(), null,
+            "hash-" + email, Instant.now().plusSeconds(3600));
         invitesById.put(invite.id(), invite);
         return invite;
     }

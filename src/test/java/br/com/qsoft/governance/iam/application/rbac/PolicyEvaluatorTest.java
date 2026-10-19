@@ -128,6 +128,14 @@ class PolicyEvaluatorTest {
         }
 
         @Override
+        public List<RoleAssignment> findActiveByTenantIdAndUserId(TenantId tenantId, UserId userId) {
+            return assignments.stream()
+                .filter(a -> a.isActive()
+                    && a.tenantId().equals(tenantId) && a.userId().equals(userId))
+                .toList();
+        }
+
+        @Override
         public void deleteById(RoleAssignmentId id) {
             assignments.removeIf(a -> a.id().equals(id));
         }
@@ -150,26 +158,32 @@ class PolicyEvaluatorTest {
         return id;
     }
 
-    private RoleId roleWith(TenantId tenantId, Permission permission) {
+    private Role roleWith(TenantId tenantId, Permission permission) {
+        return roleWith(tenantId, permission, "EXECUTIVE");
+    }
+
+    private Role roleWith(TenantId tenantId, Permission permission, String name) {
         RoleId id = RoleId.random();
-        Role role = Role.create(id, tenantId, "role-" + id);
+        Role role = Role.create(id, tenantId, name);
         if (permission != null) {
             role.grantPermission(permission);
         }
         roles.put(id, role);
-        return id;
+        return role;
     }
 
-    private void assign(TenantId tenantId, UserId userId, RoleId roleId, UUID departmentId) {
-        assignments.add(RoleAssignment.create(userId, roleId, tenantId, departmentId));
+    private void assign(TenantId tenantId, UserId userId, Role role, UUID departmentId) {
+        assignments.add(RoleAssignment.grant(
+            userId, role, departmentId, br.com.qsoft.governance.iam.domain.rbac.GrantOrigin.MIGRATION,
+            null, Instant.now()));
     }
 
     @Test
     void shouldAllowWhenRoleHasPermission() {
         TenantId tenantId = activeTenant();
         UserId userId = activeUser(tenantId);
-        RoleId roleId = roleWith(tenantId, manageUsers);
-        assign(tenantId, userId, roleId, null);
+        Role role = roleWith(tenantId, manageUsers);
+        assign(tenantId, userId, role, null);
 
         assertThat(evaluator.isAllowed(EvaluationContext.of(tenantId, userId), manageUsers)).isTrue();
     }
@@ -178,8 +192,8 @@ class PolicyEvaluatorTest {
     void shouldDenyWhenRoleLacksPermission() {
         TenantId tenantId = activeTenant();
         UserId userId = activeUser(tenantId);
-        RoleId roleId = roleWith(tenantId, Permission.of(Resource.USER, Action.READ));
-        assign(tenantId, userId, roleId, null);
+        Role role = roleWith(tenantId, Permission.of(Resource.USER, Action.READ));
+        assign(tenantId, userId, role, null);
 
         assertThat(evaluator.isAllowed(EvaluationContext.of(tenantId, userId), manageUsers)).isFalse();
     }
@@ -196,10 +210,10 @@ class PolicyEvaluatorTest {
     void shouldRespectDepartmentScope() {
         TenantId tenantId = activeTenant();
         UserId userId = activeUser(tenantId);
-        RoleId roleId = roleWith(tenantId, manageUsers);
+        Role role = roleWith(tenantId, manageUsers, "MANAGER");
         UUID departmentA = UUID.randomUUID();
         UUID departmentB = UUID.randomUUID();
-        assign(tenantId, userId, roleId, departmentA);
+        assign(tenantId, userId, role, departmentA);
 
         assertThat(evaluator.isAllowed(new EvaluationContext(tenantId, userId, departmentA), manageUsers)).isTrue();
         assertThat(evaluator.isAllowed(new EvaluationContext(tenantId, userId, departmentB), manageUsers)).isFalse();
@@ -210,8 +224,8 @@ class PolicyEvaluatorTest {
     void shouldDenyWhenUserInactive() {
         TenantId tenantId = activeTenant();
         UserId userId = activeUser(tenantId);
-        RoleId roleId = roleWith(tenantId, manageUsers);
-        assign(tenantId, userId, roleId, null);
+        Role role = roleWith(tenantId, manageUsers);
+        assign(tenantId, userId, role, null);
         users.get(userId).deactivate();
 
         assertThat(evaluator.isAllowed(EvaluationContext.of(tenantId, userId), manageUsers)).isFalse();
@@ -223,8 +237,8 @@ class PolicyEvaluatorTest {
         tenants.put(tenantId, Tenant.restore(tenantId, "inactive", "Inactive",
             TenantStatus.INACTIVE, Instant.now(), Instant.now()));
         UserId userId = activeUser(tenantId);
-        RoleId roleId = roleWith(tenantId, manageUsers);
-        assign(tenantId, userId, roleId, null);
+        Role role = roleWith(tenantId, manageUsers);
+        assign(tenantId, userId, role, null);
 
         assertThat(evaluator.isAllowed(EvaluationContext.of(tenantId, userId), manageUsers)).isFalse();
     }
@@ -234,8 +248,8 @@ class PolicyEvaluatorTest {
         TenantId tenantId = activeTenant();
         TenantId otherTenant = activeTenant();
         UserId userId = activeUser(otherTenant);
-        RoleId roleId = roleWith(tenantId, manageUsers);
-        assign(tenantId, userId, roleId, null);
+        Role role = roleWith(tenantId, manageUsers);
+        assign(tenantId, userId, role, null);
 
         assertThat(evaluator.isAllowed(EvaluationContext.of(tenantId, userId), manageUsers)).isFalse();
     }
@@ -244,9 +258,9 @@ class PolicyEvaluatorTest {
     void shouldReturnEffectivePermissionsFromRoles() {
         TenantId tenantId = activeTenant();
         UserId userId = activeUser(tenantId);
-        RoleId roleId = roleWith(tenantId, manageUsers);
-        roles.get(roleId).grantPermission(Permission.of(Resource.TENANT, Action.READ));
-        assign(tenantId, userId, roleId, null);
+        Role role = roleWith(tenantId, manageUsers);
+        role.grantPermission(Permission.of(Resource.TENANT, Action.READ));
+        assign(tenantId, userId, role, null);
 
         assertThat(evaluator.effectivePermissions(EvaluationContext.of(tenantId, userId)))
             .containsExactlyInAnyOrder(
@@ -258,8 +272,8 @@ class PolicyEvaluatorTest {
     void shouldReturnEmptyEffectivePermissionsForInvalidContext() {
         TenantId tenantId = activeTenant();
         UserId userId = activeUser(tenantId);
-        RoleId roleId = roleWith(tenantId, manageUsers);
-        assign(tenantId, userId, roleId, null);
+        Role role = roleWith(tenantId, manageUsers);
+        assign(tenantId, userId, role, null);
         users.get(userId).deactivate();
 
         assertThat(evaluator.effectivePermissions(EvaluationContext.of(tenantId, userId))).isEmpty();
@@ -291,7 +305,7 @@ class PolicyEvaluatorTest {
     void shouldIgnoreAssignmentWhenRoleDoesNotExist() {
         TenantId tenantId = activeTenant();
         UserId userId = activeUser(tenantId);
-        RoleId nonExistentRole = RoleId.random();
+        Role nonExistentRole = Role.create(RoleId.random(), tenantId, "EXECUTIVE");
         assign(tenantId, userId, nonExistentRole, null);
 
         assertThat(evaluator.isAllowed(EvaluationContext.of(tenantId, userId), manageUsers)).isFalse();

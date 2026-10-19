@@ -3,9 +3,8 @@ package br.com.qsoft.governance.iam.application.rbac;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import br.com.qsoft.governance.iam.application.port.RoleRepository;
-import br.com.qsoft.governance.iam.domain.rbac.PermissionMatrix;
 import br.com.qsoft.governance.iam.domain.rbac.Role;
-import br.com.qsoft.governance.iam.domain.user.HierarchyLevel;
+import br.com.qsoft.governance.iam.domain.rbac.SystemRole;
 import br.com.qsoft.governance.sharedkernel.id.RoleId;
 import br.com.qsoft.governance.sharedkernel.id.TenantId;
 import java.util.ArrayList;
@@ -50,13 +49,13 @@ class ProvisionDefaultRolesTest {
 
         List<Role> provisioned = useCase.provision(tenantId);
 
-        assertThat(provisioned).hasSize(HierarchyLevel.values().length);
+        assertThat(provisioned).hasSize(SystemRole.values().length);
         assertThat(roles).extracting(Role::name)
-            .containsExactlyInAnyOrder("COLLABORATOR", "LEADER", "MANAGER", "EXECUTIVE");
+            .containsExactlyInAnyOrder("COLLABORATOR", "LEADER", "MANAGER", "EXECUTIVE", "TENANT_ADMIN");
 
         Role manager = roles.stream().filter(r -> r.name().equals("MANAGER")).findFirst().orElseThrow();
         assertThat(manager.permissions())
-            .containsExactlyInAnyOrderElementsOf(PermissionMatrix.permissionsFor(HierarchyLevel.MANAGER));
+            .containsExactlyInAnyOrderElementsOf(SystemRole.MANAGER.permissions());
     }
 
     @Test
@@ -67,6 +66,6 @@ class ProvisionDefaultRolesTest {
         List<Role> second = useCase.provision(tenantId);
 
         assertThat(second).isEmpty();
-        assertThat(roles).hasSize(HierarchyLevel.values().length);
+        assertThat(roles).hasSize(SystemRole.values().length);
     }
 }

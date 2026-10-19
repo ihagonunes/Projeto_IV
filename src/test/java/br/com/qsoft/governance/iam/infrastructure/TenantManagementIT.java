@@ -109,17 +109,18 @@ class TenantManagementIT {
 
         User admin = provisionIfAbsent(tenant, ADMIN_EMAIL);
 
-        // O papel padrão EXECUTIVE contém TENANT:READ e TENANT:MANAGE.
-        Role executive = roleRepository
-            .findByTenantIdAndName(tenant.id(), HierarchyLevel.EXECUTIVE.name())
+        // O papel TENANT_ADMIN contém TENANT:READ e TENANT:MANAGE (ADR-36).
+        Role tenantAdmin = roleRepository
+            .findByTenantIdAndName(tenant.id(), "TENANT_ADMIN")
             .orElseThrow();
         boolean assigned = roleAssignmentRepository
             .findByTenantIdAndUserId(tenant.id(), admin.id())
             .stream()
-            .anyMatch(assignment -> assignment.roleId().equals(executive.id()));
+            .anyMatch(assignment -> assignment.roleId().equals(tenantAdmin.id()));
         if (!assigned) {
-            roleAssignmentRepository.save(
-                RoleAssignment.create(admin.id(), executive.id(), tenant.id(), null));
+            roleAssignmentRepository.save(RoleAssignment.grant(admin.id(), tenantAdmin, null,
+                    br.com.qsoft.governance.iam.domain.rbac.GrantOrigin.MIGRATION, null,
+                    java.time.Instant.now()));
         }
     }
 

@@ -6,11 +6,13 @@ import java.util.UUID;
 
 /**
  * Dados de entrada para emissão de um convite.
+ * {@code invitedBy} é o usuário autenticado que emite o convite.
  */
 public record CreateInviteCommand(
     TenantId tenantId,
     String email,
     HierarchyLevel hierarchyLevel,
-    UUID departmentId
+    UUID departmentId,
+    UUID invitedBy
 ) {
 }

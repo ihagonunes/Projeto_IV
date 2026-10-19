@@ -5,10 +5,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import br.com.qsoft.governance.sharedkernel.id.RoleId;
 import br.com.qsoft.governance.sharedkernel.id.TenantId;
+import br.com.qsoft.governance.sharedkernel.id.UserId;
 import br.com.qsoft.governance.sharedkernel.rbac.Action;
 import br.com.qsoft.governance.sharedkernel.rbac.Resource;
 import java.time.Instant;
 import java.util.Set;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 
@@ -62,15 +64,16 @@ class RoleTest {
 
     @Test
     void roleAssignmentShouldReferenceDepartmentById() {
-        var assignment = RoleAssignment.create(
-            br.com.qsoft.governance.sharedkernel.id.UserId.random(),
-            RoleId.random(), tenantId, java.util.UUID.randomUUID());
+        UserId user = UserId.random();
+        Role leader = Role.create(RoleId.random(), tenantId, "LEADER");
+        RoleAssignment assignment = RoleAssignment.grant(
+            user, leader, UUID.randomUUID(), GrantOrigin.INVITE, null, Instant.now());
 
         assertThat(assignment.isDepartmentScoped()).isTrue();
 
-        var tenantWide = RoleAssignment.create(
-            br.com.qsoft.governance.sharedkernel.id.UserId.random(),
-            RoleId.random(), tenantId, null);
+        Role collaborator = Role.create(RoleId.random(), tenantId, "COLLABORATOR");
+        RoleAssignment tenantWide = RoleAssignment.grant(
+            user, collaborator, null, GrantOrigin.INVITE, null, Instant.now());
         assertThat(tenantWide.isDepartmentScoped()).isFalse();
     }
 

@@ -18,5 +18,8 @@ public interface RoleAssignmentRepository {
 
     List<RoleAssignment> findByTenantIdAndUserId(TenantId tenantId, UserId userId);
 
+    /** Concessões ativas (não revogadas) do usuário no tenant (ADR-36). */
+    List<RoleAssignment> findActiveByTenantIdAndUserId(TenantId tenantId, UserId userId);
+
     void deleteById(RoleAssignmentId id);
 }

@@ -5,12 +5,12 @@ import br.com.qsoft.governance.iam.application.AcceptInvite;
 import br.com.qsoft.governance.iam.application.AcceptInviteCommand;
 import br.com.qsoft.governance.iam.application.CreateInvite;
 import br.com.qsoft.governance.iam.application.CreateInviteCommand;
+import br.com.qsoft.governance.iam.application.IssuedInvite;
 import br.com.qsoft.governance.iam.application.ListInvites;
 import br.com.qsoft.governance.iam.application.ResendInvite;
 import br.com.qsoft.governance.iam.application.ResendInviteCommand;
 import br.com.qsoft.governance.iam.application.RevokeInvite;
 import br.com.qsoft.governance.iam.application.RevokeInviteCommand;
-import br.com.qsoft.governance.iam.domain.invite.Invite;
 import br.com.qsoft.governance.sharedkernel.rbac.Action;
 import br.com.qsoft.governance.sharedkernel.rbac.Resource;
 import br.com.qsoft.governance.iam.domain.user.User;
@@ -75,13 +75,14 @@ public class InviteController {
     @RequiresPermission(resource = Resource.INVITE, action = Action.MANAGE)
     public ResponseEntity<InviteResponse> create(@Valid @RequestBody CreateInviteRequest request) {
         TenantContext context = TenantContextHolder.require();
-        Invite invite = createInvite.create(new CreateInviteCommand(
+        IssuedInvite issued = createInvite.create(new CreateInviteCommand(
             context.tenantId(),
             request.email(),
             request.hierarchyLevel(),
-            request.departmentId()
+            request.departmentId(),
+            context.userId().value()
         ));
-        return ResponseEntity.status(HttpStatus.CREATED).body(InviteResponse.from(invite));
+        return ResponseEntity.status(HttpStatus.CREATED).body(InviteResponse.from(issued));
     }
 
     @PostMapping("/aceitar")
@@ -99,9 +100,9 @@ public class InviteController {
     @RequiresPermission(resource = Resource.INVITE, action = Action.MANAGE)
     public ResponseEntity<InviteResponse> resend(@PathVariable UUID id) {
         TenantContext context = TenantContextHolder.require();
-        Invite invite = resendInvite.resend(
+        IssuedInvite issued = resendInvite.resend(
             new ResendInviteCommand(context.tenantId(), InviteId.of(id)));
-        return ResponseEntity.ok(InviteResponse.from(invite));
+        return ResponseEntity.ok(InviteResponse.from(issued));
     }
 
     /**

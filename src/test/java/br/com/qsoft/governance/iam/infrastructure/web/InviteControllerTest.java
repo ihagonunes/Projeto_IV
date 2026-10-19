@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import br.com.qsoft.governance.iam.application.AcceptInvite;
 import br.com.qsoft.governance.iam.application.CreateInvite;
+import br.com.qsoft.governance.iam.application.IssuedInvite;
 import br.com.qsoft.governance.iam.application.ListInvites;
 import br.com.qsoft.governance.iam.application.ResendInvite;
 import br.com.qsoft.governance.iam.application.RevokeInvite;
@@ -81,9 +82,14 @@ class InviteControllerTest {
         return Invite.restore(
             InviteId.random(), tenantId, "dev@qsoft.com",
             HierarchyLevel.COLLABORATOR, null,
-            "tok-abc", InviteStatus.PENDING,
+            UUID.randomUUID(), null,
+            "hash-abc", InviteStatus.PENDING,
             Instant.now(), Instant.now().plusSeconds(86400), null
         );
+    }
+
+    private IssuedInvite sampleIssuedInvite(TenantId tenantId) {
+        return new IssuedInvite(sampleInvite(tenantId), "tok-abc");
     }
 
     private User sampleUser() {
@@ -113,7 +119,7 @@ class InviteControllerTest {
     void deve_retornar201_quando_criarConviteComSucesso() throws Exception {
         TenantId tenantId = TenantId.random();
         TenantContextHolder.set(new TenantContext(tenantId, UserId.random()));
-        when(createInvite.create(any())).thenReturn(sampleInvite(tenantId));
+        when(createInvite.create(any())).thenReturn(sampleIssuedInvite(tenantId));
 
         mockMvc.perform(post("/api/v1/convites")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -177,7 +183,7 @@ class InviteControllerTest {
     void deve_retornar200_quando_reenviarConvite() throws Exception {
         TenantId tenantId = TenantId.random();
         TenantContextHolder.set(new TenantContext(tenantId, UserId.random()));
-        when(resendInvite.resend(any())).thenReturn(sampleInvite(tenantId));
+        when(resendInvite.resend(any())).thenReturn(sampleIssuedInvite(tenantId));
 
         mockMvc.perform(post("/api/v1/convites/" + UUID.randomUUID() + "/reenviar"))
             .andExpect(status().isOk())
