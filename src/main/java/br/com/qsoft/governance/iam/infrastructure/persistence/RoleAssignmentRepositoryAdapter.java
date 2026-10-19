@@ -3,6 +3,7 @@ package br.com.qsoft.governance.iam.infrastructure.persistence;
 import br.com.qsoft.governance.iam.application.port.RoleAssignmentRepository;
 import br.com.qsoft.governance.iam.domain.rbac.RoleAssignment;
 import br.com.qsoft.governance.sharedkernel.id.RoleAssignmentId;
+import br.com.qsoft.governance.sharedkernel.id.RoleId;
 import br.com.qsoft.governance.sharedkernel.id.TenantId;
 import br.com.qsoft.governance.sharedkernel.id.UserId;
 import java.util.List;
@@ -52,6 +53,13 @@ public class RoleAssignmentRepositoryAdapter implements RoleAssignmentRepository
             .stream()
             .map(mapper::toDomain)
             .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public long countActiveByTenantIdAndRoleId(TenantId tenantId, RoleId roleId) {
+        return jpaRepository.countByTenantIdAndRoleIdAndRevokedAtIsNull(
+            tenantId.value(), roleId.value());
     }
 
     @Override

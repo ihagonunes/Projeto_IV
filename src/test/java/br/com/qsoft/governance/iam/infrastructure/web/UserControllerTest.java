@@ -9,10 +9,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import br.com.qsoft.governance.iam.application.AssignRole;
 import br.com.qsoft.governance.iam.application.ChangeUserHierarchyLevel;
 import br.com.qsoft.governance.iam.application.ChangeUserStatus;
 import br.com.qsoft.governance.iam.application.CreateUser;
 import br.com.qsoft.governance.iam.application.ListUsers;
+import br.com.qsoft.governance.iam.application.RevokeRoleAssignment;
 import br.com.qsoft.governance.iam.application.UpdateUser;
 import br.com.qsoft.governance.iam.application.rbac.PolicyEvaluator;
 import br.com.qsoft.governance.iam.domain.exception.UserEmailAlreadyExistsException;
@@ -51,6 +53,8 @@ class UserControllerTest {
     private ListUsers listUsers;
     private UpdateUser updateUser;
     private PolicyEvaluator policyEvaluator;
+    private AssignRole assignRole;
+    private RevokeRoleAssignment revokeRoleAssignment;
     private MockMvc mockMvc;
 
     @BeforeEach
@@ -61,10 +65,12 @@ class UserControllerTest {
         listUsers = mock(ListUsers.class);
         updateUser = mock(UpdateUser.class);
         policyEvaluator = mock(PolicyEvaluator.class);
+        assignRole = mock(AssignRole.class);
+        revokeRoleAssignment = mock(RevokeRoleAssignment.class);
 
         UserController controller = new UserController(
             createUser, changeUserHierarchyLevel, changeUserStatus,
-            listUsers, updateUser, policyEvaluator);
+            listUsers, updateUser, policyEvaluator, assignRole, revokeRoleAssignment);
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
             .setControllerAdvice(new UserApiExceptionHandler())
             .build();

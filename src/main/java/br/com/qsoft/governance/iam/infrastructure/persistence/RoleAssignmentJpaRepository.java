@@ -10,4 +10,6 @@ public interface RoleAssignmentJpaRepository extends JpaRepository<RoleAssignmen
 
     List<RoleAssignmentJpaEntity> findByTenantIdAndUserIdAndRevokedAtIsNull(
         UUID tenantId, UUID userId);
+
+    long countByTenantIdAndRoleIdAndRevokedAtIsNull(UUID tenantId, UUID roleId);
 }

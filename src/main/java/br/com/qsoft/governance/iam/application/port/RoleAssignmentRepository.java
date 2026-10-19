@@ -2,6 +2,7 @@ package br.com.qsoft.governance.iam.application.port;
 
 import br.com.qsoft.governance.iam.domain.rbac.RoleAssignment;
 import br.com.qsoft.governance.sharedkernel.id.RoleAssignmentId;
+import br.com.qsoft.governance.sharedkernel.id.RoleId;
 import br.com.qsoft.governance.sharedkernel.id.TenantId;
 import br.com.qsoft.governance.sharedkernel.id.UserId;
 import java.util.List;
@@ -20,6 +21,9 @@ public interface RoleAssignmentRepository {
 
     /** Concessões ativas (não revogadas) do usuário no tenant (ADR-36). */
     List<RoleAssignment> findActiveByTenantIdAndUserId(TenantId tenantId, UserId userId);
+
+    /** Contagem de concessões ativas do tenant para um papel (guarda do último admin). */
+    long countActiveByTenantIdAndRoleId(TenantId tenantId, RoleId roleId);
 
     void deleteById(RoleAssignmentId id);
 }

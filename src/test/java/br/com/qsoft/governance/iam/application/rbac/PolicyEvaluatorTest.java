@@ -140,6 +140,14 @@ class PolicyEvaluatorTest {
         }
 
         @Override
+        public long countActiveByTenantIdAndRoleId(TenantId tenantId, RoleId roleId) {
+            return assignments.stream()
+                .filter(a -> a.isActive()
+                    && a.tenantId().equals(tenantId) && a.roleId().equals(roleId))
+                .count();
+        }
+
+        @Override
         public void deleteById(RoleAssignmentId id) {
             assignments.removeIf(a -> a.id().equals(id));
         }

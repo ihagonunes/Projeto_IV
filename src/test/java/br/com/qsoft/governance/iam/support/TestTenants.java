@@ -3,6 +3,7 @@ package br.com.qsoft.governance.iam.support;
 import br.com.qsoft.governance.iam.application.AcceptInvite;
 import br.com.qsoft.governance.iam.application.AcceptInviteCommand;
 import br.com.qsoft.governance.iam.application.AssignRole;
+import br.com.qsoft.governance.iam.application.AssignRoleCommand;
 import br.com.qsoft.governance.iam.application.CreateInvite;
 import br.com.qsoft.governance.iam.application.CreateInviteCommand;
 import br.com.qsoft.governance.iam.application.IssuedInvite;
@@ -116,8 +117,8 @@ public class TestTenants {
             .stream()
             .anyMatch(grant -> grant.roleId().equals(role.id()));
         if (!present) {
-            assignRole.assign(tenant.id(), user.id(), roleKey, departmentId,
-                GrantOrigin.INVITE, grantedBy);
+            assignRole.assign(new AssignRoleCommand(
+                tenant.id(), grantedBy, user.id(), roleKey, departmentId, GrantOrigin.INVITE));
         }
     }
 }

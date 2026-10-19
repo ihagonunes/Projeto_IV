@@ -1,6 +1,9 @@
 package br.com.qsoft.governance.iam.infrastructure.web;
 
 import br.com.qsoft.governance.iam.domain.exception.AuthorizationDeniedException;
+import br.com.qsoft.governance.iam.domain.exception.LastTenantAdminException;
+import br.com.qsoft.governance.iam.domain.exception.RoleAssignmentAlreadyExistsException;
+import br.com.qsoft.governance.iam.domain.exception.RoleAssignmentNotFoundException;
 import br.com.qsoft.governance.iam.domain.exception.TenantNotFoundException;
 import br.com.qsoft.governance.iam.domain.exception.UserEmailAlreadyExistsException;
 import br.com.qsoft.governance.iam.domain.exception.UserNotFoundException;
@@ -33,9 +36,15 @@ public class UserApiExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Não autenticado."));
     }
 
-    @ExceptionHandler({ TenantNotFoundException.class, UserNotFoundException.class })
+    @ExceptionHandler({ TenantNotFoundException.class, UserNotFoundException.class,
+        RoleAssignmentNotFoundException.class })
     public ResponseEntity<Map<String, String>> handleNotFound(RuntimeException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", ex.getMessage()));
+    }
+
+    @ExceptionHandler({ RoleAssignmentAlreadyExistsException.class, LastTenantAdminException.class })
+    public ResponseEntity<Map<String, String>> handleConflict(RuntimeException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("message", ex.getMessage()));
     }
 
     @ExceptionHandler({ MethodArgumentNotValidException.class, IllegalArgumentException.class })

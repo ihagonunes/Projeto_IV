@@ -1,6 +1,8 @@
 package br.com.qsoft.governance.iam.infrastructure.web;
 
 import br.com.qsoft.governance.iam.api.rbac.RequiresPermission;
+import br.com.qsoft.governance.iam.application.AssignRole;
+import br.com.qsoft.governance.iam.application.AssignRoleCommand;
 import br.com.qsoft.governance.iam.application.ChangeUserHierarchyLevel;
 import br.com.qsoft.governance.iam.application.ChangeUserHierarchyLevelCommand;
 import br.com.qsoft.governance.iam.application.ChangeUserStatus;
@@ -9,15 +11,20 @@ import br.com.qsoft.governance.iam.application.ListUsers;
 import br.com.qsoft.governance.iam.application.ListUsersCommand;
 import br.com.qsoft.governance.iam.application.CreateUser;
 import br.com.qsoft.governance.iam.application.CreateUserCommand;
+import br.com.qsoft.governance.iam.application.RevokeRoleAssignment;
+import br.com.qsoft.governance.iam.application.RevokeRoleAssignmentCommand;
 import br.com.qsoft.governance.iam.application.UpdateUser;
 import br.com.qsoft.governance.iam.application.UpdateUserCommand;
 import br.com.qsoft.governance.iam.application.rbac.EvaluationContext;
 import br.com.qsoft.governance.iam.application.rbac.PolicyEvaluator;
 import br.com.qsoft.governance.sharedkernel.rbac.Action;
+import br.com.qsoft.governance.iam.domain.rbac.GrantOrigin;
 import br.com.qsoft.governance.iam.domain.rbac.Permission;
+import br.com.qsoft.governance.iam.domain.rbac.RoleAssignment;
 import br.com.qsoft.governance.sharedkernel.rbac.Resource;
 import br.com.qsoft.governance.iam.domain.user.HierarchyLevel;
 import br.com.qsoft.governance.iam.domain.user.User;
+import br.com.qsoft.governance.sharedkernel.id.RoleAssignmentId;
 import br.com.qsoft.governance.sharedkernel.id.UserId;
 import br.com.qsoft.governance.sharedkernel.query.PageResult;
 import br.com.qsoft.governance.sharedkernel.tenant.TenantContext;
@@ -27,6 +34,7 @@ import java.util.Set;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -51,19 +59,25 @@ public class UserController {
     private final ListUsers listUsers;
     private final UpdateUser updateUser;
     private final PolicyEvaluator policyEvaluator;
+    private final AssignRole assignRole;
+    private final RevokeRoleAssignment revokeRoleAssignment;
 
     public UserController(CreateUser createUser,
                           ChangeUserHierarchyLevel changeUserHierarchyLevel,
                           ChangeUserStatus changeUserStatus,
                           ListUsers listUsers,
                           UpdateUser updateUser,
-                          PolicyEvaluator policyEvaluator) {
+                          PolicyEvaluator policyEvaluator,
+                          AssignRole assignRole,
+                          RevokeRoleAssignment revokeRoleAssignment) {
         this.createUser = createUser;
         this.changeUserHierarchyLevel = changeUserHierarchyLevel;
         this.changeUserStatus = changeUserStatus;
         this.listUsers = listUsers;
         this.updateUser = updateUser;
         this.policyEvaluator = policyEvaluator;
+        this.assignRole = assignRole;
+        this.revokeRoleAssignment = revokeRoleAssignment;
     }
 
     /** Cria usuário no tenant do contexto autenticado. Requer permissão USER:MANAGE. */
@@ -157,5 +171,35 @@ public class UserController {
         Set<Permission> permissions = policyEvaluator.effectivePermissions(
             new EvaluationContext(context.tenantId(), UserId.of(id), null));
         return ResponseEntity.ok(EffectivePermissionsResponse.from(id, permissions));
+    }
+
+    /**
+     * Atribui uma concessão de papel a um usuário existente (SPI-47).
+     * Requer {@code ROLE:MANAGE} (só {@code TENANT_ADMIN}); a origem é DIRECT.
+     */
+    @PostMapping("/{id}/concessoes")
+    @RequiresPermission(resource = Resource.ROLE, action = Action.MANAGE)
+    public ResponseEntity<AssignmentResponse> assign(@PathVariable UUID id,
+                                                     @Valid @RequestBody AssignRoleRequest request) {
+        TenantContext context = TenantContextHolder.require();
+        RoleAssignment assignment = assignRole.assign(new AssignRoleCommand(
+            context.tenantId(), context.userId(), UserId.of(id), request.roleKey(),
+            request.departmentId(), GrantOrigin.DIRECT));
+        return ResponseEntity.status(HttpStatus.CREATED).body(AssignmentResponse.from(assignment));
+    }
+
+    /**
+     * Revoga (logicamente) uma concessão de um usuário (SPI-47).
+     * Requer {@code ROLE:MANAGE}; o último {@code TENANT_ADMIN} ativo → 409.
+     */
+    @DeleteMapping("/{id}/concessoes/{concessaoId}")
+    @RequiresPermission(resource = Resource.ROLE, action = Action.MANAGE)
+    public ResponseEntity<Void> revokeAssignment(@PathVariable UUID id,
+                                                 @PathVariable UUID concessaoId) {
+        TenantContext context = TenantContextHolder.require();
+        revokeRoleAssignment.revoke(new RevokeRoleAssignmentCommand(
+            context.tenantId(), context.userId(), UserId.of(id),
+            RoleAssignmentId.of(concessaoId)));
+        return ResponseEntity.noContent().build();
     }
 }

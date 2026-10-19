@@ -130,6 +130,10 @@ class AcceptInviteTest {
             return findByTenantIdAndUserId(tid, uid);
         }
         @Override
+        public long countActiveByTenantIdAndRoleId(TenantId tid, RoleId rid) {
+            return 0;
+        }
+        @Override
         public void deleteById(RoleAssignmentId id) {
             assignments.removeIf(a -> a.id().equals(id));
         }
