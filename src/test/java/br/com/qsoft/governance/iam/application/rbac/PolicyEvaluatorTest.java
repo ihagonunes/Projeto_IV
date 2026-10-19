@@ -432,6 +432,29 @@ class PolicyEvaluatorTest {
             .isEqualTo(new VisibilityScope.None());
     }
 
+    /**
+     * SPEC §7.3: as permissões efetivas são a união das concessões ATIVAS, sem
+     * filtro de escopo — em particular, concessões DEPARTMENT contam (regressão
+     * encontrada na revisão A1–A6: TODO departamento era descartado).
+     */
+    @Test
+    void effectivePermissionsByTenantIncludesDepartmentalGrants() {
+        TenantId tenantId = activeTenant();
+        UserId userId = activeUser(tenantId);
+        Role role = roleWith(tenantId, Permission.of(Resource.USER, Action.READ), "MANAGER");
+        assign(tenantId, userId, role, UUID.randomUUID());
+
+        assertThat(evaluator.effectivePermissions(tenantId, userId))
+            .contains(Permission.of(Resource.USER, Action.READ));
+    }
+
+    @Test
+    void effectivePermissionsByTenantIsEmptyForInvalidContext() {
+        TenantId tenantId = activeTenant();
+
+        assertThat(evaluator.effectivePermissions(tenantId, UserId.random())).isEmpty();
+    }
+
     @Test
     void roleFromAnotherTenantIsIgnored() {
         TenantId tenantId = activeTenant();

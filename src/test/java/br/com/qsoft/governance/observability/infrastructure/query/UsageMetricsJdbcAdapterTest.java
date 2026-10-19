@@ -95,7 +95,8 @@ class UsageMetricsJdbcAdapterTest {
     void deve_aplicar_filtros_de_escopo_user_id_e_department_id_em_requests_by_period() {
         UUID userId = UUID.randomUUID();
         UUID departmentId = UUID.randomUUID();
-        UsageMetricsFilter filter = new UsageMetricsFilter(tenantId, userId, departmentId, from, to, Granularity.DAY);
+        UsageMetricsFilter filter = new UsageMetricsFilter(
+            tenantId, userId, java.util.Set.of(departmentId), from, to, Granularity.DAY);
 
         when(jdbcTemplate.query(anyString(), any(RowMapper.class), any(Object[].class)))
             .thenReturn(List.of());
@@ -107,7 +108,7 @@ class UsageMetricsJdbcAdapterTest {
         verify(jdbcTemplate).query(sqlCaptor.capture(), any(RowMapper.class), paramsCaptor.capture());
 
         assertThat(sqlCaptor.getValue()).contains("AND user_id = ?");
-        assertThat(sqlCaptor.getValue()).contains("AND department_id = ?");
+        assertThat(sqlCaptor.getValue()).contains("AND department_id IN (?)");
         assertThat(paramsCaptor.getValue()).contains(userId, departmentId);
     }
 

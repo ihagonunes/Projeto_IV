@@ -40,7 +40,8 @@ class QueryCostMetricsTest {
             tenantId, userId, deptId, from, to, UsageMetricsRepository.Granularity.DAY);
 
         UsageMetricsRepository.UsageMetricsFilter filter = new UsageMetricsRepository.UsageMetricsFilter(
-            tenantId, null, deptId, from, to, UsageMetricsRepository.Granularity.DAY);
+            tenantId, null, java.util.Set.of(deptId), from, to,
+            UsageMetricsRepository.Granularity.DAY);
 
         when(scopeResolver.resolve(any(), any(), any(), any(), any(), any())).thenReturn(filter);
 

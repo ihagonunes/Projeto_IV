@@ -1,5 +1,6 @@
 package br.com.qsoft.governance.observability.infrastructure.web;
 
+import br.com.qsoft.governance.observability.application.UsageVisibilityDeniedException;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,5 +22,10 @@ public class ObservabilityApiExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> handleBadRequest(IllegalArgumentException ex) {
         return ResponseEntity.badRequest().body(Map.of("message", ex.getMessage()));
+    }
+
+    @ExceptionHandler(UsageVisibilityDeniedException.class)
+    public ResponseEntity<Map<String, String>> handleVisibilityDenied(UsageVisibilityDeniedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", ex.getMessage()));
     }
 }

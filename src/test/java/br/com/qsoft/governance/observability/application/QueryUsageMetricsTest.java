@@ -39,7 +39,8 @@ class QueryUsageMetricsTest {
             tenantId, userId, deptId, from, to, UsageMetricsRepository.Granularity.MONTH);
 
         UsageMetricsRepository.UsageMetricsFilter filter = new UsageMetricsRepository.UsageMetricsFilter(
-            tenantId, null, deptId, from, to, UsageMetricsRepository.Granularity.MONTH);
+            tenantId, null, java.util.Set.of(deptId), from, to,
+            UsageMetricsRepository.Granularity.MONTH);
 
         when(scopeResolver.resolve(any(), any(), any(), any(), any(), any())).thenReturn(filter);
         when(metricsRepository.activeUsers(filter)).thenReturn(42L);

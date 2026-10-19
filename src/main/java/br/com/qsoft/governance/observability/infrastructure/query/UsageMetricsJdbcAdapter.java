@@ -91,9 +91,14 @@ public class UsageMetricsJdbcAdapter implements UsageMetricsRepository {
             sql.append(" AND user_id = ?");
             params.add(filter.userId());
         }
-        if (filter.departmentId() != null) {
-            sql.append(" AND department_id = ?");
-            params.add(filter.departmentId());
+        if (!filter.departmentIds().isEmpty()) {
+            // União de departamentos das concessões (escopo DEPARTMENT). Placeholders
+            // gerados a partir da quantidade; os IDs vêm do servidor (concessões).
+            sql.append(" AND department_id IN (")
+                .append(String.join(",", java.util.Collections.nCopies(
+                    filter.departmentIds().size(), "?")))
+                .append(")");
+            params.addAll(filter.departmentIds());
         }
         sql.append(" AND created_at >= ? AND created_at <= ?");
         params.add(Timestamp.from(filter.from()));

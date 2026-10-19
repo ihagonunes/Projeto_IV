@@ -8,6 +8,7 @@ import br.com.qsoft.governance.iam.domain.exception.TenantNotFoundException;
 import br.com.qsoft.governance.iam.domain.exception.UserEmailAlreadyExistsException;
 import br.com.qsoft.governance.iam.domain.exception.UserNotFoundException;
 import java.util.Map;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -17,7 +18,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 /**
  * Traduz erros do provisionamento de usuário em respostas HTTP sem vazar internals.
  */
-@RestControllerAdvice(basePackageClasses = UserController.class)
+@RestControllerAdvice(basePackageClasses = { UserController.class, RoleController.class })
 public class UserApiExceptionHandler {
 
     @ExceptionHandler(UserEmailAlreadyExistsException.class)
@@ -45,6 +46,16 @@ public class UserApiExceptionHandler {
     @ExceptionHandler({ RoleAssignmentAlreadyExistsException.class, LastTenantAdminException.class })
     public ResponseEntity<Map<String, String>> handleConflict(RuntimeException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("message", ex.getMessage()));
+    }
+
+    /**
+     * Corrida em regra de unicidade (ex.: duas concessões idênticas simultâneas,
+     * barradas pelo índice parcial): vira 409, sem revelar a constraint.
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, String>> handleDataConflict(DataIntegrityViolationException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+            .body(Map.of("message", "Operação em conflito com o estado atual dos dados."));
     }
 
     @ExceptionHandler({ MethodArgumentNotValidException.class, IllegalArgumentException.class })

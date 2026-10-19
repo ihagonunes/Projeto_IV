@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
@@ -81,6 +82,15 @@ class InviteApiExceptionHandlerTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody()).containsEntry("message", "Dados inválidos.");
+    }
+
+    @Test
+    void deve_tratarConflitoDeDados_semVazarConstraint() {
+        ResponseEntity<Map<String, String>> response = handler.handleDataConflict(
+            new DataIntegrityViolationException("uq_app_user_tenant_email"));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(response.getBody().get("message")).doesNotContain("uq_app_user_tenant_email");
     }
 
     @Test

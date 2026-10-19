@@ -3,6 +3,7 @@ package br.com.qsoft.governance.observability.application.port;
 import br.com.qsoft.governance.sharedkernel.id.TenantId;
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -10,9 +11,9 @@ import java.util.UUID;
  * (SPI-88/89), sobre {@code observability_usage_records}.
  * <p>
  * Toda consulta é <b>tenant-aware</b> (filtro explícito por {@code tenant_id}) e
- * recebe os filtros de <b>escopo</b> já resolvidos pela aplicação a partir do
- * {@code AuthorizationScope} do usuário (SPI-94) — o frontend nunca decide o
- * escopo.
+ * recebe os filtros de <b>escopo</b> já resolvidos pela aplicação a partir das
+ * concessões do usuário ({@code AuthorizationQuery.visibilityFor}, ADR-36) — o
+ * frontend nunca decide o escopo.
  */
 public interface UsageMetricsRepository {
 
@@ -35,16 +36,20 @@ public interface UsageMetricsRepository {
     /**
      * Filtros já resolvidos (escopo aplicado).
      * {@code userId} restringe a um usuário (escopo SELF);
-     * {@code departmentId} restringe a um departamento (escopo DEPARTMENT/TENANT).
+     * {@code departmentIds} restringe à união de departamentos (escopo DEPARTMENT);
+     * vazio = todo o tenant (escopo TENANT, com filtro opcional pedido pelo cliente).
      */
     record UsageMetricsFilter(
         TenantId tenantId,
         UUID userId,
-        UUID departmentId,
+        Set<UUID> departmentIds,
         Instant from,
         Instant to,
         Granularity granularity
     ) {
+        public UsageMetricsFilter {
+            departmentIds = departmentIds == null ? Set.of() : Set.copyOf(departmentIds);
+        }
     }
 
     /** Ponto da série temporal. */

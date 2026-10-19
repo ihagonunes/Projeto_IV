@@ -62,6 +62,7 @@ class DashboardMetricsIT {
     private static final String ADMIN_EMAIL = "admin@dashdemo.com";
     private static final String MANAGER_EMAIL = "manager@dashdemo.com";
     private static final String COLLAB_EMAIL = "collab@dashdemo.com";
+    private static final String IMPOSTOR_EMAIL = "impostor@dashdemo.com";
     private static final String PASSWORD = "secret123";
 
     @LocalServerPort
@@ -183,14 +184,14 @@ class DashboardMetricsIT {
     @Test
     void managerShouldSeeOnlyOwnDepartmentEvenRequestingAnother() {
         User admin = userRepository.findByTenantIdAndEmail(tenant.id(), ADMIN_EMAIL).orElseThrow();
-        // Concessão TENANT-scoped (EXECUTIVE) para passar o gate USAGE:READ do endpoint
-        // legado; o escopo de visibilidade do dashboard ainda vem do rótulo (MANAGER) via SPI-94.
+        // Gestor coerente: concessão MANAGER/DEPARTMENT(marketing) e rótulo MANAGER.
         testTenants.ensureMember(tenant, admin.id(), MANAGER_EMAIL, "User", PASSWORD,
-            HierarchyLevel.MANAGER, marketingDepartment, "EXECUTIVE");
+            HierarchyLevel.MANAGER, marketingDepartment, "MANAGER");
         usage(admin, marketingDepartment, 1000, 2000);
         usage(admin, salesDepartment, 500, 500);
 
-        // O gestor PEDE o departamento de vendas, mas o backend força o dele (SPI-94).
+        // O gestor PEDE o departamento de vendas, mas o backend força o dele (SPI-94):
+        // o escopo vem da concessão (visibilityFor), nunca do rótulo (ADR-36 item 9).
         List<Map<String, Object>> costs = client.get()
             .uri("/api/v1/observability/metrics/costs?departmentId=" + salesDepartment)
             .header("Authorization", "Bearer " + login(MANAGER_EMAIL))
@@ -210,6 +211,31 @@ class DashboardMetricsIT {
         usage(collaborator, marketingDepartment, 10, 20);
 
         Map<?, ?> usageMetrics = getJson(login(COLLAB_EMAIL), "/api/v1/observability/metrics/usage");
+
+        // SELF: apenas o próprio uso — 1 usuário ativo e 1 requisição no total.
+        assertThat(usageMetrics.get("activeUsers")).isEqualTo(1);
+        long total = ((List<Map<String, Object>>) usageMetrics.get("series")).stream()
+            .mapToLong(point -> ((Number) point.get("requests")).longValue())
+            .sum();
+        assertThat(total).isEqualTo(1);
+    }
+
+    /**
+     * Regressão de segurança (revisão A1–A6): rótulo EXECUTIVE com concessão
+     * COLLABORATOR/SELF. O escopo de visibilidade tem que vir da concessão
+     * (ADR-36 item 9) — o rótulo NUNCA é fonte de autorização.
+     */
+    @Test
+    void collaboratorGrantWithExecutiveLabelSeesOnlyOwnUsage() {
+        User admin = userRepository.findByTenantIdAndEmail(tenant.id(), ADMIN_EMAIL).orElseThrow();
+        // Rótulo EXECUTIVE deliberadamente divergente da concessão COLLABORATOR.
+        User impostor = testTenants.ensureMember(tenant, admin.id(), IMPOSTOR_EMAIL, "User",
+            PASSWORD, HierarchyLevel.EXECUTIVE, marketingDepartment, "COLLABORATOR");
+        usage(admin, marketingDepartment, 1000, 2000);
+        usage(admin, salesDepartment, 500, 500);
+        usage(impostor, marketingDepartment, 10, 20);
+
+        Map<?, ?> usageMetrics = getJson(login(IMPOSTOR_EMAIL), "/api/v1/observability/metrics/usage");
 
         // SELF: apenas o próprio uso — 1 usuário ativo e 1 requisição no total.
         assertThat(usageMetrics.get("activeUsers")).isEqualTo(1);

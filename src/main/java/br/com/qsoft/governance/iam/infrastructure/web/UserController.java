@@ -15,7 +15,6 @@ import br.com.qsoft.governance.iam.application.RevokeRoleAssignment;
 import br.com.qsoft.governance.iam.application.RevokeRoleAssignmentCommand;
 import br.com.qsoft.governance.iam.application.UpdateUser;
 import br.com.qsoft.governance.iam.application.UpdateUserCommand;
-import br.com.qsoft.governance.iam.application.rbac.EvaluationContext;
 import br.com.qsoft.governance.iam.application.rbac.PolicyEvaluator;
 import br.com.qsoft.governance.sharedkernel.rbac.Action;
 import br.com.qsoft.governance.iam.domain.rbac.GrantOrigin;
@@ -154,22 +153,22 @@ public class UserController {
         return ResponseEntity.ok(UserResponse.from(user));
     }
 
-    /** Permissões efetivas do próprio usuário autenticado (SPI-44). */
+    /** Permissões efetivas do próprio usuário autenticado (SPI-44/SPEC §7.3). */
     @GetMapping("/me/permissoes")
     public ResponseEntity<EffectivePermissionsResponse> myPermissions() {
         TenantContext context = TenantContextHolder.require();
         Set<Permission> permissions = policyEvaluator.effectivePermissions(
-            EvaluationContext.of(context.tenantId(), context.userId()));
+            context.tenantId(), context.userId());
         return ResponseEntity.ok(EffectivePermissionsResponse.from(context.userId().value(), permissions));
     }
 
-    /** Permissões efetivas de um usuário. Requer permissão USER:READ (SPI-44). */
+    /** Permissões efetivas de um usuário. Requer permissão USER:READ (SPI-44/SPEC §7.3). */
     @GetMapping("/{id}/permissoes")
     @RequiresPermission(resource = Resource.USER, action = Action.READ)
     public ResponseEntity<EffectivePermissionsResponse> userPermissions(@PathVariable UUID id) {
         TenantContext context = TenantContextHolder.require();
         Set<Permission> permissions = policyEvaluator.effectivePermissions(
-            new EvaluationContext(context.tenantId(), UserId.of(id), null));
+            context.tenantId(), UserId.of(id));
         return ResponseEntity.ok(EffectivePermissionsResponse.from(id, permissions));
     }
 

@@ -19,6 +19,7 @@ import br.com.qsoft.governance.sharedkernel.rbac.Resource;
 import br.com.qsoft.governance.sharedkernel.rbac.ScopeType;
 import br.com.qsoft.governance.sharedkernel.rbac.VisibilityScope;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -86,6 +87,29 @@ public class PolicyEvaluator {
      */
     public boolean gateByTarget(TenantId tenantId, UserId actor, Resource resource, Action action) {
         return !applicableGrants(tenantId, actor, Permission.of(resource, action)).isEmpty();
+    }
+
+    /**
+     * União das permissões das concessões ATIVAS do usuário no tenant, sem filtro
+     * de escopo/departamento (SPEC-01 §7.3 — usado por {@code /me/permissoes}).
+     * Não é decisão de autorização: o front usa apenas para exibir menus.
+     */
+    public Set<Permission> effectivePermissions(TenantId tenantId, UserId actor) {
+        Objects.requireNonNull(tenantId, "tenantId é obrigatório.");
+        Objects.requireNonNull(actor, "actor é obrigatório.");
+        if (!contextValid(tenantId, actor)) {
+            return Set.of();
+        }
+        Set<Permission> permissions = new HashSet<>();
+        for (RoleAssignment grant :
+            roleAssignmentRepository.findActiveByTenantIdAndUserId(tenantId, actor)) {
+            Role role = roleRepository.findById(grant.roleId()).orElse(null);
+            if (role == null || !role.tenantId().equals(tenantId)) {
+                continue;
+            }
+            permissions.addAll(role.permissions());
+        }
+        return Set.copyOf(permissions);
     }
 
     /** Escopo de visibilidade para consultas agregadas (ADR-36 §3). */
