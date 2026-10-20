@@ -32,13 +32,8 @@ router.get("/onboarding/usuarios/importacao", wrap(async (req, res) => {
     });
 }));
 
-/** GET /onboarding/usuarios/manual → cadastro manual */
-router.get("/onboarding/usuarios/manual", wrap(async (req, res) => {
-    res.render("usuarios/views/manual", {
-        titulo: "Cadastro Manual de Usuários",
-        bodyClass: "bg-light auth-bg onboarding-bg"
-    });
-}));
+// O cadastro manual de usuário foi removido: a criação passa pelo convite
+// (POST /api/v1/convites), que carrega o papel e o departamento.
 
 // ---------------------------------------------------------------------------
 // Rotas de API-PROXY (chamam o Spring Boot via controller)
@@ -46,9 +41,6 @@ router.get("/onboarding/usuarios/manual", wrap(async (req, res) => {
 
 /** GET /api/usuarios → lista usuários */
 router.get("/api/usuarios", wrap(usuariosController.listar));
-
-/** POST /api/usuarios → cria usuário */
-router.post("/api/usuarios", wrap(usuariosController.criar));
 
 /** POST /api/usuarios/importar → importa planilha */
 router.post("/api/usuarios/importar", wrap(usuariosController.importar));

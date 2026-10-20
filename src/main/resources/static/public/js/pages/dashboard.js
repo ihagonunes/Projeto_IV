@@ -163,6 +163,12 @@ document.addEventListener("DOMContentLoaded", () => {
             const visao = escopos.includes("TENANT")
                 ? "TENANT"
                 : (escopos.includes("DEPARTMENT") ? "DEPARTMENT" : "SELF");
+            if (visao !== "TENANT") {
+                // Só o escopo TENANT pode filtrar por qualquer departamento (A9).
+                const colunaDepartamento = campoDepartamento?.closest(".col-md-4");
+                if (colunaDepartamento) colunaDepartamento.classList.add("d-none");
+                campoDepartamento.value = "";
+            }
             if (visao === "SELF") {
                 colunaUsuario.classList.add("d-none");
                 return;

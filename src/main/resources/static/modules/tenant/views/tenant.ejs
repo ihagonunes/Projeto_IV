@@ -71,6 +71,30 @@
                                     <option value="es">Espanhol</option>
                                 </select>
                             </div>
+
+                            <p class="atlas-section-title mt-3">Administrador principal</p>
+
+                            <div class="col-md-6">
+                                <label for="adminNome" class="form-label-custom">Nome do administrador *</label>
+                                <input type="text" class="form-control custom-input" id="adminNome" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="adminEmail" class="form-label-custom">E-mail do administrador *</label>
+                                <input type="email" class="form-control custom-input" id="adminEmail"
+                                       placeholder="admin@empresa.com" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="adminSenha" class="form-label-custom">Senha do administrador *</label>
+                                <input type="password" class="form-control custom-input" id="adminSenha"
+                                       minlength="8" placeholder="Mínimo de 8 caracteres" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="tenantSlug" class="form-label-custom">Identificador (slug) *</label>
+                                <input type="text" class="form-control custom-input" id="tenantSlug"
+                                       pattern="[a-z0-9][a-z0-9-]{1,99}" placeholder="minha-empresa" required>
+                                <div class="field-explanation">Usado no login da empresa. Somente letras minúsculas,
+                                    números e hífen.</div>
+                            </div>
                         </div>
                     </div>
 
@@ -91,9 +115,13 @@
 
                 </div>
 
+                <div id="tenantMensagem" class="d-none"></div>
+
                 <div class="atlas-form-footer">
                     <span></span>
-                    <button type="submit" class="btn btn-orange btn-pill fw-bold px-4">próximo →</button>
+                    <button type="submit" id="btnCriarTenant" class="btn btn-orange btn-pill fw-bold px-4">
+                        criar empresa e entrar →
+                    </button>
                 </div>
             </form>
         </div>

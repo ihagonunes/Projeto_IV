@@ -15,16 +15,6 @@ async function listar(req, res, next) {
     }
 }
 
-/** POST /api/usuarios → cria usuário manualmente */
-async function criar(req, res, next) {
-    try {
-        const response = await api.post("/usuarios", req.body);
-        res.status(response.status).json(response.data);
-    } catch (err) {
-        next(err);
-    }
-}
-
 /** POST /api/usuarios/importar → importa usuários via planilha */
 async function importar(req, res, next) {
     try {
@@ -47,4 +37,4 @@ async function atualizar(req, res, next) {
     }
 }
 
-module.exports = { listar, criar, importar, atualizar };
+module.exports = { listar, importar, atualizar };

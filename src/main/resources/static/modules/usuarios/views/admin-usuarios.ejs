@@ -34,21 +34,7 @@
                         <path
                             d="M10.854 5.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7.5 7.793l2.646-2.647a.5.5 0 0 1 .708 0" />
                     </svg>
-                    <span id="roleBadgeText">Perfil: Administrador</span>
-                </div>
-
-                <!-- Alternador Rápido de Perfil para Teste dos Critérios de Aceite -->
-                <div class="dropdown">
-                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle btn-pill" type="button"
-                        data-bs-toggle="dropdown" aria-expanded="false">
-                        Simular Perfil
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                        <li><button class="dropdown-item small active" type="button"
-                                onclick="setSimulatedRole('admin')">Administrador</button></li>
-                        <li><button class="dropdown-item small" type="button"
-                                onclick="setSimulatedRole('comum')">Usuário Comum (Não-Admin)</button></li>
-                    </ul>
+                    <span id="roleBadgeText">Verificando permissões...</span>
                 </div>
             </div>
         </div>
@@ -143,29 +129,15 @@
                     <div class="col-md-3">
                         <select id="departamentoFilter" class="form-select form-select-sm custom-input">
                             <option value="TODOS">Todos os Departamentos</option>
-                            <option value="Tecnologia da Informação">Tecnologia da Informação</option>
-                            <option value="Recursos Humanos">Recursos Humanos</option>
-                            <option value="Financeiro">Financeiro</option>
-                            <option value="Vendas & Comercial">Vendas & Comercial</option>
-                            <option value="Operações">Operações</option>
-                            <option value="Marketing">Marketing</option>
                         </select>
                     </div>
                     <div class="col-md-3">
                         <select id="nivelFilter" class="form-select form-select-sm custom-input">
                             <option value="TODOS">Todos os Níveis</option>
-                            <option value="Diretoria">Diretoria</option>
-                            <option value="Gerência">Gerência</option>
-                            <option value="Coordenação">Coordenação</option>
-                            <option value="Operacional">Operacional</option>
-                            <option value="Estagiário">Estagiário</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <select id="permFilter" class="form-select form-select-sm custom-input">
-                            <option value="TODOS">Todas Permissões</option>
-                            <option value="ADMIN">Administrador</option>
-                            <option value="COMUM">Usuário Comum</option>
+                            <option value="COLLABORATOR">Colaborador</option>
+                            <option value="LEADER">Líder</option>
+                            <option value="MANAGER">Gestor</option>
+                            <option value="EXECUTIVE">Executivo</option>
                         </select>
                     </div>
                 </div>
@@ -179,8 +151,7 @@
                             <th>Usuário</th>
                             <th>Departamento</th>
                             <th>Nível Hierárquico</th>
-                            <th>Permissão Administrativa</th>
-                            <th>Último Acesso</th>
+                            <th>Status</th>
                             <th class="text-end">Ações</th>
                         </tr>
                     </thead>
@@ -233,24 +204,21 @@
                             <label for="editNivelHierarquico" class="form-label-custom fw-semibold">Nível Hierárquico
                                 *</label>
                             <select class="form-select custom-input" id="editNivelHierarquico" required>
-                                <option value="Diretoria">Diretoria</option>
-                                <option value="Gerência">Gerência</option>
-                                <option value="Coordenação">Coordenação</option>
-                                <option value="Operacional">Operacional</option>
-                                <option value="Estagiário">Estagiário</option>
+                                <option value="COLLABORATOR">Colaborador</option>
+                                <option value="LEADER">Líder</option>
+                                <option value="MANAGER">Gestor</option>
+                                <option value="EXECUTIVE">Executivo</option>
                             </select>
                             <div class="field-explanation">Define a posição do usuário na hierarquia corporativa da
                                 empresa.</div>
                         </div>
                         <div class="mb-3">
-                            <label for="editPermissaoAdmin" class="form-label-custom fw-semibold">Permissão
-                                Administrativa no Sistema *</label>
-                            <select class="form-select custom-input" id="editPermissaoAdmin" required>
-                                <option value="ADMIN">Administrador do Tenant (Acesso total a gestão)</option>
-                                <option value="COMUM">Usuário Comum (Acesso sem privilégios de gestão)</option>
+                            <label for="editDepartamento" class="form-label-custom fw-semibold">Departamento</label>
+                            <select class="form-select custom-input" id="editDepartamento">
+                                <option value="">Sem departamento</option>
                             </select>
-                            <div class="field-explanation">Define se o usuário possui autonomia para alterar
-                                configurações, gerenciar outros membros e emitir convites.</div>
+                            <div class="field-explanation">A lotação organizacional é independente das concessões de
+                                acesso.</div>
                         </div>
                     </div>
                     <div class="modal-footer custom-modal-footer">
@@ -264,6 +232,57 @@
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Concessões -->
+    <div class="modal fade" id="modalConcessoes" tabindex="-1" aria-labelledby="modalConcessoesLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content custom-modal-content">
+                <div class="modal-header custom-modal-header">
+                    <div>
+                        <h5 class="modal-title fw-bold" id="modalConcessoesLabel">Concessões de acesso</h5>
+                        <p class="text-muted small mb-0" id="modalConcessoesSubtitle"></p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body custom-modal-body">
+                    <div id="concessoesMensagem" class="d-none"></div>
+                    <div class="table-responsive mb-3">
+                        <table class="table table-sm align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Papel</th>
+                                    <th>Escopo</th>
+                                    <th>Departamento</th>
+                                    <th>Origem</th>
+                                    <th class="text-end">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="concessoesTableBody"></tbody>
+                        </table>
+                    </div>
+
+                    <form id="formConcessao" class="row g-2 align-items-end" novalidate>
+                        <div class="col-md-4">
+                            <label for="concessaoPapel" class="form-label-custom">Papel</label>
+                            <select class="form-select custom-input" id="concessaoPapel" required></select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="concessaoDepartamento" class="form-label-custom">Departamento</label>
+                            <select class="form-select custom-input" id="concessaoDepartamento">
+                                <option value="">Sem departamento</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <button type="submit" class="btn btn-orange btn-pill text-white fw-bold w-100">
+                                Conceder acesso
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>

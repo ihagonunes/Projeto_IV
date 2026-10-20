@@ -1,382 +1,336 @@
 // public/js/pages/admin-convites.js
+// Gestão de convites ligada ao backend (A9/SPEC-01 §7.2).
+// A interface é guiada por GET /api/v1/usuarios/me/permissoes; o backend
+// continua sendo a única fonte de autorização (ADR-34).
 
-document.addEventListener('DOMContentLoaded', () => {
-    // 1. Estado Local da Aplicação
-    let userRole = localStorage.getItem('simulatedUserRole') || 'admin';
-    let convites = JSON.parse(localStorage.getItem('convitesList') || '[]');
+document.addEventListener("DOMContentLoaded", () => {
+    const client = window.ApiClient;
 
-    // Se estiver vazio na primeira execução, carrega dados de demonstração
-    if (convites.length === 0) {
-        convites = [
-            {
-                id: 'inv_101',
-                email: 'carla.silva@empresa.com',
-                departamento: 'Tecnologia da Informação',
-                papel: 'Gestor',
-                nivel: 'Gerência',
-                enviadoEm: new Date(Date.now() - 3600000 * 4).toISOString(),
-                validadeHoras: 48,
-                status: 'Pendente'
-            },
-            {
-                id: 'inv_102',
-                email: 'roberto.almeida@empresa.com',
-                departamento: 'Recursos Humanos',
-                papel: 'Usuário Comum',
-                nivel: 'Operacional',
-                enviadoEm: new Date(Date.now() - 86400000 * 2).toISOString(),
-                validadeHoras: 48,
-                status: 'Aceito'
-            },
-            {
-                id: 'inv_103',
-                email: 'juliana.costa@empresa.com',
-                departamento: 'Financeiro',
-                papel: 'Apenas Leitura',
-                nivel: 'Coordenação',
-                enviadoEm: new Date(Date.now() - 86400000 * 5).toISOString(),
-                validadeHoras: 24,
-                status: 'Expirado'
-            }
-        ];
-        salvarConvites();
-    }
+    let convites = [];
+    let departamentos = {};
+    let papeis = {};
+    let podeGerenciar = false;
 
-    // 2. Elementos do DOM
-    const form = document.getElementById('formEmitirConvite');
-    const inputEmail = document.getElementById('emailConvite');
-    const selectDepartamento = document.getElementById('departamentoConvite');
-    const selectPapel = document.getElementById('papelConvite');
-    const selectNivel = document.getElementById('nivelConvite');
-    const selectValidade = document.getElementById('validadeConvite');
-    const btnEnviar = document.getElementById('btnEnviarConvite');
-    const submitSpinner = document.getElementById('submitSpinner');
-    const btnLimpar = document.getElementById('btnLimparForm');
-    const tableBody = document.getElementById('convitesTableBody');
-    const searchInput = document.getElementById('searchInput');
-    const statusFilter = document.getElementById('statusFilter');
-    const emptyState = document.getElementById('emptyState');
-    const totalBadge = document.getElementById('totalConvitesBadge');
-    const alertArea = document.getElementById('alertArea');
-    const accessDeniedBanner = document.getElementById('accessDeniedBanner');
-    const roleBadgeText = document.getElementById('roleBadgeText');
-    const roleBadgeContainer = document.getElementById('roleBadgeContainer');
+    const form = document.getElementById("formEmitirConvite");
+    const inputEmail = document.getElementById("emailConvite");
+    const selectDepartamento = document.getElementById("departamentoConvite");
+    const selectPapel = document.getElementById("papelConvite");
+    const btnEnviar = document.getElementById("btnEnviarConvite");
+    const submitSpinner = document.getElementById("submitSpinner");
+    const btnLimpar = document.getElementById("btnLimparForm");
+    const tableBody = document.getElementById("convitesTableBody");
+    const searchInput = document.getElementById("searchInput");
+    const statusFilter = document.getElementById("statusFilter");
+    const emptyState = document.getElementById("emptyState");
+    const totalBadge = document.getElementById("totalConvitesBadge");
+    const alertArea = document.getElementById("alertArea");
+    const accessDeniedBanner = document.getElementById("accessDeniedBanner");
+    const roleBadgeText = document.getElementById("roleBadgeText");
+    const roleBadgeContainer = document.getElementById("roleBadgeContainer");
+    const linkPanel = document.getElementById("inviteLinkPanel");
+    const linkInput = document.getElementById("inviteLinkInput");
+    const btnCopiarLink = document.getElementById("btnCopiarLink");
 
-    // 3. Função Global para Alternar o Papel (Simulação de Acesso Admin vs Não-Admin)
-    window.setSimulatedRole = function(role) {
-        userRole = role;
-        localStorage.setItem('simulatedUserRole', role);
-        atualizarPermissaoInterface();
+    const STATUS_LABEL = {
+        PENDING: "Pendente",
+        ACCEPTED: "Aceito",
+        REVOKED: "Cancelado"
     };
 
-    function atualizarPermissaoInterface() {
-        const isAdmin = userRole === 'admin';
-        
-        if (isAdmin) {
-            roleBadgeText.textContent = 'Perfil: Administrador';
-            roleBadgeContainer.className = 'admin-header-badge';
-            accessDeniedBanner.classList.add('d-none');
-            
-            // Habilita o formulário
-            Array.from(form.elements).forEach(element => element.disabled = false);
-        } else {
-            roleBadgeText.textContent = 'Perfil: Usuário Comum (Não-Admin)';
-            roleBadgeContainer.className = 'admin-header-badge non-admin';
-            accessDeniedBanner.classList.remove('d-none');
-            
-            // Desabilita os campos do formulário para impedir envio
-            Array.from(form.elements).forEach(element => element.disabled = true);
-        }
-    }
+    const STATUS_CLASS = {
+        PENDING: "status-badge pending",
+        ACCEPTED: "status-badge accepted",
+        REVOKED: "status-badge cancelled"
+    };
 
-    // 4. Exibição de Notificações / Alertas
-    function showNotification(message, type = 'success') {
-        const alertDiv = document.createElement('div');
+    function showNotification(message, type = "success") {
+        if (!alertArea) return;
+        const alertDiv = document.createElement("div");
         alertDiv.className = `alert alert-${type} alert-dismissible fade show alert-toast shadow-sm`;
-        alertDiv.role = 'alert';
+        alertDiv.role = "alert";
         alertDiv.innerHTML = `
-            <div class="d-flex align-items-center">
-                <span>${message}</span>
-            </div>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
-        `;
+            <div class="d-flex align-items-center"><span>${message}</span></div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>`;
         alertArea.appendChild(alertDiv);
-
         setTimeout(() => {
-            if (alertDiv && alertDiv.parentNode) {
-                alertDiv.classList.remove('show');
-                setTimeout(() => alertDiv.remove(), 200);
-            }
+            alertDiv.classList.remove("show");
+            setTimeout(() => alertDiv.remove(), 200);
         }, 5000);
     }
 
-    // 5. Validação de Formulário
+    function escapar(valor) {
+        return String(valor ?? "")
+            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+
+    function tratarErro(err, padrao) {
+        if (err?.status === 401) {
+            window.location.href = "/sessao-expirada";
+            return "Sua sessão expirou.";
+        }
+        if (err?.status === 403) {
+            return "Você não tem permissão para gerenciar convites.";
+        }
+        return err?.message || padrao;
+    }
+
+    function atualizarPermissaoInterface() {
+        if (roleBadgeText) {
+            roleBadgeText.textContent = podeGerenciar
+                ? "Perfil: gestor de convites"
+                : "Perfil: sem permissão de convites";
+        }
+        if (roleBadgeContainer) {
+            roleBadgeContainer.className = podeGerenciar
+                ? "admin-header-badge" : "admin-header-badge non-admin";
+        }
+        if (accessDeniedBanner) {
+            accessDeniedBanner.classList.toggle("d-none", podeGerenciar);
+        }
+        if (form) {
+            Array.from(form.elements).forEach((element) => {
+                element.disabled = !podeGerenciar;
+            });
+        }
+    }
+
+    async function carregarPermissoes() {
+        try {
+            const acesso = await client.get("/v1/usuarios/me/permissoes");
+            const permissoes = acesso?.permissoes || [];
+            podeGerenciar = permissoes.includes("INVITE:MANAGE");
+            const papeisDoAtor = (acesso?.concessoes || []).map((c) => c.papel);
+            if (roleBadgeText && papeisDoAtor.length) {
+                roleBadgeText.textContent = `Perfil: ${papeisDoAtor.join(", ")}`;
+            }
+        } catch (err) {
+            podeGerenciar = false;
+            if (err?.status === 401) window.location.href = "/sessao-expirada";
+        }
+        atualizarPermissaoInterface();
+    }
+
+    async function carregarDepartamentos() {
+        try {
+            const resposta = await client.get("/v1/departamentos");
+            const lista = Array.isArray(resposta) ? resposta : (resposta?.content || []);
+            lista.forEach((dep) => {
+                departamentos[dep.id] = dep.name;
+                const option = document.createElement("option");
+                option.value = dep.id;
+                option.textContent = dep.name;
+                selectDepartamento.appendChild(option);
+            });
+            selectDepartamento.options[0].textContent = "Selecione um departamento...";
+        } catch (err) {
+            selectDepartamento.options[0].textContent = "Departamentos indisponíveis";
+        }
+    }
+
+    async function carregarPapeis() {
+        try {
+            const lista = await client.get("/v1/papeis");
+            (Array.isArray(lista) ? lista : []).filter((role) => role.concedivel)
+                .forEach((role) => {
+                    papeis[role.key] = role;
+                    const option = document.createElement("option");
+                    option.value = role.key;
+                    option.textContent = `${role.key} (${role.escopo})`;
+                    selectPapel.appendChild(option);
+                });
+            selectPapel.options[0].textContent = "Selecione o papel...";
+        } catch (err) {
+            selectPapel.options[0].textContent = "Papéis indisponíveis";
+        }
+    }
+
+    async function carregarConvites() {
+        try {
+            const lista = await client.get("/v1/convites");
+            convites = Array.isArray(lista) ? lista : [];
+            renderizarTabela();
+        } catch (err) {
+            convites = [];
+            renderizarTabela();
+            showNotification(tratarErro(err, "Não foi possível carregar os convites."), "danger");
+        }
+    }
+
     function validarFormulario() {
         let valido = true;
-
-        // Validar E-mail
-        const emailValue = inputEmail.value.trim();
+        const email = inputEmail.value.trim();
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailValue || !emailRegex.test(emailValue)) {
-            inputEmail.classList.add('is-invalid');
-            valido = false;
-        } else {
-            inputEmail.classList.remove('is-invalid');
-        }
+        inputEmail.classList.toggle("is-invalid", !email || !emailRegex.test(email));
+        if (!email || !emailRegex.test(email)) valido = false;
 
-        // Validar Departamento
-        if (!selectDepartamento.value) {
-            selectDepartamento.classList.add('is-invalid');
-            valido = false;
-        } else {
-            selectDepartamento.classList.remove('is-invalid');
-        }
+        const papel = papeis[selectPapel.value];
+        const exigeDepartamento = papel && papel.escopo === "DEPARTMENT";
+        const semDepartamento = exigeDepartamento && !selectDepartamento.value;
+        selectDepartamento.classList.toggle("is-invalid", semDepartamento);
+        if (semDepartamento) valido = false;
 
-        // Validar Papel
-        if (!selectPapel.value) {
-            selectPapel.classList.add('is-invalid');
-            valido = false;
-        } else {
-            selectPapel.classList.remove('is-invalid');
-        }
-
-        // Validar Nível
-        if (!selectNivel.value) {
-            selectNivel.classList.add('is-invalid');
-            valido = false;
-        } else {
-            selectNivel.classList.remove('is-invalid');
-        }
-
+        selectPapel.classList.toggle("is-invalid", !selectPapel.value);
+        if (!selectPapel.value) valido = false;
         return valido;
     }
 
-    // Limpar estados de erro ao digitar/alterar
-    [inputEmail, selectDepartamento, selectPapel, selectNivel].forEach(field => {
-        if (field) {
-            field.addEventListener('input', () => field.classList.remove('is-invalid'));
-            field.addEventListener('change', () => field.classList.remove('is-invalid'));
-        }
+    [inputEmail, selectDepartamento, selectPapel].forEach((field) => {
+        if (!field) return;
+        field.addEventListener("input", () => field.classList.remove("is-invalid"));
+        field.addEventListener("change", () => field.classList.remove("is-invalid"));
     });
 
-    // 6. Envio de Convite (Integração com Backend / Fallback)
-    if (form) {
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
+    function linkDoConvite(email, token) {
+        return `${window.location.origin}/aceitar-convite?token=${encodeURIComponent(token)}`
+            + `&email=${encodeURIComponent(email || "")}`;
+    }
 
-            if (userRole !== 'admin') {
-                showNotification('Apenas administradores podem emitir convites.', 'danger');
-                return;
-            }
+    function mostrarLink(email, token) {
+        if (!linkPanel || !linkInput) return;
+        linkInput.value = linkDoConvite(email, token);
+        linkPanel.classList.remove("d-none");
+    }
 
-            if (!validarFormulario()) {
-                showNotification('Por favor, preencha corretamente todos os campos obrigatórios.', 'warning');
-                return;
-            }
-
-            // Ativa Estado de Carregamento
-            btnEnviar.disabled = true;
-            submitSpinner.classList.remove('d-none');
-
-            const novoConvitePayload = {
-                email: inputEmail.value.trim(),
-                departamento: selectDepartamento.value,
-                papel: selectPapel.value,
-                nivel: selectNivel.value,
-                validadeHoras: parseInt(selectValidade.value, 10)
-            };
-
+    if (btnCopiarLink) {
+        btnCopiarLink.addEventListener("click", async () => {
             try {
-                // Tenta realizar a chamada ao endpoint real da API REST
-                let responseData;
-                try {
-                    responseData = await window.ApiClient.post('/v1/convites', novoConvitePayload);
-                } catch (apiError) {
-                    console.info('[Front-end Fallback] Endpoint backend real ainda não ativo. Processando emissão em modo de simulação local.', apiError.message);
-                    
-                    // Simulação de latência de rede (500ms)
-                    await new Promise(resolve => setTimeout(resolve, 500));
-                    
-                    responseData = {
-                        id: `inv_${Date.now()}`,
-                        ...novoConvitePayload,
-                        enviadoEm: new Date().toISOString(),
-                        status: 'Pendente'
-                    };
-                }
+                await navigator.clipboard.writeText(linkInput.value);
+                showNotification("Link copiado para a área de transferência.", "success");
+            } catch (e) {
+                linkInput.select();
+                showNotification("Copie o link manualmente.", "info");
+            }
+        });
+    }
 
-                // Adiciona o novo convite ao topo da lista local
-                convites.unshift(responseData);
-                salvarConvites();
-                renderizarTabela();
+    if (form) {
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            if (!podeGerenciar || !validarFormulario()) {
+                showNotification("Preencha corretamente os campos obrigatórios.", "warning");
+                return;
+            }
 
-                showNotification(`Convite emitido com sucesso para <strong>${responseData.email}</strong>!`, 'success');
+            btnEnviar.disabled = true;
+            submitSpinner.classList.remove("d-none");
+            const papel = papeis[selectPapel.value];
+            try {
+                const resposta = await client.post("/v1/convites", {
+                    email: inputEmail.value.trim(),
+                    roleKey: selectPapel.value,
+                    departmentId: papel?.escopo === "DEPARTMENT" ? selectDepartamento.value : null
+                });
+                mostrarLink(resposta.email, resposta.token);
+                showNotification(`Convite emitido para <strong>${resposta.email}</strong>.`, "success");
                 form.reset();
-
+                selectPapel.value = "";
+                selectDepartamento.value = "";
+                await carregarConvites();
             } catch (err) {
-                showNotification(`Erro ao emitir convite: ${err.message || 'Falha ao processar a solicitação.'}`, 'danger');
+                showNotification(tratarErro(err, "Não foi possível emitir o convite."), "danger");
             } finally {
                 btnEnviar.disabled = false;
-                submitSpinner.classList.add('d-none');
+                submitSpinner.classList.add("d-none");
             }
         });
     }
 
     if (btnLimpar) {
-        btnLimpar.addEventListener('click', () => {
+        btnLimpar.addEventListener("click", () => {
             form.reset();
-            [inputEmail, selectDepartamento, selectPapel, selectNivel].forEach(f => f.classList.remove('is-invalid'));
+            [inputEmail, selectDepartamento, selectPapel]
+                .forEach((field) => field.classList.remove("is-invalid"));
         });
     }
 
-    // 7. Persistência e Renderização da Tabela de Convites
-    function salvarConvites() {
-        localStorage.setItem('convitesList', JSON.stringify(convites));
-    }
-
-    function getStatusBadgeClass(status) {
-        switch (status) {
-            case 'Pendente': return 'status-badge pending';
-            case 'Aceito': return 'status-badge accepted';
-            case 'Expirado': return 'status-badge expired';
-            case 'Cancelado': return 'status-badge cancelled';
-            default: return 'status-badge pending';
-        }
-    }
-
     function formatarData(isoString) {
+        if (!isoString) return "—";
         const data = new Date(isoString);
-        return data.toLocaleDateString('pt-BR', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
+        if (Number.isNaN(data.getTime())) return "—";
+        return data.toLocaleDateString("pt-BR", {
+            day: "2-digit", month: "2-digit", year: "numeric",
+            hour: "2-digit", minute: "2-digit"
         });
     }
 
     function renderizarTabela() {
-        const termoBusca = (searchInput.value || '').toLowerCase().trim();
-        const filtroStatus = statusFilter.value;
+        const termo = (searchInput?.value || "").toLowerCase().trim();
+        const status = statusFilter?.value || "TODOS";
 
-        const convitesFiltrados = convites.filter(c => {
-            const bateuBusca = c.email.toLowerCase().includes(termoBusca) || 
-                               c.departamento.toLowerCase().includes(termoBusca);
-            const bateuStatus = filtroStatus === 'TODOS' || c.status === filtroStatus;
+        const filtrados = convites.filter((convite) => {
+            const nomeDepartamento = departamentos[convite.departmentId] || "";
+            const bateuBusca = String(convite.email || "").toLowerCase().includes(termo)
+                || nomeDepartamento.toLowerCase().includes(termo);
+            const bateuStatus = status === "TODOS" || convite.status === status;
             return bateuBusca && bateuStatus;
         });
 
-        totalBadge.textContent = `${convitesFiltrados.length} ${convitesFiltrados.length === 1 ? 'convite' : 'convites'}`;
-        tableBody.innerHTML = '';
+        if (totalBadge) {
+            totalBadge.textContent = `${filtrados.length} `
+                + `${filtrados.length === 1 ? "convite" : "convites"}`;
+        }
+        if (!tableBody) return;
+        tableBody.innerHTML = "";
 
-        if (convitesFiltrados.length === 0) {
-            emptyState.classList.remove('d-none');
+        if (!filtrados.length) {
+            if (emptyState) emptyState.classList.remove("d-none");
             return;
         }
+        if (emptyState) emptyState.classList.add("d-none");
 
-        emptyState.classList.add('d-none');
-
-        convitesFiltrados.forEach(c => {
-            const tr = document.createElement('tr');
-            
-            const acoesHTML = c.status === 'Pendente' ? `
-                <button class="btn btn-action btn-action-copy me-1" onclick="copiarLinkConvite('${c.id}')" title="Copiar link do convite">
-                    Link
-                </button>
-                <button class="btn btn-action btn-action-resend me-1" onclick="reenviarConvite('${c.id}')" title="Reenviar solicitação">
-                    Reenviar
-                </button>
-                <button class="btn btn-action btn-action-cancel" onclick="cancelarConvite('${c.id}')" title="Cancelar convite">
-                    Cancelar
-                </button>
-            ` : `
-                <span class="text-muted small">—</span>
-            `;
-
+        filtrados.forEach((convite) => {
+            const acoes = convite.status === "PENDING"
+                ? `<button class="btn btn-action btn-action-resend me-1" data-acao="reenviar" data-id="${convite.id}">Reenviar</button>
+                   <button class="btn btn-action btn-action-cancel" data-acao="cancelar" data-id="${convite.id}">Cancelar</button>`
+                : '<span class="text-muted small">—</span>';
+            const tr = document.createElement("tr");
             tr.innerHTML = `
-                <td class="fw-medium text-dark">${c.email}</td>
-                <td>${c.departamento}</td>
-                <td>
-                    <span class="d-block text-dark fw-medium fs-7">${c.papel}</span>
-                    <span class="text-muted small">${c.nivel}</span>
-                </td>
-                <td>${formatarData(c.enviadoEm)}</td>
-                <td>
-                    <span class="${getStatusBadgeClass(c.status)}">${c.status}</span>
-                </td>
-                <td class="text-end">${acoesHTML}</td>
-            `;
-
+                <td class="fw-medium text-dark">${escapar(convite.email)}</td>
+                <td>${escapar(departamentos[convite.departmentId] || "—")}</td>
+                <td>${escapar(convite.hierarchyLevel || "—")}</td>
+                <td>${formatarData(convite.createdAt)}</td>
+                <td><span class="${STATUS_CLASS[convite.status] || "status-badge pending"}">
+                    ${STATUS_LABEL[convite.status] || convite.status}</span></td>
+                <td class="text-end">${acoes}</td>`;
             tableBody.appendChild(tr);
         });
     }
 
-    // 8. Funções de Ação sobre Convites Existentes
-    window.reenviarConvite = async function(id) {
-        const item = convites.find(c => c.id === id);
-        if (!item) return;
+    tableBody?.addEventListener("click", async (event) => {
+        const botao = event.target.closest("button[data-acao]");
+        if (!botao) return;
+        const id = botao.dataset.id;
+        const convite = convites.find((item) => item.id === id);
+        if (!convite) return;
 
-        try {
-            // Chamada de API para reenviar
+        if (botao.dataset.acao === "reenviar") {
             try {
-                await window.ApiClient.post(`/v1/convites/${id}/reenviar`);
-            } catch (apiErr) {
-                console.info('[Front-end Fallback] Reenvio simulado localmente.', apiErr.message);
+                const resposta = await client.post(`/v1/convites/${id}/reenviar`);
+                mostrarLink(resposta.email, resposta.token);
+                showNotification(`Convite reenviado para <strong>${resposta.email}</strong>.`, "info");
+                await carregarConvites();
+            } catch (err) {
+                showNotification(tratarErro(err, "Não foi possível reenviar o convite."), "danger");
             }
-
-            item.enviadoEm = new Date().toISOString();
-            item.status = 'Pendente';
-            salvarConvites();
-            renderizarTabela();
-
-            showNotification(`Convite reenviado com sucesso para <strong>${item.email}</strong>!`, 'info');
-        } catch (err) {
-            showNotification(`Erro ao reenviar convite: ${err.message}`, 'danger');
-        }
-    };
-
-    window.cancelarConvite = async function(id) {
-        const item = convites.find(c => c.id === id);
-        if (!item) return;
-
-        if (!confirm(`Deseja realmente cancelar o convite enviado para ${item.email}?`)) return;
-
-        try {
+        } else if (botao.dataset.acao === "cancelar") {
+            if (!window.confirm(`Cancelar o convite de ${convite.email}?`)) return;
             try {
-                await window.ApiClient.delete(`/v1/convites/${id}`);
-            } catch (apiErr) {
-                console.info('[Front-end Fallback] Cancelamento simulado localmente.', apiErr.message);
+                await client.delete(`/v1/convites/${id}`);
+                showNotification(`Convite de <strong>${convite.email}</strong> cancelado.`, "warning");
+                await carregarConvites();
+            } catch (err) {
+                showNotification(tratarErro(err, "Não foi possível cancelar o convite."), "danger");
             }
-
-            item.status = 'Cancelado';
-            salvarConvites();
-            renderizarTabela();
-
-            showNotification(`O convite para <strong>${item.email}</strong> foi cancelado.`, 'warning');
-        } catch (err) {
-            showNotification(`Erro ao cancelar convite: ${err.message}`, 'danger');
         }
-    };
+    });
 
-    window.copiarLinkConvite = function(id) {
-        const item = convites.find(c => c.id === id);
-        if (!item) return;
+    if (searchInput) searchInput.addEventListener("input", renderizarTabela);
+    if (statusFilter) statusFilter.addEventListener("change", renderizarTabela);
 
-        // Gera URL segura sem expor segredo/token privado
-        const inviteUrl = `${window.location.origin}/aceitar-convite?id=${id}`;
-        
-        navigator.clipboard.writeText(inviteUrl).then(() => {
-            showNotification(`Link do convite para <strong>${item.email}</strong> copiado para a área de transferência!`, 'success');
-        }).catch(() => {
-            showNotification(`Não foi possível copiar o link automaticamente: ${inviteUrl}`, 'info');
+    carregarPermissoes()
+        .then(async () => {
+            await Promise.all([carregarDepartamentos(), carregarPapeis()]);
+            await carregarConvites();
         });
-    };
-
-    // Eventos de Busca e Filtro
-    if (searchInput) searchInput.addEventListener('input', renderizarTabela);
-    if (statusFilter) statusFilter.addEventListener('change', renderizarTabela);
-
-    // Inicialização da Página
-    atualizarPermissaoInterface();
-    renderizarTabela();
 });

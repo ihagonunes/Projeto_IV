@@ -7,12 +7,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     const saved = sessionStorage.getItem("onboarding_usuarios");
     if (!saved) {
         sessionStorage.setItem("onboarding_usuarios", JSON.stringify({
-            metodo: "Cadastro Manual"
+            metodo: "Convite"
         }));
     }
 
     const importCard = document.querySelector('a[href="/onboarding/usuarios/importacao"]');
-    const manualCard = document.querySelector('a[href="/onboarding/usuarios/manual"]');
+    const inviteCard = document.querySelector('a[href="/convites"]');
     const selectDepUsuario = document.getElementById("departamentoUsuario");
 
     if (importCard) {
@@ -23,10 +23,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
-    if (manualCard) {
-        manualCard.addEventListener("click", () => {
+    if (inviteCard) {
+        inviteCard.addEventListener("click", () => {
             sessionStorage.setItem("onboarding_usuarios", JSON.stringify({
-                metodo: "Cadastro Manual Individual"
+                metodo: "Convite"
             }));
         });
     }

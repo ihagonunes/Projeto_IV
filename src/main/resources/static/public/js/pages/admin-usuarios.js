@@ -1,335 +1,351 @@
 // public/js/pages/admin-usuarios.js
+// Gestão de usuários e concessões (A9/SPEC-01 §6/§7). Menus e botões são
+// guiados por GET /api/v1/usuarios/me/permissoes; o backend continua decidindo.
 
-document.addEventListener('DOMContentLoaded', () => {
-    // 1. Estado Local da Aplicação
-    let userRole = localStorage.getItem('simulatedUserRole') || 'admin';
-    let usuarios = JSON.parse(localStorage.getItem('usuariosTenantList') || '[]');
+document.addEventListener("DOMContentLoaded", () => {
+    const client = window.ApiClient;
 
-    // Carga inicial de dados de demonstração do tenant se estiver vazio
-    if (usuarios.length === 0) {
-        usuarios = [
-            {
-                id: 'usr_1',
-                nome: 'Carlos Eduardo Oliveira',
-                email: 'carlos.oliveira@acceletec.com.br',
-                departamento: 'Tecnologia da Informação',
-                nivelHierarquico: 'Diretoria',
-                permissaoAdmin: 'ADMIN',
-                ultimoAcesso: new Date(Date.now() - 3600000 * 2).toISOString(),
-                status: 'Ativo'
-            },
-            {
-                id: 'usr_2',
-                nome: 'Mariana Souza Santos',
-                email: 'mariana.santos@acceletec.com.br',
-                departamento: 'Recursos Humanos',
-                nivelHierarquico: 'Gerência',
-                permissaoAdmin: 'ADMIN',
-                ultimoAcesso: new Date(Date.now() - 3600000 * 5).toISOString(),
-                status: 'Ativo'
-            },
-            {
-                id: 'usr_3',
-                nome: 'Lucas Ribeiro Mendes',
-                email: 'lucas.mendes@acceletec.com.br',
-                departamento: 'Financeiro',
-                nivelHierarquico: 'Coordenação',
-                permissaoAdmin: 'COMUM',
-                ultimoAcesso: new Date(Date.now() - 86400000 * 1).toISOString(),
-                status: 'Ativo'
-            },
-            {
-                id: 'usr_4',
-                nome: 'Fernanda Costa Lima',
-                email: 'fernanda.lima@acceletec.com.br',
-                departamento: 'Vendas & Comercial',
-                nivelHierarquico: 'Operacional',
-                permissaoAdmin: 'COMUM',
-                ultimoAcesso: new Date(Date.now() - 86400000 * 3).toISOString(),
-                status: 'Ativo'
-            },
-            {
-                id: 'usr_5',
-                nome: 'Gabriel Arantes',
-                email: 'gabriel.arantes@acceletec.com.br',
-                departamento: 'Marketing',
-                nivelHierarquico: 'Estagiário',
-                permissaoAdmin: 'COMUM',
-                ultimoAcesso: new Date(Date.now() - 86400000 * 6).toISOString(),
-                status: 'Ativo'
-            }
-        ];
-        salvarUsuarios();
-    }
+    let usuarios = [];
+    let departamentos = {};
+    let papeis = {};
+    let podeGerenciarUsuarios = false;
+    let podeLerConcessoes = false;
+    let podeGerenciarConcessoes = false;
+    let usuarioConcessoes = null;
 
-    // 2. Elementos do DOM
-    const tableBody = document.getElementById('usuariosTableBody');
-    const searchInput = document.getElementById('searchInput');
-    const departamentoFilter = document.getElementById('departamentoFilter');
-    const nivelFilter = document.getElementById('nivelFilter');
-    const permFilter = document.getElementById('permFilter');
-    const emptyState = document.getElementById('emptyState');
-    const totalBadge = document.getElementById('totalUsuariosBadge');
-    const alertArea = document.getElementById('alertArea');
-    const accessDeniedBanner = document.getElementById('accessDeniedBanner');
-    const roleBadgeText = document.getElementById('roleBadgeText');
-    const roleBadgeContainer = document.getElementById('roleBadgeContainer');
+    const tableBody = document.getElementById("usuariosTableBody");
+    const searchInput = document.getElementById("searchInput");
+    const departamentoFilter = document.getElementById("departamentoFilter");
+    const nivelFilter = document.getElementById("nivelFilter");
+    const emptyState = document.getElementById("emptyState");
+    const totalBadge = document.getElementById("totalUsuariosBadge");
+    const alertArea = document.getElementById("alertArea");
+    const accessDeniedBanner = document.getElementById("accessDeniedBanner");
+    const roleBadgeText = document.getElementById("roleBadgeText");
+    const roleBadgeContainer = document.getElementById("roleBadgeContainer");
 
-    // Elementos do Modal de Edição
-    const modalElement = document.getElementById('modalEditarUsuario');
+    const modalElement = document.getElementById("modalEditarUsuario");
     const editModal = modalElement ? new bootstrap.Modal(modalElement) : null;
-    const formEditar = document.getElementById('formEditarUsuario');
-    const editUserId = document.getElementById('editUserId');
-    const editUserName = document.getElementById('editUserName');
-    const editNivel = document.getElementById('editNivelHierarquico');
-    const editPerm = document.getElementById('editPermissaoAdmin');
-    const btnSalvar = document.getElementById('btnSalvarEdicao');
-    const editSpinner = document.getElementById('editSpinner');
+    const formEditar = document.getElementById("formEditarUsuario");
+    const editUserId = document.getElementById("editUserId");
+    const editUserName = document.getElementById("editUserName");
+    const editNivel = document.getElementById("editNivelHierarquico");
+    const editDepartamento = document.getElementById("editDepartamento");
+    const btnSalvar = document.getElementById("btnSalvarEdicao");
+    const editSpinner = document.getElementById("editSpinner");
 
-    // 3. Função Global para Alternar o Perfil Simulado (Admin vs Não-Admin)
-    window.setSimulatedRole = function(role) {
-        userRole = role;
-        localStorage.setItem('simulatedUserRole', role);
-        atualizarPermissaoInterface();
-        renderizarTabela();
+    const concessoesModalElement = document.getElementById("modalConcessoes");
+    const concessoesModal = concessoesModalElement ? new bootstrap.Modal(concessoesModalElement) : null;
+    const concessoesSubtitle = document.getElementById("modalConcessoesSubtitle");
+    const concessoesBody = document.getElementById("concessoesTableBody");
+    const concessoesMensagem = document.getElementById("concessoesMensagem");
+    const formConcessao = document.getElementById("formConcessao");
+    const concessaoPapel = document.getElementById("concessaoPapel");
+    const concessaoDepartamento = document.getElementById("concessaoDepartamento");
+
+    const NIVEL_LABEL = {
+        COLLABORATOR: "Colaborador",
+        LEADER: "Líder",
+        MANAGER: "Gestor",
+        EXECUTIVE: "Executivo"
     };
 
-    function atualizarPermissaoInterface() {
-        const isAdmin = userRole === 'admin';
-        
-        if (isAdmin) {
-            roleBadgeText.textContent = 'Perfil: Administrador';
-            roleBadgeContainer.className = 'admin-header-badge';
-            accessDeniedBanner.classList.add('d-none');
-        } else {
-            roleBadgeText.textContent = 'Perfil: Usuário Comum (Não-Admin)';
-            roleBadgeContainer.className = 'admin-header-badge non-admin';
-            accessDeniedBanner.classList.remove('d-none');
-        }
-    }
-
-    // 4. Exibição de Notificações / Alertas
-    function showNotification(message, type = 'success') {
-        const alertDiv = document.createElement('div');
+    function showNotification(message, type = "success") {
+        if (!alertArea) return;
+        const alertDiv = document.createElement("div");
         alertDiv.className = `alert alert-${type} alert-dismissible fade show alert-toast shadow-sm`;
-        alertDiv.role = 'alert';
+        alertDiv.role = "alert";
         alertDiv.innerHTML = `
-            <div class="d-flex align-items-center">
-                <span>${message}</span>
-            </div>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
-        `;
+            <div class="d-flex align-items-center"><span>${message}</span></div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>`;
         alertArea.appendChild(alertDiv);
-
         setTimeout(() => {
-            if (alertDiv && alertDiv.parentNode) {
-                alertDiv.classList.remove('show');
-                setTimeout(() => alertDiv.remove(), 200);
-            }
+            alertDiv.classList.remove("show");
+            setTimeout(() => alertDiv.remove(), 200);
         }, 5000);
     }
 
-    // 5. Carregar Dados da API Real (com Fallback Gracioso)
-    async function carregarUsuariosDaAPI() {
+    function escapar(valor) {
+        return String(valor ?? "")
+            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+
+    function tratarErro(err, padrao) {
+        if (err?.status === 401) {
+            window.location.href = "/sessao-expirada";
+            return "Sua sessão expirou.";
+        }
+        if (err?.status === 403) return "Você não tem permissão para esta operação.";
+        if (err?.status === 409) return err.message || "Operação conflita com o estado atual.";
+        return err?.message || padrao;
+    }
+
+    async function carregarPermissoes() {
         try {
-            const apiData = await window.ApiClient.get('/v1/usuarios');
-            if (Array.isArray(apiData) && apiData.length > 0) {
-                usuarios = apiData;
-                salvarUsuarios();
+            const acesso = await client.get("/v1/usuarios/me/permissoes");
+            const permissoes = acesso?.permissoes || [];
+            podeGerenciarUsuarios = permissoes.includes("USER:MANAGE");
+            podeLerConcessoes = permissoes.includes("ROLE:READ");
+            podeGerenciarConcessoes = permissoes.includes("ROLE:MANAGE");
+            const papeisDoAtor = (acesso?.concessoes || []).map((c) => c.papel);
+            if (roleBadgeText) {
+                roleBadgeText.textContent = papeisDoAtor.length
+                    ? `Perfil: ${papeisDoAtor.join(", ")}`
+                    : "Perfil: usuário";
             }
         } catch (err) {
-            console.info('[Front-end Fallback] Endpoint /api/v1/usuarios ainda não disponível. Utilizando dados armazenados no cliente.', err.message);
-        } finally {
+            if (err?.status === 401) window.location.href = "/sessao-expirada";
+        }
+        atualizarPermissaoInterface();
+    }
+
+    function atualizarPermissaoInterface() {
+        if (roleBadgeContainer) {
+            roleBadgeContainer.className = podeGerenciarUsuarios
+                ? "admin-header-badge" : "admin-header-badge non-admin";
+        }
+        if (accessDeniedBanner) {
+            accessDeniedBanner.classList.toggle("d-none", podeGerenciarUsuarios);
+        }
+    }
+
+    async function carregarDepartamentos() {
+        try {
+            const resposta = await client.get("/v1/departamentos");
+            const lista = Array.isArray(resposta) ? resposta : (resposta?.content || []);
+            lista.forEach((dep) => {
+                departamentos[dep.id] = dep.name;
+                adicionarOpcao(departamentoFilter, dep.id, dep.name);
+                adicionarOpcao(editDepartamento, dep.id, dep.name);
+                adicionarOpcao(concessaoDepartamento, dep.id, dep.name);
+            });
+        } catch (e) {
+            // Sem DEPARTMENT:READ o filtro fica apenas em "Todos".
+        }
+    }
+
+    function adicionarOpcao(select, valor, texto) {
+        if (!select) return;
+        const option = document.createElement("option");
+        option.value = valor;
+        option.textContent = texto;
+        select.appendChild(option);
+    }
+
+    async function carregarPapeis() {
+        try {
+            const lista = await client.get("/v1/papeis");
+            (Array.isArray(lista) ? lista : []).filter((role) => role.concedivel)
+                .forEach((role) => {
+                    papeis[role.key] = role;
+                    const option = document.createElement("option");
+                    option.value = role.key;
+                    option.textContent = `${role.key} (${role.escopo})`;
+                    if (concessaoPapel) concessaoPapel.appendChild(option);
+                });
+        } catch (e) {
+            // Papéis indisponíveis: a concessão fica sem opções.
+        }
+    }
+
+    async function carregarUsuarios() {
+        try {
+            const pagina = await client.get("/v1/usuarios?size=100");
+            usuarios = Array.isArray(pagina) ? pagina : (pagina?.content || []);
             renderizarTabela();
+        } catch (err) {
+            usuarios = [];
+            renderizarTabela();
+            showNotification(tratarErro(err, "Não foi possível carregar os usuários."), "danger");
         }
     }
 
-    function salvarUsuarios() {
-        localStorage.setItem('usuariosTenantList', JSON.stringify(usuarios));
-    }
-
-    // Helpers para Badges Visuais
-    function getNivelBadgeHTML(nivel) {
-        let classe = 'operacional';
-        switch (nivel) {
-            case 'Diretoria': classe = 'diretoria'; break;
-            case 'Gerência': classe = 'gerencia'; break;
-            case 'Coordenação': classe = 'coordenacao'; break;
-            case 'Operacional': classe = 'operacional'; break;
-            case 'Estagiário': classe = 'estagiario'; break;
-        }
-        return `<span class="level-badge ${classe}">${nivel}</span>`;
-    }
-
-    function getPermissaBadgeHTML(perm) {
-        if (perm === 'ADMIN') {
-            return `
-                <span class="admin-perm-badge is-admin">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="bi bi-shield-lock-fill" viewBox="0 0 16 16">
-                        <path d="M8 1a2 2 0 0 1 2 2v2H6V3a2 2 0 0 1 2-2zm3 4V3a3 3 0 0 0-6 0v2a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"/>
-                    </svg>
-                    Administrador
-                </span>`;
-        }
-        return `
-            <span class="admin-perm-badge is-common">
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="bi bi-person" viewBox="0 0 16 16">
-                    <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10z"/>
-                </svg>
-                Usuário Comum
-            </span>`;
-    }
-
-    function formatarData(isoString) {
-        if (!isoString) return 'Nunca';
-        const data = new Date(isoString);
-        return data.toLocaleDateString('pt-BR', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    }
-
-    // 6. Renderização da Tabela de Usuários
     function renderizarTabela() {
-        const termoBusca = (searchInput.value || '').toLowerCase().trim();
-        const filtroDepto = departamentoFilter.value;
-        const filtroNivel = nivelFilter.value;
-        const filtroPerm = permFilter.value;
-        const isAdmin = userRole === 'admin';
+        const termo = (searchInput?.value || "").toLowerCase().trim();
+        const filtroDepto = departamentoFilter?.value || "TODOS";
+        const filtroNivel = nivelFilter?.value || "TODOS";
 
-        const usuariosFiltrados = usuarios.filter(u => {
-            const bateuBusca = u.nome.toLowerCase().includes(termoBusca) || u.email.toLowerCase().includes(termoBusca);
-            const bateuDepto = filtroDepto === 'TODOS' || u.departamento === filtroDepto;
-            const bateuNivel = filtroNivel === 'TODOS' || u.nivelHierarquico === filtroNivel;
-            const bateuPerm = filtroPerm === 'TODOS' || u.permissaoAdmin === filtroPerm;
-            return bateuBusca && bateuDepto && bateuNivel && bateuPerm;
+        const filtrados = usuarios.filter((usuario) => {
+            const nomeDepartamento = departamentos[usuario.departmentId] || "";
+            const bateuBusca = String(usuario.name || "").toLowerCase().includes(termo)
+                || String(usuario.email || "").toLowerCase().includes(termo);
+            const bateuDepto = filtroDepto === "TODOS" || usuario.departmentId === filtroDepto;
+            const bateuNivel = filtroNivel === "TODOS" || usuario.hierarchyLevel === filtroNivel;
+            return bateuBusca && bateuDepto && bateuNivel;
         });
 
-        totalBadge.textContent = `${usuariosFiltrados.length} ${usuariosFiltrados.length === 1 ? 'usuário' : 'usuários'}`;
-        tableBody.innerHTML = '';
+        if (totalBadge) {
+            totalBadge.textContent = `${filtrados.length} `
+                + `${filtrados.length === 1 ? "usuário" : "usuários"}`;
+        }
+        if (!tableBody) return;
+        tableBody.innerHTML = "";
 
-        if (usuariosFiltrados.length === 0) {
-            emptyState.classList.remove('d-none');
+        if (!filtrados.length) {
+            if (emptyState) emptyState.classList.remove("d-none");
             return;
         }
+        if (emptyState) emptyState.classList.add("d-none");
 
-        emptyState.classList.add('d-none');
-
-        usuariosFiltrados.forEach(u => {
-            const tr = document.createElement('tr');
-            
-            const btnDisabledAttr = isAdmin ? '' : 'disabled title="Apenas administradores podem editar permissões"';
-
+        filtrados.forEach((usuario) => {
+            const acoes = [];
+            if (podeGerenciarUsuarios) {
+                acoes.push(`<button class="btn btn-action btn-action-edit me-1" data-acao="editar" data-id="${usuario.id}">Editar</button>`);
+            }
+            if (podeLerConcessoes) {
+                acoes.push(`<button class="btn btn-action" data-acao="concessoes" data-id="${usuario.id}">Concessões</button>`);
+            }
+            const tr = document.createElement("tr");
             tr.innerHTML = `
                 <td>
-                    <div class="fw-bold text-dark fs-7">${u.nome}</div>
-                    <div class="text-muted small">${u.email}</div>
+                    <div class="fw-bold text-dark fs-7">${escapar(usuario.name || "—")}</div>
+                    <div class="text-muted small">${escapar(usuario.email)}</div>
                 </td>
-                <td><span class="text-dark small">${u.departamento}</span></td>
-                <td>${getNivelBadgeHTML(u.nivelHierarquico)}</td>
-                <td>${getPermissaBadgeHTML(u.permissaoAdmin)}</td>
-                <td><span class="text-muted small">${formatarData(u.ultimoAcesso)}</span></td>
-                <td class="text-end">
-                    <button class="btn btn-action btn-action-edit" onclick="abrirModalEdicao('${u.id}')" ${btnDisabledAttr}>
-                        Editar
-                    </button>
-                </td>
-            `;
-
+                <td><span class="text-dark small">${escapar(departamentos[usuario.departmentId] || "—")}</span></td>
+                <td><span class="level-badge">${NIVEL_LABEL[usuario.hierarchyLevel] || usuario.hierarchyLevel}</span></td>
+                <td><span class="badge ${usuario.status === "ACTIVE" ? "text-bg-success" : "text-bg-secondary"}">
+                    ${usuario.status === "ACTIVE" ? "Ativo" : "Inativo"}</span></td>
+                <td class="text-end">${acoes.join("") || '<span class="text-muted small">—</span>'}</td>`;
             tableBody.appendChild(tr);
         });
     }
 
-    // 7. Modal de Edição de Nível e Permissão
-    window.abrirModalEdicao = function(id) {
-        if (userRole !== 'admin') {
-            showNotification('Apenas administradores possuem autorização para alterar o nível ou permissão de usuários.', 'danger');
-            return;
-        }
-
-        const usuario = usuarios.find(u => u.id === id);
+    tableBody?.addEventListener("click", (event) => {
+        const botao = event.target.closest("button[data-acao]");
+        if (!botao) return;
+        const usuario = usuarios.find((item) => item.id === botao.dataset.id);
         if (!usuario) return;
+        if (botao.dataset.acao === "editar") abrirModalEdicao(usuario);
+        if (botao.dataset.acao === "concessoes") abrirConcessoes(usuario);
+    });
 
+    function abrirModalEdicao(usuario) {
         editUserId.value = usuario.id;
-        editUserName.value = `${usuario.nome} (${usuario.email})`;
-        editNivel.value = usuario.nivelHierarquico;
-        editPerm.value = usuario.permissaoAdmin;
+        editUserName.value = `${usuario.name || ""} (${usuario.email})`;
+        editNivel.value = usuario.hierarchyLevel;
+        editDepartamento.value = usuario.departmentId || "";
+        if (editModal) editModal.show();
+    }
 
-        if (editModal) {
-            editModal.show();
-        }
-    };
-
-    // Submissão do Formulário de Edição
     if (formEditar) {
-        formEditar.addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            if (userRole !== 'admin') {
-                showNotification('Operação negada: Seu perfil atual não possui autorização administrativa.', 'danger');
-                if (editModal) editModal.hide();
+        formEditar.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            if (!podeGerenciarUsuarios) {
+                showNotification("Seu perfil não possui autorização para editar usuários.", "danger");
                 return;
             }
-
             const id = editUserId.value;
-            const usuario = usuarios.find(u => u.id === id);
-            if (!usuario) return;
-
-            const novoNivel = editNivel.value;
-            const novaPerm = editPerm.value;
-
-            // Ativa estado de carregamento
-            btnSalvar.disabled = true;
-            editSpinner.classList.remove('d-none');
-
-            const payload = {
-                nivelHierarquico: novoNivel,
-                permissaoAdmin: novaPerm
-            };
-
+            if (btnSalvar) btnSalvar.disabled = true;
+            if (editSpinner) editSpinner.classList.remove("d-none");
             try {
-                // Tenta requisição ao endpoint protegido da API REST
-                try {
-                    await window.ApiClient.post(`/v1/usuarios/${id}/nivel`, {
-                        hierarchyLevel: String(novoNivel).toUpperCase()
-                    });
-                } catch (apiErr) {
-                    console.info('[Front-end Fallback] Endpoint POST /api/v1/usuarios/:id/nivel simulado localmente.', apiErr.message);
-                    
-                    // Simula latência de rede de 400ms
-                    await new Promise(resolve => setTimeout(resolve, 400));
-                }
-
-                // Atualiza o estado local
-                usuario.nivelHierarquico = novoNivel;
-                usuario.permissaoAdmin = novaPerm;
-
-                salvarUsuarios();
-                renderizarTabela();
-
+                await client.post(`/v1/usuarios/${id}/nivel`, {
+                    hierarchyLevel: editNivel.value
+                });
+                await client.request(`/v1/usuarios/${id}`, {
+                    method: "PATCH",
+                    body: JSON.stringify({ departmentId: editDepartamento.value || null })
+                });
                 if (editModal) editModal.hide();
-
-                showNotification(`Nível e permissões de <strong>${usuario.nome}</strong> atualizados com sucesso!`, 'success');
-
+                showNotification("Usuário atualizado.", "success");
+                await carregarUsuarios();
             } catch (err) {
-                showNotification(`Erro ao atualizar usuário: ${err.message || 'Falha na comunicação com o servidor.'}`, 'danger');
+                showNotification(tratarErro(err, "Não foi possível atualizar o usuário."), "danger");
             } finally {
-                btnSalvar.disabled = false;
-                editSpinner.classList.add('d-none');
+                if (btnSalvar) btnSalvar.disabled = false;
+                if (editSpinner) editSpinner.classList.add("d-none");
             }
         });
     }
 
-    // Eventos de Busca e Filtros
-    if (searchInput) searchInput.addEventListener('input', renderizarTabela);
-    if (departamentoFilter) departamentoFilter.addEventListener('change', renderizarTabela);
-    if (nivelFilter) nivelFilter.addEventListener('change', renderizarTabela);
-    if (permFilter) permFilter.addEventListener('change', renderizarTabela);
+    function avisarConcessoes(texto, tipo) {
+        if (!concessoesMensagem) return;
+        concessoesMensagem.textContent = texto || "";
+        concessoesMensagem.className = texto ? `alert alert-${tipo || "info"} mb-3` : "d-none";
+    }
 
-    // Inicialização da Página
-    atualizarPermissaoInterface();
-    carregarUsuariosDaAPI();
+    async function abrirConcessoes(usuario) {
+        usuarioConcessoes = usuario;
+        if (concessoesSubtitle) {
+            concessoesSubtitle.textContent = `${usuario.name || usuario.email} — ${usuario.email}`;
+        }
+        avisarConcessoes("");
+        if (formConcessao) {
+            Array.from(formConcessao.elements).forEach((element) => {
+                element.disabled = !podeGerenciarConcessoes;
+            });
+        }
+        if (concessoesModal) concessoesModal.show();
+        await carregarConcessoes();
+    }
+
+    async function carregarConcessoes() {
+        if (!usuarioConcessoes || !concessoesBody) return;
+        try {
+            const acesso = await client.get(`/v1/usuarios/${usuarioConcessoes.id}/permissoes`);
+            const concessoes = acesso?.concessoes || [];
+            if (!concessoes.length) {
+                concessoesBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">'
+                    + "Nenhuma concessão ativa.</td></tr>";
+                return;
+            }
+            concessoesBody.innerHTML = concessoes.map((concessao) => `
+                <tr>
+                    <td>${concessao.papel}</td>
+                    <td>${concessao.escopo}</td>
+                    <td>${escapar(departamentos[concessao.departmentId] || "—")}</td>
+                    <td>${concessao.origem}</td>
+                    <td class="text-end">${podeGerenciarConcessoes
+                        ? `<button class="btn btn-sm btn-outline-danger" data-revogar="${concessao.id}">Revogar</button>`
+                        : "—"}</td>
+                </tr>`).join("");
+        } catch (err) {
+            concessoesBody.innerHTML = "";
+            avisarConcessoes(tratarErro(err, "Não foi possível carregar as concessões."), "danger");
+        }
+    }
+
+    concessoesBody?.addEventListener("click", async (event) => {
+        const botao = event.target.closest("button[data-revogar]");
+        if (!botao || !usuarioConcessoes || !podeGerenciarConcessoes) return;
+        try {
+            await client.delete(
+                `/v1/usuarios/${usuarioConcessoes.id}/concessoes/${botao.dataset.revogar}`);
+            avisarConcessoes("Concessão revogada.", "success");
+            await carregarConcessoes();
+        } catch (err) {
+            avisarConcessoes(tratarErro(err, "Não foi possível revogar a concessão."), "danger");
+        }
+    });
+
+    if (formConcessao) {
+        formConcessao.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            if (!usuarioConcessoes || !podeGerenciarConcessoes) return;
+            const papel = papeis[concessaoPapel.value];
+            const departmentId = papel?.escopo === "DEPARTMENT"
+                ? (concessaoDepartamento.value || null)
+                : null;
+            try {
+                await client.post(`/v1/usuarios/${usuarioConcessoes.id}/concessoes`, {
+                    roleKey: concessaoPapel.value,
+                    departmentId
+                });
+                avisarConcessoes("Concessão atribuída.", "success");
+                await carregarConcessoes();
+            } catch (err) {
+                avisarConcessoes(tratarErro(err, "Não foi possível atribuir a concessão."), "danger");
+            }
+        });
+    }
+
+    if (searchInput) searchInput.addEventListener("input", renderizarTabela);
+    if (departamentoFilter) departamentoFilter.addEventListener("change", renderizarTabela);
+    if (nivelFilter) nivelFilter.addEventListener("change", renderizarTabela);
+
+    carregarPermissoes()
+        .then(async () => {
+            await Promise.all([carregarDepartamentos(), carregarPapeis()]);
+            await carregarUsuarios();
+        });
 });
