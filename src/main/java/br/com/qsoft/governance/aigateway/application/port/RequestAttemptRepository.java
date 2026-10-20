@@ -1,5 +1,6 @@
 package br.com.qsoft.governance.aigateway.application.port;
 
+import br.com.qsoft.governance.aigateway.domain.attempt.CostStatus;
 import br.com.qsoft.governance.aigateway.domain.attempt.DeliveryStatus;
 import br.com.qsoft.governance.aigateway.domain.attempt.ExecutionStatus;
 import br.com.qsoft.governance.aigateway.domain.attempt.RequestAttempt;
@@ -45,6 +46,7 @@ public interface RequestAttemptRepository {
         Instant to,
         ExecutionStatus status,
         DeliveryStatus deliveryStatus,
+        CostStatus costStatus,
         UUID userId,
         UUID departmentId
     ) {

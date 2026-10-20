@@ -57,7 +57,8 @@ public class QueryRequestAttempts {
 
         return attemptRepository.search(new RequestAttemptRepository.AttemptFilter(
             tenantId, visibility, command.from(), command.to(), command.status(),
-            command.deliveryStatus(), requestedUser, requestedDepartment), page, size);
+            command.deliveryStatus(), command.costStatus(), requestedUser, requestedDepartment),
+            page, size);
     }
 
     private static boolean coversDepartment(VisibilityScope visibility, UUID departmentId) {

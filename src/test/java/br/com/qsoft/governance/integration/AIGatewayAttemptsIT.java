@@ -148,6 +148,18 @@ class AIGatewayAttemptsIT {
     }
 
     @Test
+    void filtroPorCustoInconclusivoDevolveApenasAsInconclusivas() {
+        User admin = testTenants.admin(tenant, adminEmail);
+        UUID inconclusive = insertInconclusiveAttempt(tenant, departmentA,
+            admin.id().value(), t0.plusSeconds(95));
+
+        Map<String, Object> page = page(adminEmail, "?costStatus=INCONCLUSIVE");
+
+        assertThat(ids(page)).containsExactly(inconclusive.toString());
+        assertThat(page.get("totalElements")).isEqualTo(1);
+    }
+
+    @Test
     void colaboradorVeSomenteOProprioUsoENaoFiltraOutroUsuario() {
         Map<String, Object> page = page(collabEmail, "");
 
@@ -235,6 +247,26 @@ class AIGatewayAttemptsIT {
         return ((List<Map<String, Object>>) page.get("content")).stream()
             .map(item -> (String) item.get("requestId"))
             .toList();
+    }
+
+    private UUID insertInconclusiveAttempt(Tenant owner, UUID departmentId, UUID userId,
+                                           Instant createdAt) {
+        UUID requestId = UUID.randomUUID();
+        jdbcTemplate.update("""
+            INSERT INTO aigateway_request_attempts
+                (request_id, tenant_id, user_id, department_id, purpose, model_id, provider_id,
+                 authorization_status, denial_reason, execution_status, delivery_status,
+                 input_tokens, output_tokens, cost_status, estimated_cost,
+                 unit_price_input, unit_price_output, latency_ms, error_code,
+                 delivery_attempts, next_delivery_at, created_at, updated_at)
+            VALUES (?, ?, ?, ?, 'CHAT', ?, ?, 'GRANTED', NULL, 'SUCCEEDED', 'DELIVERED',
+                    0, 0, 'INCONCLUSIVE', NULL, 0.01, 0.03, 100, NULL, 0, NULL, ?, ?)
+            """,
+            requestId, owner.id().value(), userId, departmentId,
+            UUID.randomUUID(), UUID.randomUUID(),
+            OffsetDateTime.ofInstant(createdAt, ZoneOffset.UTC),
+            OffsetDateTime.ofInstant(createdAt, ZoneOffset.UTC));
+        return requestId;
     }
 
     private UUID insertAttempt(Tenant owner, UUID departmentId, UUID userId,

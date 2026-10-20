@@ -173,6 +173,10 @@ public class RequestAttemptRepositoryAdapter implements RequestAttemptRepository
             where.append(" AND delivery_status = ?");
             params.add(filter.deliveryStatus().name());
         }
+        if (filter.costStatus() != null) {
+            where.append(" AND cost_status = ?");
+            params.add(filter.costStatus().name());
+        }
         if (filter.userId() != null) {
             where.append(" AND user_id = ?");
             params.add(filter.userId());

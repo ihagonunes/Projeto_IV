@@ -61,6 +61,11 @@
 
     <div id="dashboardMensagem" class="d-none"></div>
 
+    <div id="dashboardLoading" class="d-none text-muted small mb-3" role="status">
+        <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+        Carregando dados...
+    </div>
+
     <!-- KPIs (SPI-92) -->
     <div class="row g-3 mb-4">
         <div class="col-md-4">
@@ -82,8 +87,9 @@
         <div class="col-md-4">
             <div class="card h-100">
                 <div class="card-body">
-                    <div class="text-muted small">Custo estimado</div>
+                    <div class="text-muted small" id="kpiCustoLabel">Custo estimado</div>
                     <div class="fs-3 fw-semibold" id="kpiCusto">—</div>
+                    <div class="small text-muted d-none" id="kpiCustoDetalhe"></div>
                 </div>
             </div>
         </div>

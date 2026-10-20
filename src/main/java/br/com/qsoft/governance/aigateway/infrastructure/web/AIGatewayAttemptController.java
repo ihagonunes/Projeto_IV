@@ -2,6 +2,7 @@ package br.com.qsoft.governance.aigateway.infrastructure.web;
 
 import br.com.qsoft.governance.aigateway.application.QueryRequestAttempts;
 import br.com.qsoft.governance.aigateway.application.QueryRequestAttemptsCommand;
+import br.com.qsoft.governance.aigateway.domain.attempt.CostStatus;
 import br.com.qsoft.governance.aigateway.domain.attempt.DeliveryStatus;
 import br.com.qsoft.governance.aigateway.domain.attempt.ExecutionStatus;
 import br.com.qsoft.governance.iam.api.rbac.RequiresPermission;
@@ -44,6 +45,7 @@ public class AIGatewayAttemptController {
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
             @RequestParam(required = false) ExecutionStatus status,
             @RequestParam(required = false) DeliveryStatus deliveryStatus,
+            @RequestParam(required = false) CostStatus costStatus,
             @RequestParam(required = false) UUID userId,
             @RequestParam(required = false) UUID departmentId,
             @RequestParam(defaultValue = "0") int page,
@@ -52,6 +54,6 @@ public class AIGatewayAttemptController {
         return ResponseEntity.ok(RequestAttemptPageResponse.from(
             queryRequestAttempts.query(new QueryRequestAttemptsCommand(
                 context.tenantId(), context.userId(), from, to, status, deliveryStatus,
-                userId, departmentId, page, size))));
+                costStatus, userId, departmentId, page, size))));
     }
 }

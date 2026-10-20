@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 
 import br.com.qsoft.governance.aigateway.api.exception.AIAttemptAccessDeniedException;
 import br.com.qsoft.governance.aigateway.application.port.RequestAttemptRepository;
+import br.com.qsoft.governance.aigateway.domain.attempt.CostStatus;
 import br.com.qsoft.governance.aigateway.domain.attempt.DeliveryStatus;
 import br.com.qsoft.governance.aigateway.domain.attempt.ExecutionStatus;
 import br.com.qsoft.governance.iam.api.query.AuthorizationQuery;
@@ -130,11 +131,25 @@ class QueryRequestAttemptsTest {
             org.mockito.ArgumentMatchers.eq(20));
     }
 
+    @Test
+    void deve_repassarFiltroDeCustoInconclusivo() {
+        when(authorizationQuery.visibilityFor(tenantId, actor, Resource.USAGE, Action.READ))
+            .thenReturn(new VisibilityScope.TenantWide());
+
+        useCase.query(new QueryRequestAttemptsCommand(tenantId, actor, null, null, null, null,
+            CostStatus.INCONCLUSIVE, null, null, 0, 20));
+
+        ArgumentCaptor<RequestAttemptRepository.AttemptFilter> captor =
+            ArgumentCaptor.forClass(RequestAttemptRepository.AttemptFilter.class);
+        verify(repository).search(captor.capture(), anyInt(), anyInt());
+        assertThat(captor.getValue().costStatus()).isEqualTo(CostStatus.INCONCLUSIVE);
+    }
+
     private QueryRequestAttemptsCommand command(UUID departmentId, UUID userId,
                                                 ExecutionStatus status,
                                                 DeliveryStatus delivery,
                                                 int page, int size) {
         return new QueryRequestAttemptsCommand(tenantId, actor, Instant.now().minusSeconds(3600),
-            Instant.now(), status, delivery, userId, departmentId, page, size);
+            Instant.now(), status, delivery, null, userId, departmentId, page, size);
     }
 }

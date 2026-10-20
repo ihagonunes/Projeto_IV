@@ -18,6 +18,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const kpiRequests = document.getElementById("kpiRequests");
     const kpiActiveUsers = document.getElementById("kpiActiveUsers");
     const kpiCusto = document.getElementById("kpiCusto");
+    const kpiCustoLabel = document.getElementById("kpiCustoLabel");
+    const kpiCustoDetalhe = document.getElementById("kpiCustoDetalhe");
+    const carregando = document.getElementById("dashboardLoading");
     const grafico = document.getElementById("graficoSeries");
     const tabela = document.getElementById("tabelaCustos");
     const campoMesOrcamento = document.getElementById("orcamentoMes");
@@ -165,7 +168,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
             await carregarUsuarios();
-        } catch (e) {
+        } catch (err) {
+            if (err?.status === 401) {
+                window.location.href = "/sessao-expirada";
+            }
             colunaUsuario.classList.add("d-none");
         }
     }
@@ -175,6 +181,59 @@ document.addEventListener("DOMContentLoaded", () => {
             minimumFractionDigits: 2,
             maximumFractionDigits: 4
         });
+    }
+
+    let carregamentosAtivos = 0;
+
+    function iniciarCarregamento() {
+        carregamentosAtivos += 1;
+        if (carregando) carregando.classList.remove("d-none");
+    }
+
+    function finalizarCarregamento() {
+        carregamentosAtivos = Math.max(0, carregamentosAtivos - 1);
+        if (carregamentosAtivos === 0 && carregando) carregando.classList.add("d-none");
+    }
+
+    function mensagemDeErro(err, padrao) {
+        if (err?.status === 401) {
+            window.location.href = "/sessao-expirada";
+            return "Sua sessão expirou. Redirecionando para o login...";
+        }
+        if (err?.status === 403) {
+            return "Você não tem permissão para consultar estes dados.";
+        }
+        if (err?.timeout) {
+            return "A consulta demorou demais. Tente novamente.";
+        }
+        if (err?.status >= 500) {
+            return "O serviço está indisponível. Tente novamente em instantes.";
+        }
+        return err?.message || padrao;
+    }
+
+    function comTimeout(promise, ms) {
+        return Promise.race([
+            promise,
+            new Promise((_, reject) => {
+                setTimeout(() => {
+                    const error = new Error("Tempo limite da consulta excedido.");
+                    error.timeout = true;
+                    reject(error);
+                }, ms);
+            })
+        ]);
+    }
+
+    function definirKpi(elemento, valor, formatador) {
+        if (!elemento) return;
+        if (valor == null) {
+            elemento.textContent = "Sem dados no período";
+            elemento.classList.add("fs-6", "text-muted");
+            return;
+        }
+        elemento.textContent = formatador(valor);
+        elemento.classList.remove("fs-6", "text-muted");
     }
 
     async function carregarDepartamentos() {
@@ -194,25 +253,39 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function limpar() {
-        kpiRequests.textContent = "—";
-        kpiActiveUsers.textContent = "—";
-        kpiCusto.textContent = "—";
+        [kpiRequests, kpiActiveUsers, kpiCusto].forEach((elemento) => {
+            if (!elemento) return;
+            elemento.textContent = "—";
+            elemento.classList.remove("fs-6", "text-muted");
+        });
         grafico.innerHTML = "";
         tabela.innerHTML = "";
     }
 
     function renderKpis(usage, costs) {
-        const total = (usage?.series || []).reduce((soma, p) => soma + Number(p.requests || 0), 0);
-        kpiRequests.textContent = total.toLocaleString("pt-BR");
-        kpiActiveUsers.textContent = Number(usage?.activeUsers || 0).toLocaleString("pt-BR");
-        const custo = (costs || []).reduce((soma, c) => soma + Number(c.estimatedCost || 0), 0);
-        kpiCusto.textContent = formatarMoeda(custo);
+        const serie = usage?.series || [];
+        if (!serie.length) {
+            definirKpi(kpiRequests, null);
+            definirKpi(kpiActiveUsers, null);
+        } else {
+            const total = serie.reduce((soma, p) => soma + Number(p.requests || 0), 0);
+            definirKpi(kpiRequests, total, (valor) => valor.toLocaleString("pt-BR"));
+            definirKpi(kpiActiveUsers, Number(usage?.activeUsers || 0),
+                (valor) => valor.toLocaleString("pt-BR"));
+        }
+
+        if (!costs || !costs.length) {
+            definirKpi(kpiCusto, null);
+        } else {
+            const custo = costs.reduce((soma, c) => soma + Number(c.custoEstimado || 0), 0);
+            definirKpi(kpiCusto, custo, formatarMoeda);
+        }
     }
 
     function renderSeries(usage) {
         const serie = usage?.series || [];
         if (!serie.length) {
-            grafico.innerHTML = '<p class="text-muted mb-0">Sem requisições registradas no período.</p>';
+            grafico.innerHTML = '<p class="text-muted mb-0">Sem dados no período.</p>';
             return;
         }
         const maximo = Math.max(...serie.map((p) => Number(p.requests || 0)), 1);
@@ -233,7 +306,8 @@ document.addEventListener("DOMContentLoaded", () => {
     function renderCustos(costs) {
         const dimensao = dimensaoAtual();
         if (!costs || !costs.length) {
-            tabela.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-3">${dimensao.vazio}</td></tr>`;
+            tabela.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">'
+                + 'Sem dados no período.</td></tr>';
             return;
         }
         tabela.innerHTML = costs.map((c) => {
@@ -282,7 +356,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!tabelaOrcamentos) return;
         if (!itens || !itens.length) {
             tabelaOrcamentos.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">'
-                + 'Nenhum departamento ativo no seu escopo para este mês.</td></tr>';
+                + 'Sem dados no período.</td></tr>';
             return;
         }
         tabelaOrcamentos.innerHTML = itens.map((item) => {
@@ -306,20 +380,62 @@ document.addEventListener("DOMContentLoaded", () => {
     async function carregarOrcamentos() {
         if (!client || !tabelaOrcamentos || !campoMesOrcamento) return;
         avisarOrcamento("");
+        iniciarCarregamento();
         try {
-            const resposta = await client.get(
-                `/v1/observability/orcamentos?mes=${encodeURIComponent(campoMesOrcamento.value)}`);
+            const resposta = await comTimeout(client.get(
+                `/v1/observability/orcamentos?mes=${encodeURIComponent(campoMesOrcamento.value)}`),
+                20000);
             renderOrcamentos(resposta?.itens || []);
         } catch (err) {
             tabelaOrcamentos.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">'
-                + 'Não foi possível carregar o orçamento.</td></tr>';
-            if (err?.status === 403) {
-                avisarOrcamento("Você não tem permissão para visualizar o orçamento neste escopo.", "warning");
-            } else if (err?.status >= 500) {
-                avisarOrcamento("O serviço de orçamento está indisponível. Tente novamente em instantes.", "danger");
-            } else {
-                avisarOrcamento(err?.message || "Não foi possível carregar o orçamento.", "warning");
+                + 'Sem dados no período.</td></tr>';
+            avisarOrcamento(mensagemDeErro(err, "Não foi possível carregar o orçamento."),
+                err?.status === 403 ? "warning" : "danger");
+        } finally {
+            finalizarCarregamento();
+        }
+    }
+
+    /**
+     * Custo conhecido + tentativas inconclusivas (F2). O contador vem da RF047
+     * (C3), nunca de uma dependência observability → aigateway. Sem a RF047,
+     * o contador fica oculto.
+     */
+    async function carregarInconclusivos() {
+        if (!client) return;
+        if (kpiCustoLabel) kpiCustoLabel.textContent = "Custo estimado";
+        if (kpiCustoDetalhe) {
+            kpiCustoDetalhe.textContent = "";
+            kpiCustoDetalhe.classList.add("d-none");
+        }
+        try {
+            const params = new URLSearchParams();
+            params.set("costStatus", "INCONCLUSIVE");
+            params.set("size", "1");
+            if (campoDe.value) params.set("de", `${campoDe.value}T00:00:00Z`);
+            if (campoAte.value) params.set("ate", `${campoAte.value}T23:59:59Z`);
+            if (campoDepartamento.value) {
+                params.set("departmentId", campoDepartamento.value);
             }
+            if (campoUsuario?.value) {
+                params.set("userId", campoUsuario.value);
+            }
+            const pagina = await comTimeout(
+                client.get(`/v1/ai-gateway/tentativas?${params.toString()}`), 15000);
+            const total = Number(pagina?.totalElements || 0);
+            if (total > 0) {
+                if (kpiCustoLabel) kpiCustoLabel.textContent = "Custo conhecido";
+                if (kpiCustoDetalhe) {
+                    kpiCustoDetalhe.textContent = total.toLocaleString("pt-BR")
+                        + " tentativa(s) inconclusiva(s) fora do custo conhecido.";
+                    kpiCustoDetalhe.classList.remove("d-none");
+                }
+            }
+        } catch (err) {
+            if (err?.status === 401) {
+                window.location.href = "/sessao-expirada";
+            }
+            // Contador complementar: oculto quando a RF047 não está disponível.
         }
     }
 
@@ -329,21 +445,26 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
         avisar("");
+        iniciarCarregamento();
         try {
             const filtros = queryString();
             const agrupamento = encodeURIComponent(campoAgrupamento?.value || "DEPARTMENT");
-            const [usage, costs] = await Promise.all([
+            const [usage, costs] = await comTimeout(Promise.all([
                 client.get(`/v1/observability/metrics/usage?${filtros}`),
                 client.get(`/v1/observability/metrics/costs?${filtros}&groupBy=${agrupamento}`)
-            ]);
+            ]), 20000);
             dadosAtuais = { usage, costs: costs || [] };
             renderKpis(dadosAtuais.usage, dadosAtuais.costs);
             renderSeries(dadosAtuais.usage);
             renderCustos(dadosAtuais.costs);
+            carregarInconclusivos();
         } catch (err) {
             dadosAtuais = { usage: null, costs: [] };
             limpar();
-            avisar(err?.message || "Não foi possível carregar as métricas.", "warning");
+            avisar(mensagemDeErro(err, "Não foi possível carregar as métricas."),
+                err?.status === 403 ? "warning" : "danger");
+        } finally {
+            finalizarCarregamento();
         }
     }
 

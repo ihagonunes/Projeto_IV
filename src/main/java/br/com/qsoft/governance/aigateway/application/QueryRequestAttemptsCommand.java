@@ -1,5 +1,6 @@
 package br.com.qsoft.governance.aigateway.application;
 
+import br.com.qsoft.governance.aigateway.domain.attempt.CostStatus;
 import br.com.qsoft.governance.aigateway.domain.attempt.DeliveryStatus;
 import br.com.qsoft.governance.aigateway.domain.attempt.ExecutionStatus;
 import br.com.qsoft.governance.sharedkernel.id.TenantId;
@@ -15,6 +16,7 @@ public record QueryRequestAttemptsCommand(
     Instant to,
     ExecutionStatus status,
     DeliveryStatus deliveryStatus,
+    CostStatus costStatus,
     UUID userId,
     UUID departmentId,
     int page,
