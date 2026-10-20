@@ -1,11 +1,11 @@
 # Contrato de API — Frontend × Backend
 
-> **Estado atual: 2026-10-18** (backend `b-ihago` @ `1a4e9ac`; produção igual à `057fbea`).
-> As §1 e §2 descrevem o contrato **vigente**. A partir da §3, o conteúdo é o **registro histórico**
-> da reconciliação de 27/09 (Opção A).
+> **Estado atual: 2026-10-20** (Sprint 3, A1–A10 e ondas B/C/D/E/F aplicadas).
+> As §1, §2 e §2.7 descrevem o contrato **vigente**. A partir da §3, o conteúdo é o **registro
+> histórico** da reconciliação de 27/09 (Opção A).
 >
-> Mudanças planejadas na Sprint 3: `ai/tasks/sprint-03/SPEC-01-autorizacao.md` §6–§7 e as SPECs
-> 02–05. A TASK-S3-A10 atualiza este arquivo quando elas forem entregues.
+> Referências: `ai/tasks/sprint-03/SPEC-01-autorizacao.md` §6–§7 (autorização) e
+> `docs/development/MATRIZ_PERMISSOES.md` (matriz conferida contra o código).
 
 ---
 
@@ -19,7 +19,7 @@
 
 ---
 
-## 2. Contrato vigente do backend (33 endpoints)
+## 2. Contrato vigente do backend
 
 Convenções:
 - `/api/v1/{recurso}`;
@@ -34,17 +34,20 @@ O tenant vem sempre do JWT.
 | Método | Caminho | Corpo | Autorização |
 |---|---|---|---|
 | POST | `/api/v1/auth/login` | `{ tenantSlug?, email, password }` → `{ token, tokenType }` | público |
-| POST | `/api/v1/tenants` | `{ slug, name, emailDomain }` | público (não cria usuário — N01) |
+| POST | `/api/v1/tenants` | `{ slug, name, emailDomain, adminName, adminEmail, adminPassword }` (cria tenant + admin `TENANT_ADMIN`) | público |
 | GET / PUT | `/api/v1/tenants/me` | PUT: `{ name }` | autenticado / `TENANT:MANAGE` |
 | GET / PUT | `/api/v1/tenants/me/identidade-visual` | PUT: `{ logoUrl, primaryColor, secondaryColor }` | autenticado / `TENANT:MANAGE` |
-| POST | `/api/v1/usuarios` | `{ email, name, hierarchyLevel, departmentId? }` (sem senha) | `USER:MANAGE` — **será removido** (TASK-S3-A7) |
-| GET | `/api/v1/usuarios` | filtros `hierarchyLevel`, `departmentId`, `name`, `email` | `USER:READ` |
+| ~~POST~~ | ~~`/api/v1/usuarios`~~ | **removido** (404/405); criação só por convite | — |
+| GET | `/api/v1/usuarios` | filtros `hierarchyLevel`, `departmentId`, `name`, `email`, `page`, `size` | `USER:READ` (BT) |
 | PATCH | `/api/v1/usuarios/{id}` | `{ departmentId }` | `USER:MANAGE` |
 | PATCH | `/api/v1/usuarios/{id}/status` | `{ status }` | `USER:MANAGE` |
 | POST | `/api/v1/usuarios/{id}/nivel` | `{ hierarchyLevel }` (rótulo, sem efeito de autorização) | `USER:MANAGE` |
-| GET | `/api/v1/usuarios/me/permissoes` | → `{ userId, permissions: ["RESOURCE:ACTION"] }` | autenticado |
-| GET | `/api/v1/usuarios/{id}/permissoes` | idem | `USER:READ` |
-| GET / POST | `/api/v1/convites` | POST: `{ email, hierarchyLevel, departmentId? }` → inclui `token` | `INVITE:MANAGE` |
+| GET | `/api/v1/usuarios/me/permissoes` | → `{ userId, concessoes, permissoes: ["RESOURCE:ACTION"] }` | autenticado |
+| GET | `/api/v1/usuarios/{id}/permissoes` | idem | `USER:READ` (BT) |
+| GET | `/api/v1/papeis` | → `[{ key, escopo, posto, concedivel }]` | `ROLE:READ` (BT) |
+| POST | `/api/v1/usuarios/{id}/concessoes` | `{ roleKey, departmentId? }` → 201 | `ROLE:MANAGE` (TO) |
+| DELETE | `/api/v1/usuarios/{id}/concessoes/{concessaoId}` | — | `ROLE:MANAGE` (TO) |
+| GET / POST | `/api/v1/convites` | POST: `{ email, roleKey, departmentId?, hierarchyLevel? }` → inclui `token` | `INVITE:MANAGE` (BT) |
 | POST | `/api/v1/convites/{id}/reenviar` | — | `INVITE:MANAGE` |
 | DELETE | `/api/v1/convites/{id}` | — | `INVITE:MANAGE` |
 | POST | `/api/v1/convites/aceitar` | `{ token, name?, password }` | público |
@@ -54,7 +57,9 @@ O tenant vem sempre do JWT.
 | Método | Caminho | Corpo | Autorização |
 |---|---|---|---|
 | GET / POST | `/api/v1/departamentos` | POST: `{ name, description?, monthlyBudget? }` | `DEPARTMENT:READ` / `DEPARTMENT:MANAGE` |
-| GET / PUT / DELETE | `/api/v1/departamentos/{id}` | DELETE é lógico (inativa) | `DEPARTMENT:READ` / `DEPARTMENT:MANAGE` |
+| GET / PUT / DELETE | `/api/v1/departamentos/{id}` | DELETE é lógico (inativa) | `DEPARTMENT:READ` (BT) / `DEPARTMENT:MANAGE` |
+| PUT | `/api/v1/departamentos/{id}/orcamentos/{mes}` | `{ amount, alertThresholdPct? }` (`mes=AAAA-MM`) | `DEPARTMENT:MANAGE` (BT) |
+| GET | `/api/v1/departamentos/{id}/orcamentos` | `de=AAAA-MM&ate=AAAA-MM` (≤ 24 meses) | `DEPARTMENT:READ` (BT) |
 
 ### 2.3 Catálogo de IA e roteamento (`aigateway`)
 
@@ -70,9 +75,11 @@ O tenant vem sempre do JWT.
 
 | Método | Caminho | Filtros | Autorização |
 |---|---|---|---|
-| GET | `/api/v1/observability/usage` | `departmentId`, `userId`, `from`, `to`, `page`, `size` | `USAGE:READ` — ⚠️ hoje **sem escopo** (D5; corrigido na TASK-S3-A3) |
-| GET | `/api/v1/observability/metrics/usage` | `from`, `to`, `departmentId`, `granularity` | `USAGE:READ` (escopo pelo rótulo; muda na A3) |
-| GET | `/api/v1/observability/metrics/costs` | `from`, `to`, `departmentId` | `USAGE:READ` (idem) |
+| GET | `/api/v1/observability/usage` | `departmentId`, `userId`, `from`, `to`, `page`, `size` | `USAGE:READ` (BT; filtro fora do escopo → 403) |
+| GET | `/api/v1/observability/metrics/usage` | `from`, `to`, `departmentId`, `modelId`, `userId`, `granularity` | `USAGE:READ` (BT) |
+| GET | `/api/v1/observability/metrics/costs` | `from`, `to`, `departmentId`, `modelId`, `userId`, `groupBy=DEPARTMENT\|MODEL\|USER` | `USAGE:READ` (BT) |
+| GET | `/api/v1/observability/orcamentos` | `mes=AAAA-MM` | `USAGE:READ` (BT; SelfOnly → 403) |
+| GET | `/api/v1/ai-gateway/tentativas` | `de`, `ate`, `status`, `deliveryStatus`, `costStatus`, `userId`, `departmentId`, `page`, `size` | `USAGE:READ` (BT) |
 
 ### 2.5 Infra
 
@@ -81,22 +88,64 @@ O tenant vem sempre do JWT.
 | GET | `/actuator/health` | público |
 | GET | `/swagger-ui.html`, `/v3/api-docs` | público (desligável por `OPENAPI_ENABLED`) |
 
-### 2.6 Chamadas do front em 18/10/2026
+### 2.6 Chamadas do front em 20/10/2026
 
-O cliente do browser é `public/js/**`. Os controllers server-side `modules/*/*.controller.js`
-**nunca executam**: o proxy `app.use("/api", …)` (`app.js:76`) é registrado antes das rotas dos
-módulos (`app.js:135+`).
+O cliente do browser é `public/js/**` (`window.ApiClient` base `/api` + `/v1/...` e `window.API`
+base `/api/v1`). Os controllers server-side `modules/*/*.controller.js` continuam inalcançáveis:
+o proxy `app.use("/api", …)` (`app.js:76`) é registrado antes das rotas dos módulos.
 
 | Arquivo | Chamada | Status |
 |---|---|---|
 | `core/auth.js` | `POST /api/v1/auth/login` | ✅ |
-| `pages/aceite-convite.js` | `POST /api/v1/convites/aceitar` | ✅ (corrigido desde 27/09) |
-| `pages/admin-convites.js` | `POST /api/v1/convites`, `POST …/{id}/reenviar`, `DELETE …/{id}` | ✅ |
-| `pages/admin-usuarios.js` | `GET /api/v1/usuarios`, `POST …/{id}/nivel` | ✅ (o papel exibido vem de `localStorage('simulatedUserRole')`, não do backend — TASK-S3-A9) |
+| `pages/onboarding/step-tenant.js` | `POST /api/v1/tenants` + `POST /api/v1/auth/login` | ✅ (registra e autentica o admin) |
+| `pages/aceite-convite.js` | `POST /api/v1/convites/aceitar` | ✅ |
+| `pages/admin-convites.js` | `GET /me/permissoes`, `GET /papeis`, `GET /departamentos`, `GET/POST /convites`, `POST …/{id}/reenviar`, `DELETE …/{id}` | ✅ |
+| `pages/admin-usuarios.js` | `GET /me/permissoes`, `GET /usuarios`, `POST …/{id}/nivel`, `PATCH /usuarios/{id}`, `GET …/{id}/permissoes`, `POST/DELETE …/concessoes` | ✅ |
 | `pages/editar-empresa.js` | `GET/PUT /api/v1/tenants/me` | ✅ |
 | `pages/identidade-visual.js` | `GET/PUT /api/v1/tenant/identidade-visual` | ❌ **path errado** (singular). Correto: `/api/v1/tenants/me/identidade-visual` |
-| `pages/dashboard.js` | `GET /api/v1/observability/metrics/usage` e `/costs` | ✅ |
+| `pages/dashboard.js` | `GET /api/v1/observability/metrics/usage` e `/costs`, `/orcamentos`, `/ai-gateway/tentativas` | ✅ |
+| `pages/orcamentos.js` | `GET/PUT /departamentos/{id}/orcamentos`, `GET /observability/orcamentos`, `GET /me/permissoes` | ✅ |
 | `modules/*/*.controller.js` (server-side, inalcançável) | `/ia`, `/revisao`, `/revisao/confirmar`, `/auth/redefinir-senha`, `/usuarios/importar`, `GET /tenants` | ❌ não existem no backend; código morto |
+
+## 2.7 Payloads de autorização (SPEC-01 §7)
+
+`POST /api/v1/tenants`:
+
+```json
+{ "slug": "acme", "name": "ACME", "emailDomain": "acme.com",
+  "adminName": "Ana", "adminEmail": "ana@acme.com", "adminPassword": "..." }
+```
+
+- `adminEmail` deve pertencer a `emailDomain`; senha ≥ 8 caracteres; resposta 201 sem senha.
+- Tudo em uma transação: tenant, papéis, usuário e concessão `TENANT_ADMIN`/TENANT (BOOTSTRAP).
+
+`POST /api/v1/convites`:
+
+```json
+{ "email": "x@acme.com", "roleKey": "LEADER",
+  "departmentId": "<uuid|null>", "hierarchyLevel": "LEADER" }
+```
+
+- `departmentId` é obrigatório para papéis `DEPARTMENT`; `hierarchyLevel` é opcional (derivado
+  do papel quando ausente).
+- A resposta 201 inclui `token` **uma única vez**; só o hash SHA-256 fica no banco e o token
+  nunca vai para log. `GET /convites` nunca devolve token.
+
+`GET /api/v1/usuarios/me/permissoes` e `/{id}/permissoes`:
+
+```json
+{ "userId": "…",
+  "concessoes": [{ "id": "…", "papel": "MANAGER", "escopo": "DEPARTMENT",
+                   "departmentId": "…", "origem": "INVITE" }],
+  "permissoes": ["USER:READ", "USAGE:READ"] }
+```
+
+- `permissoes` é a união sem escopo, usada só para menus; não é autorização.
+
+`POST /api/v1/usuarios/{id}/concessoes`: `{ "roleKey": "MANAGER", "departmentId": "…" }`.
+Respostas: 201 criada; 409 concessão ativa idêntica; 403 ator = alvo.
+
+`GET /api/v1/papeis`: `[{ "key": "LEADER", "escopo": "DEPARTMENT", "posto": 2, "concedivel": true }]`.
 
 ---
 

@@ -43,8 +43,8 @@ Outro módulo pode acessar somente `<module>.api.*`.
 
 | Módulo | Ownership principal |
 |---|---|
-| sharedkernel | IDs, DomainEvent, TenantContext, exceções base, vocabulário de autorização (`Resource`/`Action` — ADR-34) |
-| iam | Tenant, User, autenticação, permissões, AuthorizationScope, contrato `@RequiresPermission` |
+| sharedkernel | IDs, DomainEvent, TenantContext, exceções base, vocabulário de autorização (`Resource`/`Action`/`ScopeType`/`AccessTarget`/`VisibilityScope`/`Targeting` — ADR-34/ADR-36) |
+| iam | Tenant, User, autenticação, papéis de sistema, concessões com escopo (`RoleAssignment`), `AuthorizationQuery`, contrato `@RequiresPermission` (ADR-36/ADR-37) |
 | department | Department, Area, UserAreaMembership, BudgetLimit, ModelPolicy |
 | project | Project mínimo |
 | aigateway | Provider, AITool, Model, credenciais por referência, completion |
@@ -106,11 +106,14 @@ Múltiplos Providers podem estar ACTIVE. Provider local não implica Docker.
 
 ## Segurança
 
-- login: `tenantSlug + email + password`;
+- login: `email + password`; `tenantSlug` é **opcional** e, quando ausente, o tenant é
+  resolvido pelo domínio de e-mail cadastrado (ADR-32, emendado pela SPI-54);
 - BCrypt;
 - JWT Bearer stateless, TTL 30 min, sem refresh no MVP;
 - claims estáveis: UserId/TenantId + iat/exp;
-- permissões/escopos vêm do IAM atual;
+- cada requisição protegida lê as **concessões ativas** do IAM, sem cache; revogar vale
+  na requisição seguinte (ADR-36/ADR-37);
+- permissões/escopos vêm do IAM atual (nunca do frontend ou do LLM);
 - Tenant/User ACTIVE revalidados;
 - Chat é privado inclusive de MANAGER/ADMIN;
 - LLM nunca decide autorização.

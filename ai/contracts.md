@@ -6,7 +6,7 @@ Contratos são Java APIs internas entre módulos. Não equivalem automaticamente
 
 | Módulo | Contratos públicos principais |
 |---|---|
-| iam | `IdentityQuery`, `AuthorizationQuery`, contrato de autorização RBAC (`@RequiresPermission` em `iam.api.rbac` — ADR-34) |
+| iam | `IdentityQuery`, `AuthorizationQuery` (`isAllowed`/`visibilityFor`), `@RequiresPermission`/`Targeting` em `iam.api.rbac` (ADR-34/ADR-36/ADR-37) |
 | department | `OrganizationQuery`, `DepartmentBudgetQuery` (`budgetFor`/`budgetsFor` + `BudgetLimitInfo`), `DepartmentModelPolicyQuery` |
 | project | `ProjectQueryPort` |
 | aigateway | `AICompletionService`, `ModelResolutionQuery`, `AIToolCatalogQuery`, catálogo administrativo |
@@ -17,6 +17,54 @@ Contratos são Java APIs internas entre módulos. Não equivalem automaticamente
 | governancescore | `GovernanceScoreQueryPort`, Breakdown, Department scores, History |
 
 `AlertQueryPort` foi substituído pelo status de orçamento calculado na leitura (sem tabela nova, sem evento e sem bloqueio — A105).
+
+## Autorização (ADR-34/ADR-36/ADR-37)
+
+`iam.api.query.AuthorizationQuery` (leitura das concessões ativas a cada chamada, sem cache):
+
+```java
+boolean isAllowed(TenantId tenantId, UserId actor,
+                  Resource resource, Action action, AccessTarget target);
+
+VisibilityScope visibilityFor(TenantId tenantId, UserId actor,
+                             Resource resource, Action action);
+```
+
+`iam.api.rbac`:
+
+```java
+enum Targeting { TENANT_ONLY, BY_TARGET }   // default: TENANT_ONLY
+
+@interface RequiresPermission {
+    Resource resource();
+    Action action();
+    Targeting targeting() default Targeting.TENANT_ONLY;
+}
+```
+
+`sharedkernel.rbac` (vocabulário transversal):
+
+```java
+enum ScopeType { SELF, DEPARTMENT, TENANT }
+
+sealed interface AccessTarget {
+    record TenantTarget() implements AccessTarget {}
+    record DepartmentTarget(UUID departmentId) implements AccessTarget {}
+    record OwnedTarget(UserId owner, UUID ownerDepartment) implements AccessTarget {}
+}
+
+sealed interface VisibilityScope {
+    record TenantWide() implements VisibilityScope {}
+    record Departments(Set<UUID> ids, UserId self) implements VisibilityScope {}
+    record SelfOnly(UserId self) implements VisibilityScope {}
+    record None() implements VisibilityScope {}
+    default boolean coversDepartment(UUID departmentId);
+}
+```
+
+- `BY_TARGET` aceita qualquer concessão aplicável e **exige** a checagem fina no caso de uso
+  (`isAllowed` com o alvo, ou `visibilityFor` para consultas agregadas).
+- O teto de `CHAT` é sempre `SELF`, mesmo em concessões `TENANT`/`DEPARTMENT`.
 
 ## Eventos definitivos do MVP
 

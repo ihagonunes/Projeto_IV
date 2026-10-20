@@ -88,7 +88,13 @@ Cortes deliberados para reduzir complexidade e superfície de segurança, sem re
 - **Efeito:** o corpo do PATCH é `{ departmentId }`. O nível continua em `POST /api/v1/usuarios/{id}/nivel`, como **rótulo organizacional**.
 - **Contrato alterado** — `UpdateUserRequest`/`UpdateUserCommand` e `UserResponse` (ganhou `departmentId`).
 
-### 2. `POST /api/v1/usuarios` **não** aceita senha
+### 2. `POST /api/v1/usuarios` **não** aceita senha — **SUPERADA pela TASK-S3-A7**
+
+> O endpoint `POST /api/v1/usuarios` foi **removido** na Sprint 3 (A7): criar usuário sem
+> senha deixava contas inextinguíveis/inutilizáveis. O único caminho de criação passa a ser
+> o **convite** (`POST /api/v1/convites` + `POST /api/v1/convites/aceitar`), que carrega
+> papel, departamento e define a senha no aceite. O texto abaixo fica como registro
+> histórico.
 
 - **Motivo:** o caminho legítimo para o usuário obter acesso é o **convite** (SPI-29/30), que define a senha no aceite. Aceitar senha no cadastro permitia ao administrador fixar/transmitir senha por canal inseguro.
 - **Efeito:** o payload é `{ email, name, hierarchyLevel, departmentId? }`; o endpoint usa `CreateUser` (sem senha). O usuário criado assim não autentica até aceitar um convite (ou passar por recuperação de senha, quando existir).

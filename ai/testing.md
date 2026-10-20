@@ -44,10 +44,12 @@ Executa `*IT` com Testcontainers/PostgreSQL real e exige Docker.
 
 ### Security/API
 
-- tenantSlug + email + password;
+- login com `email + password`; `tenantSlug` opcional, com tenant resolvido pelo
+  domínio de e-mail cadastrado (ADR-32, emendado pela SPI-54);
 - Tenant/User INACTIVE;
 - ownership de Chat;
-- AuthorizationScope;
+- concessões com escopo (`AuthorizationQuery.isAllowed`/`visibilityFor`) e `targeting`;
+- revogação de concessão vale na requisição seguinte (sem cache);
 - paginação;
 - endpoint privado/publicado corretamente.
 

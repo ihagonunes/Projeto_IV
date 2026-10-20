@@ -68,6 +68,28 @@ O que passa a ser **transversal** é apenas o **vocabulário** `resource × acti
 (`Resource`/`Action` no `sharedkernel`), porque **todo módulo precisa declarar
 quais recursos protege**. O ADR-04 fica assim **esclarecido, não revogado**.
 
+## Emenda (ADR-36/ADR-37) — 2026-10-18
+
+`@RequiresPermission` passa a declarar **targeting**:
+
+```java
+Targeting targeting() default Targeting.TENANT_ONLY;
+```
+
+- `TENANT_ONLY` (padrão, gate fechado): exige uma concessão aplicável cujo teto efetivo
+  seja `TENANT`.
+- `BY_TARGET`: aceita qualquer concessão aplicável e **obriga** o caso de uso a fazer a
+  checagem fina com `AuthorizationQuery.isAllowed(..., AccessTarget)` (ou
+  `visibilityFor` para consultas agregadas). Sem essa checagem, o endpoint não deve ser
+  publicado.
+- Entram no `sharedkernel.rbac`, além de `Resource`/`Action`: `ScopeType`, `AccessTarget`
+  (`TenantTarget`, `DepartmentTarget`, `OwnedTarget`), `VisibilityScope` (`TenantWide`,
+  `Departments`, `SelfOnly`, `None`) e `Targeting`.
+- O teto de `CHAT` é sempre `SELF`, independentemente do escopo da concessão (ADR-36,
+  item 5), e as concessões são lidas a cada requisição, sem cache.
+
+O Status continua `ACCEPTED`.
+
 ## Consequências
 
 - Positivo: habilita RBAC cross-module **sem violar a allowlist** do ADR-31; o

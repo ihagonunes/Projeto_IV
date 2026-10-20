@@ -48,6 +48,23 @@ opcional de Department avaliado em tempo de execução (não persistido na tupla
 - **Renumerar a migration duplicada e manter o código órfão**: descartada — não
   resolve a duplicidade de modelos, apenas adia o conflito.
 
+## Emenda (ADR-36/ADR-37) — 2026-10-18
+
+O trecho "escopo opcional de Department avaliado em tempo de execução (não persistido
+na tupla)" **não vale mais**. A decisão atual:
+
+- o escopo é **persistido na concessão**: `scope_type` (`SELF`/`DEPARTMENT`/`TENANT`) e
+  `department_id`; a invariante é `department_id != null` ⇔ `scope_type = DEPARTMENT`;
+- a concessão guarda ainda `origin` (`BOOTSTRAP`/`INVITE`/`DIRECT`/`MIGRATION`),
+  `granted_by`/`granted_at` e `revoked_at`/`revoked_by` (revogação lógica);
+- o escopo do papel é fixo (`SystemRole`): `COLLABORATOR` = SELF, `LEADER`/`MANAGER` =
+  DEPARTMENT, `EXECUTIVE`/`TENANT_ADMIN` = TENANT; `PermissionMatrix` é substituída por
+  `SystemRole`;
+- a trilha legada `user_permission` não é mais lida; a remoção física fica para a
+  release seguinte (V021+).
+
+O Status continua `ACCEPTED`.
+
 ## Consequências
 
 - Positivo: uma única fonte de verdade; papéis isolados por `tenant_id`
