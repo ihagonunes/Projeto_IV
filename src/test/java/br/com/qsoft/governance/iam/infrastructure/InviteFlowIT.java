@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -113,6 +114,22 @@ class InviteFlowIT {
         assertThat(acceptStatus(inviteToken, "outra123")).isEqualTo(400);
     }
 
+    /** F6: convite de outro tenant em reenviar/DELETE → 404 (não 400). */
+    @Test
+    void conviteDeOutroTenantRetorna404AoReenviarERevogar() {
+        testTenants.ensureTenant("inviteother", "Invite Other", "Admin",
+            "admin@inviteother.com", ADMIN_PASSWORD);
+        String otherToken = login("admin@inviteother.com", ADMIN_PASSWORD);
+        String inviteId = (String) createInvite(otherToken, "outro@inviteother.com").get("id");
+
+        String adminToken = login(ADMIN_EMAIL, ADMIN_PASSWORD);
+
+        assertThat(requestStatus("POST", "/api/v1/convites/" + inviteId + "/reenviar",
+            adminToken)).isEqualTo(404);
+        assertThat(requestStatus("DELETE", "/api/v1/convites/" + inviteId, adminToken))
+            .isEqualTo(404);
+    }
+
     @Test
     void shouldRejectInviteWithoutPermission() {
         // Sem token: /api/v1/convites exige autenticação.
@@ -124,6 +141,17 @@ class InviteFlowIT {
             throw new AssertionError("Esperado 401/403");
         } catch (RestClientResponseException e) {
             assertThat(e.getStatusCode().value()).isIn(401, 403);
+        }
+    }
+
+    private int requestStatus(String method, String uri, String token) {
+        try {
+            client.method(HttpMethod.valueOf(method)).uri(uri)
+                .header("Authorization", "Bearer " + token)
+                .retrieve().toBodilessEntity();
+            return 200;
+        } catch (RestClientResponseException e) {
+            return e.getStatusCode().value();
         }
     }
 }

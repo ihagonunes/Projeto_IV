@@ -6,6 +6,7 @@ import br.com.qsoft.governance.iam.application.port.UserRepository;
 import br.com.qsoft.governance.iam.application.rbac.GrantAuthority;
 import br.com.qsoft.governance.iam.domain.exception.AuthorizationDeniedException;
 import br.com.qsoft.governance.iam.domain.exception.InvalidInviteException;
+import br.com.qsoft.governance.iam.domain.exception.InviteNotFoundException;
 import br.com.qsoft.governance.iam.domain.exception.UserEmailAlreadyExistsException;
 import br.com.qsoft.governance.iam.domain.invite.Invite;
 import br.com.qsoft.governance.iam.domain.invite.InviteStatus;
@@ -57,9 +58,10 @@ public class ResendInvite {
         InviteId inviteId = Objects.requireNonNull(command.inviteId(), "inviteId");
         UserId actor = Objects.requireNonNull(command.actor(), "actor");
 
+        // Inexistente ou de outro tenant: 404, sem revelar a existência (F6).
         Invite previous = inviteRepository.findById(inviteId)
             .filter(invite -> invite.tenantId().equals(tenantId))
-            .orElseThrow(InvalidInviteException::new);
+            .orElseThrow(InviteNotFoundException::new);
 
         if (previous.status() == InviteStatus.ACCEPTED) {
             throw new InvalidInviteException();

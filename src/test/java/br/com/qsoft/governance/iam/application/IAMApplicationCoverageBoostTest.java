@@ -19,6 +19,7 @@ import br.com.qsoft.governance.iam.application.rbac.ProvisionDefaultRoles;
 import br.com.qsoft.governance.iam.application.rbac.TenantAdminGuard;
 import br.com.qsoft.governance.iam.domain.exception.AuthorizationDeniedException;
 import br.com.qsoft.governance.iam.domain.exception.InvalidInviteException;
+import br.com.qsoft.governance.iam.domain.exception.InviteNotFoundException;
 import br.com.qsoft.governance.iam.domain.exception.TenantDomainAlreadyExistsException;
 import br.com.qsoft.governance.iam.domain.exception.TenantNotFoundException;
 import br.com.qsoft.governance.iam.domain.exception.TenantSlugAlreadyExistsException;
@@ -195,7 +196,7 @@ class IAMApplicationCoverageBoostTest {
 
         // Cross tenant revoke
         assertThatThrownBy(() -> useCase.revoke(new RevokeInviteCommand(t2.id(), invite.id(), UserId.random())))
-            .isInstanceOf(InvalidInviteException.class);
+            .isInstanceOf(InviteNotFoundException.class);
 
         // Invite accepted
         Invite acceptedInvite = Invite.restore(InviteId.random(), t1.id(), "b@b.com", HierarchyLevel.COLLABORATOR, null, UUID.randomUUID(), null, "token2", InviteStatus.ACCEPTED, Instant.now(), Instant.now().plusSeconds(3600), Instant.now());

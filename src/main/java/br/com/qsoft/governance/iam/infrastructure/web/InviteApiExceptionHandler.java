@@ -3,6 +3,7 @@ package br.com.qsoft.governance.iam.infrastructure.web;
 import br.com.qsoft.governance.iam.domain.exception.AuthorizationDeniedException;
 import br.com.qsoft.governance.iam.domain.exception.InvalidInviteException;
 import br.com.qsoft.governance.iam.domain.exception.InviteAuthorityLostException;
+import br.com.qsoft.governance.iam.domain.exception.InviteNotFoundException;
 import br.com.qsoft.governance.iam.domain.exception.TenantNotFoundException;
 import br.com.qsoft.governance.iam.domain.exception.UserEmailAlreadyExistsException;
 import java.util.Map;
@@ -22,6 +23,12 @@ public class InviteApiExceptionHandler {
     @ExceptionHandler(InvalidInviteException.class)
     public ResponseEntity<Map<String, String>> handleInvalidInvite(InvalidInviteException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", ex.getMessage()));
+    }
+
+    /** Convite inexistente ou de outro tenant (não revela a existência). */
+    @ExceptionHandler(InviteNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleInviteNotFound(InviteNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", ex.getMessage()));
     }
 
     @ExceptionHandler(UserEmailAlreadyExistsException.class)

@@ -10,6 +10,7 @@ import br.com.qsoft.governance.iam.application.port.InviteRepository;
 import br.com.qsoft.governance.iam.application.port.RoleRepository;
 import br.com.qsoft.governance.iam.application.rbac.GrantAuthority;
 import br.com.qsoft.governance.iam.domain.exception.InvalidInviteException;
+import br.com.qsoft.governance.iam.domain.exception.InviteNotFoundException;
 import br.com.qsoft.governance.iam.domain.invite.Invite;
 import br.com.qsoft.governance.iam.domain.invite.InviteStatus;
 import br.com.qsoft.governance.iam.domain.rbac.Role;
@@ -134,7 +135,7 @@ class RevokeInviteTest {
 
         assertThatThrownBy(() -> useCase.revoke(
             new RevokeInviteCommand(TenantId.random(), invite.id(), actor)))
-            .isInstanceOf(InvalidInviteException.class);
+            .isInstanceOf(InviteNotFoundException.class);
         assertThat(invitesById.get(invite.id()).status()).isEqualTo(InviteStatus.PENDING);
     }
 
@@ -142,6 +143,6 @@ class RevokeInviteTest {
     void shouldRejectUnknownInvite() {
         assertThatThrownBy(() -> useCase.revoke(
             new RevokeInviteCommand(TenantId.random(), InviteId.random(), actor)))
-            .isInstanceOf(InvalidInviteException.class);
+            .isInstanceOf(InviteNotFoundException.class);
     }
 }

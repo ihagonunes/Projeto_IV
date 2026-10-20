@@ -5,6 +5,7 @@ import br.com.qsoft.governance.iam.application.port.RoleRepository;
 import br.com.qsoft.governance.iam.application.rbac.GrantAuthority;
 import br.com.qsoft.governance.iam.domain.exception.AuthorizationDeniedException;
 import br.com.qsoft.governance.iam.domain.exception.InvalidInviteException;
+import br.com.qsoft.governance.iam.domain.exception.InviteNotFoundException;
 import br.com.qsoft.governance.iam.domain.invite.Invite;
 import br.com.qsoft.governance.iam.domain.invite.InviteStatus;
 import br.com.qsoft.governance.iam.domain.rbac.Role;
@@ -19,8 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Caso de uso de revogação de convite. O ator só revoga convites cujo papel
- * pode conceder. Convite de outro tenant é tratado como inválido (404 implícito
- * via 400), sem revelar existência.
+ * pode conceder. Convite inexistente ou de outro tenant → 404, sem revelar
+ * existência.
  */
 @Service
 public class RevokeInvite {
@@ -46,9 +47,10 @@ public class RevokeInvite {
         InviteId inviteId = Objects.requireNonNull(command.inviteId(), "inviteId");
         UserId actor = Objects.requireNonNull(command.actor(), "actor");
 
+        // Inexistente ou de outro tenant: 404, sem revelar a existência (F6).
         Invite invite = inviteRepository.findById(inviteId)
             .filter(candidate -> candidate.tenantId().equals(tenantId))
-            .orElseThrow(InvalidInviteException::new);
+            .orElseThrow(InviteNotFoundException::new);
 
         if (invite.status() == InviteStatus.ACCEPTED) {
             throw new InvalidInviteException();

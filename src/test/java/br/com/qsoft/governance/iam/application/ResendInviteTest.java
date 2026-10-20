@@ -11,6 +11,7 @@ import br.com.qsoft.governance.iam.application.port.RoleRepository;
 import br.com.qsoft.governance.iam.application.port.UserRepository;
 import br.com.qsoft.governance.iam.application.rbac.GrantAuthority;
 import br.com.qsoft.governance.iam.domain.exception.InvalidInviteException;
+import br.com.qsoft.governance.iam.domain.exception.InviteNotFoundException;
 import br.com.qsoft.governance.iam.domain.exception.UserEmailAlreadyExistsException;
 import br.com.qsoft.governance.iam.domain.invite.Invite;
 import br.com.qsoft.governance.iam.domain.invite.InviteStatus;
@@ -172,7 +173,7 @@ class ResendInviteTest {
 
         assertThatThrownBy(() -> useCase.resend(
             new ResendInviteCommand(TenantId.random(), invite.id(), actor)))
-            .isInstanceOf(InvalidInviteException.class);
+            .isInstanceOf(InviteNotFoundException.class);
     }
 
     @Test
@@ -190,6 +191,6 @@ class ResendInviteTest {
     void shouldRejectUnknownInvite() {
         assertThatThrownBy(() -> useCase.resend(
             new ResendInviteCommand(TenantId.random(), InviteId.random(), actor)))
-            .isInstanceOf(InvalidInviteException.class);
+            .isInstanceOf(InviteNotFoundException.class);
     }
 }
