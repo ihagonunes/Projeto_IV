@@ -36,7 +36,7 @@ class AIToolCatalogQueryAdapterTest {
 
     @Test
     void deve_retornar_catalog_model_info_quando_modelo_existir() {
-        Model model = Model.create(modelId, tenantId, providerId, "gpt-4o", BigDecimal.ONE, BigDecimal.TEN);
+        Model model = Model.create(modelId, tenantId, providerId, "gpt-4o", null, BigDecimal.ONE, BigDecimal.TEN);
         when(modelRepository.findByTenantIdAndId(tenantId, modelId)).thenReturn(Optional.of(model));
 
         Optional<CatalogModelInfo> result = adapter.findModel(tenantId, modelId);
@@ -82,8 +82,8 @@ class AIToolCatalogQueryAdapterTest {
         UUID id2 = UUID.randomUUID();
         Set<UUID> modelIds = Set.of(id1, id2);
 
-        Model m1 = Model.create(id1, tenantId, providerId, "gpt-4o", BigDecimal.ONE, BigDecimal.TEN);
-        Model m2 = Model.create(id2, tenantId, providerId, "claude-3-5", BigDecimal.ONE, BigDecimal.TEN);
+        Model m1 = Model.create(id1, tenantId, providerId, "gpt-4o", null, BigDecimal.ONE, BigDecimal.TEN);
+        Model m2 = Model.create(id2, tenantId, providerId, "claude-3-5", null, BigDecimal.ONE, BigDecimal.TEN);
 
         when(modelRepository.findByTenantIdAndIdIn(tenantId, modelIds)).thenReturn(List.of(m1, m2));
 
@@ -99,7 +99,7 @@ class AIToolCatalogQueryAdapterTest {
         UUID id2 = UUID.randomUUID();
         Set<UUID> modelIds = Set.of(id1, id2);
 
-        Model m1 = Model.create(id1, tenantId, providerId, "gpt-4o", BigDecimal.ONE, BigDecimal.TEN);
+        Model m1 = Model.create(id1, tenantId, providerId, "gpt-4o", null, BigDecimal.ONE, BigDecimal.TEN);
 
         when(modelRepository.findByTenantIdAndIdIn(tenantId, modelIds)).thenReturn(List.of(m1));
 

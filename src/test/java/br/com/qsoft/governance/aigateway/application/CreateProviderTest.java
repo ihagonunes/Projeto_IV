@@ -65,7 +65,8 @@ class CreateProviderTest {
 
     private Provider existingProvider(String name) {
         Provider p = Provider.restore(UUID.randomUUID(), tenantId, name,
-            ProviderStatus.ACTIVE, Instant.now(), Instant.now());
+            br.com.qsoft.governance.aigateway.domain.provider.ProviderKind.STUB, null, null,
+            30000, ProviderStatus.ACTIVE, Instant.now(), Instant.now());
         storedByName.put(tenantId + "|" + name, p);
         return p;
     }
@@ -74,7 +75,7 @@ class CreateProviderTest {
 
     @Test
     void deve_criarProvider_quando_dadosValidos() {
-        Provider result = useCase.create(new CreateProviderCommand(tenantId, "OpenAI"));
+        Provider result = useCase.create(new CreateProviderCommand(tenantId, "OpenAI", null, null, null, null));
 
         assertThat(result.id()).isNotNull();
         assertThat(result.name()).isEqualTo("OpenAI");
@@ -85,7 +86,7 @@ class CreateProviderTest {
 
     @Test
     void deve_trimNome_quando_nomeComEspacos() {
-        Provider result = useCase.create(new CreateProviderCommand(tenantId, "  Anthropic  "));
+        Provider result = useCase.create(new CreateProviderCommand(tenantId, "  Anthropic  ", null, null, null, null));
 
         assertThat(result.name()).isEqualTo("Anthropic");
     }
@@ -101,7 +102,7 @@ class CreateProviderTest {
 
     @Test
     void deve_lancarExcecao_quando_tenantIdNulo() {
-        assertThatThrownBy(() -> useCase.create(new CreateProviderCommand(null, "OpenAI")))
+        assertThatThrownBy(() -> useCase.create(new CreateProviderCommand(null, "OpenAI", null, null, null, null)))
             .isInstanceOf(NullPointerException.class);
 
         assertThat(saved).isEmpty();
@@ -109,7 +110,7 @@ class CreateProviderTest {
 
     @Test
     void deve_lancarExcecao_quando_nomeVazio() {
-        assertThatThrownBy(() -> useCase.create(new CreateProviderCommand(tenantId, "")))
+        assertThatThrownBy(() -> useCase.create(new CreateProviderCommand(tenantId, "", null, null, null, null)))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("obrigatório");
 
@@ -118,7 +119,7 @@ class CreateProviderTest {
 
     @Test
     void deve_lancarExcecao_quando_nomeApenasEspacos() {
-        assertThatThrownBy(() -> useCase.create(new CreateProviderCommand(tenantId, "   ")))
+        assertThatThrownBy(() -> useCase.create(new CreateProviderCommand(tenantId, "   ", null, null, null, null)))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("obrigatório");
 
@@ -127,7 +128,7 @@ class CreateProviderTest {
 
     @Test
     void deve_lancarExcecao_quando_nomeNulo() {
-        assertThatThrownBy(() -> useCase.create(new CreateProviderCommand(tenantId, null)))
+        assertThatThrownBy(() -> useCase.create(new CreateProviderCommand(tenantId, null, null, null, null, null)))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("obrigatório");
 
@@ -138,7 +139,7 @@ class CreateProviderTest {
     void deve_lancarExcecao_quando_nomeDuplicadoNoMesmoTenant() {
         existingProvider("OpenAI");
 
-        assertThatThrownBy(() -> useCase.create(new CreateProviderCommand(tenantId, "OpenAI")))
+        assertThatThrownBy(() -> useCase.create(new CreateProviderCommand(tenantId, "OpenAI", null, null, null, null)))
             .isInstanceOf(ProviderNameAlreadyExistsException.class)
             .hasMessageContaining("OpenAI");
 
@@ -151,7 +152,7 @@ class CreateProviderTest {
         existingProvider("OpenAI"); // no tenantId original
 
         TenantId outroTenant = TenantId.random();
-        Provider result = useCase.create(new CreateProviderCommand(outroTenant, "OpenAI"));
+        Provider result = useCase.create(new CreateProviderCommand(outroTenant, "OpenAI", null, null, null, null));
 
         // Isolamento multi-tenant: mesmo nome é OK em outro tenant
         assertThat(result.tenantId()).isEqualTo(outroTenant);

@@ -84,7 +84,9 @@ class AIGatewayModelPolicyControllerTest {
     void deve_resolver_modelo_para_usuario_sem_modelo_solicitado() throws Exception {
         UUID modelId = UUID.randomUUID();
         UUID providerId = UUID.randomUUID();
-        ResolvedModel resolvedModel = new ResolvedModel(modelId, "gpt-4o", providerId, "OpenAI");
+        ResolvedModel resolvedModel = new ResolvedModel(modelId, "gpt-4o", null, providerId, "OpenAI",
+            br.com.qsoft.governance.aigateway.domain.provider.ProviderKind.STUB, null, null,
+            30000, null, null, null);
 
         when(resolveModelForUser.resolve(tenantId, userId, null)).thenReturn(resolvedModel);
 
@@ -102,7 +104,10 @@ class AIGatewayModelPolicyControllerTest {
     void deve_resolver_modelo_para_usuario_com_modelo_solicitado() throws Exception {
         UUID requestedModelId = UUID.randomUUID();
         UUID providerId = UUID.randomUUID();
-        ResolvedModel resolvedModel = new ResolvedModel(requestedModelId, "claude-3-5-sonnet", providerId, "Anthropic");
+        ResolvedModel resolvedModel = new ResolvedModel(requestedModelId, "claude-3-5-sonnet",
+            null, providerId, "Anthropic",
+            br.com.qsoft.governance.aigateway.domain.provider.ProviderKind.STUB, null, null,
+            30000, null, null, null);
 
         when(resolveModelForUser.resolve(tenantId, userId, requestedModelId)).thenReturn(resolvedModel);
 
@@ -137,7 +142,10 @@ class AIGatewayModelPolicyControllerTest {
         assertThat(policyRequest.allowedModelIds()).isEqualTo(allowed);
         assertThat(policyRequest.defaultModelId()).isEqualTo(defaultModelId);
 
-        ResolvedModel resolved = new ResolvedModel(defaultModelId, "gpt-4", UUID.randomUUID(), "OpenAI");
+        ResolvedModel resolved = new ResolvedModel(defaultModelId, "gpt-4", null,
+            UUID.randomUUID(), "OpenAI",
+            br.com.qsoft.governance.aigateway.domain.provider.ProviderKind.STUB, null, null,
+            30000, null, null, null);
         ResolvedModelResponse response = ResolvedModelResponse.from(resolved);
 
         assertThat(response.modelId()).isEqualTo(resolved.modelId());

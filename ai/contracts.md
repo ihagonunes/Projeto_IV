@@ -41,25 +41,40 @@ Regra: é a **única origem operacional de UsageRecord**.
 
 ## Completion
 
+`aigateway.api.completion.AICompletionService` (ADR-11/ADR-38):
+
 ```text
 CompletionCommand
+- tenantId            (do contexto autenticado)
 - userId
-- tenantId
-- departmentId
-- conversationId?
-- messages[]
 - requestedModelId?
-- generationConfigOverride?
+- purpose             (CHAT | POLICY_AGENT)
+- messages[]          (role SYSTEM | USER | ASSISTANT | TOOL, content, toolCallId?)
+- tools[]?            (ToolSpec: name, description, jsonSchemaParameters)
 
 CompletionResult
+- requestId           (sempre gerado pelo servidor)
 - content
-- modelId
-- UsageStats
-- estimatedCost
+- toolCalls[]
+- modelId, modelName, providerId, providerName
+- inputTokens?, outputTokens?
+- estimatedCost?
+- costStatus          (KNOWN | NOT_APPLICABLE | INCONCLUSIVE)
 - latencyMs
 ```
 
-O Gateway calcula custo uma única vez.
+- O `departmentId` **não** é informado pelo chamador: o Gateway resolve a lotação atual pelo
+  `IdentityQuery` e aplica a `ModelPolicy` (`ResolveModelForUser`, ADR-07/08).
+- O `requestId` é gerado pelo servidor e identifica a tentativa e o `UsageRecord`.
+- Exceções públicas em `aigateway.api.exception`, para o chamador mapear:
+  - `ModelNotAllowedException` → 403;
+  - `NoModelConfiguredException`, `ModelUnavailableException`, `ProviderInactiveException` → 409;
+  - `AIProviderTimeoutException` → 504;
+  - `AIProviderFailureException` → 502;
+  - `AIAttemptNotRecordedException` → 503.
+- Antes de chamar o provider, o Gateway grava a tentativa `IN_FLIGHT` em transação própria
+  (`REQUIRES_NEW`); `DENIED` e o resultado final também são persistidos (ADR-38).
+- O Gateway calcula o custo uma única vez, com os preços fotografados no início da tentativa.
 
 ## REST
 

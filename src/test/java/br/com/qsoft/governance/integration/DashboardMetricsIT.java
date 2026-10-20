@@ -2,13 +2,13 @@ package br.com.qsoft.governance.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import br.com.qsoft.governance.aigateway.application.CompleteAIRequest;
-import br.com.qsoft.governance.aigateway.application.CompleteAIRequestCommand;
 import br.com.qsoft.governance.aigateway.application.CreateModel;
 import br.com.qsoft.governance.aigateway.application.CreateModelCommand;
 import br.com.qsoft.governance.aigateway.application.CreateProvider;
 import br.com.qsoft.governance.aigateway.application.CreateProviderCommand;
 import br.com.qsoft.governance.aigateway.domain.model.Model;
+import br.com.qsoft.governance.aigateway.domain.provider.ProviderKind;
+import br.com.qsoft.governance.sharedkernel.event.AIRequestCompleted;
 import br.com.qsoft.governance.iam.application.port.TenantRepository;
 import br.com.qsoft.governance.iam.application.port.UserRepository;
 import br.com.qsoft.governance.iam.domain.tenant.Tenant;
@@ -22,6 +22,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.core.ParameterizedTypeReference;
@@ -82,7 +83,7 @@ class DashboardMetricsIT {
     CreateModel createModel;
 
     @Autowired
-    CompleteAIRequest completeAIRequest;
+    ApplicationEventPublisher eventPublisher;
 
     @Autowired
     TestTenants testTenants;
@@ -91,7 +92,7 @@ class DashboardMetricsIT {
     private Tenant tenant;
     private UUID marketingDepartment;
     private UUID salesDepartment;
-    private UUID modelId;
+    private Model model;
 
     @BeforeEach
     void setUp() {
@@ -101,11 +102,10 @@ class DashboardMetricsIT {
         salesDepartment = UUID.randomUUID();
 
         UUID providerId = createProvider.create(new CreateProviderCommand(
-            tenant.id(), "OpenAI " + UUID.randomUUID())).id();
-        Model model = createModel.create(new CreateModelCommand(
-            tenant.id(), providerId, "gpt-4 " + UUID.randomUUID(),
+            tenant.id(), "OpenAI " + UUID.randomUUID(), ProviderKind.STUB, null, null, null)).id();
+        model = createModel.create(new CreateModelCommand(
+            tenant.id(), providerId, "gpt-4 " + UUID.randomUUID(), null,
             new BigDecimal("0.010000"), new BigDecimal("0.030000")));
-        modelId = model.id();
     }
 
     private Tenant ensureTenant() {
@@ -122,9 +122,10 @@ class DashboardMetricsIT {
 
     /** Emite uso para um usuário/departamento via o pipeline real do Gateway. */
     private void usage(User user, UUID departmentId, long input, long output) {
-        completeAIRequest.complete(new CompleteAIRequestCommand(
-            UUID.randomUUID(), tenant.id(), departmentId, user.id().value(),
-            modelId, input, output, 100, "COMPLETED"));
+        eventPublisher.publishEvent(new AIRequestCompleted(
+            UUID.randomUUID(), tenant.id().value(), departmentId, user.id().value(),
+            model.id(), model.providerId(), input, output,
+            model.estimatedCost(input, output), 100, "COMPLETED"));
     }
 
     private Map<?, ?> getJson(String token, String uri) {

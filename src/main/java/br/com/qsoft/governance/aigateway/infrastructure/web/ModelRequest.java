@@ -16,6 +16,9 @@ public record ModelRequest(
     @Size(max = 150, message = "name deve ter no máximo 150 caracteres")
     String name,
 
+    @Size(max = 150, message = "externalName deve ter no máximo 150 caracteres")
+    String externalName,
+
     @DecimalMin(value = "0.00", message = "inputPricePer1k não pode ser negativo")
     BigDecimal inputPricePer1k,
 

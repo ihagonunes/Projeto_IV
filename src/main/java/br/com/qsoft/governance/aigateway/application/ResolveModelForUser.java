@@ -2,11 +2,11 @@ package br.com.qsoft.governance.aigateway.application;
 
 import br.com.qsoft.governance.aigateway.application.port.ModelRepository;
 import br.com.qsoft.governance.aigateway.application.port.ProviderRepository;
-import br.com.qsoft.governance.aigateway.domain.exception.ModelNotAllowedException;
+import br.com.qsoft.governance.aigateway.api.exception.ModelNotAllowedException;
 import br.com.qsoft.governance.aigateway.domain.exception.ModelNotFoundException;
-import br.com.qsoft.governance.aigateway.domain.exception.ModelUnavailableException;
-import br.com.qsoft.governance.aigateway.domain.exception.NoModelConfiguredException;
-import br.com.qsoft.governance.aigateway.domain.exception.ProviderInactiveException;
+import br.com.qsoft.governance.aigateway.api.exception.ModelUnavailableException;
+import br.com.qsoft.governance.aigateway.api.exception.NoModelConfiguredException;
+import br.com.qsoft.governance.aigateway.api.exception.ProviderInactiveException;
 import br.com.qsoft.governance.aigateway.domain.exception.ProviderNotFoundException;
 import br.com.qsoft.governance.aigateway.domain.model.Model;
 import br.com.qsoft.governance.aigateway.domain.provider.Provider;
@@ -74,7 +74,9 @@ public class ResolveModelForUser {
             throw new ProviderInactiveException();
         }
 
-        return new ResolvedModel(model.id(), model.name(), provider.id(), provider.name());
+        return new ResolvedModel(model.id(), model.name(), model.externalName(), provider.id(),
+            provider.name(), provider.kind(), provider.baseUrl(), provider.credentialRef(),
+            provider.timeoutMs(), departmentId, model.inputPricePer1k(), model.outputPricePer1k());
     }
 
     private static UUID chooseModel(ModelPolicyInfo policy, UUID requestedModelId) {

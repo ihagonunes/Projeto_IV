@@ -67,7 +67,9 @@ public class AIGatewayCatalogController {
     public ResponseEntity<ProviderResponse> createProvider(@Valid @RequestBody ProviderRequest request) {
         TenantContext context = TenantContextHolder.require();
         return ResponseEntity.status(HttpStatus.CREATED).body(ProviderResponse.from(
-            createProvider.create(new CreateProviderCommand(context.tenantId(), request.name()))));
+            createProvider.create(new CreateProviderCommand(
+                context.tenantId(), request.name(), request.kind(),
+                request.baseUrl(), request.credentialRef(), request.timeoutMs()))));
     }
 
     @GetMapping("/models")
@@ -86,7 +88,7 @@ public class AIGatewayCatalogController {
         TenantContext context = TenantContextHolder.require();
         return ResponseEntity.status(HttpStatus.CREATED).body(ModelResponse.from(
             createModel.create(new CreateModelCommand(
-                context.tenantId(), request.providerId(), request.name(),
+                context.tenantId(), request.providerId(), request.name(), request.externalName(),
                 request.inputPricePer1k(), request.outputPricePer1k()))));
     }
 

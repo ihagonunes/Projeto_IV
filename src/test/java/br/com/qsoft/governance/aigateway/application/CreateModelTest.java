@@ -100,17 +100,18 @@ class CreateModelTest {
 
     private void activeProvider(UUID id) {
         providers.put(id, Provider.restore(id, tenantId, "OpenAI",
-            ProviderStatus.ACTIVE, Instant.now(), Instant.now()));
+            br.com.qsoft.governance.aigateway.domain.provider.ProviderKind.STUB, null, null,
+            30000, ProviderStatus.ACTIVE, Instant.now(), Instant.now()));
     }
 
     private void existingModel(String name) {
-        Model m = Model.restore(UUID.randomUUID(), tenantId, providerId, name,
+        Model m = Model.restore(UUID.randomUUID(), tenantId, providerId, name, null,
             ModelStatus.AVAILABLE, null, null, Instant.now(), Instant.now());
         modelsByName.put(tenantId + "|" + name, m);
     }
 
     private CreateModelCommand cmd(String name) {
-        return new CreateModelCommand(tenantId, providerId, name,
+        return new CreateModelCommand(tenantId, providerId, name, null,
             new BigDecimal("0.01"), new BigDecimal("0.03"));
     }
 
@@ -135,7 +136,7 @@ class CreateModelTest {
         activeProvider(providerId);
 
         Model result = useCase.create(new CreateModelCommand(tenantId, providerId,
-            "  claude-3  ", null, null));
+            "  claude-3  ", null, null, null));
 
         assertThat(result.name()).isEqualTo("claude-3");
     }
@@ -145,7 +146,7 @@ class CreateModelTest {
         activeProvider(providerId);
 
         Model result = useCase.create(new CreateModelCommand(tenantId, providerId,
-            "llama3", null, null));
+            "llama3", null, null, null));
 
         assertThat(result.inputPricePer1k()).isNull();
         assertThat(result.outputPricePer1k()).isNull();
@@ -163,7 +164,7 @@ class CreateModelTest {
     @Test
     void deve_lancarExcecao_quando_tenantIdNulo() {
         assertThatThrownBy(() -> useCase.create(
-            new CreateModelCommand(null, providerId, "gpt-4o", null, null)))
+            new CreateModelCommand(null, providerId, "gpt-4o", null, null, null)))
             .isInstanceOf(NullPointerException.class);
 
         assertThat(savedModels).isEmpty();
@@ -172,7 +173,7 @@ class CreateModelTest {
     @Test
     void deve_lancarExcecao_quando_providerIdNulo() {
         assertThatThrownBy(() -> useCase.create(
-            new CreateModelCommand(tenantId, null, "gpt-4o", null, null)))
+            new CreateModelCommand(tenantId, null, "gpt-4o", null, null, null)))
             .isInstanceOf(NullPointerException.class);
 
         assertThat(savedModels).isEmpty();
@@ -181,7 +182,7 @@ class CreateModelTest {
     @Test
     void deve_lancarExcecao_quando_nomeVazio() {
         assertThatThrownBy(() -> useCase.create(
-            new CreateModelCommand(tenantId, providerId, "", null, null)))
+            new CreateModelCommand(tenantId, providerId, "", null, null, null)))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("obrigatório");
 
@@ -191,7 +192,7 @@ class CreateModelTest {
     @Test
     void deve_lancarExcecao_quando_nomeApenasEspacos() {
         assertThatThrownBy(() -> useCase.create(
-            new CreateModelCommand(tenantId, providerId, "   ", null, null)))
+            new CreateModelCommand(tenantId, providerId, "   ", null, null, null)))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("obrigatório");
 
@@ -201,7 +202,7 @@ class CreateModelTest {
     @Test
     void deve_lancarExcecao_quando_nomeNulo() {
         assertThatThrownBy(() -> useCase.create(
-            new CreateModelCommand(tenantId, providerId, null, null, null)))
+            new CreateModelCommand(tenantId, providerId, null, null, null, null)))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("obrigatório");
 
@@ -224,10 +225,11 @@ class CreateModelTest {
         // Provider existe mas pertence a outro tenant → isolamento multi-tenant
         UUID outroProviderId = UUID.randomUUID();
         providers.put(outroProviderId, Provider.restore(outroProviderId, TenantId.random(),
-            "OpenAI", ProviderStatus.ACTIVE, Instant.now(), Instant.now()));
+            "OpenAI", br.com.qsoft.governance.aigateway.domain.provider.ProviderKind.STUB,
+            null, null, 30000, ProviderStatus.ACTIVE, Instant.now(), Instant.now()));
 
         assertThatThrownBy(() -> useCase.create(
-            new CreateModelCommand(tenantId, outroProviderId, "gpt-4o", null, null)))
+            new CreateModelCommand(tenantId, outroProviderId, "gpt-4o", null, null, null)))
             .isInstanceOf(ProviderNotFoundException.class);
 
         assertThat(savedModels).isEmpty();

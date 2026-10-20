@@ -3,234 +3,361 @@ package br.com.qsoft.governance.aigateway.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import br.com.qsoft.governance.aigateway.application.port.ModelRepository;
-import br.com.qsoft.governance.aigateway.application.port.ProviderRepository;
-import br.com.qsoft.governance.aigateway.domain.exception.ModelNotFoundException;
-import br.com.qsoft.governance.aigateway.domain.exception.ModelUnavailableException;
-import br.com.qsoft.governance.aigateway.domain.exception.ProviderInactiveException;
-import br.com.qsoft.governance.aigateway.domain.exception.ProviderNotFoundException;
-import br.com.qsoft.governance.aigateway.domain.model.Model;
-import br.com.qsoft.governance.aigateway.domain.model.ModelStatus;
-import br.com.qsoft.governance.aigateway.domain.provider.Provider;
-import br.com.qsoft.governance.aigateway.domain.provider.ProviderStatus;
+import br.com.qsoft.governance.aigateway.api.completion.CompletionCommand;
+import br.com.qsoft.governance.aigateway.api.completion.CompletionMessage;
+import br.com.qsoft.governance.aigateway.api.completion.CompletionResult;
+import br.com.qsoft.governance.aigateway.api.exception.AIAttemptNotRecordedException;
+import br.com.qsoft.governance.aigateway.api.exception.AIProviderFailureException;
+import br.com.qsoft.governance.aigateway.api.exception.AIProviderTimeoutException;
+import br.com.qsoft.governance.aigateway.api.exception.ModelNotAllowedException;
+import br.com.qsoft.governance.aigateway.application.port.ProviderClient;
+import br.com.qsoft.governance.aigateway.application.port.ProviderFailureException;
+import br.com.qsoft.governance.aigateway.application.port.RequestAttemptRepository;
+import br.com.qsoft.governance.aigateway.domain.attempt.AuthorizationStatus;
+import br.com.qsoft.governance.aigateway.domain.attempt.CostStatus;
+import br.com.qsoft.governance.aigateway.domain.attempt.DeliveryStatus;
+import br.com.qsoft.governance.aigateway.domain.attempt.ExecutionStatus;
+import br.com.qsoft.governance.aigateway.domain.attempt.RequestAttempt;
+import br.com.qsoft.governance.aigateway.domain.attempt.RequestPurpose;
+import br.com.qsoft.governance.aigateway.domain.provider.ProviderKind;
+import br.com.qsoft.governance.aigateway.infrastructure.provider.StubProviderClient;
+import br.com.qsoft.governance.iam.api.model.UserContext;
+import br.com.qsoft.governance.iam.api.query.IdentityQuery;
 import br.com.qsoft.governance.sharedkernel.event.AIRequestCompleted;
 import br.com.qsoft.governance.sharedkernel.id.TenantId;
+import br.com.qsoft.governance.sharedkernel.id.UserId;
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationEventPublisher;
 
 /**
- * Testes unitários de {@link CompleteAIRequest}.
- * Usa fakes em memória + publisher capturador — sem Spring, sem Mockito.
+ * Testes de {@link CompleteAIRequest} (TR01, TR02, TR03, TR08, TR09) com o
+ * {@link StubProviderClient}. Sem Spring e sem banco: fakes em memória.
  */
 class CompleteAIRequestTest {
 
-    private final TenantId tenantId   = TenantId.random();
-    private final UUID     providerId = UUID.randomUUID();
-    private final UUID     modelId    = UUID.randomUUID();
+    private final TenantId tenantId = TenantId.random();
+    private final UserId userId = UserId.random();
+    private final UUID departmentId = UUID.randomUUID();
+    private final UUID providerId = UUID.randomUUID();
+    private final UUID modelId = UUID.randomUUID();
 
-    // ── Fake: captura eventos publicados ─────────────────────────────────────
+    private final Map<UUID, RequestAttempt> attempts = new LinkedHashMap<>();
+    private final List<Object> published = new ArrayList<>();
+    private StubProviderClient stub;
+    private ResolvedModel resolved;
+    private ApplicationEventPublisher publisher;
+    private AttemptRecorder recorder;
+    private UsageDeliveryPublisher delivery;
+    private CompleteAIRequest service;
 
-    private final List<Object> publishedEvents = new ArrayList<>();
-    private final ApplicationEventPublisher eventPublisher = publishedEvents::add;
-
-    // ── Fakes em memória ──────────────────────────────────────────────────────
-
-    private final Map<UUID, Model>    models    = new LinkedHashMap<>();
-    private final Map<UUID, Provider> providers = new LinkedHashMap<>();
-
-    private final ModelRepository modelRepository = new ModelRepository() {
+    private final IdentityQuery identityQuery = new IdentityQuery() {
         @Override
-        public Model save(Model m) { models.put(m.id(), m); return m; }
-        @Override
-        public Optional<Model> findByTenantIdAndId(TenantId tid, UUID id) {
-            return Optional.ofNullable(models.get(id))
-                .filter(m -> m.tenantId().equals(tid));
+        public Optional<UserContext> getUserContext(UserId id) {
+            return Optional.of(new UserContext(id, tenantId, "COLLABORATOR", departmentId, "ACTIVE"));
         }
-        @Override
-        public List<Model> findByTenantId(TenantId tid) { return List.of(); }
-        @Override
-        public List<Model> findByTenantIdAndIdIn(TenantId tid, Collection<UUID> ids) {
-            return models.values().stream()
-                .filter(m -> m.tenantId().equals(tid) && ids.contains(m.id())).toList();
-        }
-        @Override
-        public boolean existsByTenantIdAndName(TenantId tid, String name) { return false; }
     };
 
-    private final ProviderRepository providerRepository = new ProviderRepository() {
+    private ResolveModelForUser resolveModelForUser =
+        new ResolveModelForUser(null, null, null, null) {
+            @Override
+            public ResolvedModel resolve(TenantId tenant, UserId user, UUID requestedModelId) {
+                return resolved;
+            }
+        };
+
+    private final RequestAttemptRepository attemptRepository = new RequestAttemptRepository() {
         @Override
-        public Provider save(Provider p) { providers.put(p.id(), p); return p; }
-        @Override
-        public Optional<Provider> findByTenantIdAndId(TenantId tid, UUID id) {
-            return Optional.ofNullable(providers.get(id))
-                .filter(p -> p.tenantId().equals(tid));
+        public RequestAttempt save(RequestAttempt attempt) {
+            attempts.put(attempt.requestId(), attempt);
+            return attempt;
         }
+
         @Override
-        public List<Provider> findByTenantId(TenantId tid) { return List.of(); }
-        @Override
-        public boolean existsByTenantIdAndName(TenantId tid, String name) { return false; }
+        public Optional<RequestAttempt> findById(UUID requestId) {
+            return Optional.ofNullable(attempts.get(requestId));
+        }
     };
 
-    private final CompleteAIRequest useCase =
-        new CompleteAIRequest(modelRepository, providerRepository, eventPublisher);
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
-    private void availableModel(UUID id, UUID provId) {
-        models.put(id, Model.restore(id, tenantId, provId, "gpt-4o",
-            ModelStatus.AVAILABLE, new BigDecimal("0.01"), new BigDecimal("0.03"),
-            Instant.now(), Instant.now()));
+    @BeforeEach
+    void setUp() {
+        attempts.clear();
+        published.clear();
+        stub = new StubProviderClient();
+        stub.reset();
+        resolved = resolved("stub-echo");
+        publisher = published::add;
+        recorder = new AttemptRecorder(attemptRepository);
+        delivery = new UsageDeliveryPublisher(publisher, attemptRepository, recorder);
+        service = new CompleteAIRequest(identityQuery, resolveModelForUser, kind -> stub,
+            recorder, delivery);
     }
 
-    private void disabledModel(UUID id, UUID provId) {
-        models.put(id, Model.restore(id, tenantId, provId, "gpt-4o-disabled",
-            ModelStatus.DISABLED, null, null, Instant.now(), Instant.now()));
-    }
-
-    private void activeProvider(UUID id) {
-        providers.put(id, Provider.restore(id, tenantId, "OpenAI",
-            ProviderStatus.ACTIVE, Instant.now(), Instant.now()));
-    }
-
-    private void inactiveProvider(UUID id) {
-        providers.put(id, Provider.restore(id, tenantId, "ClosedAI",
-            ProviderStatus.INACTIVE, Instant.now(), Instant.now()));
-    }
-
-    private CompleteAIRequestCommand cmd(UUID reqId, String status) {
-        return new CompleteAIRequestCommand(reqId, tenantId, null, null,
-            modelId, 1000L, 2000L, 350L, status);
-    }
-
-    // ── Testes ────────────────────────────────────────────────────────────────
+    // ── TR01: sucesso ────────────────────────────────────────────────────────
 
     @Test
-    void deve_completarRequisicao_quando_dadosValidos() {
-        availableModel(modelId, providerId);
-        activeProvider(providerId);
+    void tr01_sucessoGravaTentativaEEntregaEvento() {
+        CompletionResult result = service.complete(command("CHAT", "quatro palavras aqui"));
 
-        AIRequestCompleted event = useCase.complete(cmd(UUID.randomUUID(), "SUCCESS"));
+        assertThat(result.requestId()).isNotNull();
+        assertThat(result.content()).isEqualTo("[stub] quatro palavras aqui");
+        assertThat(result.inputTokens()).isEqualTo(3L);
+        assertThat(result.outputTokens()).isEqualTo(3L);
+        assertThat(result.costStatus()).isEqualTo("KNOWN");
+        assertThat(result.estimatedCost()).isEqualByComparingTo("0.000120");
 
-        assertThat(event.modelId()).isEqualTo(modelId);
-        assertThat(event.providerId()).isEqualTo(providerId);
-        assertThat(event.tenantId()).isEqualTo(tenantId.value());
-        assertThat(event.inputTokens()).isEqualTo(1000L);
-        assertThat(event.outputTokens()).isEqualTo(2000L);
-        assertThat(event.status()).isEqualTo("SUCCESS");
-        assertThat(publishedEvents).hasSize(1);
-        assertThat(publishedEvents.get(0)).isInstanceOf(AIRequestCompleted.class);
+        RequestAttempt attempt = attempts.get(result.requestId());
+        assertThat(attempt.authorizationStatus()).isEqualTo(AuthorizationStatus.GRANTED);
+        assertThat(attempt.executionStatus()).isEqualTo(ExecutionStatus.SUCCEEDED);
+        assertThat(attempt.costStatus()).isEqualTo(CostStatus.KNOWN);
+        assertThat(attempt.deliveryStatus()).isEqualTo(DeliveryStatus.DELIVERED);
+        assertThat(attempt.departmentId()).isEqualTo(departmentId);
+        assertThat(attempt.purpose()).isEqualTo(RequestPurpose.CHAT);
+
+        assertThat(published).hasSize(1);
+        assertThat(published.get(0)).isInstanceOfSatisfying(AIRequestCompleted.class,
+            event -> assertThat(event.requestId()).isEqualTo(result.requestId()));
     }
 
     @Test
-    void deve_gerarRequestId_quando_requestIdNulo() {
-        availableModel(modelId, providerId);
-        activeProvider(providerId);
+    void requestIdEhSempreGeradoNoServidor() {
+        CompletionResult first = service.complete(command("CHAT", "a"));
+        CompletionResult second = service.complete(command("CHAT", "a"));
 
-        AIRequestCompleted event = useCase.complete(cmd(null, "SUCCESS"));
-
-        // requestId gerado aleatoriamente — deve ser não-nulo
-        assertThat(event.requestId()).isNotNull();
+        assertThat(first.requestId()).isNotNull();
+        assertThat(second.requestId()).isNotEqualTo(first.requestId());
     }
 
     @Test
-    void deve_usarRequestIdFornecido_quando_naoNulo() {
-        availableModel(modelId, providerId);
-        activeProvider(providerId);
+    void tr08_usoDesconhecidoNaoProduzCustoNemEvento() {
+        resolved = resolved("stub-unknown-usage");
 
-        UUID fixedId = UUID.randomUUID();
-        AIRequestCompleted event = useCase.complete(cmd(fixedId, "SUCCESS"));
+        CompletionResult result = service.complete(command("CHAT", "a b"));
 
-        assertThat(event.requestId()).isEqualTo(fixedId);
+        assertThat(result.inputTokens()).isNull();
+        assertThat(result.outputTokens()).isNull();
+        assertThat(result.costStatus()).isEqualTo("INCONCLUSIVE");
+        assertThat(result.estimatedCost()).isNull();
+
+        RequestAttempt attempt = attempts.get(result.requestId());
+        assertThat(attempt.executionStatus()).isEqualTo(ExecutionStatus.SUCCEEDED);
+        assertThat(attempt.costStatus()).isEqualTo(CostStatus.INCONCLUSIVE);
+        assertThat(attempt.deliveryStatus()).isEqualTo(DeliveryStatus.NOT_APPLICABLE);
+        assertThat(published).isEmpty();
     }
 
     @Test
-    void deve_usarStatusCompleted_quando_statusNulo() {
-        availableModel(modelId, providerId);
-        activeProvider(providerId);
+    void tr08_zeroTokensConhecidosSaoDistintosDeUsoDesconhecido() {
+        CompletionResult result = service.complete(command("CHAT", ""));
 
-        AIRequestCompleted event = useCase.complete(cmd(null, null));
+        RequestAttempt attempt = attempts.get(result.requestId());
+        assertThat(attempt.inputTokens()).isZero();
+        assertThat(attempt.outputTokens()).isZero();
+        assertThat(attempt.costStatus()).isEqualTo(CostStatus.KNOWN);
+        assertThat(attempt.estimatedCost()).isEqualByComparingTo("0.000000");
+    }
 
-        assertThat(event.status()).isEqualTo("COMPLETED");
+    // ── TR02: negado pela política ───────────────────────────────────────────
+
+    @Test
+    void tr02_modeloForaDaPoliticaGravaDeniedSemChamarProvider() {
+        resolveModelForUserFailing(new ModelNotAllowedException());
+
+        assertThatThrownBy(() -> service.complete(command("CHAT", "oi")))
+            .isInstanceOf(ModelNotAllowedException.class);
+
+        assertThat(attempts).hasSize(1);
+        RequestAttempt attempt = attempts.values().iterator().next();
+        assertThat(attempt.authorizationStatus()).isEqualTo(AuthorizationStatus.DENIED);
+        assertThat(attempt.denialReason()).isEqualTo("MODEL_NOT_ALLOWED");
+        assertThat(attempt.executionStatus()).isEqualTo(ExecutionStatus.NOT_STARTED);
+        assertThat(attempt.deliveryStatus()).isEqualTo(DeliveryStatus.NOT_APPLICABLE);
+        assertThat(attempt.costStatus()).isEqualTo(CostStatus.NOT_APPLICABLE);
+        assertThat(attempt.estimatedCost()).isNull();
+        assertThat(stub.lastCall()).isNull();
+        assertThat(published).isEmpty();
+    }
+
+    // ── Ordem: IN_FLIGHT antes da chamada ───────────────────────────────────
+
+    @Test
+    void gravaInFlightAntesDeChamarOProvider() {
+        boolean[] sawInFlight = {false};
+        stub = new StubProviderClient() {
+            @Override
+            public ProviderResponse call(ProviderCall call) {
+                sawInFlight[0] = attempts.values().stream()
+                    .anyMatch(attempt -> attempt.executionStatus() == ExecutionStatus.IN_FLIGHT);
+                return super.call(call);
+            }
+        };
+        delivery = new UsageDeliveryPublisher(publisher, attemptRepository, recorder);
+        service = new CompleteAIRequest(identityQuery, resolveModelForUser, kind -> stub,
+            recorder, delivery);
+
+        service.complete(command("CHAT", "oi"));
+
+        assertThat(sawInFlight[0]).isTrue();
     }
 
     @Test
-    void deve_calcularCustoEstimado_quando_precosDefinidos() {
-        availableModel(modelId, providerId);
-        activeProvider(providerId);
+    void falhaAoGravarInFlightNaoChamaOProvider() {
+        RequestAttemptRepository failing = new RequestAttemptRepository() {
+            @Override
+            public RequestAttempt save(RequestAttempt attempt) {
+                throw new IllegalStateException("db down");
+            }
 
-        AIRequestCompleted event = useCase.complete(cmd(null, "SUCCESS"));
+            @Override
+            public Optional<RequestAttempt> findById(UUID requestId) {
+                return Optional.empty();
+            }
+        };
+        service = new CompleteAIRequest(identityQuery, resolveModelForUser, kind -> stub,
+            new AttemptRecorder(failing), new UsageDeliveryPublisher(publisher, failing,
+                new AttemptRecorder(failing)));
 
-        // (1000/1000 * 0.01) + (2000/1000 * 0.03) = 0.01 + 0.06 = 0.07
-        assertThat(event.estimatedCost()).isEqualByComparingTo("0.07");
+        assertThatThrownBy(() -> service.complete(command("CHAT", "oi")))
+            .isInstanceOf(AIAttemptNotRecordedException.class);
+
+        assertThat(stub.lastCall()).isNull();
+    }
+
+    // ── TR03: timeout e erro ─────────────────────────────────────────────────
+
+    @Test
+    void tr03_timeoutGravaTimedOutSemEvento() {
+        resolved = resolved("stub-timeout");
+
+        assertThatThrownBy(() -> service.complete(command("CHAT", "oi")))
+            .isInstanceOf(AIProviderTimeoutException.class);
+
+        RequestAttempt attempt = attempts.values().iterator().next();
+        assertThat(attempt.executionStatus()).isEqualTo(ExecutionStatus.TIMED_OUT);
+        assertThat(attempt.costStatus()).isEqualTo(CostStatus.INCONCLUSIVE);
+        assertThat(attempt.deliveryStatus()).isEqualTo(DeliveryStatus.NOT_APPLICABLE);
+        assertThat(published).isEmpty();
     }
 
     @Test
-    void deve_lancarExcecao_quando_commandNulo() {
-        assertThatThrownBy(() -> useCase.complete(null))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("obrigatório");
+    void erroDoProviderGravaFailedComCodigoCurto() {
+        resolved = resolved("stub-error");
 
-        assertThat(publishedEvents).isEmpty();
+        assertThatThrownBy(() -> service.complete(command("CHAT", "oi")))
+            .isInstanceOfSatisfying(AIProviderFailureException.class,
+                ex -> assertThat(ex.errorCode()).isEqualTo("HTTP_500"));
+
+        RequestAttempt attempt = attempts.values().iterator().next();
+        assertThat(attempt.executionStatus()).isEqualTo(ExecutionStatus.FAILED);
+        assertThat(attempt.costStatus()).isEqualTo(CostStatus.INCONCLUSIVE);
+        assertThat(attempt.errorCode()).isEqualTo("HTTP_500");
+        assertThat(published).isEmpty();
     }
 
     @Test
-    void deve_lancarExcecao_quando_tenantIdNulo() {
-        assertThatThrownBy(() -> useCase.complete(
-            new CompleteAIRequestCommand(null, null, null, null,
-                modelId, 0L, 0L, 0L, "SUCCESS")))
+    void erroComCobrancaDeclaradaZeroProduzCustoKnownZero() {
+        stub = new StubProviderClient() {
+            @Override
+            public ProviderResponse call(ProviderCall call) {
+                throw new ProviderFailureException("HTTP_503", true);
+            }
+        };
+        service = new CompleteAIRequest(identityQuery, resolveModelForUser, kind -> stub,
+            recorder, delivery);
+
+        assertThatThrownBy(() -> service.complete(command("CHAT", "oi")))
+            .isInstanceOf(AIProviderFailureException.class);
+
+        RequestAttempt attempt = attempts.values().iterator().next();
+        assertThat(attempt.executionStatus()).isEqualTo(ExecutionStatus.FAILED);
+        assertThat(attempt.costStatus()).isEqualTo(CostStatus.KNOWN);
+        assertThat(attempt.estimatedCost()).isEqualByComparingTo("0.000000");
+        assertThat(attempt.deliveryStatus()).isEqualTo(DeliveryStatus.DELIVERED);
+    }
+
+    // ── Entrega (C1: sem reentrega) ──────────────────────────────────────────
+
+    @Test
+    void falhaDeEntregaDeixaPendingSemPropagarAoCliente() {
+        publisher = event -> {
+            throw new IllegalStateException("listener down");
+        };
+        delivery = new UsageDeliveryPublisher(publisher, attemptRepository, recorder);
+        service = new CompleteAIRequest(identityQuery, resolveModelForUser, kind -> stub,
+            recorder, delivery);
+
+        CompletionResult result = service.complete(command("CHAT", "oi"));
+
+        RequestAttempt attempt = attempts.get(result.requestId());
+        assertThat(attempt.deliveryStatus()).isEqualTo(DeliveryStatus.PENDING);
+        assertThat(attempt.deliveryAttempts()).isEqualTo(1);
+        assertThat(attempt.nextDeliveryAt()).isNotNull();
+    }
+
+    // ── TR09: preço fotografado ──────────────────────────────────────────────
+
+    @Test
+    void tr09_mudancaDePrecoNaoAlteraCustoHistorico() {
+        CompletionResult first = service.complete(command("CHAT", "a"));
+        RequestAttempt firstAttempt = attempts.get(first.requestId());
+        BigDecimal firstCost = firstAttempt.estimatedCost();
+        BigDecimal firstUnit = firstAttempt.unitPriceInput();
+
+        resolved = new ResolvedModel(modelId, "gpt-4o", "stub-echo", providerId, "OpenAI",
+            ProviderKind.STUB, null, null, 30000, departmentId,
+            new BigDecimal("9.99"), new BigDecimal("9.99"));
+        service.complete(command("CHAT", "a"));
+
+        RequestAttempt reloaded = attempts.get(first.requestId());
+        assertThat(reloaded.estimatedCost()).isEqualByComparingTo(firstCost);
+        assertThat(reloaded.unitPriceInput()).isEqualByComparingTo(firstUnit);
+    }
+
+    // ── Validação ────────────────────────────────────────────────────────────
+
+    @Test
+    void purposeInvalidoNaoGravaTentativa() {
+        assertThatThrownBy(() -> service.complete(command("INVALIDO", "oi")))
+            .isInstanceOf(IllegalArgumentException.class);
+
+        assertThat(attempts).isEmpty();
+    }
+
+    @Test
+    void commandNuloEhRejeitado() {
+        assertThatThrownBy(() -> service.complete(null))
             .isInstanceOf(NullPointerException.class);
-
-        assertThat(publishedEvents).isEmpty();
     }
 
-    @Test
-    void deve_lancarExcecao_quando_modelNaoEncontrado() {
-        // Nenhum model no repositório
+    // ── Helpers ──────────────────────────────────────────────────────────────
 
-        assertThatThrownBy(() -> useCase.complete(cmd(null, "SUCCESS")))
-            .isInstanceOf(ModelNotFoundException.class);
-
-        assertThat(publishedEvents).isEmpty();
+    private CompletionCommand command(String purpose, String userMessage) {
+        return new CompletionCommand(tenantId, userId, modelId, purpose,
+            List.of(CompletionMessage.user(userMessage)), List.of());
     }
 
-    @Test
-    void deve_lancarExcecao_quando_modelDesabilitado() {
-        disabledModel(modelId, providerId);
-
-        assertThatThrownBy(() -> useCase.complete(cmd(null, "SUCCESS")))
-            .isInstanceOf(ModelUnavailableException.class);
-
-        assertThat(publishedEvents).isEmpty();
+    private ResolvedModel resolved(String externalName) {
+        return new ResolvedModel(modelId, "gpt-4o", externalName, providerId, "OpenAI",
+            ProviderKind.STUB, null, null, 30000, departmentId,
+            new BigDecimal("0.01"), new BigDecimal("0.03"));
     }
 
-    @Test
-    void deve_lancarExcecao_quando_providerNaoEncontrado() {
-        availableModel(modelId, providerId);
-        // Provider não registrado
-
-        assertThatThrownBy(() -> useCase.complete(cmd(null, "SUCCESS")))
-            .isInstanceOf(ProviderNotFoundException.class);
-
-        assertThat(publishedEvents).isEmpty();
-    }
-
-    @Test
-    void deve_lancarExcecao_quando_providerInativo() {
-        availableModel(modelId, providerId);
-        inactiveProvider(providerId);
-
-        assertThatThrownBy(() -> useCase.complete(cmd(null, "SUCCESS")))
-            .isInstanceOf(ProviderInactiveException.class);
-
-        assertThat(publishedEvents).isEmpty();
+    private void resolveModelForUserFailing(RuntimeException failure) {
+        resolveModelForUser = new ResolveModelForUser(null, null, null, null) {
+            @Override
+            public ResolvedModel resolve(TenantId tenant, UserId user, UUID requestedModelId) {
+                throw failure;
+            }
+        };
+        // Recria o serviço com o resolutor que nega.
+        service = new CompleteAIRequest(identityQuery, resolveModelForUser, kind -> stub,
+            recorder, delivery);
     }
 }

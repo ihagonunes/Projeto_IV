@@ -54,7 +54,7 @@ class ConfigureDepartmentPolicyTest {
     }
 
     private Model fakeModel(UUID id) {
-        return Model.restore(id, tenantId, UUID.randomUUID(), "m-" + id,
+        return Model.restore(id, tenantId, UUID.randomUUID(), "m-" + id, null,
             ModelStatus.AVAILABLE, null, null, Instant.now(), Instant.now());
     }
 

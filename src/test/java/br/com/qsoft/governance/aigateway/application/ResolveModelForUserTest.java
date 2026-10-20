@@ -5,10 +5,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import br.com.qsoft.governance.aigateway.application.port.ModelRepository;
 import br.com.qsoft.governance.aigateway.application.port.ProviderRepository;
-import br.com.qsoft.governance.aigateway.domain.exception.ModelNotAllowedException;
-import br.com.qsoft.governance.aigateway.domain.exception.ModelUnavailableException;
-import br.com.qsoft.governance.aigateway.domain.exception.NoModelConfiguredException;
-import br.com.qsoft.governance.aigateway.domain.exception.ProviderInactiveException;
+import br.com.qsoft.governance.aigateway.api.exception.ModelNotAllowedException;
+import br.com.qsoft.governance.aigateway.api.exception.ModelUnavailableException;
+import br.com.qsoft.governance.aigateway.api.exception.NoModelConfiguredException;
+import br.com.qsoft.governance.aigateway.api.exception.ProviderInactiveException;
 import br.com.qsoft.governance.aigateway.domain.model.Model;
 import br.com.qsoft.governance.aigateway.domain.provider.Provider;
 import br.com.qsoft.governance.department.api.model.ModelPolicyInfo;
@@ -103,7 +103,8 @@ class ResolveModelForUserTest {
         identityQuery, modelPolicyQuery, modelRepository, providerRepository);
 
     private Provider provider(boolean active) {
-        Provider provider = Provider.create(UUID.randomUUID(), tenantId, "OpenAI");
+        Provider provider = Provider.create(UUID.randomUUID(), tenantId, "OpenAI",
+            br.com.qsoft.governance.aigateway.domain.provider.ProviderKind.STUB, null, null, null);
         if (!active) {
             provider.deactivate();
         }
@@ -112,7 +113,8 @@ class ResolveModelForUserTest {
     }
 
     private Model model(Provider provider, boolean available) {
-        Model model = Model.create(UUID.randomUUID(), tenantId, provider.id(), "gpt-4", null, null);
+        Model model = Model.create(UUID.randomUUID(), tenantId, provider.id(), "gpt-4", null,
+            null, null);
         if (!available) {
             model.disable();
         }

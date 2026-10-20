@@ -25,19 +25,21 @@ public final class Model {
     private final TenantId tenantId;
     private final UUID providerId;
     private String name;
+    private String externalName;
     private ModelStatus status;
     private BigDecimal inputPricePer1k;
     private BigDecimal outputPricePer1k;
     private final Instant createdAt;
     private Instant updatedAt;
 
-    private Model(UUID id, TenantId tenantId, UUID providerId, String name, ModelStatus status,
-                  BigDecimal inputPricePer1k, BigDecimal outputPricePer1k,
+    private Model(UUID id, TenantId tenantId, UUID providerId, String name, String externalName,
+                  ModelStatus status, BigDecimal inputPricePer1k, BigDecimal outputPricePer1k,
                   Instant createdAt, Instant updatedAt) {
         this.id = Objects.requireNonNull(id, "id");
         this.tenantId = Objects.requireNonNull(tenantId, "tenantId");
         this.providerId = Objects.requireNonNull(providerId, "providerId");
         this.name = Objects.requireNonNull(name, "name");
+        this.externalName = normalizeExternalName(externalName);
         this.status = Objects.requireNonNull(status, "status");
         this.inputPricePer1k = inputPricePer1k;
         this.outputPricePer1k = outputPricePer1k;
@@ -46,17 +48,19 @@ public final class Model {
     }
 
     public static Model create(UUID id, TenantId tenantId, UUID providerId, String name,
-                               BigDecimal inputPricePer1k, BigDecimal outputPricePer1k) {
+                               String externalName, BigDecimal inputPricePer1k,
+                               BigDecimal outputPricePer1k) {
         Instant now = Instant.now();
-        return new Model(id, tenantId, providerId, requireName(name), ModelStatus.AVAILABLE,
-            requirePrice(inputPricePer1k), requirePrice(outputPricePer1k), now, now);
+        return new Model(id, tenantId, providerId, requireName(name), externalName,
+            ModelStatus.AVAILABLE, requirePrice(inputPricePer1k), requirePrice(outputPricePer1k),
+            now, now);
     }
 
     public static Model restore(UUID id, TenantId tenantId, UUID providerId, String name,
-                                ModelStatus status, BigDecimal inputPricePer1k,
+                                String externalName, ModelStatus status, BigDecimal inputPricePer1k,
                                 BigDecimal outputPricePer1k, Instant createdAt, Instant updatedAt) {
-        return new Model(id, tenantId, providerId, name, status, inputPricePer1k, outputPricePer1k,
-            createdAt, updatedAt);
+        return new Model(id, tenantId, providerId, name, externalName, status, inputPricePer1k,
+            outputPricePer1k, createdAt, updatedAt);
     }
 
     public UUID id() {
@@ -73,6 +77,11 @@ public final class Model {
 
     public String name() {
         return name;
+    }
+
+    /** Nome usado junto ao provider; {@code null} significa usar {@link #name()}. */
+    public String externalName() {
+        return externalName;
     }
 
     public ModelStatus status() {
@@ -132,6 +141,12 @@ public final class Model {
      * Preço nulo conta como zero (modelo sem preço definido).
      */
     public BigDecimal estimatedCost(long inputTokens, long outputTokens) {
+        return estimateCost(inputPricePer1k, outputPricePer1k, inputTokens, outputTokens);
+    }
+
+    /** Cálculo do custo com preços fotografados (ADR-38); preço nulo conta como zero. */
+    public static BigDecimal estimateCost(BigDecimal inputPricePer1k, BigDecimal outputPricePer1k,
+                                          long inputTokens, long outputTokens) {
         if (inputTokens < 0 || outputTokens < 0) {
             throw new IllegalArgumentException("tokens não podem ser negativos.");
         }
@@ -154,6 +169,18 @@ public final class Model {
         String trimmed = name.trim();
         if (trimmed.length() > NAME_MAX) {
             throw new IllegalArgumentException("name deve ter no máximo " + NAME_MAX + " caracteres.");
+        }
+        return trimmed;
+    }
+
+    private static String normalizeExternalName(String externalName) {
+        if (externalName == null || externalName.isBlank()) {
+            return null;
+        }
+        String trimmed = externalName.trim();
+        if (trimmed.length() > NAME_MAX) {
+            throw new IllegalArgumentException(
+                "externalName deve ter no máximo " + NAME_MAX + " caracteres.");
         }
         return trimmed;
     }

@@ -12,6 +12,10 @@ public final class ProviderJpaMapper {
         entity.setTenantId(provider.tenantId().value());
         entity.setName(provider.name());
         entity.setStatus(provider.status());
+        entity.setKind(provider.kind());
+        entity.setBaseUrl(provider.baseUrl());
+        entity.setCredentialRef(provider.credentialRef());
+        entity.setTimeoutMs(provider.timeoutMs());
         entity.setCreatedAt(provider.createdAt());
         entity.setUpdatedAt(provider.updatedAt());
         return entity;
@@ -22,6 +26,10 @@ public final class ProviderJpaMapper {
             entity.getId(),
             TenantId.of(entity.getTenantId()),
             entity.getName(),
+            entity.getKind(),
+            entity.getBaseUrl(),
+            entity.getCredentialRef(),
+            entity.getTimeoutMs(),
             entity.getStatus(),
             entity.getCreatedAt(),
             entity.getUpdatedAt()

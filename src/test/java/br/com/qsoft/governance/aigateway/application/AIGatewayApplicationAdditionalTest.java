@@ -32,7 +32,7 @@ class AIGatewayApplicationAdditionalTest {
         UUID modelId = UUID.randomUUID();
 
         Model model = Model.restore(
-            modelId, tenantId, providerId, "gpt-4",
+            modelId, tenantId, providerId, "gpt-4", null,
             ModelStatus.DISABLED, new BigDecimal("0.03"), new BigDecimal("0.06"),
             Instant.now(), Instant.now()
         );
@@ -129,7 +129,9 @@ class AIGatewayApplicationAdditionalTest {
         UUID modelId = UUID.randomUUID();
         UUID providerId = UUID.randomUUID();
 
-        ResolvedModel resolved = new ResolvedModel(modelId, "GPT-4", providerId, "OpenAI");
+        ResolvedModel resolved = new ResolvedModel(modelId, "GPT-4", null, providerId, "OpenAI",
+            br.com.qsoft.governance.aigateway.domain.provider.ProviderKind.STUB, null, null,
+            30000, null, null, null);
         assertThat(resolved.modelId()).isEqualTo(modelId);
         assertThat(resolved.modelName()).isEqualTo("GPT-4");
         assertThat(resolved.providerId()).isEqualTo(providerId);

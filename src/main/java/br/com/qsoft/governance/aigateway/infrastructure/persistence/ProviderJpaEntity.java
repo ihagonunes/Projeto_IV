@@ -1,5 +1,6 @@
 package br.com.qsoft.governance.aigateway.infrastructure.persistence;
 
+import br.com.qsoft.governance.aigateway.domain.provider.ProviderKind;
 import br.com.qsoft.governance.aigateway.domain.provider.ProviderStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -41,6 +42,19 @@ public class ProviderJpaEntity {
     @Column(name = "status", nullable = false, length = 20)
     private ProviderStatus status;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "kind", nullable = false, length = 30)
+    private ProviderKind kind;
+
+    @Column(name = "base_url", length = 500)
+    private String baseUrl;
+
+    @Column(name = "credential_ref", length = 100)
+    private String credentialRef;
+
+    @Column(name = "timeout_ms", nullable = false)
+    private int timeoutMs;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -81,6 +95,38 @@ public class ProviderJpaEntity {
 
     public void setStatus(ProviderStatus status) {
         this.status = status;
+    }
+
+    public ProviderKind getKind() {
+        return kind;
+    }
+
+    public void setKind(ProviderKind kind) {
+        this.kind = kind;
+    }
+
+    public String getBaseUrl() {
+        return baseUrl;
+    }
+
+    public void setBaseUrl(String baseUrl) {
+        this.baseUrl = baseUrl;
+    }
+
+    public String getCredentialRef() {
+        return credentialRef;
+    }
+
+    public void setCredentialRef(String credentialRef) {
+        this.credentialRef = credentialRef;
+    }
+
+    public int getTimeoutMs() {
+        return timeoutMs;
+    }
+
+    public void setTimeoutMs(int timeoutMs) {
+        this.timeoutMs = timeoutMs;
     }
 
     public Instant getCreatedAt() {

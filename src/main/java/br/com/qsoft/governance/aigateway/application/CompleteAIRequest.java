@@ -1,81 +1,204 @@
 package br.com.qsoft.governance.aigateway.application;
 
-import br.com.qsoft.governance.aigateway.application.port.ModelRepository;
-import br.com.qsoft.governance.aigateway.application.port.ProviderRepository;
+import br.com.qsoft.governance.aigateway.api.completion.AICompletionService;
+import br.com.qsoft.governance.aigateway.api.completion.CompletionCommand;
+import br.com.qsoft.governance.aigateway.api.completion.CompletionResult;
+import br.com.qsoft.governance.aigateway.api.exception.AIAttemptNotRecordedException;
+import br.com.qsoft.governance.aigateway.api.exception.AIProviderFailureException;
+import br.com.qsoft.governance.aigateway.api.exception.AIProviderTimeoutException;
+import br.com.qsoft.governance.aigateway.api.exception.ModelNotAllowedException;
+import br.com.qsoft.governance.aigateway.api.exception.ModelUnavailableException;
+import br.com.qsoft.governance.aigateway.api.exception.NoModelConfiguredException;
+import br.com.qsoft.governance.aigateway.api.exception.ProviderInactiveException;
+import br.com.qsoft.governance.aigateway.application.port.ProviderClient;
+import br.com.qsoft.governance.aigateway.application.port.ProviderClientRegistry;
+import br.com.qsoft.governance.aigateway.application.port.ProviderFailureException;
+import br.com.qsoft.governance.aigateway.application.port.ProviderTimeoutException;
+import br.com.qsoft.governance.aigateway.domain.attempt.CostStatus;
+import br.com.qsoft.governance.aigateway.domain.attempt.DeliveryStatus;
+import br.com.qsoft.governance.aigateway.domain.attempt.RequestPurpose;
 import br.com.qsoft.governance.aigateway.domain.exception.ModelNotFoundException;
-import br.com.qsoft.governance.aigateway.domain.exception.ModelUnavailableException;
-import br.com.qsoft.governance.aigateway.domain.exception.ProviderInactiveException;
 import br.com.qsoft.governance.aigateway.domain.exception.ProviderNotFoundException;
-import br.com.qsoft.governance.aigateway.domain.model.Model;
-import br.com.qsoft.governance.aigateway.domain.provider.Provider;
-import br.com.qsoft.governance.sharedkernel.event.AIRequestCompleted;
+import br.com.qsoft.governance.iam.api.model.UserContext;
+import br.com.qsoft.governance.iam.api.query.IdentityQuery;
 import br.com.qsoft.governance.sharedkernel.id.TenantId;
+import br.com.qsoft.governance.sharedkernel.id.UserId;
+import java.math.BigDecimal;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 /**
- * Conclusão de uma requisição de IA no Gateway (SPI-70/72): coleta as métricas
- * da completion, calcula o custo estimado <b>uma vez</b> e emite
- * {@link AIRequestCompleted} — a <b>única origem operacional</b> de UsageRecord
- * (ADR-13).
+ * Implementação de {@link AICompletionService} no AI Gateway (ADR-11/ADR-38).
  * <p>
- * A publicação é um evento de domínio <b>in-process</b> (ADR-02): o
- * observability consome como <b>efeito secundário</b> e uma falha dele
- * <b>não</b> invalida a completion (SPI-74). Não existe endpoint público
- * genérico de logs (SPI-71).
+ * O {@code requestId} é sempre gerado aqui e o departamento vem do
+ * {@link IdentityQuery} — o chamador não os informa. Antes de chamar o provider,
+ * grava a tentativa {@code IN_FLIGHT} em transação própria ({@code REQUIRES_NEW});
+ * o resultado é gravado depois. O conteúdo do prompt/resposta nunca é
+ * persistido nem logado.
  */
 @Service
-public class CompleteAIRequest {
+public class CompleteAIRequest implements AICompletionService {
 
-    private final ModelRepository modelRepository;
-    private final ProviderRepository providerRepository;
-    private final ApplicationEventPublisher eventPublisher;
+    private final IdentityQuery identityQuery;
+    private final ResolveModelForUser resolveModelForUser;
+    private final ProviderClientRegistry providerClientRegistry;
+    private final AttemptRecorder attemptRecorder;
+    private final UsageDeliveryPublisher deliveryPublisher;
 
-    public CompleteAIRequest(ModelRepository modelRepository,
-                             ProviderRepository providerRepository,
-                             ApplicationEventPublisher eventPublisher) {
-        this.modelRepository = modelRepository;
-        this.providerRepository = providerRepository;
-        this.eventPublisher = eventPublisher;
+    public CompleteAIRequest(IdentityQuery identityQuery,
+                             ResolveModelForUser resolveModelForUser,
+                             ProviderClientRegistry providerClientRegistry,
+                             AttemptRecorder attemptRecorder,
+                             UsageDeliveryPublisher deliveryPublisher) {
+        this.identityQuery = identityQuery;
+        this.resolveModelForUser = resolveModelForUser;
+        this.providerClientRegistry = providerClientRegistry;
+        this.attemptRecorder = attemptRecorder;
+        this.deliveryPublisher = deliveryPublisher;
     }
 
-    public AIRequestCompleted complete(CompleteAIRequestCommand command) {
-        if (command == null) {
-            throw new IllegalArgumentException("Command é obrigatório.");
-        }
-        TenantId tenantId = Objects.requireNonNull(command.tenantId(), "tenantId");
-        UUID modelId = Objects.requireNonNull(command.modelId(), "modelId");
-        UUID requestId = command.requestId() == null ? UUID.randomUUID() : command.requestId();
+    @Override
+    public CompletionResult complete(CompletionCommand command) {
+        Objects.requireNonNull(command, "command é obrigatório.");
+        TenantId tenantId = command.tenantId();
+        UserId userId = command.userId();
+        RequestPurpose purpose = parsePurpose(command.purpose());
+        UUID requestId = UUID.randomUUID();
+        UUID departmentId = departmentIdOf(tenantId, userId);
 
-        Model model = modelRepository.findByTenantIdAndId(tenantId, modelId)
-            .orElseThrow(() -> new ModelNotFoundException(modelId));
-        if (!model.isAvailable()) {
-            throw new ModelUnavailableException();
-        }
-        Provider provider = providerRepository.findByTenantIdAndId(tenantId, model.providerId())
-            .orElseThrow(() -> new ProviderNotFoundException(model.providerId()));
-        if (!provider.isActive()) {
-            throw new ProviderInactiveException();
+        ResolvedModel resolved;
+        try {
+            resolved = resolveModelForUser.resolve(tenantId, userId, command.requestedModelId());
+        } catch (RuntimeException ex) {
+            recordDenied(requestId, tenantId, userId, departmentId, purpose,
+                command.requestedModelId(), denialReason(ex));
+            throw ex;
         }
 
-        AIRequestCompleted event = new AIRequestCompleted(
-            requestId,
-            tenantId.value(),
-            command.departmentId(),
-            command.userId(),
-            model.id(),
-            provider.id(),
-            command.inputTokens(),
-            command.outputTokens(),
-            model.estimatedCost(command.inputTokens(), command.outputTokens()),
-            command.latencyMs(),
-            command.status() == null ? "COMPLETED" : command.status()
-        );
+        recordInFlight(requestId, tenantId, userId, purpose, resolved);
 
-        // Efeito secundário: uma falha do consumidor não invalida a completion (SPI-74).
-        eventPublisher.publishEvent(event);
-        return event;
+        long startedAt = System.nanoTime();
+        ProviderClient.ProviderResponse response;
+        try {
+            response = clientFor(resolved).call(new ProviderClient.ProviderCall(
+                resolved.providerKind(), resolved.baseUrl(), resolved.credentialRef(),
+                resolved.timeoutMs(), resolved.externalModelName(), command.messages(),
+                command.tools()));
+        } catch (ProviderTimeoutException ex) {
+            long latencyMs = elapsed(startedAt);
+            recordSafely(() -> attemptRecorder.recordTimeout(requestId, latencyMs));
+            throw new AIProviderTimeoutException();
+        } catch (ProviderFailureException ex) {
+            long latencyMs = elapsed(startedAt);
+            recordSafely(() -> attemptRecorder.recordFailure(
+                requestId, ex.errorCode(), latencyMs, ex.billingDeclaredZero()));
+            // Custo KNOWN (cobrança declarada zero) gera uso PENDING; entrega sem reentrega.
+            deliveryPublisher.deliver(requestId);
+            throw new AIProviderFailureException(ex.errorCode());
+        }
+
+        long latencyMs = elapsed(startedAt);
+        Usage usage = usageOf(response, resolved);
+        try {
+            attemptRecorder.recordSuccess(requestId, usage.inputTokens(), usage.outputTokens(),
+                usage.costStatus(), usage.estimatedCost(), latencyMs, usage.deliveryStatus());
+        } catch (RuntimeException ex) {
+            throw new AIAttemptNotRecordedException();
+        }
+
+        if (usage.deliveryStatus() == DeliveryStatus.PENDING) {
+            deliveryPublisher.deliver(requestId);
+        }
+
+        return new CompletionResult(requestId, response.content(), response.toolCalls(),
+            resolved.modelId(), resolved.modelName(), resolved.providerId(), resolved.providerName(),
+            usage.inputTokens(), usage.outputTokens(), usage.estimatedCost(),
+            usage.costStatus().name(), latencyMs);
+    }
+
+    private void recordDenied(UUID requestId, TenantId tenantId, UserId userId, UUID departmentId,
+                              RequestPurpose purpose, UUID requestedModelId, String reason) {
+        recordSafely(() -> attemptRecorder.recordDenied(requestId, tenantId.value(), userId.value(),
+            departmentId, purpose, requestedModelId, null, reason));
+    }
+
+    private void recordInFlight(UUID requestId, TenantId tenantId, UserId userId,
+                                RequestPurpose purpose, ResolvedModel resolved) {
+        try {
+            attemptRecorder.recordInFlight(requestId, tenantId.value(), userId.value(),
+                resolved.departmentId(), purpose, resolved.modelId(), resolved.providerId(),
+                resolved.inputPricePer1k(), resolved.outputPricePer1k());
+        } catch (RuntimeException ex) {
+            throw new AIAttemptNotRecordedException();
+        }
+    }
+
+    private ProviderClient clientFor(ResolvedModel resolved) {
+        return providerClientRegistry.forKind(resolved.providerKind());
+    }
+
+    private static Usage usageOf(ProviderClient.ProviderResponse response, ResolvedModel resolved) {
+        if (response.usage() instanceof ProviderClient.Usage.Known known) {
+            BigDecimal estimatedCost = resolved.estimatedCost(known.inputTokens(), known.outputTokens());
+            return new Usage(known.inputTokens(), known.outputTokens(), CostStatus.KNOWN,
+                estimatedCost, DeliveryStatus.PENDING);
+        }
+        return new Usage(null, null, CostStatus.INCONCLUSIVE, null, DeliveryStatus.NOT_APPLICABLE);
+    }
+
+    private UUID departmentIdOf(TenantId tenantId, UserId userId) {
+        return identityQuery.getUserContext(userId)
+            .filter(context -> context.tenantId().equals(tenantId))
+            .map(UserContext::departmentId)
+            .orElse(null);
+    }
+
+    private static RequestPurpose parsePurpose(String purpose) {
+        try {
+            return RequestPurpose.valueOf(purpose.toUpperCase(Locale.ROOT));
+        } catch (RuntimeException ex) {
+            throw new IllegalArgumentException("purpose inválido.");
+        }
+    }
+
+    private static String denialReason(RuntimeException ex) {
+        if (ex instanceof ModelNotAllowedException) {
+            return "MODEL_NOT_ALLOWED";
+        }
+        if (ex instanceof NoModelConfiguredException) {
+            return "NO_MODEL_CONFIGURED";
+        }
+        if (ex instanceof ModelUnavailableException) {
+            return "MODEL_UNAVAILABLE";
+        }
+        if (ex instanceof ProviderInactiveException) {
+            return "PROVIDER_INACTIVE";
+        }
+        if (ex instanceof ModelNotFoundException) {
+            return "MODEL_NOT_FOUND";
+        }
+        if (ex instanceof ProviderNotFoundException) {
+            return "PROVIDER_NOT_FOUND";
+        }
+        return "DENIED";
+    }
+
+    private static long elapsed(long startedAt) {
+        return (System.nanoTime() - startedAt) / 1_000_000;
+    }
+
+    private static void recordSafely(Runnable action) {
+        try {
+            action.run();
+        } catch (RuntimeException ignored) {
+            // A gravação do resultado é best-effort: a tentativa pode ficar
+            // IN_FLIGHT e ser resolvida como OUTCOME_UNKNOWN pelo job (C2).
+        }
+    }
+
+    private record Usage(Long inputTokens, Long outputTokens, CostStatus costStatus,
+                         BigDecimal estimatedCost, DeliveryStatus deliveryStatus) {
     }
 }

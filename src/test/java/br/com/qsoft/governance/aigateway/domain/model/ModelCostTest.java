@@ -12,7 +12,7 @@ class ModelCostTest {
 
     private Model model(BigDecimal inputPrice, BigDecimal outputPrice) {
         return Model.create(UUID.randomUUID(), TenantId.random(), UUID.randomUUID(), "gpt-4",
-            inputPrice, outputPrice);
+            null, inputPrice, outputPrice);
     }
 
     @Test

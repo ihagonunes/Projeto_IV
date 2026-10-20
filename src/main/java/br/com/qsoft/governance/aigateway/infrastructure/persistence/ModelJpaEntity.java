@@ -41,6 +41,9 @@ public class ModelJpaEntity {
     @Column(name = "name", nullable = false, length = 150)
     private String name;
 
+    @Column(name = "external_name", length = 150)
+    private String externalName;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     private ModelStatus status;
@@ -91,6 +94,14 @@ public class ModelJpaEntity {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getExternalName() {
+        return externalName;
+    }
+
+    public void setExternalName(String externalName) {
+        this.externalName = externalName;
     }
 
     public ModelStatus getStatus() {

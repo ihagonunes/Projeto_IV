@@ -7,6 +7,7 @@
 | Java 21 | runtime/LTS | obrigatório |
 | Spring Boot 4.1.1 | bootstrap/dependency management | baseline |
 | Spring Web | REST | obrigatório |
+| Spring `RestClient` + `JdkClientHttpRequestFactory` | chamada HTTP ao provider de IA | **provider via HTTP (`RestClient`), sem SDK** |
 | Spring Data JPA | persistência | obrigatório |
 | PostgreSQL | SGBD | único banco suportado |
 | Flyway | migrations | obrigatório |
@@ -42,6 +43,9 @@
 - SDK concreto de provider de IA.
 
 Esses itens exigem necessidade funcional explícita. Framework de provider e KnowledgeAccess permanecem abstratos.
+
+O provider de IA é acessado via HTTP (`RestClient`) a partir da porta `ProviderClient` (ADR-38),
+**sem SDK** concreto e sem Spring AI.
 
 ## Política
 

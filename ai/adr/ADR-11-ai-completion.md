@@ -19,3 +19,12 @@ Fila assíncrona obrigatória; endpoint público genérico; routing por custo/la
 ## Consequências
 
 Fluxo do usuário permanece simples e determinístico. Provider concreto fica encapsulado em adapter.
+
+## Emenda (ADR-38)
+
+- O `departmentId` deixou de ser informado pelo chamador: o Gateway resolve a lotação atual pelo
+  `IdentityQuery` e aplica a ModelPolicy do departamento.
+- Antes de chamar o provider, o Gateway grava a tentativa `IN_FLIGHT` em transação própria
+  (`REQUIRES_NEW`). A tentativa é a fonte durável do que foi executado, mesmo se o processo falhar
+  entre a chamada e a gravação do resultado.
+- O `requestId` é sempre gerado pelo servidor; o chamador não o informa.

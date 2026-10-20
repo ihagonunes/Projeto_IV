@@ -9,6 +9,7 @@ public record ModelResponse(
     UUID id,
     UUID providerId,
     String name,
+    String externalName,
     String status,
     Instant createdAt
 ) {
@@ -18,6 +19,7 @@ public record ModelResponse(
             model.id(),
             model.providerId(),
             model.name(),
+            model.externalName(),
             model.status().name(),
             model.createdAt()
         );

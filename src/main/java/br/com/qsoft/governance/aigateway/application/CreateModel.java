@@ -40,7 +40,7 @@ public class CreateModel {
             throw new ModelNameAlreadyExistsException(name);
         }
         return modelRepository.save(Model.create(UUID.randomUUID(), tenantId, providerId, name,
-            command.inputPricePer1k(), command.outputPricePer1k()));
+            command.externalName(), command.inputPricePer1k(), command.outputPricePer1k()));
     }
 
     private static String requireName(String name) {

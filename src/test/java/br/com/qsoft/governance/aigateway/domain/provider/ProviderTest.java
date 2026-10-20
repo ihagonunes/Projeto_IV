@@ -19,7 +19,8 @@ class ProviderTest {
     private final TenantId tenantId = TenantId.random();
 
     private Provider activeProvider() {
-        return Provider.create(UUID.randomUUID(), tenantId, "OpenAI");
+        return Provider.create(UUID.randomUUID(), tenantId, "OpenAI", ProviderKind.STUB,
+            null, null, null);
     }
 
     // -------------------------------------------------------------------------
@@ -28,7 +29,8 @@ class ProviderTest {
 
     @Test
     void deve_criarProviderAtivo_quando_nomeValido() {
-        Provider p = Provider.create(UUID.randomUUID(), tenantId, "OpenAI");
+        Provider p = Provider.create(UUID.randomUUID(), tenantId, "OpenAI", ProviderKind.STUB,
+            null, null, null);
 
         assertThat(p.name()).isEqualTo("OpenAI");
         assertThat(p.status()).isEqualTo(ProviderStatus.ACTIVE);
@@ -38,28 +40,32 @@ class ProviderTest {
 
     @Test
     void deve_lancarExcecao_quando_nomeVazio() {
-        assertThatThrownBy(() -> Provider.create(UUID.randomUUID(), tenantId, ""))
+        assertThatThrownBy(() -> Provider.create(UUID.randomUUID(), tenantId, "",
+            ProviderKind.STUB, null, null, null))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("obrigatório");
     }
 
     @Test
     void deve_lancarExcecao_quando_nomeApenasEspacos() {
-        assertThatThrownBy(() -> Provider.create(UUID.randomUUID(), tenantId, "   "))
+        assertThatThrownBy(() -> Provider.create(UUID.randomUUID(), tenantId, "   ",
+            ProviderKind.STUB, null, null, null))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("obrigatório");
     }
 
     @Test
     void deve_lancarExcecao_quando_nomeNulo() {
-        assertThatThrownBy(() -> Provider.create(UUID.randomUUID(), tenantId, null))
+        assertThatThrownBy(() -> Provider.create(UUID.randomUUID(), tenantId, null,
+            ProviderKind.STUB, null, null, null))
             .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void deve_lancarExcecao_quando_nomeMaiorQue150Caracteres() {
         String nomeGigante = "A".repeat(151);
-        assertThatThrownBy(() -> Provider.create(UUID.randomUUID(), tenantId, nomeGigante))
+        assertThatThrownBy(() -> Provider.create(UUID.randomUUID(), tenantId, nomeGigante,
+            ProviderKind.STUB, null, null, null))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("150");
     }
@@ -67,7 +73,8 @@ class ProviderTest {
     @Test
     void deve_aceitarNomeComExatamente150Caracteres() {
         String nome = "B".repeat(150);
-        Provider p = Provider.create(UUID.randomUUID(), tenantId, nome);
+        Provider p = Provider.create(UUID.randomUUID(), tenantId, nome, ProviderKind.STUB,
+            null, null, null);
         assertThat(p.name()).hasSize(150);
     }
 
@@ -149,7 +156,8 @@ class ProviderTest {
         UUID id = UUID.randomUUID();
         Instant now = Instant.now();
 
-        Provider p = Provider.restore(id, tenantId, "Google", ProviderStatus.INACTIVE, now, now);
+        Provider p = Provider.restore(id, tenantId, "Google", ProviderKind.STUB, null, null,
+            30000, ProviderStatus.INACTIVE, now, now);
 
         assertThat(p.id()).isEqualTo(id);
         assertThat(p.status()).isEqualTo(ProviderStatus.INACTIVE);
@@ -164,7 +172,8 @@ class ProviderTest {
     void deve_retornarCamposCorretos_quando_criado() {
         UUID id = UUID.randomUUID();
         Instant now = Instant.now();
-        Provider p = Provider.restore(id, tenantId, "Azure", ProviderStatus.ACTIVE, now, now);
+        Provider p = Provider.restore(id, tenantId, "Azure", ProviderKind.STUB, null, null,
+            30000, ProviderStatus.ACTIVE, now, now);
 
         assertThat(p.id()).isEqualTo(id);
         assertThat(p.tenantId()).isEqualTo(tenantId);

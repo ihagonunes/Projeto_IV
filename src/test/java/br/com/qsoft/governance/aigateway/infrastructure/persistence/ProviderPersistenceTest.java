@@ -83,6 +83,10 @@ class ProviderPersistenceTest {
             id,
             tenantId,
             "OpenAI",
+            br.com.qsoft.governance.aigateway.domain.provider.ProviderKind.STUB,
+            null,
+            null,
+            30000,
             ProviderStatus.ACTIVE,
             now,
             now
@@ -199,6 +203,10 @@ class ProviderPersistenceTest {
             UUID.randomUUID(),
             tenantId,
             "OpenAI",
+            br.com.qsoft.governance.aigateway.domain.provider.ProviderKind.STUB,
+            null,
+            null,
+            30000,
             ProviderStatus.ACTIVE,
             Instant.now(),
             Instant.now()

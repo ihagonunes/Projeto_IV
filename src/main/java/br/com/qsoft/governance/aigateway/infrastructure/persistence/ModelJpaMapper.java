@@ -12,6 +12,7 @@ public final class ModelJpaMapper {
         entity.setTenantId(model.tenantId().value());
         entity.setProviderId(model.providerId());
         entity.setName(model.name());
+        entity.setExternalName(model.externalName());
         entity.setStatus(model.status());
         entity.setInputPricePer1k(model.inputPricePer1k());
         entity.setOutputPricePer1k(model.outputPricePer1k());
@@ -26,6 +27,7 @@ public final class ModelJpaMapper {
             TenantId.of(entity.getTenantId()),
             entity.getProviderId(),
             entity.getName(),
+            entity.getExternalName(),
             entity.getStatus(),
             entity.getInputPricePer1k(),
             entity.getOutputPricePer1k(),

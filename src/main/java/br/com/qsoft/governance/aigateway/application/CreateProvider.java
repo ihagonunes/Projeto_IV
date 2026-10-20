@@ -3,6 +3,7 @@ package br.com.qsoft.governance.aigateway.application;
 import br.com.qsoft.governance.aigateway.application.port.ProviderRepository;
 import br.com.qsoft.governance.aigateway.domain.exception.ProviderNameAlreadyExistsException;
 import br.com.qsoft.governance.aigateway.domain.provider.Provider;
+import br.com.qsoft.governance.aigateway.domain.provider.ProviderKind;
 import br.com.qsoft.governance.sharedkernel.id.TenantId;
 import java.util.Objects;
 import java.util.UUID;
@@ -28,7 +29,9 @@ public class CreateProvider {
         if (providerRepository.existsByTenantIdAndName(tenantId, name)) {
             throw new ProviderNameAlreadyExistsException(name);
         }
-        return providerRepository.save(Provider.create(UUID.randomUUID(), tenantId, name));
+        ProviderKind kind = command.kind() == null ? ProviderKind.STUB : command.kind();
+        return providerRepository.save(Provider.create(UUID.randomUUID(), tenantId, name, kind,
+            command.baseUrl(), command.credentialRef(), command.timeoutMs()));
     }
 
     private static String requireName(String name) {

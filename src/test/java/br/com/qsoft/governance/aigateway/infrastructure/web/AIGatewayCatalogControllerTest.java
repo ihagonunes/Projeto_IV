@@ -11,6 +11,7 @@ import br.com.qsoft.governance.aigateway.application.ListProviders;
 import br.com.qsoft.governance.aigateway.domain.model.Model;
 import br.com.qsoft.governance.aigateway.domain.model.ModelStatus;
 import br.com.qsoft.governance.aigateway.domain.provider.Provider;
+import br.com.qsoft.governance.aigateway.domain.provider.ProviderKind;
 import br.com.qsoft.governance.sharedkernel.id.TenantId;
 import br.com.qsoft.governance.sharedkernel.tenant.TenantContext;
 import br.com.qsoft.governance.sharedkernel.tenant.TenantContextHolder;
@@ -20,6 +21,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -73,7 +75,8 @@ class AIGatewayCatalogControllerTest {
 
     @Test
     void deve_listar_providers_com_sucesso() throws Exception {
-        Provider provider = Provider.create(UUID.randomUUID(), tenantId, "OpenAI");
+        Provider provider = Provider.create(UUID.randomUUID(), tenantId, "OpenAI",
+            br.com.qsoft.governance.aigateway.domain.provider.ProviderKind.STUB, null, null, null);
         when(listProviders.list(tenantId)).thenReturn(List.of(provider));
 
         mockMvc.perform(get("/api/v1/ai-gateway/providers"))
@@ -87,7 +90,8 @@ class AIGatewayCatalogControllerTest {
 
     @Test
     void deve_criar_provider_com_sucesso() throws Exception {
-        Provider provider = Provider.create(UUID.randomUUID(), tenantId, "Anthropic");
+        Provider provider = Provider.create(UUID.randomUUID(), tenantId, "Anthropic",
+            br.com.qsoft.governance.aigateway.domain.provider.ProviderKind.STUB, null, null, null);
         when(createProvider.create(any(CreateProviderCommand.class))).thenReturn(provider);
 
         mockMvc.perform(post("/api/v1/ai-gateway/providers")
@@ -99,6 +103,41 @@ class AIGatewayCatalogControllerTest {
             .andExpect(jsonPath("$.status").value("ACTIVE"));
 
         verify(createProvider).create(any(CreateProviderCommand.class));
+    }
+
+    @Test
+    void deve_criarProviderComConfiguracaoSemExporSegredo() throws Exception {
+        Provider provider = Provider.create(UUID.randomUUID(), tenantId, "OpenAI Compatível",
+            ProviderKind.OPENAI_COMPATIBLE, "https://api.example.com/v1", "OPENAI_KEY", 15000);
+        when(createProvider.create(any(CreateProviderCommand.class))).thenReturn(provider);
+
+        String payload = """
+            {
+              "name": "OpenAI Compatível",
+              "kind": "OPENAI_COMPATIBLE",
+              "baseUrl": "https://api.example.com/v1",
+              "credentialRef": "OPENAI_KEY",
+              "timeoutMs": 15000
+            }
+            """;
+
+        mockMvc.perform(post("/api/v1/ai-gateway/providers")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(payload))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.kind").value("OPENAI_COMPATIBLE"))
+            .andExpect(jsonPath("$.baseUrl").value("https://api.example.com/v1"))
+            .andExpect(jsonPath("$.credentialRef").value("OPENAI_KEY"))
+            .andExpect(jsonPath("$.timeoutMs").value(15000))
+            .andExpect(jsonPath("$.secret").doesNotExist())
+            .andExpect(jsonPath("$.apiKey").doesNotExist());
+
+        ArgumentCaptor<CreateProviderCommand> captor =
+            ArgumentCaptor.forClass(CreateProviderCommand.class);
+        verify(createProvider).create(captor.capture());
+        assertThat(captor.getValue().kind()).isEqualTo(ProviderKind.OPENAI_COMPATIBLE);
+        assertThat(captor.getValue().credentialRef()).isEqualTo("OPENAI_KEY");
+        assertThat(captor.getValue().timeoutMs()).isEqualTo(15000);
     }
 
     @Test
@@ -115,7 +154,7 @@ class AIGatewayCatalogControllerTest {
     @Test
     void deve_listar_models_com_sucesso() throws Exception {
         UUID providerId = UUID.randomUUID();
-        Model model = Model.create(UUID.randomUUID(), tenantId, providerId, "gpt-4o",
+        Model model = Model.create(UUID.randomUUID(), tenantId, providerId, "gpt-4o", null,
             new BigDecimal("0.005"), new BigDecimal("0.015"));
         when(listModels.list(tenantId)).thenReturn(List.of(model));
 
@@ -133,13 +172,14 @@ class AIGatewayCatalogControllerTest {
     void deve_criar_model_com_sucesso() throws Exception {
         UUID providerId = UUID.randomUUID();
         Model model = Model.create(UUID.randomUUID(), tenantId, providerId, "claude-3-5-sonnet",
-            new BigDecimal("0.003"), new BigDecimal("0.015"));
+            "claude-3-5-sonnet-20241022", new BigDecimal("0.003"), new BigDecimal("0.015"));
         when(createModel.create(any(CreateModelCommand.class))).thenReturn(model);
 
         String payload = String.format("""
             {
               "providerId": "%s",
               "name": "claude-3-5-sonnet",
+              "externalName": "claude-3-5-sonnet-20241022",
               "inputPricePer1k": 0.003,
               "outputPricePer1k": 0.015
             }
@@ -151,9 +191,13 @@ class AIGatewayCatalogControllerTest {
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.id").value(model.id().toString()))
             .andExpect(jsonPath("$.name").value("claude-3-5-sonnet"))
+            .andExpect(jsonPath("$.externalName").value("claude-3-5-sonnet-20241022"))
             .andExpect(jsonPath("$.status").value("AVAILABLE"));
 
-        verify(createModel).create(any(CreateModelCommand.class));
+        ArgumentCaptor<CreateModelCommand> captor =
+            ArgumentCaptor.forClass(CreateModelCommand.class);
+        verify(createModel).create(captor.capture());
+        assertThat(captor.getValue().externalName()).isEqualTo("claude-3-5-sonnet-20241022");
     }
 
     @Test
@@ -178,7 +222,7 @@ class AIGatewayCatalogControllerTest {
     void deve_alterar_status_do_model_com_sucesso() throws Exception {
         UUID modelId = UUID.randomUUID();
         UUID providerId = UUID.randomUUID();
-        Model model = Model.create(modelId, tenantId, providerId, "gpt-4o",
+        Model model = Model.create(modelId, tenantId, providerId, "gpt-4o", null,
             new BigDecimal("0.005"), new BigDecimal("0.015")).disable();
         when(changeModelStatus.change(any(ChangeModelStatusCommand.class))).thenReturn(model);
 
@@ -216,7 +260,8 @@ class AIGatewayCatalogControllerTest {
 
     @Test
     void deve_testar_record_provider_response() {
-        Provider provider = Provider.create(UUID.randomUUID(), tenantId, "OpenAI");
+        Provider provider = Provider.create(UUID.randomUUID(), tenantId, "OpenAI",
+            br.com.qsoft.governance.aigateway.domain.provider.ProviderKind.STUB, null, null, null);
         ProviderResponse response = ProviderResponse.from(provider);
 
         assertThat(response.id()).isEqualTo(provider.id());
@@ -228,7 +273,7 @@ class AIGatewayCatalogControllerTest {
     @Test
     void deve_testar_record_model_response() {
         UUID providerId = UUID.randomUUID();
-        Model model = Model.create(UUID.randomUUID(), tenantId, providerId, "gpt-4o",
+        Model model = Model.create(UUID.randomUUID(), tenantId, providerId, "gpt-4o", null,
             new BigDecimal("0.005"), new BigDecimal("0.015"));
         ModelResponse response = ModelResponse.from(model);
 
@@ -242,14 +287,22 @@ class AIGatewayCatalogControllerTest {
     @Test
     void deve_testar_records_request() {
         UUID providerId = UUID.randomUUID();
-        ModelRequest modelRequest = new ModelRequest(providerId, "gpt-4", BigDecimal.ONE, BigDecimal.TEN);
+        ModelRequest modelRequest = new ModelRequest(providerId, "gpt-4", "gpt-4-0613",
+            BigDecimal.ONE, BigDecimal.TEN);
         assertThat(modelRequest.providerId()).isEqualTo(providerId);
         assertThat(modelRequest.name()).isEqualTo("gpt-4");
         assertThat(modelRequest.inputPricePer1k()).isEqualTo(BigDecimal.ONE);
         assertThat(modelRequest.outputPricePer1k()).isEqualTo(BigDecimal.TEN);
 
-        ProviderRequest providerRequest = new ProviderRequest("Provider A");
+        ProviderRequest providerRequest = new ProviderRequest("Provider A",
+            br.com.qsoft.governance.aigateway.domain.provider.ProviderKind.OPENAI_COMPATIBLE,
+            "https://api.example.com/v1", "PROVIDER_A_KEY", 15000);
         assertThat(providerRequest.name()).isEqualTo("Provider A");
+        assertThat(providerRequest.kind())
+            .isEqualTo(br.com.qsoft.governance.aigateway.domain.provider.ProviderKind.OPENAI_COMPATIBLE);
+        assertThat(providerRequest.baseUrl()).isEqualTo("https://api.example.com/v1");
+        assertThat(providerRequest.credentialRef()).isEqualTo("PROVIDER_A_KEY");
+        assertThat(providerRequest.timeoutMs()).isEqualTo(15000);
 
         ModelStatusRequest statusRequest = new ModelStatusRequest(ModelStatus.DISABLED);
         assertThat(statusRequest.status()).isEqualTo(ModelStatus.DISABLED);
