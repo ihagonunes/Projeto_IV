@@ -45,7 +45,7 @@ class UsageMetricsJdbcAdapterTest {
 
     @Test
     void deve_buscar_requisicoes_por_periodo_dia() {
-        UsageMetricsFilter filter = new UsageMetricsFilter(tenantId, null, null, from, to, Granularity.DAY);
+        UsageMetricsFilter filter = new UsageMetricsFilter(tenantId, new br.com.qsoft.governance.sharedkernel.rbac.VisibilityScope.TenantWide(), null, from, to, Granularity.DAY);
         UsageSeriesPoint point = new UsageSeriesPoint("2026-10-01", 50L);
 
         when(jdbcTemplate.query(anyString(), any(RowMapper.class), any(Object[].class)))
@@ -63,7 +63,7 @@ class UsageMetricsJdbcAdapterTest {
 
     @Test
     void deve_buscar_requisicoes_por_periodo_semana() {
-        UsageMetricsFilter filter = new UsageMetricsFilter(tenantId, null, null, from, to, Granularity.WEEK);
+        UsageMetricsFilter filter = new UsageMetricsFilter(tenantId, new br.com.qsoft.governance.sharedkernel.rbac.VisibilityScope.TenantWide(), null, from, to, Granularity.WEEK);
 
         when(jdbcTemplate.query(anyString(), any(RowMapper.class), any(Object[].class)))
             .thenReturn(List.of());
@@ -78,7 +78,7 @@ class UsageMetricsJdbcAdapterTest {
 
     @Test
     void deve_buscar_requisicoes_por_periodo_mes() {
-        UsageMetricsFilter filter = new UsageMetricsFilter(tenantId, null, null, from, to, Granularity.MONTH);
+        UsageMetricsFilter filter = new UsageMetricsFilter(tenantId, new br.com.qsoft.governance.sharedkernel.rbac.VisibilityScope.TenantWide(), null, from, to, Granularity.MONTH);
 
         when(jdbcTemplate.query(anyString(), any(RowMapper.class), any(Object[].class)))
             .thenReturn(List.of());
@@ -92,11 +92,36 @@ class UsageMetricsJdbcAdapterTest {
     }
 
     @Test
-    void deve_aplicar_filtros_de_escopo_user_id_e_department_id_em_requests_by_period() {
-        UUID userId = UUID.randomUUID();
-        UUID departmentId = UUID.randomUUID();
-        UsageMetricsFilter filter = new UsageMetricsFilter(
-            tenantId, userId, java.util.Set.of(departmentId), from, to, Granularity.DAY);
+    void deve_aplicar_visibilidade_departments_com_uniao_e_self() {
+        UUID self = UUID.randomUUID();
+        UUID deptA = UUID.randomUUID();
+        UUID deptB = UUID.randomUUID();
+        UsageMetricsFilter filter = new UsageMetricsFilter(tenantId,
+            new br.com.qsoft.governance.sharedkernel.rbac.VisibilityScope.Departments(
+                java.util.Set.of(deptA, deptB),
+                br.com.qsoft.governance.sharedkernel.id.UserId.of(self)),
+            null, from, to, Granularity.DAY);
+
+        when(jdbcTemplate.query(anyString(), any(RowMapper.class), any(Object[].class)))
+            .thenReturn(List.of());
+
+        adapter.requestsByPeriod(filter);
+
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<Object[]> paramsCaptor = ArgumentCaptor.forClass(Object[].class);
+        verify(jdbcTemplate).query(sqlCaptor.capture(), any(RowMapper.class), paramsCaptor.capture());
+
+        assertThat(sqlCaptor.getValue()).contains("AND (department_id IN (?,?) OR user_id = ?)");
+        assertThat(paramsCaptor.getValue()).contains(deptA, deptB, self);
+    }
+
+    @Test
+    void deve_aplicar_visibilidade_selfOnly() {
+        UUID self = UUID.randomUUID();
+        UsageMetricsFilter filter = new UsageMetricsFilter(tenantId,
+            new br.com.qsoft.governance.sharedkernel.rbac.VisibilityScope.SelfOnly(
+                br.com.qsoft.governance.sharedkernel.id.UserId.of(self)),
+            null, from, to, Granularity.DAY);
 
         when(jdbcTemplate.query(anyString(), any(RowMapper.class), any(Object[].class)))
             .thenReturn(List.of());
@@ -108,13 +133,12 @@ class UsageMetricsJdbcAdapterTest {
         verify(jdbcTemplate).query(sqlCaptor.capture(), any(RowMapper.class), paramsCaptor.capture());
 
         assertThat(sqlCaptor.getValue()).contains("AND user_id = ?");
-        assertThat(sqlCaptor.getValue()).contains("AND department_id IN (?)");
-        assertThat(paramsCaptor.getValue()).contains(userId, departmentId);
+        assertThat(paramsCaptor.getValue()).contains(self);
     }
 
     @Test
     void deve_testar_row_mapper_do_requests_by_period() throws SQLException {
-        UsageMetricsFilter filter = new UsageMetricsFilter(tenantId, null, null, from, to, Granularity.DAY);
+        UsageMetricsFilter filter = new UsageMetricsFilter(tenantId, new br.com.qsoft.governance.sharedkernel.rbac.VisibilityScope.TenantWide(), null, from, to, Granularity.DAY);
 
         when(jdbcTemplate.query(anyString(), any(RowMapper.class), any(Object[].class)))
             .thenAnswer(invocation -> {
@@ -136,7 +160,7 @@ class UsageMetricsJdbcAdapterTest {
 
     @Test
     void deve_contar_usuarios_ativos_retornando_valor() {
-        UsageMetricsFilter filter = new UsageMetricsFilter(tenantId, null, null, from, to, Granularity.DAY);
+        UsageMetricsFilter filter = new UsageMetricsFilter(tenantId, new br.com.qsoft.governance.sharedkernel.rbac.VisibilityScope.TenantWide(), null, from, to, Granularity.DAY);
 
         when(jdbcTemplate.queryForObject(anyString(), eq(Long.class), any(Object[].class)))
             .thenReturn(15L);
@@ -148,7 +172,7 @@ class UsageMetricsJdbcAdapterTest {
 
     @Test
     void deve_retornar_zero_quando_contagem_de_usuarios_ativos_for_nula() {
-        UsageMetricsFilter filter = new UsageMetricsFilter(tenantId, null, null, from, to, Granularity.DAY);
+        UsageMetricsFilter filter = new UsageMetricsFilter(tenantId, new br.com.qsoft.governance.sharedkernel.rbac.VisibilityScope.TenantWide(), null, from, to, Granularity.DAY);
 
         when(jdbcTemplate.queryForObject(anyString(), eq(Long.class), any(Object[].class)))
             .thenReturn(null);
@@ -164,7 +188,7 @@ class UsageMetricsJdbcAdapterTest {
     void deve_buscar_custo_por_departamento_mapeando_valores() throws SQLException {
         UUID deptId = UUID.randomUUID();
         BigDecimal costVal = new BigDecimal("1.500000");
-        UsageMetricsFilter filter = new UsageMetricsFilter(tenantId, null, null, from, to, Granularity.DAY);
+        UsageMetricsFilter filter = new UsageMetricsFilter(tenantId, new br.com.qsoft.governance.sharedkernel.rbac.VisibilityScope.TenantWide(), null, from, to, Granularity.DAY);
 
         when(jdbcTemplate.query(anyString(), any(RowMapper.class), any(Object[].class)))
             .thenAnswer(invocation -> {
@@ -190,7 +214,7 @@ class UsageMetricsJdbcAdapterTest {
 
     @Test
     void deve_buscar_custo_por_departamento_tratando_valores_nulos_no_resultset() throws SQLException {
-        UsageMetricsFilter filter = new UsageMetricsFilter(tenantId, null, null, from, to, Granularity.DAY);
+        UsageMetricsFilter filter = new UsageMetricsFilter(tenantId, new br.com.qsoft.governance.sharedkernel.rbac.VisibilityScope.TenantWide(), null, from, to, Granularity.DAY);
 
         when(jdbcTemplate.query(anyString(), any(RowMapper.class), any(Object[].class)))
             .thenAnswer(invocation -> {

@@ -1,5 +1,6 @@
 package br.com.qsoft.governance.department.infrastructure.web;
 
+import br.com.qsoft.governance.department.domain.exception.DepartmentAccessDeniedException;
 import br.com.qsoft.governance.department.domain.exception.DepartmentNameAlreadyExistsException;
 import br.com.qsoft.governance.department.domain.exception.DepartmentNotFoundException;
 import java.util.Map;
@@ -24,6 +25,11 @@ public class DepartmentApiExceptionHandler {
     @ExceptionHandler(DepartmentNameAlreadyExistsException.class)
     public ResponseEntity<Map<String, String>> handleNameAlreadyExists(DepartmentNameAlreadyExistsException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("message", ex.getMessage()));
+    }
+
+    @ExceptionHandler(DepartmentAccessDeniedException.class)
+    public ResponseEntity<Map<String, String>> handleAccessDenied(DepartmentAccessDeniedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", ex.getMessage()));
     }
 
     @ExceptionHandler(IllegalStateException.class)

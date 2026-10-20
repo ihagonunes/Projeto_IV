@@ -56,27 +56,46 @@ class DashboardScopeResolverTest {
     }
 
     @Test
-    void deve_resolverSelfOnly_quandoConcessaoSelf() {
+    void deve_resolverSelfOnly() {
         when(authorizationQuery.visibilityFor(tenantId, userId, Resource.USAGE, Action.READ))
             .thenReturn(new VisibilityScope.SelfOnly(userId));
 
-        UsageMetricsRepository.UsageMetricsFilter filter = resolve(UUID.randomUUID());
+        UsageMetricsRepository.UsageMetricsFilter filter = resolve(null);
 
-        assertThat(filter.userId()).isEqualTo(userId.value());
-        assertThat(filter.departmentIds()).isEmpty();
+        assertThat(filter.visibility()).isEqualTo(new VisibilityScope.SelfOnly(userId));
+        assertThat(filter.requestedDepartmentId()).isNull();
     }
 
     @Test
-    void deve_resolverDepartments_pelaUniao_dasConcessoes_ignorandoOPedido() {
+    void deve_resolverDepartments_e_aceitarPedidoDentroDoEscopo() {
         UUID deptA = UUID.randomUUID();
         UUID deptB = UUID.randomUUID();
         when(authorizationQuery.visibilityFor(tenantId, userId, Resource.USAGE, Action.READ))
             .thenReturn(new VisibilityScope.Departments(Set.of(deptA, deptB), userId));
 
-        UsageMetricsRepository.UsageMetricsFilter filter = resolve(UUID.randomUUID());
+        UsageMetricsRepository.UsageMetricsFilter filter = resolve(deptA);
 
-        assertThat(filter.userId()).isNull();
-        assertThat(filter.departmentIds()).containsExactlyInAnyOrder(deptA, deptB);
+        assertThat(filter.visibility()).isInstanceOf(VisibilityScope.Departments.class);
+        assertThat(filter.requestedDepartmentId()).isEqualTo(deptA);
+    }
+
+    @Test
+    void deve_negarPedidoDeDepartamentoForaDoEscopo() {
+        UUID visible = UUID.randomUUID();
+        when(authorizationQuery.visibilityFor(tenantId, userId, Resource.USAGE, Action.READ))
+            .thenReturn(new VisibilityScope.Departments(Set.of(visible), userId));
+
+        assertThatThrownBy(() -> resolve(UUID.randomUUID()))
+            .isInstanceOf(UsageVisibilityDeniedException.class);
+    }
+
+    @Test
+    void deve_negarPedidoDeDepartamento_noEscopoSelfOnly() {
+        when(authorizationQuery.visibilityFor(tenantId, userId, Resource.USAGE, Action.READ))
+            .thenReturn(new VisibilityScope.SelfOnly(userId));
+
+        assertThatThrownBy(() -> resolve(UUID.randomUUID()))
+            .isInstanceOf(UsageVisibilityDeniedException.class);
     }
 
     @Test
@@ -87,19 +106,18 @@ class DashboardScopeResolverTest {
 
         UsageMetricsRepository.UsageMetricsFilter filter = resolve(requested);
 
-        assertThat(filter.userId()).isNull();
-        assertThat(filter.departmentIds()).containsExactly(requested);
+        assertThat(filter.visibility()).isEqualTo(new VisibilityScope.TenantWide());
+        assertThat(filter.requestedDepartmentId()).isEqualTo(requested);
     }
 
     @Test
-    void deve_resolverTenantWide_semFiltro_quandoNadaSolicitado() {
+    void deve_resolverTenantWide_semFiltro() {
         when(authorizationQuery.visibilityFor(tenantId, userId, Resource.USAGE, Action.READ))
             .thenReturn(new VisibilityScope.TenantWide());
 
         UsageMetricsRepository.UsageMetricsFilter filter = resolve(null);
 
-        assertThat(filter.userId()).isNull();
-        assertThat(filter.departmentIds()).isEmpty();
+        assertThat(filter.requestedDepartmentId()).isNull();
     }
 
     @Test

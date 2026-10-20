@@ -1,10 +1,14 @@
 package br.com.qsoft.governance.observability.infrastructure.query;
 
+import br.com.qsoft.governance.observability.application.UsageVisibilityDeniedException;
 import br.com.qsoft.governance.observability.application.port.UsageMetricsRepository;
+import br.com.qsoft.governance.sharedkernel.rbac.VisibilityScope;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
@@ -12,10 +16,15 @@ import org.springframework.stereotype.Component;
  * Adapter de leitura das métricas do dashboard (SPI-88/89) sobre
  * {@code observability_usage_records}.
  * <p>
- * Consulta <b>nativa</b> e <b>sempre tenant-aware</b>: o predicado por
- * {@code tenant_id} é obrigatório (ADR-03). Os filtros de escopo já chegam
- * resolvidos ({@code user_id}/{@code department_id}). A granularidade é
- * convertida para um literal <b>whitelisted</b> (nunca interpolada do cliente).
+ * Consulta <b>nativa</b> e <b>sempre tenant-aware</b> (ADR-03). O escopo vem do
+ * {@link VisibilityScope} resolvido pelo IAM (ADR-36):
+ * <ul>
+ *   <li>{@code TenantWide} — sem cláusula extra (departamento pedido vira filtro);</li>
+ *   <li>{@code Departments} — {@code (department_id IN (…) OR user_id = ?)};</li>
+ *   <li>{@code SelfOnly} — {@code user_id = ?};</li>
+ *   <li>{@code None} — 403 (defesa; o resolver já barra antes).</li>
+ * </ul>
+ * A granularidade é convertida para um literal whitelisted.
  */
 @Component
 public class UsageMetricsJdbcAdapter implements UsageMetricsRepository {
@@ -73,9 +82,9 @@ public class UsageMetricsJdbcAdapter implements UsageMetricsRepository {
         sql.append(" GROUP BY department_id ORDER BY estimated_cost DESC");
 
         return jdbcTemplate.query(sql.toString(), (rs, rowNum) -> {
-            java.util.UUID departmentId = rs.getObject("department_id") == null
+            UUID departmentId = rs.getObject("department_id") == null
                 ? null
-                : (java.util.UUID) rs.getObject("department_id");
+                : (UUID) rs.getObject("department_id");
             return new DepartmentCost(
                 departmentId,
                 rs.getLong("requests"),
@@ -86,23 +95,41 @@ public class UsageMetricsJdbcAdapter implements UsageMetricsRepository {
         }, params.toArray());
     }
 
-    private void appendScopeAndPeriod(StringBuilder sql, List<Object> params, UsageMetricsFilter filter) {
-        if (filter.userId() != null) {
-            sql.append(" AND user_id = ?");
-            params.add(filter.userId());
-        }
-        if (!filter.departmentIds().isEmpty()) {
-            // União de departamentos das concessões (escopo DEPARTMENT). Placeholders
-            // gerados a partir da quantidade; os IDs vêm do servidor (concessões).
-            sql.append(" AND department_id IN (")
-                .append(String.join(",", java.util.Collections.nCopies(
-                    filter.departmentIds().size(), "?")))
-                .append(")");
-            params.addAll(filter.departmentIds());
-        }
+    private void appendScopeAndPeriod(StringBuilder sql, List<Object> params,
+                                      UsageMetricsFilter filter) {
+        appendVisibility(sql, params, filter.visibility(), filter.requestedDepartmentId());
         sql.append(" AND created_at >= ? AND created_at <= ?");
         params.add(Timestamp.from(filter.from()));
         params.add(Timestamp.from(filter.to()));
+    }
+
+    private void appendVisibility(StringBuilder sql, List<Object> params,
+                                  VisibilityScope visibility, UUID requestedDepartmentId) {
+        if (visibility instanceof VisibilityScope.TenantWide) {
+            if (requestedDepartmentId != null) {
+                sql.append(" AND department_id = ?");
+                params.add(requestedDepartmentId);
+            }
+            return;
+        }
+        if (visibility instanceof VisibilityScope.Departments departments) {
+            sql.append(" AND (department_id IN (")
+                .append(String.join(",", Collections.nCopies(departments.ids().size(), "?")))
+                .append(") OR user_id = ?)");
+            params.addAll(departments.ids());
+            params.add(departments.self().value());
+            if (requestedDepartmentId != null) {
+                sql.append(" AND department_id = ?");
+                params.add(requestedDepartmentId);
+            }
+            return;
+        }
+        if (visibility instanceof VisibilityScope.SelfOnly selfOnly) {
+            sql.append(" AND user_id = ?");
+            params.add(selfOnly.self().value());
+            return;
+        }
+        throw new UsageVisibilityDeniedException();
     }
 
     /** Literal whitelisted (nunca vem do cliente). */

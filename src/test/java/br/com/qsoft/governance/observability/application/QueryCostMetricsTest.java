@@ -40,7 +40,7 @@ class QueryCostMetricsTest {
             tenantId, userId, deptId, from, to, UsageMetricsRepository.Granularity.DAY);
 
         UsageMetricsRepository.UsageMetricsFilter filter = new UsageMetricsRepository.UsageMetricsFilter(
-            tenantId, null, java.util.Set.of(deptId), from, to,
+            tenantId, new br.com.qsoft.governance.sharedkernel.rbac.VisibilityScope.TenantWide(), deptId, from, to,
             UsageMetricsRepository.Granularity.DAY);
 
         when(scopeResolver.resolve(any(), any(), any(), any(), any(), any())).thenReturn(filter);

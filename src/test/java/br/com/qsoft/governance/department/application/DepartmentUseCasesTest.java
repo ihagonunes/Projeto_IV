@@ -9,6 +9,7 @@ import br.com.qsoft.governance.department.domain.DepartmentStatus;
 import br.com.qsoft.governance.department.domain.exception.DepartmentNameAlreadyExistsException;
 import br.com.qsoft.governance.department.domain.exception.DepartmentNotFoundException;
 import br.com.qsoft.governance.sharedkernel.id.TenantId;
+import br.com.qsoft.governance.sharedkernel.id.UserId;
 import java.math.BigDecimal;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -63,7 +64,19 @@ class DepartmentUseCasesTest {
     private final CreateDepartment createDepartment = new CreateDepartment(departmentRepository);
     private final UpdateDepartment updateDepartment = new UpdateDepartment(departmentRepository);
     private final DeleteDepartment deleteDepartment = new DeleteDepartment(departmentRepository);
-    private final ListDepartments listDepartments = new ListDepartments(departmentRepository);
+    private final UserId actor = UserId.random();
+    private final br.com.qsoft.governance.iam.api.query.AuthorizationQuery authorizationQuery =
+        org.mockito.Mockito.mock(br.com.qsoft.governance.iam.api.query.AuthorizationQuery.class);
+    private final ListDepartments listDepartments =
+        new ListDepartments(departmentRepository, authorizationQuery);
+
+    @org.junit.jupiter.api.BeforeEach
+    void allowTenantWide() {
+        org.mockito.Mockito.when(authorizationQuery.visibilityFor(
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
+            .thenReturn(new br.com.qsoft.governance.sharedkernel.rbac.VisibilityScope.TenantWide());
+    }
 
     private Department create(TenantId tenantId, String name) {
         return createDepartment.create(new CreateDepartmentCommand(
@@ -168,8 +181,8 @@ class DepartmentUseCasesTest {
         deleteDepartment.delete(tenantId, department.id());
 
         assertThat(departments.get(department.id()).status()).isEqualTo(DepartmentStatus.INACTIVE);
-        assertThat(listDepartments.list(tenantId, null, null)).isEmpty();
-        assertThat(listDepartments.list(tenantId, null, DepartmentStatus.INACTIVE))
+        assertThat(listDepartments.list(tenantId, actor, null, null)).isEmpty();
+        assertThat(listDepartments.list(tenantId, actor, null, DepartmentStatus.INACTIVE))
             .extracting(Department::id).containsExactly(department.id());
     }
 
@@ -187,7 +200,7 @@ class DepartmentUseCasesTest {
         create(tenantId, "Marketing");
         create(tenantId, "Vendas");
 
-        List<Department> result = listDepartments.list(tenantId, "vend", null);
+        List<Department> result = listDepartments.list(tenantId, actor, "vend", null);
 
         assertThat(result).extracting(Department::name).containsExactly("Vendas");
     }
@@ -198,7 +211,7 @@ class DepartmentUseCasesTest {
         create(tenantId, "Marketing");
         create(TenantId.random(), "Outro");
 
-        assertThat(listDepartments.list(tenantId, null, null))
+        assertThat(listDepartments.list(tenantId, actor, null, null))
             .extracting(Department::name).containsExactly("Marketing");
     }
 
@@ -261,7 +274,7 @@ class DepartmentUseCasesTest {
         Department d = create(tenantId, "TI");
         updateDepartment.update(new UpdateDepartmentCommand(tenantId, d.id(), "TI", "Suporte Tecnico Especializado", null, null));
 
-        List<Department> result = listDepartments.list(tenantId, "especializado", null);
+        List<Department> result = listDepartments.list(tenantId, actor, "especializado", null);
 
         assertThat(result).extracting(Department::name).containsExactly("TI");
     }
@@ -311,7 +324,7 @@ class DepartmentUseCasesTest {
         create(tenantId, "RH");
         create(tenantId, "Financeiro");
 
-        List<Department> result = listDepartments.list(tenantId, "   ", null);
+        List<Department> result = listDepartments.list(tenantId, actor, "   ", null);
 
         assertThat(result).hasSize(2);
     }
@@ -323,7 +336,7 @@ class DepartmentUseCasesTest {
         Department dept = createDepartment.create(new CreateDepartmentCommand(
             tenantId, "Suporte", null, null, null));
 
-        List<Department> result = listDepartments.list(tenantId, "comercial", null);
+        List<Department> result = listDepartments.list(tenantId, actor, "comercial", null);
 
         assertThat(result).isEmpty();
     }

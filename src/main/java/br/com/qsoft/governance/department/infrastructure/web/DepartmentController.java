@@ -9,7 +9,11 @@ import br.com.qsoft.governance.department.application.UpdateDepartment;
 import br.com.qsoft.governance.department.application.UpdateDepartmentCommand;
 import br.com.qsoft.governance.department.domain.Department;
 import br.com.qsoft.governance.department.domain.DepartmentStatus;
+import br.com.qsoft.governance.department.domain.exception.DepartmentAccessDeniedException;
+import br.com.qsoft.governance.iam.api.query.AuthorizationQuery;
 import br.com.qsoft.governance.iam.api.rbac.RequiresPermission;
+import br.com.qsoft.governance.iam.api.rbac.Targeting;
+import br.com.qsoft.governance.sharedkernel.rbac.AccessTarget;
 import br.com.qsoft.governance.sharedkernel.rbac.Action;
 import br.com.qsoft.governance.sharedkernel.rbac.Resource;
 import br.com.qsoft.governance.sharedkernel.tenant.TenantContext;
@@ -45,27 +49,32 @@ public class DepartmentController {
     private final DeleteDepartment deleteDepartment;
     private final GetDepartment getDepartment;
     private final ListDepartments listDepartments;
+    private final AuthorizationQuery authorizationQuery;
 
     public DepartmentController(CreateDepartment createDepartment,
                                 UpdateDepartment updateDepartment,
                                 DeleteDepartment deleteDepartment,
                                 GetDepartment getDepartment,
-                                ListDepartments listDepartments) {
+                                ListDepartments listDepartments,
+                                AuthorizationQuery authorizationQuery) {
         this.createDepartment = createDepartment;
         this.updateDepartment = updateDepartment;
         this.deleteDepartment = deleteDepartment;
         this.getDepartment = getDepartment;
         this.listDepartments = listDepartments;
+        this.authorizationQuery = authorizationQuery;
     }
 
-    /** Lista departamentos do tenant (por padrão, apenas ACTIVE). Requer DEPARTMENT:READ. */
+    /** Lista departamentos visíveis (por padrão, apenas ACTIVE). Requer DEPARTMENT:READ. */
     @GetMapping
-    @RequiresPermission(resource = Resource.DEPARTMENT, action = Action.READ)
+    @RequiresPermission(resource = Resource.DEPARTMENT, action = Action.READ,
+        targeting = Targeting.BY_TARGET)
     public ResponseEntity<List<DepartmentResponse>> list(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) DepartmentStatus status) {
         TenantContext context = TenantContextHolder.require();
-        List<DepartmentResponse> departments = listDepartments.list(context.tenantId(), search, status)
+        List<DepartmentResponse> departments = listDepartments.list(
+                context.tenantId(), context.userId(), search, status)
             .stream()
             .map(DepartmentResponse::from)
             .toList();
@@ -86,11 +95,21 @@ public class DepartmentController {
         return ResponseEntity.status(HttpStatus.CREATED).body(DepartmentResponse.from(department));
     }
 
-    /** Consulta um departamento do tenant. Requer DEPARTMENT:READ. */
+    /**
+     * Consulta um departamento do tenant. Requer DEPARTMENT:READ e
+     * {@code isAllowed(DepartmentTarget(id))}; fora do escopo → 403.
+     */
     @GetMapping("/{id}")
-    @RequiresPermission(resource = Resource.DEPARTMENT, action = Action.READ)
+    @RequiresPermission(resource = Resource.DEPARTMENT, action = Action.READ,
+        targeting = Targeting.BY_TARGET)
     public ResponseEntity<DepartmentResponse> get(@PathVariable UUID id) {
         TenantContext context = TenantContextHolder.require();
+        boolean allowed = authorizationQuery.isAllowed(
+            context.tenantId(), context.userId(), Resource.DEPARTMENT, Action.READ,
+            new AccessTarget.DepartmentTarget(id));
+        if (!allowed) {
+            throw new DepartmentAccessDeniedException();
+        }
         return ResponseEntity.ok(DepartmentResponse.from(getDepartment.get(context.tenantId(), id)));
     }
 

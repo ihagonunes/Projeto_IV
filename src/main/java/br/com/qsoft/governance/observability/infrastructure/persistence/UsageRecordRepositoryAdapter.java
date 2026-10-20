@@ -65,6 +65,7 @@ public class UsageRecordRepositoryAdapter implements UsageRecordRepository {
         return (root, query, builder) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(builder.equal(root.get("tenantId"), filter.tenantId().value()));
+            appendVisibility(predicates, root, builder, filter.visibility());
             if (filter.departmentId() != null) {
                 predicates.add(builder.equal(root.get("departmentId"), filter.departmentId()));
             }
@@ -79,6 +80,26 @@ public class UsageRecordRepositoryAdapter implements UsageRecordRepository {
             }
             return builder.and(predicates.toArray(new Predicate[0]));
         };
+    }
+
+    private void appendVisibility(List<Predicate> predicates,
+                                  jakarta.persistence.criteria.Root<UsageRecordJpaEntity> root,
+                                  jakarta.persistence.criteria.CriteriaBuilder builder,
+                                  br.com.qsoft.governance.sharedkernel.rbac.VisibilityScope visibility) {
+        if (visibility instanceof br.com.qsoft.governance.sharedkernel.rbac.VisibilityScope.TenantWide) {
+            return;
+        }
+        if (visibility instanceof br.com.qsoft.governance.sharedkernel.rbac.VisibilityScope.Departments departments) {
+            predicates.add(builder.or(
+                root.get("departmentId").in(departments.ids()),
+                builder.equal(root.get("userId"), departments.self().value())));
+            return;
+        }
+        if (visibility instanceof br.com.qsoft.governance.sharedkernel.rbac.VisibilityScope.SelfOnly selfOnly) {
+            predicates.add(builder.equal(root.get("userId"), selfOnly.self().value()));
+            return;
+        }
+        throw new br.com.qsoft.governance.observability.application.UsageVisibilityDeniedException();
     }
 
     void applyTenantFilter() {

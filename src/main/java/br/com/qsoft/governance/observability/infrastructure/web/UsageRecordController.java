@@ -1,6 +1,7 @@
 package br.com.qsoft.governance.observability.infrastructure.web;
 
 import br.com.qsoft.governance.iam.api.rbac.RequiresPermission;
+import br.com.qsoft.governance.iam.api.rbac.Targeting;
 import br.com.qsoft.governance.observability.application.QueryUsage;
 import br.com.qsoft.governance.observability.application.QueryUsageCommand;
 import br.com.qsoft.governance.sharedkernel.rbac.Action;
@@ -18,7 +19,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Consulta operacional de uso (SPI-73). O tenant vem SEMPRE do contexto
- * autenticado (ADR-03); requer {@code USAGE:READ} (ADR-34).
+ * autenticado (ADR-03); requer {@code USAGE:READ} em {@code BY_TARGET} e aplica
+ * o {@code visibilityFor} no caso de uso (ADR-36).
  */
 @RestController
 @RequestMapping("/api/v1/observability")
@@ -31,7 +33,8 @@ public class UsageRecordController {
     }
 
     @GetMapping("/usage")
-    @RequiresPermission(resource = Resource.USAGE, action = Action.READ)
+    @RequiresPermission(resource = Resource.USAGE, action = Action.READ,
+        targeting = Targeting.BY_TARGET)
     public ResponseEntity<UsagePageResponse> usage(
             @RequestParam(required = false) UUID departmentId,
             @RequestParam(required = false) UUID userId,
@@ -41,6 +44,6 @@ public class UsageRecordController {
             @RequestParam(defaultValue = "20") int size) {
         TenantContext context = TenantContextHolder.require();
         return ResponseEntity.ok(UsagePageResponse.from(queryUsage.query(new QueryUsageCommand(
-            context.tenantId(), departmentId, userId, from, to, page, size))));
+            context.tenantId(), context.userId(), departmentId, userId, from, to, page, size))));
     }
 }

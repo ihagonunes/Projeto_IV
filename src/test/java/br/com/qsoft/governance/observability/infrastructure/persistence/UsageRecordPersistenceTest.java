@@ -198,6 +198,7 @@ class UsageRecordPersistenceTest {
 
         UsageRecordFilter filter = new UsageRecordFilter(
             record.tenantId(),
+            new br.com.qsoft.governance.sharedkernel.rbac.VisibilityScope.TenantWide(),
             record.departmentId(),
             record.userId(),
             Instant.now().minusSeconds(3600),
@@ -220,6 +221,7 @@ class UsageRecordPersistenceTest {
         UsageRecord record = criarRecordExemplo();
         UsageRecordFilter filter = new UsageRecordFilter(
             record.tenantId(),
+            new br.com.qsoft.governance.sharedkernel.rbac.VisibilityScope.TenantWide(),
             record.departmentId(),
             record.userId(),
             Instant.now().minusSeconds(3600),
@@ -257,6 +259,7 @@ class UsageRecordPersistenceTest {
     void deve_construir_specification_com_filtros_nulos() {
         UsageRecordFilter filter = new UsageRecordFilter(
             TenantId.random(),
+            new br.com.qsoft.governance.sharedkernel.rbac.VisibilityScope.TenantWide(),
             null,
             null,
             null,

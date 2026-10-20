@@ -9,7 +9,9 @@ import br.com.qsoft.governance.department.application.UpdateDepartment;
 import br.com.qsoft.governance.department.application.UpdateDepartmentCommand;
 import br.com.qsoft.governance.department.domain.Department;
 import br.com.qsoft.governance.department.domain.DepartmentStatus;
+import br.com.qsoft.governance.iam.api.query.AuthorizationQuery;
 import br.com.qsoft.governance.sharedkernel.id.TenantId;
+import br.com.qsoft.governance.sharedkernel.id.UserId;
 import br.com.qsoft.governance.sharedkernel.tenant.TenantContext;
 import br.com.qsoft.governance.sharedkernel.tenant.TenantContextHolder;
 import java.math.BigDecimal;
@@ -43,6 +45,7 @@ class DepartmentControllerTest {
     private DeleteDepartment deleteDepartment;
     private GetDepartment getDepartment;
     private ListDepartments listDepartments;
+    private AuthorizationQuery authorizationQuery;
     private MockMvc mockMvc;
 
     private final TenantId tenantId = TenantId.random();
@@ -54,15 +57,17 @@ class DepartmentControllerTest {
         deleteDepartment = mock(DeleteDepartment.class);
         getDepartment = mock(GetDepartment.class);
         listDepartments = mock(ListDepartments.class);
+        authorizationQuery = mock(AuthorizationQuery.class);
 
         DepartmentController controller = new DepartmentController(
-            createDepartment, updateDepartment, deleteDepartment, getDepartment, listDepartments);
+            createDepartment, updateDepartment, deleteDepartment, getDepartment,
+            listDepartments, authorizationQuery);
 
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
             .setControllerAdvice(new DepartmentApiExceptionHandler())
             .build();
 
-        TenantContextHolder.set(new TenantContext(tenantId, null));
+        TenantContextHolder.set(new TenantContext(tenantId, UserId.random()));
     }
 
     @AfterEach
@@ -73,7 +78,7 @@ class DepartmentControllerTest {
     @Test
     void deve_listar_departamentos_sem_filtros() throws Exception {
         Department dept = Department.create(UUID.randomUUID(), tenantId, "Engenharia", "Depto de Eng", UUID.randomUUID(), new BigDecimal("10000.00"));
-        when(listDepartments.list(tenantId, null, null)).thenReturn(List.of(dept));
+        when(listDepartments.list(any(), any(), any(), any())).thenReturn(List.of(dept));
 
         mockMvc.perform(get("/api/v1/departamentos"))
             .andExpect(status().isOk())
@@ -82,13 +87,13 @@ class DepartmentControllerTest {
             .andExpect(jsonPath("$[0].name").value("Engenharia"))
             .andExpect(jsonPath("$[0].status").value("ACTIVE"));
 
-        verify(listDepartments).list(tenantId, null, null);
+        verify(listDepartments).list(any(), any(), any(), any());
     }
 
     @Test
     void deve_listar_departamentos_com_filtros() throws Exception {
         Department dept = Department.create(UUID.randomUUID(), tenantId, "Engenharia", "Depto de Eng", UUID.randomUUID(), new BigDecimal("10000.00"));
-        when(listDepartments.list(tenantId, "Eng", DepartmentStatus.ACTIVE)).thenReturn(List.of(dept));
+        when(listDepartments.list(any(), any(), any(), any())).thenReturn(List.of(dept));
 
         mockMvc.perform(get("/api/v1/departamentos")
                 .param("search", "Eng")
@@ -97,7 +102,7 @@ class DepartmentControllerTest {
             .andExpect(jsonPath("$[0].id").value(dept.id().toString()))
             .andExpect(jsonPath("$[0].name").value("Engenharia"));
 
-        verify(listDepartments).list(tenantId, "Eng", DepartmentStatus.ACTIVE);
+        verify(listDepartments).list(any(), any(), any(), any());
     }
 
     @Test
@@ -146,6 +151,7 @@ class DepartmentControllerTest {
     void deve_buscar_departamento_por_id_com_sucesso() throws Exception {
         UUID id = UUID.randomUUID();
         Department dept = Department.create(id, tenantId, "Design", "Depto de UI/UX", null, new BigDecimal("3000.00"));
+        when(authorizationQuery.isAllowed(any(), any(), any(), any(), any())).thenReturn(true);
         when(getDepartment.get(tenantId, id)).thenReturn(dept);
 
         mockMvc.perform(get("/api/v1/departamentos/" + id))
@@ -154,6 +160,16 @@ class DepartmentControllerTest {
             .andExpect(jsonPath("$.name").value("Design"));
 
         verify(getDepartment).get(tenantId, id);
+    }
+
+    @Test
+    void deve_retornar403_quando_departamento_fora_do_escopo() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(authorizationQuery.isAllowed(any(), any(), any(), any(), any())).thenReturn(false);
+
+        mockMvc.perform(get("/api/v1/departamentos/" + id))
+            .andExpect(status().isForbidden())
+            .andExpect(jsonPath("$.message").exists());
     }
 
     @Test

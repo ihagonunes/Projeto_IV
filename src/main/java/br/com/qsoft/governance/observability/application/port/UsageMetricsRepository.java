@@ -1,9 +1,10 @@
 package br.com.qsoft.governance.observability.application.port;
 
 import br.com.qsoft.governance.sharedkernel.id.TenantId;
+import br.com.qsoft.governance.sharedkernel.rbac.VisibilityScope;
 import java.time.Instant;
 import java.util.List;
-import java.util.Set;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -11,9 +12,9 @@ import java.util.UUID;
  * (SPI-88/89), sobre {@code observability_usage_records}.
  * <p>
  * Toda consulta é <b>tenant-aware</b> (filtro explícito por {@code tenant_id}) e
- * recebe os filtros de <b>escopo</b> já resolvidos pela aplicação a partir das
- * concessões do usuário ({@code AuthorizationQuery.visibilityFor}, ADR-36) — o
- * frontend nunca decide o escopo.
+ * recebe o {@link VisibilityScope} resolvido pela aplicação a partir das
+ * concessões do usuário ({@code AuthorizationQuery.visibilityFor}, ADR-36) —
+ * o frontend nunca decide o escopo.
  */
 public interface UsageMetricsRepository {
 
@@ -34,21 +35,20 @@ public interface UsageMetricsRepository {
     }
 
     /**
-     * Filtros já resolvidos (escopo aplicado).
-     * {@code userId} restringe a um usuário (escopo SELF);
-     * {@code departmentIds} restringe à união de departamentos (escopo DEPARTMENT);
-     * vazio = todo o tenant (escopo TENANT, com filtro opcional pedido pelo cliente).
+     * Filtros já resolvidos: o escopo de visibilidade (nunca do cliente) e o
+     * departamento pedido (já validado contra o escopo), mais o período.
      */
     record UsageMetricsFilter(
         TenantId tenantId,
-        UUID userId,
-        Set<UUID> departmentIds,
+        VisibilityScope visibility,
+        UUID requestedDepartmentId,
         Instant from,
         Instant to,
         Granularity granularity
     ) {
         public UsageMetricsFilter {
-            departmentIds = departmentIds == null ? Set.of() : Set.copyOf(departmentIds);
+            Objects.requireNonNull(tenantId, "tenantId é obrigatório.");
+            Objects.requireNonNull(visibility, "visibility é obrigatória.");
         }
     }
 

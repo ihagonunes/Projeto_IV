@@ -25,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -143,6 +144,21 @@ class DashboardMetricsIT {
         }
     }
 
+    private int statusOf(String method, String uri, String token, Object body) {
+        RestClient.RequestBodySpec spec = client.method(HttpMethod.valueOf(method)).uri(uri);
+        if (token != null) {
+            spec = spec.header("Authorization", "Bearer " + token);
+        }
+        if (body != null) {
+            spec = spec.contentType(MediaType.APPLICATION_JSON).body(body);
+        }
+        try {
+            return spec.retrieve().toBodilessEntity().getStatusCode().value();
+        } catch (RestClientResponseException e) {
+            return e.getStatusCode().value();
+        }
+    }
+
     @Test
     void shouldAggregateUsageAndCostByPeriodAndDepartment() {
         User admin = userRepository.findByTenantIdAndEmail(tenant.id(), ADMIN_EMAIL).orElseThrow();
@@ -182,24 +198,92 @@ class DashboardMetricsIT {
     }
 
     @Test
-    void managerShouldSeeOnlyOwnDepartmentEvenRequestingAnother() {
+    void managerCannotRequestAnotherDepartmentFilter() {
         User admin = userRepository.findByTenantIdAndEmail(tenant.id(), ADMIN_EMAIL).orElseThrow();
-        // Gestor coerente: concessão MANAGER/DEPARTMENT(marketing) e rótulo MANAGER.
         testTenants.ensureMember(tenant, admin.id(), MANAGER_EMAIL, "User", PASSWORD,
             HierarchyLevel.MANAGER, marketingDepartment, "MANAGER");
         usage(admin, marketingDepartment, 1000, 2000);
         usage(admin, salesDepartment, 500, 500);
 
-        // O gestor PEDE o departamento de vendas, mas o backend força o dele (SPI-94):
-        // o escopo vem da concessão (visibilityFor), nunca do rótulo (ADR-36 item 9).
+        // DB01: filtro fora do escopo → 403 (decisão 10).
+        assertThat(status(login(MANAGER_EMAIL),
+            "/api/v1/observability/metrics/costs?departmentId=" + salesDepartment))
+            .isEqualTo(403);
+
+        // Sem filtro → só o departamento da concessão (nunca o tenant).
         List<Map<String, Object>> costs = client.get()
-            .uri("/api/v1/observability/metrics/costs?departmentId=" + salesDepartment)
+            .uri("/api/v1/observability/metrics/costs")
             .header("Authorization", "Bearer " + login(MANAGER_EMAIL))
             .retrieve().body(new ParameterizedTypeReference<List<Map<String, Object>>>() {
             });
-
         assertThat(costs).allSatisfy(cost ->
             assertThat(cost.get("departmentId")).isEqualTo(marketingDepartment.toString()));
+    }
+
+    /** DB02: gestor com concessões em A e B vê A ∪ B. */
+    @Test
+    void managerWithTwoDepartmentGrantsSeesTheUnion() {
+        User admin = userRepository.findByTenantIdAndEmail(tenant.id(), ADMIN_EMAIL).orElseThrow();
+        String email = "manager-db02@dashdemo.com";
+        User manager = testTenants.ensureMember(tenant, admin.id(), email, "User", PASSWORD,
+            HierarchyLevel.MANAGER, marketingDepartment, "MANAGER");
+        // Segunda concessão departamental (B), via atribuição direta (admin).
+        assertThat(statusOf("POST", "/api/v1/usuarios/" + manager.id().value() + "/concessoes",
+            login(ADMIN_EMAIL),
+            Map.of("roleKey", "MANAGER", "departmentId", salesDepartment.toString())))
+            .isEqualTo(201);
+
+        usage(admin, marketingDepartment, 1000, 2000);
+        usage(admin, salesDepartment, 500, 500);
+
+        List<Map<String, Object>> costs = client.get()
+            .uri("/api/v1/observability/metrics/costs")
+            .header("Authorization", "Bearer " + login(email))
+            .retrieve().body(new ParameterizedTypeReference<List<Map<String, Object>>>() {
+            });
+
+        assertThat(costs).extracting(cost -> cost.get("departmentId"))
+            .contains(marketingDepartment.toString(), salesDepartment.toString());
+    }
+
+    /** DB03: mudar a lotação não muda o escopo da concessão. */
+    @Test
+    void changingDepartmentDoesNotChangeGrantScope() {
+        User admin = userRepository.findByTenantIdAndEmail(tenant.id(), ADMIN_EMAIL).orElseThrow();
+        String email = "manager-db03@dashdemo.com";
+        User manager = testTenants.ensureMember(tenant, admin.id(), email, "User", PASSWORD,
+            HierarchyLevel.MANAGER, marketingDepartment, "MANAGER");
+        usage(admin, marketingDepartment, 1000, 2000);
+        usage(admin, salesDepartment, 500, 500);
+
+        // Admin move a lotação do gestor para B; a concessão continua em A.
+        assertThat(statusOf("PATCH", "/api/v1/usuarios/" + manager.id().value(),
+            login(ADMIN_EMAIL), Map.of("departmentId", salesDepartment.toString())))
+            .isEqualTo(200);
+
+        List<Map<String, Object>> costs = client.get()
+            .uri("/api/v1/observability/metrics/costs")
+            .header("Authorization", "Bearer " + login(email))
+            .retrieve().body(new ParameterizedTypeReference<List<Map<String, Object>>>() {
+            });
+        assertThat(costs).allSatisfy(cost ->
+            assertThat(cost.get("departmentId")).isEqualTo(marketingDepartment.toString()));
+    }
+
+    /** DB04: rótulo de gestor sem concessão departamental → só os próprios dados. */
+    @Test
+    void labelWithoutDepartmentalGrantSeesOnlyOwnUsage() {
+        User admin = userRepository.findByTenantIdAndEmail(tenant.id(), ADMIN_EMAIL).orElseThrow();
+        String email = "leader-db04@dashdemo.com";
+        // Rótulo LEADER, mas a concessão é COLLABORATOR/SELF.
+        User leader = testTenants.ensureMember(tenant, admin.id(), email, "User", PASSWORD,
+            HierarchyLevel.LEADER, marketingDepartment, "COLLABORATOR");
+        usage(admin, marketingDepartment, 1000, 2000);
+        usage(leader, marketingDepartment, 10, 20);
+
+        Map<?, ?> usageMetrics = getJson(login(email), "/api/v1/observability/metrics/usage");
+
+        assertThat(usageMetrics.get("activeUsers")).isEqualTo(1);
     }
 
     @Test

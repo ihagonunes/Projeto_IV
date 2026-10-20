@@ -40,7 +40,7 @@ class ObservabilityCommandTest {
         Instant to = Instant.now();
 
         QueryUsageCommand cmd = new QueryUsageCommand(
-            tenantId, deptId, userId, from, to, 1, 20);
+            tenantId, UserId.random(), deptId, userId, from, to, 1, 20);
 
         assertThat(cmd.tenantId()).isEqualTo(tenantId);
         assertThat(cmd.departmentId()).isEqualTo(deptId);

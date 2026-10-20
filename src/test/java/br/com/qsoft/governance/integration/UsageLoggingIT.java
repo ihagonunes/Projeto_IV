@@ -10,9 +10,11 @@ import br.com.qsoft.governance.aigateway.application.CreateProvider;
 import br.com.qsoft.governance.aigateway.application.CreateProviderCommand;
 import br.com.qsoft.governance.aigateway.domain.model.Model;
 import br.com.qsoft.governance.iam.application.port.TenantRepository;
+import br.com.qsoft.governance.iam.application.port.UserRepository;
 import br.com.qsoft.governance.iam.domain.tenant.Tenant;
-import br.com.qsoft.governance.observability.application.port.UsageRecordRepository;
+import br.com.qsoft.governance.iam.domain.user.HierarchyLevel;
 import br.com.qsoft.governance.iam.support.TestTenants;
+import br.com.qsoft.governance.observability.application.port.UsageRecordRepository;
 import java.math.BigDecimal;
 import java.util.Map;
 import java.util.UUID;
@@ -57,6 +59,7 @@ class UsageLoggingIT {
     private static final String TENANT_SLUG = "usagedemo";
     private static final String OTHER_SLUG = "usageother";
     private static final String ADMIN_EMAIL = "admin@usagedemo.com";
+    private static final String COLLAB_EMAIL = "colab@usagedemo.com";
     private static final String ADMIN_PASSWORD = "secret123";
 
     @LocalServerPort
@@ -64,6 +67,9 @@ class UsageLoggingIT {
 
     @Autowired
     TenantRepository tenantRepository;
+
+    @Autowired
+    UserRepository userRepository;
 
     @Autowired
     CreateProvider createProvider;
@@ -85,8 +91,11 @@ class UsageLoggingIT {
     @BeforeEach
     void setUp() {
         client = RestClient.builder().baseUrl("http://localhost:" + port).build();
-        testTenants.ensureTenant(TENANT_SLUG, "Usage Demo", "Admin", ADMIN_EMAIL, ADMIN_PASSWORD);
+        Tenant tenant = testTenants.ensureTenant(
+            TENANT_SLUG, "Usage Demo", "Admin", ADMIN_EMAIL, ADMIN_PASSWORD);
         testTenants.ensureTenant(OTHER_SLUG, "Usage Other", "Admin", "admin@usageother.com", ADMIN_PASSWORD);
+        testTenants.ensureMember(tenant, testTenants.admin(tenant, ADMIN_EMAIL).id(), COLLAB_EMAIL,
+            "Colab", ADMIN_PASSWORD, HierarchyLevel.COLLABORATOR, null, "COLLABORATOR");
     }
 
     private String login(String email, String password) {
@@ -99,6 +108,10 @@ class UsageLoggingIT {
 
     /** "Completion" do Gateway: cria o modelo com preço e emite AIRequestCompleted. */
     private UUID complete(Tenant tenant, UUID requestId) {
+        return complete(tenant, requestId, UUID.randomUUID());
+    }
+
+    private UUID complete(Tenant tenant, UUID requestId, UUID userId) {
         UUID providerId = createProvider.create(new CreateProviderCommand(
             tenant.id(), "OpenAI " + UUID.randomUUID())).id();
         Model model = createModel.create(new CreateModelCommand(
@@ -106,14 +119,18 @@ class UsageLoggingIT {
             new BigDecimal("0.010000"), new BigDecimal("0.030000")));
 
         completeAIRequest.complete(new CompleteAIRequestCommand(
-            requestId, tenant.id(), null, UUID.randomUUID(), model.id(),
+            requestId, tenant.id(), null, userId, model.id(),
             1000, 2000, 150, "COMPLETED"));
         return model.id();
     }
 
     private int usageStatus(String token) {
+        return usageStatusQuery(token, "");
+    }
+
+    private int usageStatusQuery(String token, String query) {
         try {
-            var spec = client.get().uri("/api/v1/observability/usage");
+            var spec = client.get().uri("/api/v1/observability/usage" + query);
             if (token != null) {
                 spec.header("Authorization", "Bearer " + token);
             }
@@ -131,10 +148,8 @@ class UsageLoggingIT {
 
         complete(tenant, requestId);
 
-        // Efeito secundário: o UsageRecord foi persistido.
         assertThat(usageRecordRepository.existsByRequestId(requestId)).isTrue();
 
-        // E aparece na consulta operacional do tenant.
         Map<?, ?> page = client.get().uri("/api/v1/observability/usage")
             .header("Authorization", "Bearer " + login(ADMIN_EMAIL, ADMIN_PASSWORD))
             .retrieve().body(Map.class);
@@ -148,7 +163,6 @@ class UsageLoggingIT {
         UUID requestId = UUID.randomUUID();
         UUID modelId = complete(tenant, requestId);
 
-        // Repetir a completion com o MESMO requestId não gera segundo registro.
         completeAIRequest.complete(new CompleteAIRequestCommand(
             requestId, tenant.id(), null, UUID.randomUUID(), modelId,
             1000, 2000, 150, "COMPLETED"));
@@ -166,7 +180,6 @@ class UsageLoggingIT {
         UUID requestId = UUID.randomUUID();
         complete(tenant, requestId);
 
-        // O outro tenant não vê o uso do primeiro.
         Map<?, ?> page = client.get().uri("/api/v1/observability/usage?size=100")
             .header("Authorization", "Bearer " + login("admin@usageother.com", ADMIN_PASSWORD))
             .retrieve().body(Map.class);
@@ -176,5 +189,33 @@ class UsageLoggingIT {
     @Test
     void shouldRejectUsageQueryWithoutAuthentication() {
         assertThat(usageStatus(null)).isEqualTo(401);
+    }
+
+    /**
+     * AZ20: COLLABORATOR só vê o próprio uso e não pode filtrar por outro usuário.
+     */
+    @Test
+    void az20CollaboratorOnlySeesOwnUsageAndCannotFilterAnotherUser() {
+        Tenant tenant = tenantRepository.findBySlug(TENANT_SLUG).orElseThrow();
+        var admin = testTenants.admin(tenant, ADMIN_EMAIL);
+        var collaborator = userRepository.findByTenantIdAndEmail(tenant.id(), COLLAB_EMAIL).orElseThrow();
+
+        UUID adminRequest = UUID.randomUUID();
+        UUID collabRequest = UUID.randomUUID();
+        complete(tenant, adminRequest, admin.id().value());
+        complete(tenant, collabRequest, collaborator.id().value());
+
+        String token = login(COLLAB_EMAIL, ADMIN_PASSWORD);
+
+        // userId de outro → 403 (filtro fora do escopo).
+        assertThat(usageStatusQuery(token, "?userId=" + admin.id().value())).isEqualTo(403);
+
+        // Sem filtro → apenas os próprios registros.
+        Map<?, ?> page = client.get().uri("/api/v1/observability/usage?size=100")
+            .header("Authorization", "Bearer " + token)
+            .retrieve().body(Map.class);
+        assertThat(page.toString())
+            .contains(collabRequest.toString())
+            .doesNotContain(adminRequest.toString());
     }
 }

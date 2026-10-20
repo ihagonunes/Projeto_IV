@@ -9,21 +9,15 @@ import br.com.qsoft.governance.sharedkernel.rbac.Resource;
 import br.com.qsoft.governance.sharedkernel.rbac.VisibilityScope;
 import java.time.Instant;
 import java.util.Objects;
-import java.util.Set;
 import java.util.UUID;
 import org.springframework.stereotype.Component;
 
 /**
- * Resolve o <b>escopo de visibilidade</b> do dashboard a partir das concessões
- * do usuário ({@link AuthorizationQuery#visibilityFor}, ADR-36).
- * <ul>
- *   <li><b>TenantWide</b> — todo o tenant; o departamento pedido é filtro opcional;</li>
- *   <li><b>Departments</b> — união dos departamentos das concessões; o pedido é ignorado;</li>
- *   <li><b>SelfOnly</b> — apenas os próprios registros;</li>
- *   <li><b>None</b> — fail-closed (403): sem concessão aplicável, nenhum dado.</li>
- * </ul>
- * O rótulo organizacional ({@code hierarchyLevel}) não é lido: não é fonte de
- * autorização (ADR-36 item 9).
+ * Resolve o escopo de visibilidade do dashboard a partir das concessões do
+ * usuário ({@link AuthorizationQuery#visibilityFor}, ADR-36).
+ * <p>
+ * Filtro pedido fora do escopo → 403 ({@link UsageVisibilityDeniedException}).
+ * O rótulo organizacional não é lido: não é fonte de autorização (ADR-36 item 9).
  */
 @Component
 public class DashboardScopeResolver {
@@ -41,27 +35,24 @@ public class DashboardScopeResolver {
         Objects.requireNonNull(tenantId, "tenantId");
         Objects.requireNonNull(userId, "userId");
 
-        VisibilityScope scope = authorizationQuery.visibilityFor(
+        VisibilityScope visibility = authorizationQuery.visibilityFor(
             tenantId, userId, Resource.USAGE, Action.READ);
 
-        UUID scopedUserId = null;
-        Set<UUID> departmentIds = Set.of();
-
-        if (scope instanceof VisibilityScope.TenantWide) {
-            departmentIds = requestedDepartmentId == null
-                ? Set.of()
-                : Set.of(requestedDepartmentId);
-        } else if (scope instanceof VisibilityScope.Departments departments) {
-            departmentIds = departments.ids();
-        } else if (scope instanceof VisibilityScope.SelfOnly selfOnly) {
-            scopedUserId = selfOnly.self().value();
-        } else {
-            // None: sem concessão aplicável com USAGE:READ. Inatingível após o gate
-            // BY_TARGET (que exige a mesma permissão), mas mantido como fail-closed.
+        if (visibility instanceof VisibilityScope.None) {
+            // Sem concessão aplicável: 403 antes de qualquer query.
+            throw new UsageVisibilityDeniedException();
+        }
+        if (requestedDepartmentId != null && !coversDepartment(visibility, requestedDepartmentId)) {
             throw new UsageVisibilityDeniedException();
         }
 
         return new UsageMetricsRepository.UsageMetricsFilter(
-            tenantId, scopedUserId, departmentIds, from, to, granularity);
+            tenantId, visibility, requestedDepartmentId, from, to, granularity);
+    }
+
+    private static boolean coversDepartment(VisibilityScope visibility, UUID departmentId) {
+        return visibility instanceof VisibilityScope.TenantWide
+            || (visibility instanceof VisibilityScope.Departments departments
+                && departments.ids().contains(departmentId));
     }
 }

@@ -39,7 +39,7 @@ class QueryUsageMetricsTest {
             tenantId, userId, deptId, from, to, UsageMetricsRepository.Granularity.MONTH);
 
         UsageMetricsRepository.UsageMetricsFilter filter = new UsageMetricsRepository.UsageMetricsFilter(
-            tenantId, null, java.util.Set.of(deptId), from, to,
+            tenantId, new br.com.qsoft.governance.sharedkernel.rbac.VisibilityScope.TenantWide(), deptId, from, to,
             UsageMetricsRepository.Granularity.MONTH);
 
         when(scopeResolver.resolve(any(), any(), any(), any(), any(), any())).thenReturn(filter);
@@ -70,7 +70,8 @@ class QueryUsageMetricsTest {
             tenantId, userId, null, from, to, null);
 
         UsageMetricsRepository.UsageMetricsFilter filter = new UsageMetricsRepository.UsageMetricsFilter(
-            tenantId, null, null, from, to, UsageMetricsRepository.Granularity.DAY);
+            tenantId, new br.com.qsoft.governance.sharedkernel.rbac.VisibilityScope.TenantWide(),
+            null, from, to, UsageMetricsRepository.Granularity.DAY);
 
         when(scopeResolver.resolve(any(), any(), any(), any(), any(), any())).thenReturn(filter);
         when(metricsRepository.activeUsers(filter)).thenReturn(10L);
