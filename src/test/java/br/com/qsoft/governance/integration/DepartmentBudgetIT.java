@@ -76,6 +76,7 @@ class DepartmentBudgetIT {
     private User adminA;
     private UUID departmentA;
     private UUID departmentB;
+    private UUID departmentNoBudget;
     private UUID departmentOtherTenant;
     private String adminAEmail;
     private String adminBEmail;
@@ -98,6 +99,7 @@ class DepartmentBudgetIT {
         String tokenA = login(adminAEmail);
         departmentA = createDepartment(tokenA, "Marketing " + suffix(), null);
         departmentB = createDepartment(tokenA, "Vendas " + suffix(), "1500.00");
+        departmentNoBudget = createDepartment(tokenA, "Operacoes " + suffix(), null);
         departmentOtherTenant = createDepartment(login(adminBEmail),
             "Outro Tenant " + suffix(), null);
 
@@ -224,6 +226,20 @@ class DepartmentBudgetIT {
         assertThat(number(defaultItem.get("orcamento"))).isCloseTo(1500.0, within(0.0001));
         assertThat(defaultItem.get("orcamentoPadrao")).isEqualTo(true);
         assertThat(defaultItem.get("limiarAlerta")).isEqualTo(80);
+    }
+
+    @Test
+    void departamentoSemOrcamentoApareceComoSemOrcamento() {
+        String admin = login(adminAEmail);
+        insertUsage(tenantA.id(), departmentNoBudget, "2026-10-10T10:00:00Z", "42.00");
+
+        Map<String, Object> item = item(budgetReport(admin, "2026-10"), departmentNoBudget);
+
+        assertThat(item.get("orcamento")).isNull();
+        assertThat(item.get("pctUsado")).isNull();
+        assertThat(item.get("status")).isEqualTo("SEM_ORCAMENTO");
+        assertThat(number(item.get("custoReal"))).isCloseTo(42.0, within(0.0001));
+        assertThat(item.get("orcamentoPadrao")).isEqualTo(false);
     }
 
     @Test

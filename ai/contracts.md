@@ -12,9 +12,11 @@ Contratos são Java APIs internas entre módulos. Não equivalem automaticamente
 | aigateway | `AICompletionService`, `ModelResolutionQuery`, `AIToolCatalogQuery`, catálogo administrativo |
 | chat | commands/queries de Conversation/Message |
 | agentpolicies | `KnowledgeAccessService`, `AskPolicyAgent`, KnowledgeDocument commands/queries |
-| observability | `UsageMetricsQueryPort`, `CostMetricsQueryPort`, `BudgetStatusQueryPort`, `AlertQueryPort` |
+| observability | `UsageMetricsQueryPort`, `CostMetricsQueryPort`, `BudgetStatusQueryPort` (implementado por `QueryBudgetStatus`) |
 | engagement | `LicenseQueryPort`, `TrainingQueryPort`, `EngagementMetricsQueryPort`, `AICreditsQueryPort` |
 | governancescore | `GovernanceScoreQueryPort`, Breakdown, Department scores, History |
+
+`AlertQueryPort` foi substituído pelo status de orçamento calculado na leitura (sem tabela nova, sem evento e sem bloqueio — A105).
 
 ## Eventos definitivos do MVP
 

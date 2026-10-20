@@ -234,4 +234,20 @@ class UsageMetricsJdbcAdapterTest {
         assertThat(costs.get(0).departmentId()).isNull();
         assertThat(costs.get(0).estimatedCost()).isEqualTo(BigDecimal.ZERO);
     }
+
+    @Test
+    void janelaDeCustoEhHalfOpenParaNaoVazarOMesSeguinte() {
+        UsageMetricsFilter filter = new UsageMetricsFilter(tenantId,
+            new br.com.qsoft.governance.sharedkernel.rbac.VisibilityScope.TenantWide(),
+            null, from, to, Granularity.MONTH);
+
+        when(jdbcTemplate.query(anyString(), any(RowMapper.class), any(Object[].class)))
+            .thenReturn(List.of());
+
+        adapter.costByDepartment(filter);
+
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+        verify(jdbcTemplate).query(sqlCaptor.capture(), any(RowMapper.class), any(Object[].class));
+        assertThat(sqlCaptor.getValue()).contains("created_at >= ? AND created_at < ?");
+    }
 }
