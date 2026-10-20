@@ -103,6 +103,13 @@ class CompleteAIRequestTest {
                                                       java.time.Instant now, int limit) {
             return java.util.List.of();
         }
+
+        @Override
+        public br.com.qsoft.governance.sharedkernel.query.PageResult<RequestAttempt> search(
+                AttemptFilter filter, int page, int size) {
+            return new br.com.qsoft.governance.sharedkernel.query.PageResult<>(
+                java.util.List.of(), 0, page, size);
+        }
     };
 
     @BeforeEach
@@ -257,6 +264,13 @@ class CompleteAIRequestTest {
                                                           java.time.Instant staleBefore,
                                                           java.time.Instant now, int limit) {
                 return java.util.List.of();
+            }
+
+            @Override
+            public br.com.qsoft.governance.sharedkernel.query.PageResult<RequestAttempt> search(
+                    AttemptFilter filter, int page, int size) {
+                return new br.com.qsoft.governance.sharedkernel.query.PageResult<>(
+                    java.util.List.of(), 0, page, size);
             }
         };
         service = new CompleteAIRequest(identityQuery, resolveModelForUser, kind -> stub,

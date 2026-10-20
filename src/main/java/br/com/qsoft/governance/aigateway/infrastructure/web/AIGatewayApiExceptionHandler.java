@@ -1,5 +1,6 @@
 package br.com.qsoft.governance.aigateway.infrastructure.web;
 
+import br.com.qsoft.governance.aigateway.api.exception.AIAttemptAccessDeniedException;
 import br.com.qsoft.governance.aigateway.api.exception.AIAttemptNotRecordedException;
 import br.com.qsoft.governance.aigateway.api.exception.AIProviderFailureException;
 import br.com.qsoft.governance.aigateway.api.exception.AIProviderTimeoutException;
@@ -40,6 +41,13 @@ public class AIGatewayApiExceptionHandler {
 
     @ExceptionHandler(ModelNotAllowedException.class)
     public ResponseEntity<Map<String, String>> handleNotAllowed(ModelNotAllowedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", ex.getMessage()));
+    }
+
+    /** RF047: filtro/tentativa fora do escopo de visibilidade. */
+    @ExceptionHandler(AIAttemptAccessDeniedException.class)
+    public ResponseEntity<Map<String, String>> handleAttemptAccessDenied(
+            AIAttemptAccessDeniedException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", ex.getMessage()));
     }
 

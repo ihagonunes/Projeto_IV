@@ -20,6 +20,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 /** Mapeamento e adapter da tentativa durável (V017/ADR-38). */
 @ExtendWith(MockitoExtension.class)
@@ -27,6 +28,9 @@ class RequestAttemptPersistenceTest {
 
     @Mock
     private RequestAttemptJpaRepository jpaRepository;
+
+    @Mock
+    private JdbcTemplate jdbcTemplate;
 
     @InjectMocks
     private RequestAttemptRepositoryAdapter adapter;
