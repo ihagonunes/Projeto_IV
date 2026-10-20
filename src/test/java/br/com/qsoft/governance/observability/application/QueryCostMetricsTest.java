@@ -43,15 +43,19 @@ class QueryCostMetricsTest {
             tenantId, new br.com.qsoft.governance.sharedkernel.rbac.VisibilityScope.TenantWide(), deptId, from, to,
             UsageMetricsRepository.Granularity.DAY);
 
-        when(scopeResolver.resolve(any(), any(), any(), any(), any(), any())).thenReturn(filter);
+        when(scopeResolver.resolve(any(), any(), any(), any(), any(), any(), any(), any()))
+            .thenReturn(filter);
 
-        List<UsageMetricsRepository.DepartmentCost> costs = List.of(
-            new UsageMetricsRepository.DepartmentCost(deptId, 100L, 1000L, 2000L, new BigDecimal("15.50"))
+        List<UsageMetricsRepository.CostGroup> groups = List.of(
+            new UsageMetricsRepository.CostGroup(
+                deptId, 100L, 1000L, 2000L, new BigDecimal("15.50"))
         );
-        when(metricsRepository.costByDepartment(filter)).thenReturn(costs);
+        when(metricsRepository.costGroups(filter, UsageMetricsRepository.CostGroupBy.DEPARTMENT))
+            .thenReturn(groups);
 
-        List<UsageMetricsRepository.DepartmentCost> result = queryCostMetrics.byDepartment(command);
+        List<UsageMetricsRepository.CostGroup> result = queryCostMetrics.byGroup(
+            command, UsageMetricsRepository.CostGroupBy.DEPARTMENT);
 
-        assertThat(result).isEqualTo(costs);
+        assertThat(result).isEqualTo(groups);
     }
 }

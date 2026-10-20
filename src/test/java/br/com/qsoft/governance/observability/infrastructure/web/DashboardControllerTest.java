@@ -21,6 +21,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -80,21 +81,42 @@ class DashboardControllerTest {
     @Test
     void deve_consultar_custos_por_departamento_com_sucesso() throws Exception {
         UUID departmentId = UUID.randomUUID();
-        UsageMetricsRepository.DepartmentCost cost = new UsageMetricsRepository.DepartmentCost(
+        UsageMetricsRepository.CostGroup cost = new UsageMetricsRepository.CostGroup(
             departmentId, 50L, 1000L, 2000L, new BigDecimal("0.050000"));
 
-        when(queryCostMetrics.byDepartment(any(DashboardQueryCommand.class))).thenReturn(List.of(cost));
+        when(queryCostMetrics.byGroup(any(DashboardQueryCommand.class), any()))
+            .thenReturn(List.of(cost));
 
         mockMvc.perform(get("/api/v1/observability/metrics/costs")
                 .param("departmentId", departmentId.toString()))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$[0].departmentId").value(departmentId.toString()))
-            .andExpect(jsonPath("$[0].requests").value(50))
-            .andExpect(jsonPath("$[0].inputTokens").value(1000))
-            .andExpect(jsonPath("$[0].outputTokens").value(2000))
-            .andExpect(jsonPath("$[0].estimatedCost").value(0.05));
+            .andExpect(jsonPath("$[0].chave").value(departmentId.toString()))
+            .andExpect(jsonPath("$[0].requisicoes").value(50))
+            .andExpect(jsonPath("$[0].tokensEntrada").value(1000))
+            .andExpect(jsonPath("$[0].tokensSaida").value(2000))
+            .andExpect(jsonPath("$[0].custoEstimado").value(0.05));
 
-        verify(queryCostMetrics).byDepartment(any(DashboardQueryCommand.class));
+        verify(queryCostMetrics).byGroup(any(DashboardQueryCommand.class),
+            eq(UsageMetricsRepository.CostGroupBy.DEPARTMENT));
+    }
+
+    @Test
+    void deve_encaminhar_groupBy_e_filtroDeUsuario() throws Exception {
+        UUID userId = UUID.randomUUID();
+
+        when(queryCostMetrics.byGroup(any(DashboardQueryCommand.class), any()))
+            .thenReturn(List.of());
+
+        mockMvc.perform(get("/api/v1/observability/metrics/costs")
+                .param("groupBy", "USER")
+                .param("userId", userId.toString()))
+            .andExpect(status().isOk());
+
+        org.mockito.ArgumentCaptor<DashboardQueryCommand> captor =
+            org.mockito.ArgumentCaptor.forClass(DashboardQueryCommand.class);
+        verify(queryCostMetrics).byGroup(captor.capture(),
+            eq(UsageMetricsRepository.CostGroupBy.USER));
+        assertThat(captor.getValue().targetUserId()).isEqualTo(userId);
     }
 
     @Test
@@ -112,15 +134,15 @@ class DashboardControllerTest {
     void deve_testar_records_de_response_de_metricas() {
         UUID departmentId = UUID.randomUUID();
         BigDecimal costVal = new BigDecimal("1.25");
-        UsageMetricsRepository.DepartmentCost cost = new UsageMetricsRepository.DepartmentCost(
+        UsageMetricsRepository.CostGroup cost = new UsageMetricsRepository.CostGroup(
             departmentId, 10L, 500L, 1500L, costVal);
 
-        DepartmentCostResponse costResponse = DepartmentCostResponse.from(cost);
-        assertThat(costResponse.departmentId()).isEqualTo(departmentId);
-        assertThat(costResponse.requests()).isEqualTo(10L);
-        assertThat(costResponse.inputTokens()).isEqualTo(500L);
-        assertThat(costResponse.outputTokens()).isEqualTo(1500L);
-        assertThat(costResponse.estimatedCost()).isEqualTo(costVal);
+        CostGroupResponse costResponse = CostGroupResponse.from(cost);
+        assertThat(costResponse.chave()).isEqualTo(departmentId);
+        assertThat(costResponse.requisicoes()).isEqualTo(10L);
+        assertThat(costResponse.tokensEntrada()).isEqualTo(500L);
+        assertThat(costResponse.tokensSaida()).isEqualTo(1500L);
+        assertThat(costResponse.custoEstimado()).isEqualTo(costVal);
 
         Instant now = Instant.now();
         UsageMetricsSeries series = new UsageMetricsSeries(

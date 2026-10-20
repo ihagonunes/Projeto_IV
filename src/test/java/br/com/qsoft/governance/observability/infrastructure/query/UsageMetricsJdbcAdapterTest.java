@@ -1,5 +1,6 @@
 package br.com.qsoft.governance.observability.infrastructure.query;
 
+import br.com.qsoft.governance.observability.application.port.UsageMetricsRepository;
 import br.com.qsoft.governance.observability.application.port.UsageMetricsRepository.DepartmentCost;
 import br.com.qsoft.governance.observability.application.port.UsageMetricsRepository.Granularity;
 import br.com.qsoft.governance.observability.application.port.UsageMetricsRepository.UsageMetricsFilter;
@@ -192,9 +193,9 @@ class UsageMetricsJdbcAdapterTest {
 
         when(jdbcTemplate.query(anyString(), any(RowMapper.class), any(Object[].class)))
             .thenAnswer(invocation -> {
-                RowMapper<DepartmentCost> rowMapper = invocation.getArgument(1);
+                RowMapper<UsageMetricsRepository.CostGroup> rowMapper = invocation.getArgument(1);
                 ResultSet rs = mock(ResultSet.class);
-                when(rs.getObject("department_id")).thenReturn(deptId);
+                when(rs.getObject("group_key")).thenReturn(deptId);
                 when(rs.getLong("requests")).thenReturn(25L);
                 when(rs.getLong("input_tokens")).thenReturn(1000L);
                 when(rs.getLong("output_tokens")).thenReturn(2000L);
@@ -218,9 +219,9 @@ class UsageMetricsJdbcAdapterTest {
 
         when(jdbcTemplate.query(anyString(), any(RowMapper.class), any(Object[].class)))
             .thenAnswer(invocation -> {
-                RowMapper<DepartmentCost> rowMapper = invocation.getArgument(1);
+                RowMapper<UsageMetricsRepository.CostGroup> rowMapper = invocation.getArgument(1);
                 ResultSet rs = mock(ResultSet.class);
-                when(rs.getObject("department_id")).thenReturn(null);
+                when(rs.getObject("group_key")).thenReturn(null);
                 when(rs.getLong("requests")).thenReturn(0L);
                 when(rs.getLong("input_tokens")).thenReturn(0L);
                 when(rs.getLong("output_tokens")).thenReturn(0L);
@@ -249,5 +250,48 @@ class UsageMetricsJdbcAdapterTest {
         ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
         verify(jdbcTemplate).query(sqlCaptor.capture(), any(RowMapper.class), any(Object[].class));
         assertThat(sqlCaptor.getValue()).contains("created_at >= ? AND created_at < ?");
+    }
+
+    @Test
+    void deve_agruparPorModeloEUsuarioComColunasWhitelisted() {
+        UsageMetricsFilter filter = new UsageMetricsFilter(tenantId,
+            new br.com.qsoft.governance.sharedkernel.rbac.VisibilityScope.TenantWide(),
+            null, from, to, Granularity.MONTH);
+
+        when(jdbcTemplate.query(anyString(), any(RowMapper.class), any(Object[].class)))
+            .thenReturn(List.of());
+
+        adapter.costGroups(filter, UsageMetricsRepository.CostGroupBy.MODEL);
+        adapter.costGroups(filter, UsageMetricsRepository.CostGroupBy.USER);
+
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+        verify(jdbcTemplate, org.mockito.Mockito.times(2))
+            .query(sqlCaptor.capture(), any(RowMapper.class), any(Object[].class));
+
+        assertThat(sqlCaptor.getAllValues().get(0))
+            .contains("model_id").contains("GROUP BY model_id");
+        assertThat(sqlCaptor.getAllValues().get(1))
+            .contains("user_id").contains("GROUP BY user_id");
+    }
+
+    @Test
+    void deve_aplicarFiltrosDeModeloEUsuario() {
+        UUID modelId = UUID.randomUUID();
+        UUID targetUserId = UUID.randomUUID();
+        UsageMetricsFilter filter = new UsageMetricsFilter(tenantId,
+            new br.com.qsoft.governance.sharedkernel.rbac.VisibilityScope.TenantWide(),
+            null, modelId, targetUserId, from, to, Granularity.DAY);
+
+        when(jdbcTemplate.query(anyString(), any(RowMapper.class), any(Object[].class)))
+            .thenReturn(List.of());
+
+        adapter.requestsByPeriod(filter);
+
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<Object[]> paramsCaptor = ArgumentCaptor.forClass(Object[].class);
+        verify(jdbcTemplate).query(sqlCaptor.capture(), any(RowMapper.class), paramsCaptor.capture());
+
+        assertThat(sqlCaptor.getValue()).contains("AND model_id = ?").contains("AND user_id = ?");
+        assertThat(paramsCaptor.getValue()).contains(modelId, targetUserId);
     }
 }

@@ -122,10 +122,22 @@ class DashboardMetricsIT {
 
     /** Emite uso para um usuário/departamento via o pipeline real do Gateway. */
     private void usage(User user, UUID departmentId, long input, long output) {
+        usageFor(tenant, user, departmentId, input, output);
+    }
+
+    private void usageFor(Tenant targetTenant, User user, UUID departmentId,
+                          long input, long output) {
         eventPublisher.publishEvent(new AIRequestCompleted(
-            UUID.randomUUID(), tenant.id().value(), departmentId, user.id().value(),
+            UUID.randomUUID(), targetTenant.id().value(), departmentId, user.id().value(),
             model.id(), model.providerId(), input, output,
             model.estimatedCost(input, output), 100, "COMPLETED"));
+    }
+
+    private List<Map<String, Object>> costs(String token, String query) {
+        return client.get().uri("/api/v1/observability/metrics/costs" + query)
+            .header("Authorization", "Bearer " + token)
+            .retrieve().body(new ParameterizedTypeReference<List<Map<String, Object>>>() {
+            });
     }
 
     private Map<?, ?> getJson(String token, String uri) {
@@ -178,7 +190,7 @@ class DashboardMetricsIT {
             });
         assertThat(costs).isNotEmpty();
         assertThat(costs).anySatisfy(cost ->
-            assertThat(cost.get("departmentId")).isEqualTo(marketingDepartment.toString()));
+            assertThat(cost.get("chave")).isEqualTo(marketingDepartment.toString()));
     }
 
     @Test
@@ -195,7 +207,7 @@ class DashboardMetricsIT {
 
         assertThat(costs).isNotEmpty();
         assertThat(costs).allSatisfy(cost ->
-            assertThat(cost.get("departmentId")).isEqualTo(marketingDepartment.toString()));
+            assertThat(cost.get("chave")).isEqualTo(marketingDepartment.toString()));
     }
 
     @Test
@@ -218,7 +230,7 @@ class DashboardMetricsIT {
             .retrieve().body(new ParameterizedTypeReference<List<Map<String, Object>>>() {
             });
         assertThat(costs).allSatisfy(cost ->
-            assertThat(cost.get("departmentId")).isEqualTo(marketingDepartment.toString()));
+            assertThat(cost.get("chave")).isEqualTo(marketingDepartment.toString()));
     }
 
     /** DB02: gestor com concessões em A e B vê A ∪ B. */
@@ -243,7 +255,7 @@ class DashboardMetricsIT {
             .retrieve().body(new ParameterizedTypeReference<List<Map<String, Object>>>() {
             });
 
-        assertThat(costs).extracting(cost -> cost.get("departmentId"))
+        assertThat(costs).extracting(cost -> cost.get("chave"))
             .contains(marketingDepartment.toString(), salesDepartment.toString());
     }
 
@@ -268,7 +280,7 @@ class DashboardMetricsIT {
             .retrieve().body(new ParameterizedTypeReference<List<Map<String, Object>>>() {
             });
         assertThat(costs).allSatisfy(cost ->
-            assertThat(cost.get("departmentId")).isEqualTo(marketingDepartment.toString()));
+            assertThat(cost.get("chave")).isEqualTo(marketingDepartment.toString()));
     }
 
     /** DB04: rótulo de gestor sem concessão departamental → só os próprios dados. */
@@ -347,5 +359,115 @@ class DashboardMetricsIT {
         } catch (RestClientResponseException e) {
             assertThat(e.getStatusCode().value()).isEqualTo(401);
         }
+    }
+
+    /** SPI-97/98: agrupamento por modelo e por usuário sobre o mesmo recorte. */
+    @Test
+    void shouldGroupCostsByModelAndUser() {
+        User admin = userRepository.findByTenantIdAndEmail(tenant.id(), ADMIN_EMAIL).orElseThrow();
+        usage(admin, marketingDepartment, 1000, 2000);
+
+        String token = login(ADMIN_EMAIL);
+
+        List<Map<String, Object>> byModel = costs(token,
+            "?groupBy=MODEL&departmentId=" + marketingDepartment);
+        assertThat(byModel).hasSize(1);
+        assertThat(byModel.get(0).get("chave")).isEqualTo(model.id().toString());
+        assertThat(groupRequests(byModel.get(0))).isEqualTo(1);
+        assertThat(groupTokens(byModel.get(0), "tokensEntrada")).isEqualTo(1000);
+        assertThat(groupTokens(byModel.get(0), "tokensSaida")).isEqualTo(2000);
+
+        List<Map<String, Object>> byUser = costs(token,
+            "?groupBy=USER&departmentId=" + marketingDepartment);
+        assertThat(byUser).hasSize(1);
+        assertThat(byUser.get(0).get("chave")).isEqualTo(admin.id().value().toString());
+        assertThat(groupRequests(byUser.get(0))).isEqualTo(1);
+    }
+
+    /** SPI-99/100: filtros combinados de período, departamento, modelo e usuário. */
+    @Test
+    void shouldCombineDepartmentModelAndUserFilters() {
+        User admin = userRepository.findByTenantIdAndEmail(tenant.id(), ADMIN_EMAIL).orElseThrow();
+        User collaborator = testTenants.ensureMember(tenant, admin.id(),
+            "combo-" + UUID.randomUUID() + "@dashdemo.com", "Combo", PASSWORD,
+            HierarchyLevel.COLLABORATOR, marketingDepartment, "COLLABORATOR");
+        usage(admin, marketingDepartment, 1000, 2000);
+        usage(collaborator, marketingDepartment, 500, 500);
+
+        List<Map<String, Object>> filtered = costs(login(ADMIN_EMAIL),
+            "?groupBy=USER&departmentId=" + marketingDepartment
+                + "&modelId=" + model.id()
+                + "&userId=" + admin.id().value());
+
+        assertThat(filtered).hasSize(1);
+        assertThat(filtered.get(0).get("chave")).isEqualTo(admin.id().value().toString());
+        assertThat(groupRequests(filtered.get(0))).isEqualTo(1);
+    }
+
+    /** MANAGER(A) agrupando por usuário só vê usuários com uso em A (SPI-113). */
+    @Test
+    void managerGroupingByUserSeesOnlyUsersFromItsDepartment() {
+        User admin = userRepository.findByTenantIdAndEmail(tenant.id(), ADMIN_EMAIL).orElseThrow();
+        String managerEmail = "group-manager-" + UUID.randomUUID() + "@dashdemo.com";
+        User manager = testTenants.ensureMember(tenant, admin.id(), managerEmail, "Manager",
+            PASSWORD, HierarchyLevel.MANAGER, marketingDepartment, "MANAGER");
+        User other = testTenants.ensureMember(tenant, admin.id(),
+            "group-other-" + UUID.randomUUID() + "@dashdemo.com", "Other", PASSWORD,
+            HierarchyLevel.COLLABORATOR, salesDepartment, "COLLABORATOR");
+        usage(admin, marketingDepartment, 1000, 2000);
+        usage(other, salesDepartment, 500, 500);
+
+        String managerToken = login(managerEmail);
+        List<Map<String, Object>> byUser = costs(managerToken, "?groupBy=USER");
+
+        assertThat(byUser).noneMatch(row -> other.id().value().toString().equals(row.get("chave")));
+        assertThat(byUser).anyMatch(row -> admin.id().value().toString().equals(row.get("chave")));
+        assertThat(status(managerToken,
+            "/api/v1/observability/metrics/costs?userId=" + other.id().value())).isEqualTo(403);
+        assertThat(status(managerToken,
+            "/api/v1/observability/metrics/usage?userId=" + other.id().value())).isEqualTo(403);
+        assertThat(manager.id().value()).isNotNull();
+    }
+
+    /** SELF: agrupar por usuário devolve apenas o próprio usuário. */
+    @Test
+    void selfOnlyGroupingByUserReturnsOnlyTheActor() {
+        User admin = userRepository.findByTenantIdAndEmail(tenant.id(), ADMIN_EMAIL).orElseThrow();
+        String email = "self-" + UUID.randomUUID() + "@dashdemo.com";
+        User collaborator = testTenants.ensureMember(tenant, admin.id(), email, "User",
+            PASSWORD, HierarchyLevel.COLLABORATOR, marketingDepartment, "COLLABORATOR");
+        usage(admin, marketingDepartment, 1000, 2000);
+        usage(collaborator, marketingDepartment, 10, 20);
+
+        List<Map<String, Object>> byUser = costs(login(email), "?groupBy=USER");
+
+        assertThat(byUser).extracting(row -> row.get("chave"))
+            .containsExactly(collaborator.id().value().toString());
+    }
+
+    /** O custo nunca cruza tenants, mesmo com IDs de outra organização. */
+    @Test
+    void shouldIsolateCostsFromAnotherTenant() {
+        Tenant otherTenant = testTenants.ensureTenant("dashother", "Dash Other", "Admin",
+            "admin@dashother.com", PASSWORD);
+        User otherAdmin = testTenants.admin(otherTenant, "admin@dashother.com");
+        usageFor(otherTenant, otherAdmin, UUID.randomUUID(), 100, 100);
+
+        String adminToken = login(ADMIN_EMAIL);
+        List<Map<String, Object>> byUser = costs(adminToken, "?groupBy=USER");
+
+        assertThat(byUser).noneMatch(row ->
+            otherAdmin.id().value().toString().equals(row.get("chave")));
+        assertThat(status(adminToken,
+            "/api/v1/observability/metrics/costs?userId=" + otherAdmin.id().value()))
+            .isEqualTo(403);
+    }
+
+    private static long groupRequests(Map<String, Object> group) {
+        return ((Number) group.get("requisicoes")).longValue();
+    }
+
+    private static long groupTokens(Map<String, Object> group, String field) {
+        return ((Number) group.get(field)).longValue();
     }
 }

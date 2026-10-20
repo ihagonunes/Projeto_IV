@@ -20,11 +20,13 @@ public class QueryCostMetrics {
         this.metricsRepository = metricsRepository;
     }
 
-    public List<UsageMetricsRepository.DepartmentCost> byDepartment(DashboardQueryCommand command) {
+    public List<UsageMetricsRepository.CostGroup> byGroup(
+            DashboardQueryCommand command, UsageMetricsRepository.CostGroupBy groupBy) {
         DashboardPeriod.Window window = DashboardPeriod.resolve(command.from(), command.to());
         UsageMetricsRepository.UsageMetricsFilter filter = scopeResolver.resolve(
             command.tenantId(), command.userId(), command.departmentId(),
-            window.from(), window.to(), UsageMetricsRepository.Granularity.DAY);
-        return metricsRepository.costByDepartment(filter);
+            command.modelId(), command.targetUserId(), window.from(), window.to(),
+            UsageMetricsRepository.Granularity.DAY);
+        return metricsRepository.costGroups(filter, groupBy);
     }
 }

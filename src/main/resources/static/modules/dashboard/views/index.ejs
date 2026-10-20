@@ -32,6 +32,29 @@
                 <div class="col-md-2">
                     <button class="btn btn-primary w-100" type="submit">Aplicar</button>
                 </div>
+
+                <div class="w-100"></div>
+
+                <div class="col-md-3">
+                    <label class="form-label" for="filtroAgrupamento">Agrupar por</label>
+                    <select class="form-select" id="filtroAgrupamento">
+                        <option value="DEPARTMENT" selected>Departamento</option>
+                        <option value="MODEL">Modelo</option>
+                        <option value="USER">Usuário</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="filtroModelo">Modelo</label>
+                    <select class="form-select" id="filtroModelo">
+                        <option value="">Todos</option>
+                    </select>
+                </div>
+                <div class="col-md-3" id="filtroUsuarioCol">
+                    <label class="form-label" for="filtroUsuario">Usuário</label>
+                    <select class="form-select" id="filtroUsuario">
+                        <option value="">Todos</option>
+                    </select>
+                </div>
             </form>
         </div>
     </div>
@@ -96,14 +119,14 @@
         <div class="card-body" id="graficoSeries"></div>
     </div>
 
-    <!-- Custos por departamento (SPI-89) -->
+    <!-- Custos por dimensão (SPI-89/97/98/99) -->
     <div class="card">
-        <div class="card-header">Tokens e custo por departamento</div>
+        <div class="card-header" id="tituloCustos">Tokens e custo por departamento</div>
         <div class="table-responsive">
             <table class="table mb-0 align-middle">
                 <thead>
                     <tr>
-                        <th>Departamento</th>
+                        <th id="thCustoDimensao">Departamento</th>
                         <th class="text-end">Requisições</th>
                         <th class="text-end">Tokens (entrada/saída)</th>
                         <th class="text-end">Custo estimado</th>

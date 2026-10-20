@@ -68,36 +68,61 @@ public class UsageMetricsJdbcAdapter implements UsageMetricsRepository {
 
     @Override
     public List<DepartmentCost> costByDepartment(UsageMetricsFilter filter) {
+        return costGroups(filter, CostGroupBy.DEPARTMENT).stream()
+            .map(group -> new DepartmentCost(group.key(), group.requests(), group.inputTokens(),
+                group.outputTokens(), group.estimatedCost()))
+            .toList();
+    }
+
+    @Override
+    public List<CostGroup> costGroups(UsageMetricsFilter filter, CostGroupBy groupBy) {
+        String keyColumn = groupColumn(groupBy);
         List<Object> params = new ArrayList<>();
         StringBuilder sql = new StringBuilder("""
-            SELECT department_id,
-                   COUNT(*)                 AS requests,
+            SELECT %s                   AS group_key,
+                   COUNT(*)             AS requests,
                    COALESCE(SUM(input_tokens), 0)  AS input_tokens,
                    COALESCE(SUM(output_tokens), 0) AS output_tokens,
                    COALESCE(SUM(estimated_cost), 0) AS estimated_cost
-            FROM observability_usage_records WHERE tenant_id = ?""");
+            FROM observability_usage_records WHERE tenant_id = ?""".formatted(keyColumn));
         params.add(filter.tenantId().value());
 
         appendScopeAndPeriod(sql, params, filter);
-        sql.append(" GROUP BY department_id ORDER BY estimated_cost DESC");
+        sql.append(" GROUP BY ").append(keyColumn).append(" ORDER BY estimated_cost DESC");
 
         return jdbcTemplate.query(sql.toString(), (rs, rowNum) -> {
-            UUID departmentId = rs.getObject("department_id") == null
-                ? null
-                : (UUID) rs.getObject("department_id");
-            return new DepartmentCost(
-                departmentId,
+            UUID key = rs.getObject("group_key") == null ? null : (UUID) rs.getObject("group_key");
+            return new CostGroup(
+                key,
                 rs.getLong("requests"),
                 rs.getLong("input_tokens"),
                 rs.getLong("output_tokens"),
-                rs.getBigDecimal("estimated_cost") == null ? BigDecimal.ZERO : rs.getBigDecimal("estimated_cost")
+                rs.getBigDecimal("estimated_cost") == null
+                    ? BigDecimal.ZERO : rs.getBigDecimal("estimated_cost")
             );
         }, params.toArray());
+    }
+
+    /** Coluna de agrupamento — literal whitelisted, nunca vem do cliente. */
+    private static String groupColumn(CostGroupBy groupBy) {
+        return switch (groupBy) {
+            case DEPARTMENT -> "department_id";
+            case MODEL -> "model_id";
+            case USER -> "user_id";
+        };
     }
 
     private void appendScopeAndPeriod(StringBuilder sql, List<Object> params,
                                       UsageMetricsFilter filter) {
         appendVisibility(sql, params, filter.visibility(), filter.requestedDepartmentId());
+        if (filter.requestedModelId() != null) {
+            sql.append(" AND model_id = ?");
+            params.add(filter.requestedModelId());
+        }
+        if (filter.requestedUserId() != null) {
+            sql.append(" AND user_id = ?");
+            params.add(filter.requestedUserId());
+        }
         // Janela half-open [from, to): um registro exatamente no início do mês
         // seguinte não pertence ao mês consultado (SPEC-02 §3).
         sql.append(" AND created_at >= ? AND created_at < ?");

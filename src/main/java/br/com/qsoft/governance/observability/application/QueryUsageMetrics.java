@@ -30,7 +30,7 @@ public class QueryUsageMetrics {
 
         UsageMetricsRepository.UsageMetricsFilter filter = scopeResolver.resolve(
             command.tenantId(), command.userId(), command.departmentId(),
-            window.from(), window.to(), granularity);
+            command.modelId(), command.targetUserId(), window.from(), window.to(), granularity);
 
         return new UsageMetricsSeries(
             granularity.name(),

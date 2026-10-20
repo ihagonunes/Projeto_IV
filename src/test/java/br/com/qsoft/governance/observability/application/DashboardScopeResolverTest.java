@@ -5,7 +5,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import br.com.qsoft.governance.iam.api.model.UserContext;
 import br.com.qsoft.governance.iam.api.query.AuthorizationQuery;
+import br.com.qsoft.governance.iam.api.query.IdentityQuery;
 import br.com.qsoft.governance.observability.application.port.UsageMetricsRepository;
 import br.com.qsoft.governance.sharedkernel.id.TenantId;
 import br.com.qsoft.governance.sharedkernel.id.UserId;
@@ -13,6 +15,7 @@ import br.com.qsoft.governance.sharedkernel.rbac.Action;
 import br.com.qsoft.governance.sharedkernel.rbac.Resource;
 import br.com.qsoft.governance.sharedkernel.rbac.VisibilityScope;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,6 +28,7 @@ import org.junit.jupiter.api.Test;
 class DashboardScopeResolverTest {
 
     private AuthorizationQuery authorizationQuery;
+    private IdentityQuery identityQuery;
     private DashboardScopeResolver resolver;
 
     private final TenantId tenantId = TenantId.random();
@@ -33,7 +37,19 @@ class DashboardScopeResolverTest {
     @BeforeEach
     void setUp() {
         authorizationQuery = mock(AuthorizationQuery.class);
-        resolver = new DashboardScopeResolver(authorizationQuery);
+        identityQuery = mock(IdentityQuery.class);
+        resolver = new DashboardScopeResolver(authorizationQuery, identityQuery);
+    }
+
+    private UsageMetricsRepository.UsageMetricsFilter resolveUser(UUID requestedUserId) {
+        return resolver.resolve(tenantId, userId, null, null, requestedUserId, null, null,
+            UsageMetricsRepository.Granularity.DAY);
+    }
+
+    private void givenUser(UUID target, TenantId targetTenant, UUID departmentId) {
+        when(identityQuery.getUserContext(UserId.of(target)))
+            .thenReturn(Optional.of(new UserContext(UserId.of(target), targetTenant,
+                "COLLABORATOR", departmentId, "ACTIVE")));
     }
 
     private UsageMetricsRepository.UsageMetricsFilter resolve(UUID requested) {
@@ -143,5 +159,53 @@ class DashboardScopeResolverTest {
         assertThat(filter.from()).isEqualTo(from);
         assertThat(filter.to()).isEqualTo(to);
         assertThat(filter.granularity()).isEqualTo(UsageMetricsRepository.Granularity.MONTH);
+    }
+
+    @Test
+    void deve_aceitarFiltroDeUsuarioDoMesmoDepartamento() {
+        UUID deptA = UUID.randomUUID();
+        UUID target = UUID.randomUUID();
+        when(authorizationQuery.visibilityFor(tenantId, userId, Resource.USAGE, Action.READ))
+            .thenReturn(new VisibilityScope.Departments(Set.of(deptA), userId));
+        givenUser(target, tenantId, deptA);
+
+        UsageMetricsRepository.UsageMetricsFilter filter = resolveUser(target);
+
+        assertThat(filter.requestedUserId()).isEqualTo(target);
+    }
+
+    @Test
+    void deve_negarFiltroDeUsuarioDeOutroDepartamento() {
+        UUID deptA = UUID.randomUUID();
+        UUID deptB = UUID.randomUUID();
+        UUID target = UUID.randomUUID();
+        when(authorizationQuery.visibilityFor(tenantId, userId, Resource.USAGE, Action.READ))
+            .thenReturn(new VisibilityScope.Departments(Set.of(deptA), userId));
+        givenUser(target, tenantId, deptB);
+
+        assertThatThrownBy(() -> resolveUser(target))
+            .isInstanceOf(UsageVisibilityDeniedException.class);
+    }
+
+    @Test
+    void deve_negarFiltroDeUsuarioDeOutroTenant() {
+        UUID target = UUID.randomUUID();
+        when(authorizationQuery.visibilityFor(tenantId, userId, Resource.USAGE, Action.READ))
+            .thenReturn(new VisibilityScope.TenantWide());
+        givenUser(target, TenantId.random(), UUID.randomUUID());
+
+        assertThatThrownBy(() -> resolveUser(target))
+            .isInstanceOf(UsageVisibilityDeniedException.class);
+    }
+
+    @Test
+    void selfOnlyAceitaProprioUsuarioENegaOutro() {
+        UUID outro = UUID.randomUUID();
+        when(authorizationQuery.visibilityFor(tenantId, userId, Resource.USAGE, Action.READ))
+            .thenReturn(new VisibilityScope.SelfOnly(userId));
+
+        assertThat(resolveUser(userId.value()).requestedUserId()).isEqualTo(userId.value());
+        assertThatThrownBy(() -> resolveUser(outro))
+            .isInstanceOf(UsageVisibilityDeniedException.class);
     }
 }

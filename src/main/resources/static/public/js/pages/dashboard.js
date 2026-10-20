@@ -23,9 +23,38 @@ document.addEventListener("DOMContentLoaded", () => {
     const campoMesOrcamento = document.getElementById("orcamentoMes");
     const tabelaOrcamentos = document.getElementById("tabelaOrcamentos");
     const mensagemOrcamento = document.getElementById("orcamentoMensagem");
+    const campoAgrupamento = document.getElementById("filtroAgrupamento");
+    const campoModelo = document.getElementById("filtroModelo");
+    const campoUsuario = document.getElementById("filtroUsuario");
+    const colunaUsuario = document.getElementById("filtroUsuarioCol");
+    const tituloCustos = document.getElementById("tituloCustos");
+    const thCustoDimensao = document.getElementById("thCustoDimensao");
 
     const nomesPorId = {};
+    const nomesModelo = {};
+    const nomesUsuario = {};
     let dadosAtuais = { usage: null, costs: [] };
+
+    const DIMENSOES = {
+        DEPARTMENT: {
+            titulo: "Tokens e custo por departamento",
+            coluna: "Departamento",
+            vazio: "Sem consumo por departamento no período.",
+            nome: (id) => nomesPorId[id] || "Sem departamento"
+        },
+        MODEL: {
+            titulo: "Tokens e custo por modelo",
+            coluna: "Modelo",
+            vazio: "Sem consumo por modelo no período.",
+            nome: (id) => nomesModelo[id] || id || "Sem modelo"
+        },
+        USER: {
+            titulo: "Tokens e custo por usuário",
+            coluna: "Usuário",
+            vazio: "Sem consumo por usuário no período.",
+            nome: (id) => nomesUsuario[id] || id || "Sem usuário"
+        }
+    };
 
     const STATUS_ORCAMENTO = {
         OK: { texto: "OK", classe: "text-bg-success" },
@@ -64,7 +93,81 @@ document.addEventListener("DOMContentLoaded", () => {
         if (campoDepartamento.value) {
             params.set("departmentId", campoDepartamento.value);
         }
+        if (campoModelo?.value) {
+            params.set("modelId", campoModelo.value);
+        }
+        if (campoUsuario?.value) {
+            params.set("userId", campoUsuario.value);
+        }
         return params.toString();
+    }
+
+    function dimensaoAtual() {
+        return DIMENSOES[campoAgrupamento?.value] || DIMENSOES.DEPARTMENT;
+    }
+
+    function atualizarCabecalhoCustos() {
+        const dimensao = dimensaoAtual();
+        if (tituloCustos) tituloCustos.textContent = dimensao.titulo;
+        if (thCustoDimensao) thCustoDimensao.textContent = dimensao.coluna;
+    }
+
+    function adicionarOpcao(select, valor, texto) {
+        if (!select) return;
+        const opcao = document.createElement("option");
+        opcao.value = valor;
+        opcao.textContent = texto;
+        select.appendChild(opcao);
+    }
+
+    async function carregarModelos() {
+        if (!client) return;
+        try {
+            const resposta = await client.get("/v1/ai-gateway/models");
+            const lista = Array.isArray(resposta) ? resposta : (resposta?.content || []);
+            lista.forEach((item) => {
+                nomesModelo[item.id] = item.name;
+                adicionarOpcao(campoModelo, item.id, item.name);
+            });
+        } catch (e) {
+            // MODEL:READ indisponível: o seletor fica apenas com "Todos".
+        }
+    }
+
+    async function carregarUsuarios() {
+        if (!client) return;
+        try {
+            const resposta = await client.get("/v1/usuarios?size=100");
+            const lista = Array.isArray(resposta) ? resposta : (resposta?.content || []);
+            lista.forEach((item) => {
+                nomesUsuario[item.id] = item.name || item.email;
+                adicionarOpcao(campoUsuario, item.id, item.name || item.email);
+            });
+        } catch (e) {
+            // USER:READ indisponível: o seletor fica apenas com "Todos".
+        }
+    }
+
+    /**
+     * Visibilidade é decisão do backend; /me/permissoes serve só para a
+     * experiência do front (ADR-36 item 9). SELF não expõe o filtro de usuário.
+     */
+    async function carregarVisao() {
+        if (!client || !colunaUsuario) return;
+        try {
+            const acesso = await client.get("/v1/usuarios/me/permissoes");
+            const escopos = (acesso?.concessoes || []).map((concessao) => concessao.escopo);
+            const visao = escopos.includes("TENANT")
+                ? "TENANT"
+                : (escopos.includes("DEPARTMENT") ? "DEPARTMENT" : "SELF");
+            if (visao === "SELF") {
+                colunaUsuario.classList.add("d-none");
+                return;
+            }
+            await carregarUsuarios();
+        } catch (e) {
+            colunaUsuario.classList.add("d-none");
+        }
     }
 
     function formatarMoeda(valor) {
@@ -128,20 +231,19 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function renderCustos(costs) {
+        const dimensao = dimensaoAtual();
         if (!costs || !costs.length) {
-            tabela.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">Sem consumo por departamento no período.</td></tr>';
+            tabela.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-3">${dimensao.vazio}</td></tr>`;
             return;
         }
         tabela.innerHTML = costs.map((c) => {
-            const nome = c.departmentId
-                ? (nomesPorId[c.departmentId] || "Departamento")
-                : "Sem departamento";
+            const nome = dimensao.nome(c.chave);
             return `
                 <tr>
-                    <td>${nome}</td>
-                    <td class="text-end">${Number(c.requests || 0).toLocaleString("pt-BR")}</td>
-                    <td class="text-end">${Number(c.inputTokens || 0).toLocaleString("pt-BR")} / ${Number(c.outputTokens || 0).toLocaleString("pt-BR")}</td>
-                    <td class="text-end">${formatarMoeda(c.estimatedCost)}</td>
+                    <td>${escapar(nome)}</td>
+                    <td class="text-end">${Number(c.requisicoes || 0).toLocaleString("pt-BR")}</td>
+                    <td class="text-end">${Number(c.tokensEntrada || 0).toLocaleString("pt-BR")} / ${Number(c.tokensSaida || 0).toLocaleString("pt-BR")}</td>
+                    <td class="text-end">${formatarMoeda(c.custoEstimado)}</td>
                 </tr>`;
         }).join("");
     }
@@ -228,9 +330,11 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         avisar("");
         try {
+            const filtros = queryString();
+            const agrupamento = encodeURIComponent(campoAgrupamento?.value || "DEPARTMENT");
             const [usage, costs] = await Promise.all([
-                client.get(`/v1/observability/metrics/usage?${queryString()}`),
-                client.get(`/v1/observability/metrics/costs?${queryString()}`)
+                client.get(`/v1/observability/metrics/usage?${filtros}`),
+                client.get(`/v1/observability/metrics/costs?${filtros}&groupBy=${agrupamento}`)
             ]);
             dadosAtuais = { usage, costs: costs || [] };
             renderKpis(dadosAtuais.usage, dadosAtuais.costs);
@@ -264,8 +368,18 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    carregarDepartamentos().then(() => {
-        carregar();
-        carregarOrcamentos();
-    });
+    if (campoAgrupamento) {
+        campoAgrupamento.addEventListener("change", () => {
+            atualizarCabecalhoCustos();
+            carregar();
+        });
+    }
+
+    (async () => {
+        atualizarCabecalhoCustos();
+        await carregarVisao();
+        await Promise.all([carregarDepartamentos(), carregarModelos()]);
+        await carregar();
+        await carregarOrcamentos();
+    })();
 });

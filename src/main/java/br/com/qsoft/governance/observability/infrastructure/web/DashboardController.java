@@ -49,27 +49,41 @@ public class DashboardController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
             @RequestParam(required = false) UUID departmentId,
+            @RequestParam(required = false) UUID modelId,
+            @RequestParam(required = false) UUID userId,
             @RequestParam(required = false) UsageMetricsRepository.Granularity granularity) {
         TenantContext context = TenantContextHolder.require();
         return ResponseEntity.ok(UsageMetricsResponse.from(queryUsageMetrics.series(
             new DashboardQueryCommand(context.tenantId(), context.userId(),
-                departmentId, from, to, granularity))));
+                departmentId, modelId, userId, from, to, granularity))));
     }
 
-    /** Tokens e custo por departamento (SPI-89). */
+    /**
+     * Tokens e custo agrupados por departamento (padrão), modelo ou usuário
+     * (SPI-89/97/98/113/114). Filtros combináveis de período, departamento,
+     * modelo e usuário — todos validados contra o escopo do ator.
+     */
     @GetMapping("/costs")
     @RequiresPermission(resource = Resource.USAGE, action = Action.READ,
         targeting = Targeting.BY_TARGET)
-    public ResponseEntity<List<DepartmentCostResponse>> costs(
+    public ResponseEntity<List<CostGroupResponse>> costs(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
-            @RequestParam(required = false) UUID departmentId) {
+            @RequestParam(required = false) UUID departmentId,
+            @RequestParam(required = false) UUID modelId,
+            @RequestParam(required = false) UUID userId,
+            @RequestParam(required = false) UsageMetricsRepository.CostGroupBy groupBy) {
         TenantContext context = TenantContextHolder.require();
-        List<DepartmentCostResponse> costs = queryCostMetrics.byDepartment(
+        UsageMetricsRepository.CostGroupBy resolvedGroup = groupBy == null
+            ? UsageMetricsRepository.CostGroupBy.DEPARTMENT
+            : groupBy;
+        List<CostGroupResponse> costs = queryCostMetrics.byGroup(
                 new DashboardQueryCommand(context.tenantId(), context.userId(),
-                    departmentId, from, to, UsageMetricsRepository.Granularity.DAY))
+                    departmentId, modelId, userId, from, to,
+                    UsageMetricsRepository.Granularity.DAY),
+                resolvedGroup)
             .stream()
-            .map(DepartmentCostResponse::from)
+            .map(CostGroupResponse::from)
             .toList();
         return ResponseEntity.ok(costs);
     }

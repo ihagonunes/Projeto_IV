@@ -42,7 +42,7 @@ class QueryUsageMetricsTest {
             tenantId, new br.com.qsoft.governance.sharedkernel.rbac.VisibilityScope.TenantWide(), deptId, from, to,
             UsageMetricsRepository.Granularity.MONTH);
 
-        when(scopeResolver.resolve(any(), any(), any(), any(), any(), any())).thenReturn(filter);
+        when(scopeResolver.resolve(any(), any(), any(), any(), any(), any(), any(), any())).thenReturn(filter);
         when(metricsRepository.activeUsers(filter)).thenReturn(42L);
 
         List<UsageMetricsRepository.UsageSeriesPoint> seriesPoints = List.of(
@@ -73,7 +73,7 @@ class QueryUsageMetricsTest {
             tenantId, new br.com.qsoft.governance.sharedkernel.rbac.VisibilityScope.TenantWide(),
             null, from, to, UsageMetricsRepository.Granularity.DAY);
 
-        when(scopeResolver.resolve(any(), any(), any(), any(), any(), any())).thenReturn(filter);
+        when(scopeResolver.resolve(any(), any(), any(), any(), any(), any(), any(), any())).thenReturn(filter);
         when(metricsRepository.activeUsers(filter)).thenReturn(10L);
         when(metricsRepository.requestsByPeriod(filter)).thenReturn(List.of());
 
@@ -84,3 +84,4 @@ class QueryUsageMetricsTest {
         assertThat(result.series()).isEmpty();
     }
 }
+
