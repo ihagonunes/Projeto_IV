@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ATLAS · Sprint 3 — estado do projeto, jornada e entregas</title>
+<style>
+  :root{
+    --bg:#f4f7fb; --ink:#0f172a; --muted:#64748b; --card:#fff; --line:#e2e8f0;
+    --brand:#0f766e; --brand-2:#14b8a6; --brand-soft:#ccfbf1;
+    --orange:#f97316; --orange-soft:#ffedd5;
+    --ok:#16a34a; --ok-soft:#dcfce7; --warn:#d97706; --warn-soft:#fef3c7;
+    --bad:#dc2626; --bad-soft:#fee2e2; --info:#2563eb; --info-soft:#dbeafe;
+    --violet:#7c3aed; --violet-soft:#ede9fe;
+    --shadow:0 10px 30px rgba(15,23,42,.07); --radius:16px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; color:var(--ink); line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    background:
+      radial-gradient(1200px 500px at 10% -10%, #dff7f3 0%, transparent 55%),
+      radial-gradient(900px 400px at 95% 0%, #ffe8d6 0%, transparent 50%), var(--bg);
+  }
+  a{color:inherit}
+  .wrap{width:min(1220px, calc(100% - 32px)); margin:0 auto}
+  .hero{position:relative; overflow:hidden; padding:56px 0 34px; color:#e6eefc;
+    background:radial-gradient(900px 350px at 15% -10%, rgba(20,184,166,.35), transparent 60%),
+      radial-gradient(700px 300px at 90% 0%, rgba(249,115,22,.22), transparent 60%), #0b1220;
+    border-bottom:1px solid rgba(255,255,255,.08)}
+  .hero::after{content:""; position:absolute; inset:0; pointer-events:none;
+    background-image:linear-gradient(rgba(255,255,255,.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.045) 1px, transparent 1px);
+    background-size:42px 42px; mask-image:linear-gradient(to bottom, rgba(0,0,0,.55), transparent 85%)}
+  .hero .wrap{position:relative; z-index:1}
+  .eyebrow{display:inline-flex; align-items:center; gap:8px; font-size:.76rem; letter-spacing:.18em;
+    text-transform:uppercase; color:#99f6e4; font-weight:700}
+  .eyebrow::before{content:""; width:26px; height:2px; background:#2dd4bf; display:inline-block}
+  h1{font-size:clamp(1.8rem,3.4vw,3.1rem); line-height:1.1; margin:14px 0 12px; letter-spacing:-.02em}
+  .lead{max-width:880px; color:#c7d2e5; font-size:1.03rem; margin:0 0 26px}
+  .hero-grid{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; margin-top:10px}
+  .hero-kpi{background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
+    border-radius:14px; padding:15px 16px; backdrop-filter:blur(6px)}
+  .hero-kpi strong{display:block; font-size:1.65rem; letter-spacing:-.02em}
+  .hero-kpi span{display:block; color:#9fb0ca; font-size:.78rem; text-transform:uppercase;
+    letter-spacing:.08em; margin-top:4px}
+  .hero-kpi small{display:block; color:#7f93b2; margin-top:8px; font-size:.76rem}
+  .hero-chips{display:flex; flex-wrap:wrap; gap:8px; margin-top:18px}
+  .hero-chip{font-size:.76rem; border:1px solid rgba(255,255,255,.16); background:rgba(255,255,255,.05);
+    color:#d6e2f5; padding:6px 10px; border-radius:999px}
+  .hero-chip b{color:#fff}
+  nav.topnav{position:sticky; top:0; z-index:50; background:rgba(244,247,251,.86);
+    backdrop-filter:blur(10px); border-bottom:1px solid var(--line)}
+  .nav-inner{display:flex; gap:6px; overflow:auto; padding:9px 0}
+  .nav-inner a{text-decoration:none; white-space:nowrap; font-size:.82rem; font-weight:600;
+    color:#475569; padding:7px 11px; border-radius:999px; border:1px solid transparent}
+  .nav-inner a:hover{border-color:var(--line); background:#fff; color:var(--brand)}
+  main{padding:30px 0 70px}
+  section{margin:34px 0 46px; scroll-margin-top:74px}
+  .section-head{display:flex; align-items:flex-end; justify-content:space-between; gap:16px;
+    flex-wrap:wrap; margin-bottom:16px}
+  h2{font-size:1.45rem; margin:0 0 4px; letter-spacing:-.01em}
+  h2 .num{color:var(--brand); font-variant-numeric:tabular-nums}
+  .section-head p{margin:0; color:var(--muted); max-width:760px; font-size:.94rem}
+  h3{font-size:1.02rem; margin:0 0 8px}
+  h4{font-size:.9rem; margin:0 0 6px}
+  p{margin:0 0 10px}
+  small,.small{font-size:.8rem}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.82em;
+    background:#f1f5f9; border:1px solid #e2e8f0; border-radius:6px; padding:1px 5px}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:20px}
+  .grid-2{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px}
+  .grid-3{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px}
+  .grid-4{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px}
+  .stack{display:grid; gap:12px}
+  .chips{display:flex; flex-wrap:wrap; gap:7px}
+  .chip{display:inline-flex; align-items:center; gap:6px; font-size:.74rem; font-weight:700;
+    letter-spacing:.02em; padding:4px 9px; border-radius:999px; border:1px solid transparent}
+  .chip.ok{background:var(--ok-soft); color:#166534; border-color:#bbf7d0}
+  .chip.warn{background:var(--warn-soft); color:#92400e; border-color:#fde68a}
+  .chip.bad{background:var(--bad-soft); color:#991b1b; border-color:#fecaca}
+  .chip.info{background:var(--info-soft); color:#1e40af; border-color:#bfdbfe}
+  .chip.violet{background:var(--violet-soft); color:#5b21b6; border-color:#ddd6fe}
+  .chip.neutral{background:#f1f5f9; color:#475569; border-color:#e2e8f0}
+  .dot{width:8px; height:8px; border-radius:50%; background:currentColor; display:inline-block}
+  .legend{display:flex; flex-wrap:wrap; gap:10px; margin-top:12px}
+  .progress-grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px 26px; margin-top:14px}
+  .progress-row .top{display:flex; justify-content:space-between; font-size:.82rem; margin-bottom:6px}
+  .progress-row .top b{font-variant-numeric:tabular-nums}
+  .bar{height:10px; border-radius:999px; background:#e8eef6; overflow:hidden}
+  .bar > i{display:block; height:100%; width:0; border-radius:999px; transition:width 1s ease;
+    background:linear-gradient(90deg,var(--brand),var(--brand-2))}
+  .bar.warn > i{background:linear-gradient(90deg,#f59e0b,#f97316)}
+  .bar.bad > i{background:linear-gradient(90deg,#ef4444,#dc2626)}
+  .donut-wrap{display:flex; align-items:center; gap:22px; flex-wrap:wrap}
+  .donut{--p:95.5; width:150px; height:150px; border-radius:50%; flex:0 0 auto; display:grid;
+    place-items:center; position:relative; background:conic-gradient(var(--brand) calc(var(--p) * 1%), #e2e8f0 0)}
+  .donut::before{content:""; position:absolute; inset:14px; background:#fff; border-radius:50%}
+  .donut span{position:relative; z-index:1; font-weight:800; font-size:1.5rem; letter-spacing:-.02em}
+  .donut small{position:absolute; bottom:36px; z-index:1; color:var(--muted); font-size:.68rem;
+    text-transform:uppercase; letter-spacing:.08em}
+  .callout{border-left:4px solid var(--brand); background:linear-gradient(90deg,#f0fdfa,#fff);
+    border-radius:10px; padding:12px 14px; font-size:.9rem}
+  .callout.warn{border-left-color:var(--warn); background:linear-gradient(90deg,#fffbeb,#fff)}
+  .callout.bad{border-left-color:var(--bad); background:linear-gradient(90deg,#fef2f2,#fff)}
+  .callout.info{border-left-color:var(--info); background:linear-gradient(90deg,#eff6ff,#fff)}
+  .journey{display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:12px; margin-top:8px}
+  .step{position:relative; background:#fff; border:1px solid var(--line); border-radius:14px;
+    padding:14px 14px 13px; box-shadow:0 6px 18px rgba(15,23,42,.05); display:flex;
+    flex-direction:column; gap:7px; min-height:172px}
+  .step::after{content:""; position:absolute; right:-10px; top:50%; width:16px; height:2px;
+    background:linear-gradient(90deg,#cbd5e1,transparent)}
+  .step:nth-child(5n)::after,.step:last-child::after{display:none}
+  .step .n{width:28px; height:28px; border-radius:9px; display:grid; place-items:center;
+    font-weight:800; font-size:.8rem; background:var(--brand-soft); color:#115e59}
+  .step h4{font-size:.9rem; margin:0; line-height:1.25}
+  .step .who{font-size:.72rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-weight:700}
+  .step p{font-size:.78rem; color:#475569; margin:0}
+  .step .footer{margin-top:auto; display:flex; flex-wrap:wrap; gap:5px}
+  .step.partial{border-color:#fde68a; background:linear-gradient(180deg,#fff,#fffdf5)}
+  .lane-grid{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin-top:14px}
+  .lane{border:1px solid var(--line); border-radius:14px; background:#fff; padding:15px; box-shadow:var(--shadow)}
+  .lane h4{display:flex; align-items:center; gap:8px; margin-bottom:10px}
+  .lane ul{margin:0; padding-left:18px; font-size:.84rem; color:#334155}
+  .lane li{margin:5px 0}
+  .wave-grid{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-bottom:16px}
+  .wave{border:1px solid var(--line); border-radius:14px; background:#fff; padding:14px;
+    display:flex; gap:12px; align-items:flex-start; box-shadow:0 6px 18px rgba(15,23,42,.04)}
+  .wave .letter{width:38px; height:38px; border-radius:11px; flex:0 0 auto; display:grid;
+    place-items:center; font-weight:900; background:var(--brand-soft); color:#115e59; font-size:1rem}
+  .wave.done .letter{background:var(--ok-soft); color:#166534}
+  .wave.pending .letter{background:var(--bad-soft); color:#991b1b}
+  .wave h4{margin:0 0 2px; font-size:.92rem}
+  .wave p{font-size:.78rem; color:var(--muted); margin:0}
+  .filterbar{display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:4px 0 12px}
+  .filterbar button{border:1px solid var(--line); background:#fff; color:#475569; padding:7px 11px;
+    border-radius:999px; font-size:.78rem; font-weight:700; cursor:pointer}
+  .filterbar button.active{background:var(--ink); color:#fff; border-color:var(--ink)}
+  .filterbar .count{margin-left:auto; color:var(--muted); font-size:.8rem}
+  .task-list{display:grid; gap:8px}
+  .task-item{display:grid; grid-template-columns:92px 1.35fr 1.1fr 1fr 132px; gap:12px;
+    align-items:center; background:#fff; border:1px solid var(--line); border-radius:12px;
+    padding:11px 13px; box-shadow:0 4px 14px rgba(15,23,42,.04)}
+  .task-item .id{font-weight:900; font-size:.82rem; letter-spacing:.02em; color:var(--brand)}
+  .task-item .name{font-weight:700; font-size:.86rem}
+  .task-item .evid{font-size:.74rem; color:var(--muted)}
+  .task-item.pending{border-color:#fecaca; background:#fffafa}
+  .task-item.is-hidden{display:none}
+  .pipeline{display:flex; flex-wrap:wrap; gap:8px; align-items:stretch; margin:6px 0 18px}
+  .pnode{flex:1 1 130px; background:#fff; border:1px solid var(--line); border-radius:12px;
+    padding:11px 12px; box-shadow:0 4px 14px rgba(15,23,42,.04); position:relative}
+  .pnode b{display:block; font-size:.8rem}
+  .pnode span{display:block; font-size:.72rem; color:var(--muted); margin-top:2px}
+  .pnode::after{content:"→"; position:absolute; right:-12px; top:50%; transform:translateY(-50%);
+    color:#94a3b8; font-weight:900}
+  .pnode:last-child::after{display:none}
+  .flow{display:grid; gap:12px}
+  .flow-row{display:flex; flex-wrap:wrap; gap:8px; align-items:center}
+  .fnode{border:1px solid var(--line); background:#fff; border-radius:10px; padding:8px 10px;
+    font-size:.76rem; font-weight:700; color:#334155; box-shadow:0 3px 10px rgba(15,23,42,.04)}
+  .fnode.ok{border-color:#bbf7d0; background:var(--ok-soft); color:#166534}
+  .fnode.warn{border-color:#fde68a; background:var(--warn-soft); color:#92400e}
+  .fnode.bad{border-color:#fecaca; background:var(--bad-soft); color:#991b1b}
+  .fnode.info{border-color:#bfdbfe; background:var(--info-soft); color:#1e40af}
+  .fnode.brand{border-color:#99f6e4; background:var(--brand-soft); color:#115e59}
+  .arrow{color:#94a3b8; font-weight:900; font-size:1rem}
+  .feature-grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px}
+  .feature{background:#fff; border:1px solid var(--line); border-radius:14px; padding:16px; box-shadow:var(--shadow)}
+  .feature h4{display:flex; align-items:center; gap:8px}
+  .feature .tag{font-size:.68rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-weight:800}
+  .screen-grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px}
+  .screen{background:#fff; border:1px solid var(--line); border-radius:14px; overflow:hidden; box-shadow:var(--shadow)}
+  .screen .head{display:flex; justify-content:space-between; align-items:center; gap:8px;
+    padding:11px 13px; border-bottom:1px solid var(--line); background:#fbfdff}
+  .screen .head b{font-size:.84rem}
+  .screen .body{padding:12px}
+  .wire{display:grid; gap:7px}
+  .wire .row{display:flex; gap:6px; flex-wrap:wrap}
+  .wire .box{flex:1 1 60px; min-height:26px; border-radius:6px; border:1px solid #e2e8f0;
+    background:linear-gradient(180deg,#f8fafc,#eef2f7); display:flex; align-items:center;
+    justify-content:center; font-size:.62rem; color:#64748b; font-weight:700; text-align:center; padding:3px 4px}
+  .wire .box.green{background:var(--ok-soft); border-color:#bbf7d0; color:#166534}
+  .wire .box.blue{background:var(--info-soft); border-color:#bfdbfe; color:#1e40af}
+  .wire .box.red{background:var(--bad-soft); border-color:#fecaca; color:#991b1b}
+  .wire .box.orange{background:var(--orange-soft); border-color:#fed7aa; color:#9a3412}
+  .wire .box.tall{min-height:58px}
+  .wire .line{height:7px; border-radius:999px; background:#e2e8f0}
+  .wire .line.s{width:55%}
+  .wire .line.m{width:78%}
+  .screen .foot{padding:9px 13px; border-top:1px solid var(--line); font-size:.72rem;
+    color:var(--muted); background:#fbfdff}
+  .arch-grid{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px}
+  .module{border:1px solid var(--line); border-radius:12px; background:#fff; padding:12px;
+    box-shadow:0 4px 14px rgba(15,23,42,.04)}
+  .module b{display:block; font-size:.84rem}
+  .module span{display:block; font-size:.72rem; color:var(--muted); margin-top:3px}
+  .module.core{border-color:#99f6e4; background:#f0fdfa}
+  .module.iam{border-color:#bfdbfe; background:#f8fbff}
+  .module.obs{border-color:#fde68a; background:#fffdf5}
+  .module.ai{border-color:#ddd6fe; background:#faf8ff}
+  .module.front{border-color:#fed7aa; background:#fffaf5}
+  .security-grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px}
+  .check{display:flex; gap:10px; align-items:flex-start; background:#fff; border:1px solid var(--line);
+    border-radius:12px; padding:12px 13px; box-shadow:0 4px 14px rgba(15,23,42,.04); font-size:.84rem}
+  .check .mark{width:24px; height:24px; flex:0 0 auto; border-radius:8px; display:grid;
+    place-items:center; background:var(--ok-soft); color:#166534; font-weight:900}
+  table{width:100%; border-collapse:collapse; background:#fff; border:1px solid var(--line);
+    border-radius:12px; overflow:hidden}
+  th,td{padding:10px 12px; text-align:left; font-size:.8rem; border-bottom:1px solid var(--line); vertical-align:top}
+  th{background:#f8fafc; color:#475569; font-size:.72rem; text-transform:uppercase; letter-spacing:.06em}
+  tr:last-child td{border-bottom:none}
+  td.num,th.num{text-align:right; font-variant-numeric:tabular-nums}
+  .table-wrap{overflow:auto; border-radius:12px}
+  .kpi-row{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-bottom:14px}
+  .kpi{background:#fff; border:1px solid var(--line); border-radius:14px; padding:14px; box-shadow:var(--shadow)}
+  .kpi strong{display:block; font-size:1.55rem; letter-spacing:-.02em}
+  .kpi span{display:block; font-size:.72rem; text-transform:uppercase; letter-spacing:.08em;
+    color:var(--muted); font-weight:700; margin-top:3px}
+  .kpi small{display:block; color:var(--muted); margin-top:6px; font-size:.74rem}
+  .timeline{position:relative; margin-left:10px; padding-left:24px}
+  .timeline::before{content:""; position:absolute; left:6px; top:6px; bottom:6px; width:2px;
+    background:linear-gradient(#14b8a6,#f97316)}
+  .commit{position:relative; margin:0 0 14px}
+  .commit::before{content:""; position:absolute; left:-24px; top:5px; width:12px; height:12px;
+    border-radius:50%; background:#fff; border:3px solid var(--brand)}
+  .commit .top{display:flex; flex-wrap:wrap; gap:8px; align-items:baseline}
+  .commit .hash{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.76rem;
+    background:#f1f5f9; border:1px solid var(--line); padding:2px 6px; border-radius:6px}
+  .commit .title{font-weight:800; font-size:.88rem}
+  .commit .stats{color:var(--muted); font-size:.75rem}
+  .commit .bar{height:6px; margin-top:7px; background:#eef2f7}
+  .commit .bar > i{background:linear-gradient(90deg,#14b8a6,#0ea5e9)}
+  .pending-grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px}
+  .pending-card{border:1px solid var(--line); border-radius:14px; background:#fff; padding:15px; box-shadow:var(--shadow)}
+  .pending-card h4{display:flex; justify-content:space-between; gap:8px; align-items:center}
+  .pending-card p{font-size:.82rem; color:#475569; margin:6px 0 0}
+  .risk-list{display:grid; gap:8px; margin-top:12px}
+  .risk{display:grid; grid-template-columns:76px 1fr; gap:10px; align-items:start; background:#fff;
+    border:1px solid var(--line); border-radius:10px; padding:10px 12px; font-size:.82rem}
+  .risk .sev{font-size:.68rem; font-weight:900; text-transform:uppercase; letter-spacing:.06em;
+    text-align:center; padding:3px 4px; border-radius:6px}
+  .sev.alta{background:var(--bad-soft); color:#991b1b}
+  .sev.media{background:var(--warn-soft); color:#92400e}
+  .sev.baixa{background:var(--info-soft); color:#1e40af}
+  .next{display:grid; gap:8px; counter-reset:item; margin:0; padding:0; list-style:none}
+  .next li{counter-increment:item; display:flex; gap:10px; align-items:flex-start; background:#fff;
+    border:1px solid var(--line); border-radius:10px; padding:10px 12px; font-size:.84rem}
+  .next li::before{content:counter(item); flex:0 0 auto; width:22px; height:22px; border-radius:7px;
+    background:var(--ink); color:#fff; font-size:.72rem; font-weight:800; display:grid; place-items:center}
+  .footer{border-top:1px solid var(--line); padding:22px 0 34px; color:var(--muted); font-size:.78rem}
+  .footer b{color:#334155}
+  .divider{height:1px; background:var(--line); margin:18px 0}
+  .muted{color:var(--muted)}
+  .mini-legend{display:flex; gap:12px; flex-wrap:wrap; font-size:.74rem; color:var(--muted); margin-top:8px}
+  .mini-legend span{display:inline-flex; gap:6px; align-items:center}
+  .mini-legend i{width:9px; height:9px; border-radius:3px; display:inline-block}
+  @media (max-width:1050px){
+    .hero-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .journey{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .step:nth-child(5n)::after{display:block}
+    .step:nth-child(3n)::after{display:none}
+    .arch-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  }
+  @media (max-width:820px){
+    .grid-2,.grid-3,.grid-4,.feature-grid,.screen-grid,.security-grid,.pending-grid{grid-template-columns:1fr}
+    .journey{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .step:nth-child(3n)::after{display:block}
+    .step:nth-child(2n)::after{display:none}
+    .lane-grid,.wave-grid{grid-template-columns:1fr}
+    .kpi-row{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .task-item{grid-template-columns:1fr 1fr; gap:6px 12px}
+    .task-item .evid{grid-column:1/-1}
+    .progress-grid{grid-template-columns:1fr}
+    .arch-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  }
+  @media (max-width:520px){
+    .hero-grid,.journey,.kpi-row,.arch-grid{grid-template-columns:1fr}
+    .step::after{display:none}
+    .task-item{grid-template-columns:1fr}
+  }
+  @media print{
+    nav.topnav{display:none}
+    body{background:#fff}
+    .card,.step,.task-item,.screen,.feature,.pending-card{box-shadow:none}
+    section{page-break-inside:avoid}
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">ATLAS · QSOFT · Sprint 3 · 20/10/2026</div>
+    <h1>Estado do projeto, jornada do cliente e o que foi entregue</h1>
+    <p class="lead">
+      Um mapa visual da Sprint 3 do monólito modular: o que o cliente já consegue fazer, o que está
+      por trás de cada tela, onde a implementação está blindada e o que ainda falta para a demonstração.
+      A leitura vai do <b>produto</b> para o <b>código</b>, e do <b>código</b> para as <b>evidências</b>.
+    </p>
+    <div class="hero-grid">
+      <div class="hero-kpi"><strong>21 / 22</strong><span>tasks do packet</span><small>95,5% · falta só a D2 (UI do chat, Lyn)</small></div>
+      <div class="hero-kpi"><strong>967</strong><span>testes verdes</span><small>806 unitários + 161 de integração</small></div>
+      <div class="hero-kpi"><strong>9</strong><span>commits nesta rodada</span><small>B1 → F6 + revisão · 84 arquivos</small></div>
+      <div class="hero-kpi"><strong>12 / 12</strong><span>endpoints da sprint</span><small>backend completo; a lacuna é só UI</small></div>
+    </div>
+    <div class="hero-chips">
+      <span class="hero-chip">branch <b>IhanDevelopment</b></span>
+      <span class="hero-chip">último commit <b>f28a271</b></span>
+      <span class="hero-chip">suite <b>BUILD SUCCESS</b></span>
+      <span class="hero-chip">migrations <b>V015–V019</b></span>
+      <span class="hero-chip">V020 <b>não necessária</b></span>
+      <span class="hero-chip">tenant <b>sempre do JWT</b></span>
+    </div>
+  </div>
+</header>
+
+<nav class="topnav" aria-label="Navegação do relatório">
+  <div class="wrap nav-inner">
+    <a href="#overview">Visão geral</a>
+    <a href="#jornada">Jornada do cliente</a>
+    <a href="#sprint3">Sprint 3</a>
+    <a href="#arquitetura">Arquitetura</a>
+    <a href="#backend">Backend</a>
+    <a href="#front">Frontend</a>
+    <a href="#seguranca">Segurança</a>
+    <a href="#testes">Testes</a>
+    <a href="#commits">Commits</a>
+    <a href="#pendentes">Pendências</a>
+  </div>
+</nav>
+
+<main class="wrap">
+  <section id="overview">
+    <div class="section-head">
+      <div>
+        <h2><span class="num">01.</span> Leitura executiva</h2>
+        <p>O que está pronto, o que está bloqueado e como o valor chega ao cliente.</p>
+      </div>
+      <div class="chips">
+        <span class="chip ok"><span class="dot"></span> pronto</span>
+        <span class="chip warn"><span class="dot"></span> parcial</span>
+        <span class="chip bad"><span class="dot"></span> bloqueado</span>
+        <span class="chip violet"><span class="dot"></span> decisão</span>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="donut-wrap">
+          <div class="donut" style="--p:95.5" role="img" aria-label="95,5 por cento da Sprint 3 concluída">
+            <span>95,5%</span><small>sprint 3</small>
+          </div>
+          <div style="flex:1; min-width:220px">
+            <h3>O caminho está aberto até a demonstração</h3>
+            <p class="small muted">
+              Todo o backend da Sprint 3 está entregue. O único item do packet sem código é a
+              <b>UI do recibo do chat (D2)</b>, que pertence à Lyn e não existe neste repositório.
+            </p>
+            <div class="chips">
+              <span class="chip ok">backend 100%</span>
+              <span class="chip ok">docs 100%</span>
+              <span class="chip ok">testes 100%</span>
+              <span class="chip warn">front 90%</span>
+            </div>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <div class="progress-grid">
+          <div class="progress-row"><div class="top"><span>Backend / API</span><b>100%</b></div><div class="bar"><i data-w="100"></i></div></div>
+          <div class="progress-row"><div class="top"><span>Frontend entregue</span><b>90%</b></div><div class="bar warn"><i data-w="90"></i></div></div>
+          <div class="progress-row"><div class="top"><span>Documentação canônica</span><b>100%</b></div><div class="bar"><i data-w="100"></i></div></div>
+          <div class="progress-row"><div class="top"><span>Testes / evidências</span><b>100%</b></div><div class="bar"><i data-w="100"></i></div></div>
+          <div class="progress-row"><div class="top"><span>Segurança / isolamento</span><b>100%</b></div><div class="bar"><i data-w="100"></i></div></div>
+          <div class="progress-row"><div class="top"><span>Sprint 3 (packet)</span><b>95,5%</b></div><div class="bar warn"><i data-w="95.5"></i></div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>O que mudou nesta rodada</h3>
+        <div class="stack">
+          <div class="check"><span class="mark">✓</span><div><b>Orçamento mensal por departamento</b><br><span class="small muted">V016, domínio, API, status orçado × realizado e tela de administração.</span></div></div>
+          <div class="check"><span class="mark">✓</span><div><b>Dashboard por modelo e usuário</b><br><span class="small muted">groupBy, filtros combinados, RBAC por escopo e seletor de agrupamento.</span></div></div>
+          <div class="check"><span class="mark">✓</span><div><b>Estados vazios e custo conhecido</b><br><span class="small muted">“Sem dados no período”, 401/403/5xx/timeout e contador de inconclusivos via RF047.</span></div></div>
+          <div class="check"><span class="mark">✓</span><div><b>Convites, usuários e onboarding reais</b><br><span class="small muted">Menus por <code>/me/permissoes</code>, papéis de <code>/papeis</code>, link único e concessões.</span></div></div>
+          <div class="check"><span class="mark">✓</span><div><b>Documentação e correções de segurança</b><br><span class="small muted">Matriz de permissões, contrato da API, 404 cross-tenant e XSS em notificações.</span></div></div>
+        </div>
+        <div class="divider"></div>
+        <div class="callout warn">
+          <b>Único bloqueio de produto:</b> a D2 (recibo na UI do chat) depende do componente SPI-136,
+          reservado à Lyn. O backend do chat/recibo já está pronto desde a D1.
+        </div>
+      </div>
+    </div>
+
+    <div class="legend" aria-label="Legenda de status">
+      <span class="chip ok"><span class="dot"></span> concluído e verificado</span>
+      <span class="chip warn"><span class="dot"></span> parcial / requer configuração</span>
+      <span class="chip bad"><span class="dot"></span> bloqueado por dependência</span>
+      <span class="chip violet"><span class="dot"></span> pendente de decisão</span>
+      <span class="chip info"><span class="dot"></span> evidência técnica</span>
+    </div>
+  </section>
+
+  <section id="jornada">
+    <div class="section-head">
+      <div>
+        <h2><span class="num">02.</span> Jornada do cliente</h2>
+        <p>Do primeiro acesso à governança do uso de IA. Cada etapa mostra quem age, o que o cliente vê e qual task sustenta.</p>
+      </div>
+      <div class="chips"><span class="chip ok">9 etapas prontas</span><span class="chip warn">1 etapa parcial</span></div>
+    </div>
+
+    <div class="journey">
+      <div class="step"><div class="n">1</div><div class="who">Visitante</div><h4>Registrar a empresa</h4><p>Nome, slug, domínio e dados do administrador. O registrante vira <code>TENANT_ADMIN</code>.</p><div class="footer"><span class="chip ok">A4 · A9</span><span class="chip neutral">POST /tenants</span></div></div>
+      <div class="step"><div class="n">2</div><div class="who">Administrador</div><h4>Entrar no tenant</h4><p>Login por e-mail e senha; <code>tenantSlug</code> é opcional e o tenant vem do domínio (ADR-32).</p><div class="footer"><span class="chip ok">A4 · ADR-32</span><span class="chip neutral">/auth/login</span></div></div>
+      <div class="step"><div class="n">3</div><div class="who">Administrador</div><h4>Organizar departamentos</h4><p>CRUD com escopo: o gestor só enxerga o departamento da concessão; o admin vê o tenant.</p><div class="footer"><span class="chip ok">A3</span><span class="chip neutral">/departamentos</span></div></div>
+      <div class="step"><div class="n">4</div><div class="who">Admin / Gestor</div><h4>Convidar pessoas</h4><p>E-mail + papel (de <code>/papeis</code>) + departamento. O link com token aparece uma única vez.</p><div class="footer"><span class="chip ok">A5 · A9</span><span class="chip neutral">/convites</span></div></div>
+      <div class="step"><div class="n">5</div><div class="who">Convidado</div><h4>Aceitar e definir senha</h4><p>O aceite revalida a autoridade do convidante e cria a concessão com escopo.</p><div class="footer"><span class="chip ok">A5</span><span class="chip neutral">/convites/aceitar</span></div></div>
+      <div class="step"><div class="n">6</div><div class="who">Administrador</div><h4>Configurar a IA</h4><p>Provider, modelo e política por departamento. O demo roda com <code>STUB</code>; o provider real depende de decisão.</p><div class="footer"><span class="chip ok">C1</span><span class="chip warn">provider real</span></div></div>
+      <div class="step partial"><div class="n">7</div><div class="who">Colaborador</div><h4>Conversar com recibo</h4><p>Backend de chat privado e recibo prontos. Falta a UI exibir modelo, tokens, custo e latência.</p><div class="footer"><span class="chip ok">D1</span><span class="chip bad">D2 · Lyn</span></div></div>
+      <div class="step"><div class="n">8</div><div class="who">Colaborador</div><h4>Perguntar ao agente</h4><p>Recuperação restrita ao tenant/departamento, fontes citadas e ferramentas da allowlist.</p><div class="footer"><span class="chip ok">E1 · E2</span><span class="chip neutral">/agente-politicas</span></div></div>
+      <div class="step"><div class="n">9</div><div class="who">Gestor</div><h4>Ver o dashboard do escopo</h4><p>Só o departamento do gestor; o colaborador vê o próprio uso; o admin vê o tenant. Custos por modelo/usuário.</p><div class="footer"><span class="chip ok">A3 · F1 · F2</span><span class="chip neutral">/observability</span></div></div>
+      <div class="step"><div class="n">10</div><div class="who">Admin / Gestor</div><h4>Governar o orçamento</h4><p>Orçamento por mês, limiar customizado, status OK/Alerta/Excedido. Alerta, nunca bloqueia.</p><div class="footer"><span class="chip ok">B1–B3</span><span class="chip neutral">/orcamentos</span></div></div>
+    </div>
+
+    <div class="callout bad" style="margin-top:14px">
+      <b>Onde a jornada para:</b> na etapa 7, a tela do chat ainda não existe neste repositório.
+      O recibo já é devolvido pelo backend (<code>requestId</code>, modelo, provider, tokens, custo,
+      <code>statusCusto</code>, latência); falta a camada visual da Lyn.
+    </div>
+
+    <div class="lane-grid">
+      <div class="lane"><h4><span class="chip info">Admin</span> vê o tenant</h4><ul><li>Registra a empresa e vira <code>TENANT_ADMIN</code>.</li><li>Convida/revoga; define papéis e departamentos.</li><li>Vê todos os departamentos, custos e orçamento.</li><li>Único que atribui/revoga concessões (<code>ROLE:MANAGE</code>).</li></ul></div>
+      <div class="lane"><h4><span class="chip ok">Gestor</span> vê o departamento</h4><ul><li>Concessão <code>DEPARTMENT</code> com posto MANAGER/LEADER.</li><li>Lê usuários e custos só do departamento da concessão.</li><li>Pode convidar COLLABORATOR/LEADER no próprio escopo.</li><li>Bloqueado (403) ao tentar outro departamento ou se auto-promover.</li></ul></div>
+      <div class="lane"><h4><span class="chip neutral">Colaborador</span> vê a si</h4><ul><li>Entra por convite e recebe concessão <code>SELF</code>.</li><li>Usa chat e agente; vê apenas o próprio uso.</li><li>Não lista usuários nem administra o tenant (403).</li><li>O teto de CHAT é sempre <code>SELF</code>.</li></ul></div>
+    </div>
+  </section>
+
+  <section id="sprint3">
+    <div class="section-head">
+      <div>
+        <h2><span class="num">03.</span> Sprint 3 — ondas, tasks e evidências</h2>
+        <p>Sete ondas (A–F), 22 tasks no packet e 1 fix extra (F6). Use os filtros para separar o pronto do que falta.</p>
+      </div>
+      <div class="chips"><span class="chip ok">21 concluídas</span><span class="chip bad">1 bloqueada</span><span class="chip info">+ F6</span></div>
+    </div>
+
+    <div class="wave-grid">
+      <div class="wave done"><div class="letter">A</div><div><h4>Autorização com escopo</h4><p>10/10 · V015, avaliador, convites, concessões, front e docs</p></div></div>
+      <div class="wave done"><div class="letter">B</div><div><h4>Orçamento</h4><p>3/3 · domínio, status 80/100 e tela de administração</p></div></div>
+      <div class="wave done"><div class="letter">C</div><div><h4>Execução de IA</h4><p>3/3 · provider, entrega idempotente e RF047</p></div></div>
+      <div class="wave pending"><div class="letter">D</div><div><h4>Chat privado</h4><p>1/2 · backend e recibo prontos; UI com a Lyn</p></div></div>
+      <div class="wave done"><div class="letter">E</div><div><h4>Agente de políticas</h4><p>2/2 · recuperação segura, ferramentas e endpoint</p></div></div>
+      <div class="wave done"><div class="letter">F</div><div><h4>Dashboard e performance</h4><p>2/2 · groupBy, filtros, estados vazios e EXPLAIN</p></div></div>
+    </div>
+
+    <div class="filterbar" role="group" aria-label="Filtrar tasks">
+      <button type="button" data-filter="all" class="active">Todas <span class="small">(22)</span></button>
+      <button type="button" data-filter="done">Concluídas <span class="small">(21)</span></button>
+      <button type="button" data-filter="pending">Pendentes <span class="small">(1)</span></button>
+      <span class="count" id="taskCount">22 de 22 visíveis</span>
+    </div>
+
+    <div class="task-list" id="taskList">
+      <div class="task-item" data-status="done"><div class="id">A1</div><div><div class="name">V015 + domínio de concessão</div><div class="jira">SPI-43 · iam / sharedkernel</div></div><div class="mod">Escopo persistido, 5 papéis, migração legada</div><div><span class="chip ok">concluída</span></div><div class="evid">af67bc3</div></div>
+      <div class="task-item" data-status="done"><div class="id">A2</div><div><div class="name">Avaliador com alvo e gate fechado</div><div class="jira">SPI-42 · iam</div></div><div class="mod">isAllowed / visibilityFor / Targeting</div><div><span class="chip ok">concluída</span></div><div class="evid">a64f080</div></div>
+      <div class="task-item" data-status="done"><div class="id">A3</div><div><div class="name">Escopo no observability e departamentos</div><div class="jira">SPI-94 · observability</div></div><div class="mod">Filtros fora do escopo → 403</div><div><span class="chip ok">concluída</span></div><div class="evid">07774db</div></div>
+      <div class="task-item" data-status="done"><div class="id">A4</div><div><div class="name">Bootstrap do admin e fixtures</div><div class="jira">SPI-169 · iam</div></div><div class="mod">Registrante vira TENANT_ADMIN</div><div><span class="chip ok">concluída</span></div><div class="evid">73788e1</div></div>
+      <div class="task-item" data-status="done"><div class="id">A5</div><div><div class="name">Convite com concessão</div><div class="jira">SPI-46 · iam</div></div><div class="mod">Token em hash, revalidação no aceite</div><div><span class="chip ok">concluída</span></div><div class="evid">7edd2ac</div></div>
+      <div class="task-item" data-status="done"><div class="id">A6</div><div><div class="name">Endpoints de concessão</div><div class="jira">SPI-47 · iam</div></div><div class="mod">/papeis e concessões com guardas</div><div><span class="chip ok">concluída</span></div><div class="evid">adcf28f</div></div>
+      <div class="task-item" data-status="done"><div class="id">A7</div><div><div class="name">Guardas de gestão de usuários</div><div class="jira">SPI-170 · iam</div></div><div class="mod">Dominância, último admin, auto-alvo</div><div><span class="chip ok">concluída</span></div><div class="evid">b505e19</div></div>
+      <div class="task-item" data-status="done"><div class="id">A8</div><div><div class="name">Remoção da trilha legada</div><div class="jira">SPI-44 · iam</div></div><div class="mod">Sem AuthorizationScope; ArchUnit</div><div><span class="chip ok">concluída</span></div><div class="evid">7b00539</div></div>
+      <div class="task-item" data-status="done"><div class="id">A9</div><div><div class="name">Front de autorização</div><div class="jira">SPI-48 · frontend</div></div><div class="mod">Onboarding, menus, convites, concessões</div><div><span class="chip ok">concluída</span></div><div class="evid">b69972f + f28a271</div></div>
+      <div class="task-item" data-status="done"><div class="id">A10</div><div><div class="name">Documentação da autorização</div><div class="jira">SPI-51 · docs</div></div><div class="mod">Emendas ADR-04/30/33/34, matriz, contrato</div><div><span class="chip ok">concluída</span></div><div class="evid">a1fdf49</div></div>
+
+      <div class="task-item" data-status="done"><div class="id">B1</div><div><div class="name">Orçamento mensal no department</div><div class="jira">SPI-118/119/122/125 · department</div></div><div class="mod">V016, domínio, upsert e histórico</div><div><span class="chip ok">concluída</span></div><div class="evid">40c3240</div></div>
+      <div class="task-item" data-status="done"><div class="id">B2</div><div><div class="name">Status de orçamento no observability</div><div class="jira">SPI-120/123/126 · observability</div></div><div class="mod">Orçado × realizado, 80/100, janela UTC</div><div><span class="chip ok">concluída</span></div><div class="evid">38b4d5f</div></div>
+      <div class="task-item" data-status="done"><div class="id">B3</div><div><div class="name">Front de orçamento e alerta</div><div class="jira">SPI-121/124 · frontend</div></div><div class="mod">Mês, edição inline, histórico 12m, card</div><div><span class="chip ok">concluída</span></div><div class="evid">9faf00a</div></div>
+
+      <div class="task-item" data-status="done"><div class="id">C1</div><div><div class="name">Provider e tentativa durável</div><div class="jira">SPI-171/127 · aigateway</div></div><div class="mod">STUB + HTTP sem SDK, V017</div><div><span class="chip ok">concluída</span></div><div class="evid">d892ba2</div></div>
+      <div class="task-item" data-status="done"><div class="id">C2</div><div><div class="name">Entrega idempotente de uso</div><div class="jira">SPI-171 · aigateway/observability</div></div><div class="mod">Retry, lease, request_id único</div><div><span class="chip ok">concluída</span></div><div class="evid">80c7a22</div></div>
+      <div class="task-item" data-status="done"><div class="id">C3</div><div><div class="name">Consulta de tentativas (RF047)</div><div class="jira">SPI-171 · aigateway</div></div><div class="mod">Paginação, filtros e escopo</div><div><span class="chip ok">concluída</span></div><div class="evid">f5bb37a</div></div>
+
+      <div class="task-item" data-status="done"><div class="id">D1</div><div><div class="name">Backend do chat privado</div><div class="jira">SPI-172 · chat</div></div><div class="mod">Conversas, mensagens e recibo</div><div><span class="chip ok">concluída</span></div><div class="evid">c45a36f</div></div>
+      <div class="task-item pending" data-status="pending"><div class="id">D2</div><div><div class="name">Recibo na UI do chat</div><div class="jira">SPI-134/136 · frontend (Lyn)</div></div><div class="mod">Componente SPI-136 não existe no repo</div><div><span class="chip bad">bloqueada</span> <span class="chip violet">decisão</span></div><div class="evid">aguarda Lyn</div></div>
+
+      <div class="task-item" data-status="done"><div class="id">E1</div><div><div class="name">Conhecimento e recuperação segura</div><div class="jira">SPI-128/129 · agentpolicies</div></div><div class="mod">Busca nativa, escopo de departamento</div><div><span class="chip ok">concluída</span></div><div class="evid">819107d</div></div>
+      <div class="task-item" data-status="done"><div class="id">E2</div><div><div class="name">Agente, ferramentas e endpoint</div><div class="jira">SPI-132/135 · agentpolicies</div></div><div class="mod">Allowlist, fontes, recibo, erros</div><div><span class="chip ok">concluída</span></div><div class="evid">f9119ec</div></div>
+
+      <div class="task-item" data-status="done"><div class="id">F1</div><div><div class="name">Dashboard por modelo e usuário</div><div class="jira">SPI-97–100/113–116 · observability</div></div><div class="mod">groupBy, filtros, RBAC e front</div><div><span class="chip ok">concluída</span></div><div class="evid">5c60442</div></div>
+      <div class="task-item" data-status="done"><div class="id">F2</div><div><div class="name">Estados vazios e performance</div><div class="jira">SPI-95/101/117 · observability/front</div></div><div class="mod">401/403/5xx/timeout, inconclusivos, EXPLAIN</div><div><span class="chip ok">concluída</span></div><div class="evid">37cb206</div></div>
+      <div class="task-item" data-status="done"><div class="id">F6</div><div><div class="name">Convite de outro tenant → 404</div><div class="jira">SPI-59 · iam (fix extra)</div></div><div class="mod">Reenviar/DELETE sem revelar existência</div><div><span class="chip ok">concluída</span></div><div class="evid">1e28fc4</div></div>
+    </div>
+  </section>
+
+  <section id="arquitetura">
+    <div class="section-head">
+      <div>
+        <h2><span class="num">04.</span> Arquitetura em um olhar</h2>
+        <p>Monólito modular: cada módulo é dono do seu domínio; comunicação por <code>api.*</code>/IDs/eventos, sem FK cross-module.</p>
+      </div>
+      <div class="chips"><span class="chip ok">ArchUnit verde</span><span class="chip info">sem dependência nova</span></div>
+    </div>
+
+    <div class="card">
+      <div class="arch-grid">
+        <div class="module core"><b>sharedkernel</b><span>IDs, TenantContext, eventos e vocabulário RBAC (Resource/Action/Scope/AccessTarget/VisibilityScope)</span></div>
+        <div class="module iam"><b>iam</b><span>Tenant, User, auth, papéis e concessões com escopo</span></div>
+        <div class="module"><b>department</b><span>Department, orçamento mensal (BudgetLimit), ModelPolicy</span></div>
+        <div class="module ai"><b>aigateway</b><span>Provider, Model, tentativas duráveis, completion</span></div>
+        <div class="module ai"><b>chat</b><span>Conversation, Message, recibo privado</span></div>
+        <div class="module ai"><b>agentpolicies</b><span>KnowledgeDocument, agentes, recuperação segura</span></div>
+        <div class="module obs"><b>observability</b><span>UsageRecord, custo real, BudgetStatus calculado</span></div>
+        <div class="module front"><b>frontend</b><span>Express/EJS + proxy /api + telas por escopo</span></div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="grid-2">
+        <div>
+          <h4>Allowlist que o ArchUnit protege</h4>
+          <div class="flow">
+            <div class="flow-row"><span class="fnode brand">iam</span><span class="arrow">→</span><span class="fnode">sharedkernel</span></div>
+            <div class="flow-row"><span class="fnode brand">department</span><span class="arrow">→</span><span class="fnode">sharedkernel + iam.api</span></div>
+            <div class="flow-row"><span class="fnode brand">observability</span><span class="arrow">→</span><span class="fnode">sharedkernel + iam.api + department.api</span></div>
+            <div class="flow-row"><span class="fnode brand">chat / agentpolicies</span><span class="arrow">→</span><span class="fnode">aigateway.api + iam.api</span></div>
+            <div class="flow-row"><span class="fnode bad">proibido</span><span class="arrow">→</span><span class="fnode">domain/application/infrastructure de outro módulo</span></div>
+          </div>
+        </div>
+        <div class="callout info">
+          <b>Orçamento é meta; custo é fato.</b><br>
+          O <code>department</code> é dono do orçamento mensal. O <code>observability</code> é dono do
+          custo real e calcula o status na leitura. A ligação é o contrato
+          <code>DepartmentBudgetQuery.budgetFor/budgetsFor</code>, por ID — sem FK e sem cópia local.
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <h4>Fluxo do orçamento até a tela</h4>
+      <div class="flow">
+        <div class="flow-row">
+          <span class="fnode info">PUT /departamentos/{id}/orcamentos/{mes}</span><span class="arrow">→</span>
+          <span class="fnode">MonthlyBudget (V016)</span><span class="arrow">→</span>
+          <span class="fnode">BudgetResolution</span><span class="arrow">→</span>
+          <span class="fnode">QueryBudgetStatus</span><span class="arrow">→</span>
+          <span class="fnode warn">custo real (SQL [from,to))</span><span class="arrow">→</span>
+          <span class="fnode ok">OK / ALERTA / EXCEDIDO / SEM_ORCAMENTO</span>
+        </div>
+        <div class="flow-row">
+          <span class="fnode">linha do mês</span><span class="arrow">›</span>
+          <span class="fnode">monthly_budget padrão (limiar 80)</span><span class="arrow">›</span>
+          <span class="fnode bad">sem orçamento (nunca zero)</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="backend">
+    <div class="section-head">
+      <div>
+        <h2><span class="num">05.</span> Backend — o que foi construído</h2>
+        <p>Fluxos reais, com as camadas e as decisões de segurança que sustentam cada entrega.</p>
+      </div>
+      <div class="chips"><span class="chip ok">12/12 endpoints</span><span class="chip info">V016 nova</span><span class="chip info">sem V020</span></div>
+    </div>
+
+    <div class="pipeline" aria-label="Pipeline de implementação">
+      <div class="pnode"><b>Jira / SPEC</b><span>critério de aceite</span></div>
+      <div class="pnode"><b>Domain</b><span>regra sem Spring</span></div>
+      <div class="pnode"><b>Application</b><span>caso de uso + port</span></div>
+      <div class="pnode"><b>API</b><span>REST + autorização</span></div>
+      <div class="pnode"><b>Persistence</b><span>JPA/SQL + tenant</span></div>
+      <div class="pnode"><b>Tests</b><span>unit + IT + ArchUnit</span></div>
+      <div class="pnode"><b>Front</b><span>BFF + EJS</span></div>
+    </div>
+
+    <div class="feature-grid">
+      <div class="feature">
+        <h4>Orçamento mensal <span class="tag">B1/B2</span></h4>
+        <p class="small muted">Upsert por mês, resolução do valor efetivo e status calculado na leitura (sem tabela de alerta).</p>
+        <div class="flow">
+          <div class="flow-row"><span class="fnode info">PUT mês</span><span class="arrow">→</span><span class="fnode">department_monthly_budgets</span><span class="arrow">→</span><span class="fnode ok">linha própria</span></div>
+          <div class="flow-row"><span class="fnode">senão monthly_budget</span><span class="arrow">→</span><span class="fnode warn">padrão, limiar 80</span></div>
+          <div class="flow-row"><span class="fnode">senão</span><span class="arrow">→</span><span class="fnode bad">SEM_ORCAMENTO</span></div>
+        </div>
+        <div class="mini-legend">
+          <span><i style="background:#16a34a"></i>OK &lt; limiar</span>
+          <span><i style="background:#d97706"></i>ALERTA ≥ limiar</span>
+          <span><i style="background:#dc2626"></i>EXCEDIDO ≥ 100%</span>
+        </div>
+      </div>
+
+      <div class="feature">
+        <h4>Custos por dimensão <span class="tag">F1</span></h4>
+        <p class="small muted">Mesma consulta nativa, com coluna de agrupamento whitelisted e escopo validado antes do SQL.</p>
+        <div class="flow">
+          <div class="flow-row"><span class="fnode info">DashboardScopeResolver</span><span class="arrow">→</span><span class="fnode">visibilityFor(USAGE:READ)</span></div>
+          <div class="flow-row"><span class="fnode">userId?</span><span class="arrow">→</span><span class="fnode warn">IdentityQuery + cobertura</span><span class="arrow">→</span><span class="fnode bad">403 se fora</span></div>
+          <div class="flow-row"><span class="fnode brand">SQL GROUP BY</span><span class="arrow">→</span><span class="fnode">CostGroupResponse</span><span class="arrow">→</span><span class="fnode ok">front resolve nomes</span></div>
+        </div>
+        <p class="small muted" style="margin-top:8px">O observability não depende do aigateway: devolve IDs; o catálogo do front resolve os rótulos.</p>
+      </div>
+
+      <div class="feature">
+        <h4>Custo conhecido + inconclusivos <span class="tag">F2</span></h4>
+        <p class="small muted">O alerta não bloqueia e o custo incerto não vira zero: o front mostra “custo conhecido” e o contador da RF047.</p>
+        <div class="flow">
+          <div class="flow-row"><span class="fnode warn">tentativa INCONCLUSIVE</span><span class="arrow">→</span><span class="fnode">RF047 ?costStatus=INCONCLUSIVE</span></div>
+          <div class="flow-row"><span class="fnode">totalElements</span><span class="arrow">→</span><span class="fnode ok">“N tentativa(s) fora do custo”</span></div>
+          <div class="flow-row"><span class="fnode bad">sem RF047</span><span class="arrow">→</span><span class="fnode">contador oculto</span></div>
+        </div>
+      </div>
+
+      <div class="feature">
+        <h4>Convite de outro tenant <span class="tag">F6</span></h4>
+        <p class="small muted">Reenviar ou revogar um convite de outro tenant não revela existência: vira 404, não 400.</p>
+        <div class="flow">
+          <div class="flow-row"><span class="fnode info">Resend / Revoke</span><span class="arrow">→</span><span class="fnode">findById + tenant</span><span class="arrow">→</span><span class="fnode bad">InviteNotFound</span><span class="arrow">→</span><span class="fnode ok">404</span></div>
+        </div>
+        <p class="small muted" style="margin-top:8px">Convite aceito/estado inválido continua 400; outro tenant é 404.</p>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <h3>Endpoints que o cliente consome</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Fluxo</th><th>Rota</th><th>Permissão</th><th>Entrega</th></tr></thead>
+        <tbody>
+          <tr><td>Registrar empresa</td><td><code>POST /api/v1/tenants</code></td><td>público</td><td><span class="chip ok">A4</span></td></tr>
+          <tr><td>Login</td><td><code>POST /api/v1/auth/login</code></td><td>público (tenantSlug opcional)</td><td><span class="chip ok">A4/ADR-32</span></td></tr>
+          <tr><td>Papéis concedíveis</td><td><code>GET /api/v1/papeis</code></td><td>ROLE:READ (BT)</td><td><span class="chip ok">A6</span></td></tr>
+          <tr><td>Convites</td><td><code>GET/POST /api/v1/convites</code>, <code>/{id}/reenviar</code>, <code>DELETE /{id}</code></td><td>INVITE:MANAGE (BT)</td><td><span class="chip ok">A5/F6</span></td></tr>
+          <tr><td>Concessões</td><td><code>POST/DELETE /api/v1/usuarios/{id}/concessoes</code></td><td>ROLE:MANAGE (TO)</td><td><span class="chip ok">A6</span></td></tr>
+          <tr><td>Orçamento</td><td><code>PUT /departamentos/{id}/orcamentos/{mes}</code><br><code>GET /departamentos/{id}/orcamentos</code></td><td>DEPARTMENT:MANAGE / READ (BT)</td><td><span class="chip ok">B1</span></td></tr>
+          <tr><td>Status do orçamento</td><td><code>GET /api/v1/observability/orcamentos?mes=</code></td><td>USAGE:READ (BT)</td><td><span class="chip ok">B2</span></td></tr>
+          <tr><td>Custos do dashboard</td><td><code>GET /api/v1/observability/metrics/costs</code></td><td>USAGE:READ (BT)</td><td><span class="chip ok">F1</span></td></tr>
+          <tr><td>Tentativas / inconclusivos</td><td><code>GET /api/v1/ai-gateway/tentativas?costStatus=</code></td><td>USAGE:READ (BT)</td><td><span class="chip ok">C3/F2</span></td></tr>
+          <tr><td>Chat e recibo</td><td><code>POST /api/v1/conversas</code>, <code>/{id}/mensagens</code></td><td>CHAT:CREATE/READ (BT, teto SELF)</td><td><span class="chip ok">D1</span> <span class="chip bad">D2 UI</span></td></tr>
+          <tr><td>Agente de políticas</td><td><code>POST /api/v1/agente-politicas/perguntas</code></td><td>KNOWLEDGE_DOCUMENT:READ (BT)</td><td><span class="chip ok">E2</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="front">
+    <div class="section-head">
+      <div>
+        <h2><span class="num">06.</span> Conexão front ↔ backend e telas</h2>
+        <p>O browser fala same-origin; o BFF Express serve EJS e encaminha <code>/api/*</code> para o Spring. Sem token no servidor Node.</p>
+      </div>
+      <div class="chips"><span class="chip ok">páginas 200</span><span class="chip ok">XSS corrigido</span><span class="chip warn">D2 pendente</span></div>
+    </div>
+
+    <div class="card">
+      <div class="flow">
+        <div class="flow-row">
+          <span class="fnode info">Browser</span><span class="arrow">→</span>
+          <span class="fnode">Express/EJS</span><span class="arrow">→</span>
+          <span class="fnode">proxy <code>/api/*</code></span><span class="arrow">→</span>
+          <span class="fnode brand">Spring Boot</span><span class="arrow">→</span>
+          <span class="fnode">PostgreSQL</span>
+        </div>
+        <div class="flow-row">
+          <span class="fnode">JWT no header</span><span class="arrow">→</span>
+          <span class="fnode">TenantContextFilter</span><span class="arrow">→</span>
+          <span class="fnode">RBAC/targeting</span><span class="arrow">→</span>
+          <span class="fnode ok">escopo aplicado no backend</span>
+        </div>
+      </div>
+      <p class="small muted" style="margin-top:12px">
+        O front nunca envia <code>tenant_id</code>. Ele só escolhe filtros permitidos; toda decisão de
+        escopo, papel e alvo é refeita no backend. <code>/me/permissoes</code> serve para esconder menus e botões, não para autorizar.
+      </p>
+    </div>
+
+    <div class="screen-grid" style="margin-top:14px">
+      <div class="screen">
+        <div class="head"><b>Dashboard de uso</b><span class="chip ok">F1 · F2 · B3</span></div>
+        <div class="body"><div class="wire">
+          <div class="row"><div class="box">De</div><div class="box">Até</div><div class="box">Depto</div><div class="box blue">Modelo</div><div class="box blue">Usuário</div><div class="box orange">GroupBy</div></div>
+          <div class="row"><div class="box green">Requisições</div><div class="box green">Usuários</div><div class="box orange">Custo conhecido</div></div>
+          <div class="row"><div class="box tall">Série temporal</div></div>
+          <div class="row"><div class="box tall">Custo por dimensão</div><div class="box tall">Orçamento do mês</div></div>
+          <div class="line m"></div><div class="line s"></div>
+        </div></div>
+        <div class="foot">Estados vazios “Sem dados no período”; 401 → sessão expirada; 403/5xx/timeout com mensagens próprias; loading com spinner.</div>
+      </div>
+
+      <div class="screen">
+        <div class="head"><b>Orçamento por departamento</b><span class="chip ok">B3</span></div>
+        <div class="body"><div class="wire">
+          <div class="row"><div class="box">Mês de referência</div></div>
+          <div class="row"><div class="box green">Depto</div><div class="box orange">Orçamento editável</div><div class="box orange">Limiar</div><div class="box blue">Custo real</div><div class="box">Status</div></div>
+          <div class="row"><div class="box tall">Histórico dos últimos 12 meses</div></div>
+          <div class="line m"></div><div class="line s"></div>
+        </div></div>
+        <div class="foot">Edição só com <code>DEPARTMENT:MANAGE</code>; o backend continua decidindo. “Sem orçamento” nunca vira 0.</div>
+      </div>
+
+      <div class="screen">
+        <div class="head"><b>Convites</b><span class="chip ok">A9</span></div>
+        <div class="body"><div class="wire">
+          <div class="row"><div class="box">E-mail</div><div class="box blue">Papel (/papeis)</div><div class="box">Departamento</div></div>
+          <div class="row"><div class="box green tall">Link do convite (uma única vez) + Copiar</div></div>
+          <div class="row"><div class="box tall">Tabela: e-mail, depto, papel, status, ações</div></div>
+          <div class="line m"></div>
+        </div></div>
+        <div class="foot">Reenviar gera novo token e mostra o link novamente; cancelar revoga. Outro tenant → 404.</div>
+      </div>
+
+      <div class="screen">
+        <div class="head"><b>Usuários e concessões</b><span class="chip ok">A9</span></div>
+        <div class="body"><div class="wire">
+          <div class="row"><div class="box tall">Lista de usuários (nome, depto, nível, status)</div></div>
+          <div class="row"><div class="box blue">Editar nível</div><div class="box blue">Editar departamento</div><div class="box green">Concessões</div></div>
+          <div class="row"><div class="box tall">Modal: papéis, escopo, origem, revogar</div></div>
+          <div class="line m"></div>
+        </div></div>
+        <div class="foot">Menus/ações via <code>/me/permissoes</code>; edição exige USER:MANAGE; concessão exige ROLE:MANAGE.</div>
+      </div>
+
+      <div class="screen">
+        <div class="head"><b>Onboarding</b><span class="chip ok">A9</span></div>
+        <div class="body"><div class="wire">
+          <div class="row"><div class="box">Empresa</div><div class="box">Slug</div><div class="box blue">Admin: nome/e-mail/senha</div></div>
+          <div class="row"><div class="box green tall">POST /tenants → login automático → /onboarding/admin</div></div>
+          <div class="line m"></div>
+        </div></div>
+        <div class="foot">O registrante vira TENANT_ADMIN. O token antigo é limpo antes do login para não bloquear o aceite.</div>
+      </div>
+
+      <div class="screen">
+        <div class="head"><b>Chat com recibo</b><span class="chip bad">D2 · Lyn</span></div>
+        <div class="body"><div class="wire">
+          <div class="row"><div class="box tall">Mensagens USER / ASSISTANT</div></div>
+          <div class="row"><div class="box orange">Modelo</div><div class="box orange">Provider</div><div class="box orange">Tokens</div><div class="box orange">Custo</div><div class="box orange">Latência</div></div>
+          <div class="row"><div class="box red tall">statusCusto ≠ KNOWN → “custo indisponível” (nunca 0)</div></div>
+        </div></div>
+        <div class="foot">Backend pronto (D1). A UI não existe neste repositório; é a única task pendente da sprint.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="seguranca">
+    <div class="section-head">
+      <div>
+        <h2><span class="num">07.</span> Segurança e multi-tenancy</h2>
+        <p>Invariantes que valem para todo endpoint e que os ITs provam nos dois sentidos: acesso permitido e acesso proibido.</p>
+      </div>
+      <div class="chips"><span class="chip ok">tenant do JWT</span><span class="chip ok">SQL com tenant_id</span><span class="chip ok">403/404 corretos</span></div>
+    </div>
+
+    <div class="security-grid">
+      <div class="check"><span class="mark">✓</span><div><b>Tenant sempre do contexto</b><br><span class="small muted"><code>TenantContextHolder</code>; nunca de body/query do cliente.</span></div></div>
+      <div class="check"><span class="mark">✓</span><div><b>Queries nativas tenant-aware</b><br><span class="small muted">Todo SQL de uso/custo inclui <code>tenant_id = ?</code> explicitamente.</span></div></div>
+      <div class="check"><span class="mark">✓</span><div><b>Escopo antes da query</b><br><span class="small muted"><code>visibilityFor</code> + <code>isAllowed</code>; filtro fora do escopo → 403.</span></div></div>
+      <div class="check"><span class="mark">✓</span><div><b>Outro tenant não existe</b><br><span class="small muted">Recurso de outro tenant → 404, sem revelar existência (inclui convite F6).</span></div></div>
+      <div class="check"><span class="mark">✓</span><div><b>Teto de CHAT é SELF</b><br><span class="small muted">Nem TENANT_ADMIN amplia acesso a conversas; admin só não tem CHAT.</span></div></div>
+      <div class="check"><span class="mark">✓</span><div><b>Sem segredo/conteúdo em log</b><br><span class="small muted">Prompt/resposta/documento/token não entram em log nem em módulo analítico.</span></div></div>
+      <div class="check"><span class="mark">✓</span><div><b>XSS em notificações</b><br><span class="small muted">Mensagens/e-mails passam por <code>textContent</code>, não por HTML.</span></div></div>
+      <div class="check"><span class="mark">✓</span><div><b>ArchUnit</b><br><span class="small muted">Falha para import interno cross-module ou dependência fora da allowlist.</span></div></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <h3>Mapa de erros</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Status</th><th>Quando</th><th>Exemplo na sprint</th></tr></thead>
+        <tbody>
+          <tr><td><span class="chip warn">401</span></td><td>Sem token/contexto autenticado</td><td>Dashboard sem login; página redireciona para sessão expirada.</td></tr>
+          <tr><td><span class="chip bad">403</span></td><td>Sem permissão, fora do escopo, ator = alvo, não domina</td><td>COLLABORATOR em orçamento; gestor filtrando outro depto; SelfOnly em /orcamentos.</td></tr>
+          <tr><td><span class="chip neutral">404</span></td><td>Recurso de outro tenant ou inexistente</td><td>Orçamento de outro tenant; convite de outro tenant em reenviar/DELETE.</td></tr>
+          <tr><td><span class="chip violet">409</span></td><td>Conflito de estado</td><td>Último admin; concessão duplicada; convidante perdeu autoridade.</td></tr>
+          <tr><td><span class="chip warn">400</span></td><td>Validação</td><td>Mês inválido; intervalo &gt; 24 meses; token de convite inválido.</td></tr>
+          <tr><td><span class="chip info">502/503/504</span></td><td>Falha do provider/entrega</td><td>Chat/agente com stub-error, timeout e indisponibilidade.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="testes">
+    <div class="section-head">
+      <div>
+        <h2><span class="num">08.</span> Evidências de teste e performance</h2>
+        <p>Não é “compila”: os cenários de isolamento, RBAC, fronteira UTC e plano de execução estão exercitados.</p>
+      </div>
+      <div class="chips"><span class="chip ok">BUILD SUCCESS</span><span class="chip info">100k linhas no EXPLAIN</span></div>
+    </div>
+
+    <div class="kpi-row">
+      <div class="kpi"><strong>806</strong><span>testes unitários</span><small>Inclui ArchUnit (6 regras)</small></div>
+      <div class="kpi"><strong>161</strong><span>testes de integração</span><small>Testcontainers/PostgreSQL</small></div>
+      <div class="kpi"><strong>967</strong><span>total verde</span><small>0 falhas, 0 erros</small></div>
+      <div class="kpi"><strong>9</strong><span>commits revisados</span><small>84 arquivos · +4.323/−932</small></div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Suíte / IT</th><th class="num">Testes</th><th>O que prova</th></tr></thead>
+        <tbody>
+          <tr><td><code>DepartmentBudgetIT</code></td><td class="num">9</td><td>Upsert/histórico, 404 cross-tenant, MANAGER(A) só A, COLLABORATOR 403, mês inválido, &gt; 24 meses, fronteira UTC, SEM_ORCAMENTO, constraints V016.</td></tr>
+          <tr><td><code>DashboardMetricsIT</code></td><td class="num">15</td><td>Agregações, filtros combinados, manager por usuário, SelfOnly, isolamento de tenant e groups por modelo/usuário.</td></tr>
+          <tr><td><code>InviteFlowIT</code></td><td class="num">4</td><td>Criar/aceitar/login, reutilização, sem permissão e convite de outro tenant → 404.</td></tr>
+          <tr><td><code>AIGatewayAttemptsIT</code></td><td class="num">9</td><td>RF047, escopo, paginação, período e filtro <code>costStatus=INCONCLUSIVE</code>.</td></tr>
+          <tr><td><code>ObservabilityQueryPlanIT</code></td><td class="num">1</td><td>100 mil linhas + EXPLAIN (ANALYZE, BUFFERS) das consultas de dashboard/orçamento.</td></tr>
+          <tr><td><code>QueryBudgetStatusTest</code></td><td class="num">12</td><td>79,99%, 80%, 99,99%, 100%, zero com/sem custo, sem orçamento, limiar 50%, arredondamento.</td></tr>
+          <tr><td><code>ArchitectureRulesTest</code></td><td class="num">6</td><td>Fronteiras, allowlist e ausência de import interno cross-module.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="divider"></div>
+
+    <h3>Planos de execução (SPI-101) — 100 mil linhas</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Consulta</th><th>Plano</th><th class="num">Tempo</th><th>Leitura</th></tr></thead>
+        <tbody>
+          <tr><td>Custos por departamento + período</td><td><code>Index Scan idx_usage_records_tenant_department_created</code></td><td class="num">1,58 ms</td><td><span class="chip ok">índice existente</span></td></tr>
+          <tr><td>Custos por modelo + período</td><td><code>Bitmap Index Scan idx_usage_records_tenant_created</code></td><td class="num">4,05 ms</td><td><span class="chip ok">índice existente</span></td></tr>
+          <tr><td>Custos por usuário + período</td><td><code>Bitmap Index Scan idx_usage_records_tenant_created</code></td><td class="num">3,75 ms</td><td><span class="chip ok">índice existente</span></td></tr>
+          <tr><td>Série de uso por dia</td><td><code>Bitmap Index Scan</code> + <code>HashAggregate</code></td><td class="num">7,78 ms</td><td><span class="chip ok">índice existente</span></td></tr>
+          <tr><td>Orçamento do mês</td><td><code>Seq Scan department_monthly_budgets</code> (5 linhas)</td><td class="num">0,02 ms</td><td><span class="chip ok">ótimo pelo tamanho</span></td></tr>
+          <tr><td>Custo real do mês</td><td><code>Index Scan idx_usage_records_tenant_department_created</code></td><td class="num">1,79 ms</td><td><span class="chip ok">índice existente</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout info" style="margin-top:12px">
+      <b>Decisão V020:</b> nenhum índice novo foi criado. Não há seq scan relevante nas consultas
+      analíticas; o único seq scan é em uma tabela de 5 linhas. O teto de migrations foi respeitado.
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <h4>Outras verificações</h4>
+      <div class="chips">
+        <span class="chip ok">mvn -B test: 806</span>
+        <span class="chip ok">mvn -B verify -Pintegration: 806 + 161</span>
+        <span class="chip ok">node --check em todos os JS alterados</span>
+        <span class="chip ok">npm start: /tenant, /convites, /admin/usuarios, /dashboard, /orcamentos = 200</span>
+        <span class="chip ok">sem BOM nos fontes</span>
+        <span class="chip ok">nenhum segredo introduzido</span>
+      </div>
+      <p class="small muted" style="margin-top:10px">
+        Não verificado: navegação autenticada ponta a ponta com backend + PostgreSQL reais e provider
+        real. A validação de front foi por renderização das páginas e revisão de contrato.
+      </p>
+    </div>
+  </section>
+
+  <section id="commits">
+    <div class="section-head">
+      <div>
+        <h2><span class="num">09.</span> Linha do tempo desta rodada</h2>
+        <p>Nove commits, da fundação do orçamento ao endurecimento final do front.</p>
+      </div>
+      <div class="chips"><span class="chip info">f9119ec..f28a271</span></div>
+    </div>
+
+    <div class="card">
+      <div class="timeline">
+        <div class="commit">
+          <div class="top"><span class="hash">40c3240</span><span class="title">B1 · Orçamento mensal e status</span><span class="stats">29 arquivos · +1.657/−43</span></div>
+          <div class="bar"><i data-w="100"></i></div>
+          <p class="small muted">V016, domínio, upsert/histórico, endpoint de status, ITs e testes unitários.</p>
+        </div>
+        <div class="commit">
+          <div class="top"><span class="hash">38b4d5f</span><span class="title">B2 · Limites do status e contrato</span><span class="stats">3 arquivos · +35/−1</span></div>
+          <div class="bar"><i data-w="8"></i></div>
+          <p class="small muted">Cobertura de SEM_ORCAMENTO, janela half-open e documentação do contrato.</p>
+        </div>
+        <div class="commit">
+          <div class="top"><span class="hash">9faf00a</span><span class="title">B3 · Tela de orçamento e card</span><span class="stats">6 arquivos · +476/−4</span></div>
+          <div class="bar"><i data-w="30"></i></div>
+          <p class="small muted">Seletor de mês, edição inline, histórico de 12 meses e card no dashboard.</p>
+        </div>
+        <div class="commit">
+          <div class="top"><span class="hash">5c60442</span><span class="title">F1 · Custos por departamento/modelo/usuário</span><span class="stats">17 arquivos · +628/−103</span></div>
+          <div class="bar"><i data-w="39"></i></div>
+          <p class="small muted">GroupBy whitelisted, filtros modelId/userId, validação de escopo e seletor no front.</p>
+        </div>
+        <div class="commit">
+          <div class="top"><span class="hash">37cb206</span><span class="title">F2 · Estados vazios, inconclusivos e EXPLAIN</span><span class="stats">10 arquivos · +386/−28</span></div>
+          <div class="bar"><i data-w="24"></i></div>
+          <p class="small muted">Mensagens 401/403/5xx/timeout, “Sem dados no período”, contador RF047 e IT de performance.</p>
+        </div>
+        <div class="commit">
+          <div class="top"><span class="hash">b69972f</span><span class="title">A9 · Onboarding, convites e permissões</span><span class="stats">11 arquivos · +779/−728</span></div>
+          <div class="bar"><i data-w="48"></i></div>
+          <p class="small muted">Criação do tenant + login, menus por /me/permissoes, convites reais e modal de concessões.</p>
+        </div>
+        <div class="commit">
+          <div class="top"><span class="hash">a1fdf49</span><span class="title">A10 · Documentação da autorização</span><span class="stats">10 arquivos · +304/−32</span></div>
+          <div class="bar"><i data-w="19"></i></div>
+          <p class="small muted">Emendas ADR-04/30/33/34, matriz de permissões e contrato front/back.</p>
+        </div>
+        <div class="commit">
+          <div class="top"><span class="hash">1e28fc4</span><span class="title">F6 · Convite de outro tenant → 404</span><span class="stats">8 arquivos · +63/−9</span></div>
+          <div class="bar"><i data-w="5"></i></div>
+          <p class="small muted">InviteNotFound, handler 404, testes unitários e IT de isolamento.</p>
+        </div>
+        <div class="commit">
+          <div class="top"><span class="hash">f28a271</span><span class="title">Revisão · XSS, login e histórico</span><span class="stats">4 arquivos · +17/−6</span></div>
+          <div class="bar"><i data-w="3"></i></div>
+          <p class="small muted">Notificações por textContent, limpeza de token no onboarding e guarda do mês no histórico.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="pendentes">
+    <div class="section-head">
+      <div>
+        <h2><span class="num">10.</span> O que falta, decisões e riscos</h2>
+        <p>Separado por tipo: bloqueio de dependência, decisão de produto e melhoria técnica.</p>
+      </div>
+      <div class="chips"><span class="chip bad">1 bloqueio</span><span class="chip violet">4 decisões</span><span class="chip warn">6 riscos baixos/médios</span></div>
+    </div>
+
+    <div class="pending-grid">
+      <div class="pending-card">
+        <h4>D2 · Recibo na UI do chat <span class="chip bad">bloqueada</span></h4>
+        <p><b>Depende de:</b> componente SPI-136 (Lyn), que não existe no repositório.</p>
+        <p><b>Backend pronto:</b> recibo com modelo, provider, tokens, custo, <code>statusCusto</code> e latência.</p>
+        <p><b>Falta:</b> exibir o recibo em toda resposta; “custo indisponível” quando ≠ KNOWN; modo agente com fontes/ferramentas; mensagens para 403/404/409/502/503/504.</p>
+      </div>
+
+      <div class="pending-card">
+        <h4>SPI-56 · Auditoria do tenant <span class="chip violet">decisão</span></h4>
+        <p>Não há trilha de auditoria de criação/alteração do tenant. Exige decidir tabela dedicada, campos, retenção e migration (V021+).</p>
+        <p><b>Impacto:</b> governança e rastreabilidade; não bloqueia a demo.</p>
+      </div>
+
+      <div class="pending-card">
+        <h4>SPI-57 · Status do tenant <span class="chip violet">ADR</span></h4>
+        <p>O bloqueio de tenant INACTIVE já existe, mas não há ator de plataforma autorizado a suspender/reativar. Precisa de ADR e escopo de plataforma.</p>
+      </div>
+
+      <div class="pending-card">
+        <h4>SPI-65 · Recuperação de senha <span class="chip violet">decisão</span></h4>
+        <p>Faltam canal de entrega do link e política de senha. Sem isso, retornar token na API seria risco de sequestro de conta.</p>
+      </div>
+
+      <div class="pending-card">
+        <h4>Provider real da demo <span class="chip warn">configuração</span></h4>
+        <p>O fluxo está validado com <code>STUB</code>. O provider concreto (OpenAI/Groq/Ollama) depende da decisão 11 e de credencial em ambiente.</p>
+      </div>
+
+      <div class="pending-card">
+        <h4>V021 · DROP user_permission <span class="chip neutral">próximo release</span></h4>
+        <p>A trilha legada não é mais lida, mas a remoção física foi deliberadamente adiada para o release seguinte, fora da Sprint 3.</p>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <h3>Riscos e follow-ups da revisão</h3>
+    <div class="risk-list">
+      <div class="risk"><span class="sev media">Média</span><div><b>Histórico do orçamento não indica o padrão.</b> O <code>GET /departamentos/{id}/orcamentos</code> devolve apenas linhas explícitas e não tem <code>fromDefault</code>; o status do mês tem <code>orcamentoPadrao</code>. Decidir se o histórico deve sintetizar meses com o padrão ou documentar que ele lista só ajustes.</div></div>
+      <div class="risk"><span class="sev media">Média</span><div><b>Passo “Administrador Principal” duplicado.</b> O admin já é criado no passo da empresa; o formulário seguinte coleta os mesmos dados e não envia nada. Sugestão: redirecionar direto ao hub de departamentos ou transformar o passo em confirmação.</div></div>
+      <div class="risk"><span class="sev baixa">Baixa</span><div><b>Upsert concorrente do mesmo mês.</b> Dois PUTs simultâneos podem violar a unique constraint e virar 500. Tratar como 409 ou refazer a leitura.</div></div>
+      <div class="risk"><span class="sev baixa">Baixa</span><div><b>N+1 no status do orçamento.</b> <code>budgetsFor</code> consulta o orçamento por departamento. Ok para dezenas; otimizar em lote se o tenant crescer.</div></div>
+      <div class="risk"><span class="sev baixa">Baixa</span><div><b>Seletor de usuário limitado a 100.</b> Acima disso o rótulo cai para o UUID. Sem impacto de autorização; só UX.</div></div>
+      <div class="risk"><span class="sev baixa">Baixa</span><div><b>Período da RF047 inclusivo.</b> <code>created_at &lt;= ate</code> vs. <code>&lt; to</code> nas métricas. O front envia 23:59:59, então o impacto prático é desprezível; padronizar depois.</div></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <h3>Roteiro da apresentação — o que já roda</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Passo da demo</th><th>Status</th><th>Depende de</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td>Registrar a empresa; o registrante vira admin</td><td><span class="chip ok">pronto</span></td><td>A4, A9</td></tr>
+          <tr><td class="num">2</td><td>Criar departamentos e convidar gestor/colaborador</td><td><span class="chip ok">pronto</span></td><td>A3, A5, A9</td></tr>
+          <tr><td class="num">3</td><td>Cadastrar provider/modelo e política por departamento</td><td><span class="chip ok">pronto</span><span class="chip warn">STUB</span></td><td>C1</td></tr>
+          <tr><td class="num">4</td><td>Colaborador conversa e vê o recibo</td><td><span class="chip warn">parcial</span></td><td>D1 pronto; D2 (Lyn)</td></tr>
+          <tr><td class="num">5</td><td>Colaborador pergunta ao agente e vê fontes</td><td><span class="chip ok">pronto</span></td><td>E1, E2</td></tr>
+          <tr><td class="num">6</td><td>Gestor vê só o departamento; colaborador só o próprio uso; admin tudo</td><td><span class="chip ok">pronto</span></td><td>A3, F1</td></tr>
+          <tr><td class="num">7</td><td>Orçamento alerta a 80% e excede a 100%, sem bloquear</td><td><span class="chip ok">pronto</span></td><td>B1–B3</td></tr>
+          <tr><td class="num">8</td><td>Gestor tenta se promover/ver outro depto e recebe 403</td><td><span class="chip ok">pronto</span></td><td>A2, A3, A7, F6</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="divider"></div>
+
+    <h3>Próximos passos recomendados</h3>
+    <ol class="next">
+      <li><b>Destravar a D2 com a Lyn</b> (ou autorizar a criação do componente SPI-136 neste repositório), ligando o recibo e os erros da SPEC-04.</li>
+      <li><b>Decidir a SPI-56</b> (auditoria do tenant): modelo da trilha, campos, retenção e migration reservada.</li>
+      <li><b>Configurar o provider real da demo</b> (decisão 11), mantendo o STUB para testes determinísticos.</li>
+      <li><b>Resolver os follow-ups de revisão</b> (histórico com padrão, passo de admin duplicado e itens baixos).</li>
+      <li><b>Planejar a V021</b> (drop da trilha legada) para o release seguinte, com janela e rollback.</li>
+    </ol>
+
+    <div class="callout info" style="margin-top:14px">
+      <b>Resumo em uma frase:</b> o backend e a governança da Sprint 3 estão completos e verdes;
+      o cliente já percorre registro, convite, departamentos, dashboard, agente e orçamento. O que
+      falta para a história ficar inteira é a UI do recibo do chat, que pertence à Lyn.
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    <b>Fontes:</b> <code>ai/tasks/sprint-03/</code> (INDEX, HANDOFF, SPEC-01/02/04 e packets),
+    ADRs 04/30/32/33/34/36/37/38/39, <code>git f9119ec..f28a271</code>,
+    relatórios do Maven/Failsafe e EXPLAIN do <code>ObservabilityQueryPlanIT</code>.
+    <br>
+    <b>Verificação:</b> <code>mvn -B test</code> (806) e
+    <code>mvn -B verify -Pintegration</code> (806 unit + 161 IT) — BUILD SUCCESS.
+    Páginas do front respondendo 200; JS validado com <code>node --check</code>; sem BOM nos fontes.
+    <br>
+    <b>Não verificado:</b> navegação autenticada ponta a ponta com backend/PostgreSQL reais e provider real.
+    Relatório gerado em 20/10/2026.
+  </div>
+</footer>
+
+<script>
+  function animarBarras(){
+    document.querySelectorAll('.bar > i[data-w]').forEach(function(el){
+      requestAnimationFrame(function(){ el.style.width = el.getAttribute('data-w') + '%'; });
+    });
+  }
+  document.addEventListener('DOMContentLoaded', function(){
+    animarBarras();
+    var botoes = document.querySelectorAll('[data-filter]');
+    var itens = document.querySelectorAll('.task-item');
+    var contador = document.getElementById('taskCount');
+    botoes.forEach(function(botao){
+      botao.addEventListener('click', function(){
+        botoes.forEach(function(b){ b.classList.remove('active'); });
+        botao.classList.add('active');
+        var filtro = botao.getAttribute('data-filter');
+        var visiveis = 0;
+        itens.forEach(function(item){
+          var mostra = filtro === 'all' || item.getAttribute('data-status') === filtro;
+          item.classList.toggle('is-hidden', !mostra);
+          if (mostra) visiveis++;
+        });
+        if (contador) contador.textContent = visiveis + ' de ' + itens.length + ' visíveis';
+      });
+    });
+  });
+</script>
+</body>
+</html>
