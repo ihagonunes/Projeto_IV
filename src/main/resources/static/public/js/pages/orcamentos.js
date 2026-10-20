@@ -208,6 +208,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     async function carregarHistorico(departmentId, departmentName) {
+        if (!mesInput.value) {
+            avisarHistorico("Selecione um mês de referência para consultar o histórico.");
+            return;
+        }
         historicoDepartamentoId = departmentId;
         historicoTitulo.textContent = `Histórico de ${departmentName} (últimos 12 meses)`;
         avisarHistorico("");

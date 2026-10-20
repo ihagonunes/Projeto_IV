@@ -112,6 +112,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 adminPassword: adminSenha
             });
 
+            // Um token antigo/expirado no storage faria o login ser rejeitado
+            // antes da autenticação; limpa antes de autenticar o novo admin.
+            window.API.clearToken();
             const login = await window.API.post("/auth/login", {
                 tenantSlug: slug,
                 email: adminEmail,
@@ -119,7 +122,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
             const token = login?.token || login?.accessToken || login?.access_token;
             if (token) {
-                localStorage.setItem("authToken", token);
+                window.API.setToken(token);
             }
 
             sessionStorage.setItem("onboarding_tenant", JSON.stringify({

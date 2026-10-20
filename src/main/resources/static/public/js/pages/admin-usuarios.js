@@ -56,8 +56,10 @@ document.addEventListener("DOMContentLoaded", () => {
         alertDiv.className = `alert alert-${type} alert-dismissible fade show alert-toast shadow-sm`;
         alertDiv.role = "alert";
         alertDiv.innerHTML = `
-            <div class="d-flex align-items-center"><span>${message}</span></div>
+            <div class="d-flex align-items-center"><span data-message></span></div>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>`;
+        // textContent: mensagens do servidor nunca viram HTML (XSS).
+        alertDiv.querySelector("[data-message]").textContent = message;
         alertArea.appendChild(alertDiv);
         setTimeout(() => {
             alertDiv.classList.remove("show");

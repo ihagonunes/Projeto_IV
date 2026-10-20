@@ -49,8 +49,10 @@ document.addEventListener("DOMContentLoaded", () => {
         alertDiv.className = `alert alert-${type} alert-dismissible fade show alert-toast shadow-sm`;
         alertDiv.role = "alert";
         alertDiv.innerHTML = `
-            <div class="d-flex align-items-center"><span>${message}</span></div>
+            <div class="d-flex align-items-center"><span data-message></span></div>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>`;
+        // textContent: e-mail/mensagem do servidor nunca viram HTML (XSS).
+        alertDiv.querySelector("[data-message]").textContent = message;
         alertArea.appendChild(alertDiv);
         setTimeout(() => {
             alertDiv.classList.remove("show");
@@ -222,7 +224,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     departmentId: papel?.escopo === "DEPARTMENT" ? selectDepartamento.value : null
                 });
                 mostrarLink(resposta.email, resposta.token);
-                showNotification(`Convite emitido para <strong>${resposta.email}</strong>.`, "success");
+                showNotification(`Convite emitido para ${resposta.email}.`, "success");
                 form.reset();
                 selectPapel.value = "";
                 selectDepartamento.value = "";
@@ -308,7 +310,7 @@ document.addEventListener("DOMContentLoaded", () => {
             try {
                 const resposta = await client.post(`/v1/convites/${id}/reenviar`);
                 mostrarLink(resposta.email, resposta.token);
-                showNotification(`Convite reenviado para <strong>${resposta.email}</strong>.`, "info");
+                showNotification(`Convite reenviado para ${resposta.email}.`, "info");
                 await carregarConvites();
             } catch (err) {
                 showNotification(tratarErro(err, "Não foi possível reenviar o convite."), "danger");
@@ -317,7 +319,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!window.confirm(`Cancelar o convite de ${convite.email}?`)) return;
             try {
                 await client.delete(`/v1/convites/${id}`);
-                showNotification(`Convite de <strong>${convite.email}</strong> cancelado.`, "warning");
+                showNotification(`Convite de ${convite.email} cancelado.`, "warning");
                 await carregarConvites();
             } catch (err) {
                 showNotification(tratarErro(err, "Não foi possível cancelar o convite."), "danger");
