@@ -9,9 +9,9 @@ Contratos são Java APIs internas entre módulos. Não equivalem automaticamente
 | iam | `IdentityQuery`, `AuthorizationQuery`, contrato de autorização RBAC (`@RequiresPermission` em `iam.api.rbac` — ADR-34) |
 | department | `OrganizationQuery`, `DepartmentBudgetQuery`, `DepartmentModelPolicyQuery` |
 | project | `ProjectQueryPort` |
-| aigateway | `AICompletionService`, `AIToolCatalogQuery`, catálogo administrativo |
+| aigateway | `AICompletionService`, `ModelResolutionQuery`, `AIToolCatalogQuery`, catálogo administrativo |
 | chat | commands/queries de Conversation/Message |
-| agentpolicies | KnowledgeDocument commands/queries, `KnowledgeAccessService`, `AgentExecutionService` |
+| agentpolicies | `KnowledgeAccessService`, `AskPolicyAgent`, KnowledgeDocument commands/queries |
 | observability | `UsageMetricsQueryPort`, `CostMetricsQueryPort`, `BudgetStatusQueryPort`, `AlertQueryPort` |
 | engagement | `LicenseQueryPort`, `TrainingQueryPort`, `EngagementMetricsQueryPort`, `AICreditsQueryPort` |
 | governancescore | `GovernanceScoreQueryPort`, Breakdown, Department scores, History |
@@ -143,6 +143,43 @@ erro segue o mapa da seção Completion (ex.: 502).
 ### `POST /api/v1/conversas/{id}/mensagens` (201)
 
 Mesmo request/response de `POST /api/v1/conversas`; 404 se a conversa não for do ator.
+
+## Agente de políticas (ADR-35 opção A)
+
+Recuperação nativa (`to_tsvector('portuguese', …)`), sem pgvector/embeddings.
+`KnowledgeAccessService.search(tenantId, userId, query)` aplica `tenant_id` nas três tabelas e a
+lotação do `IdentityQuery` **antes** do ranking; sem lotação, só documentos `tenant_wide`.
+
+### `POST /api/v1/agente-politicas/perguntas` (`KNOWLEDGE_DOCUMENT:READ`, `BY_TARGET`)
+
+Request:
+
+```json
+{ "pergunta": "Posso usar o ChatGPT com dados de cliente?", "requestedModelId": null }
+```
+
+Response:
+
+```json
+{
+  "resposta": "…[1]…",
+  "fontes": [
+    { "documentId": "…", "titulo": "Política de Uso de IA", "versao": 1, "trecho": "…" }
+  ],
+  "ferramentasUsadas": ["buscar_politicas"],
+  "recibo": { "requestId": "…", "modelo": "…", "provider": "…", "tokensEntrada": 120,
+              "tokensSaida": 340, "custoEstimado": 0.000920, "statusCusto": "KNOWN",
+              "latenciaMs": 812 }
+}
+```
+
+- Sem trechos recuperados: o LLM **não** é chamado, `resposta` informa que não encontrou política
+  aplicável, `fontes`/`ferramentasUsadas` vazios e `recibo` nulo.
+- `AskPolicyAgent` registra `RUNNING` → `COMPLETED`/`FAILED` com `request_id`, `document_ids` e
+  `tools_called` (somente metadados; nunca pergunta/resposta). Ferramentas da allowlist:
+  `buscar_politicas` e `modelo_permitido`; no máximo 2 rodadas. Ferramenta desconhecida é ignorada
+  e registrada.
+- Pergunta: 1 a 2000 caracteres. Erros da completion seguem o mapa da seção Completion.
 
 ## REST
 
