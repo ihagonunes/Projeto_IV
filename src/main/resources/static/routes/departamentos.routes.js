@@ -40,6 +40,14 @@ router.get("/onboarding/departamentos/add", wrap(async (req, res) => {
     });
 }));
 
+/** GET /onboarding/departamentos/orcamentos → orçamento mensal (SPI-121) */
+router.get("/onboarding/departamentos/orcamentos", wrap(async (req, res) => {
+    res.render("departamentos/views/orcamentos", {
+        titulo: "Orçamento por Departamento",
+        bodyClass: "bg-light auth-bg onboarding-bg"
+    });
+}));
+
 // ---------------------------------------------------------------------------
 // Rotas de API-PROXY (chamam o Spring Boot via controller)
 // ---------------------------------------------------------------------------

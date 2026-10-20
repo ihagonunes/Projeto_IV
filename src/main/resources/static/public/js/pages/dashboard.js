@@ -20,18 +20,35 @@ document.addEventListener("DOMContentLoaded", () => {
     const kpiCusto = document.getElementById("kpiCusto");
     const grafico = document.getElementById("graficoSeries");
     const tabela = document.getElementById("tabelaCustos");
+    const campoMesOrcamento = document.getElementById("orcamentoMes");
+    const tabelaOrcamentos = document.getElementById("tabelaOrcamentos");
+    const mensagemOrcamento = document.getElementById("orcamentoMensagem");
 
     const nomesPorId = {};
     let dadosAtuais = { usage: null, costs: [] };
+
+    const STATUS_ORCAMENTO = {
+        OK: { texto: "OK", classe: "text-bg-success" },
+        ALERTA: { texto: "Alerta", classe: "text-bg-warning" },
+        EXCEDIDO: { texto: "Excedido", classe: "text-bg-danger" },
+        SEM_ORCAMENTO: { texto: "Sem orçamento", classe: "text-bg-secondary" }
+    };
 
     // Periodo padrao: ultimos 30 dias (mesmo default do backend).
     const hoje = new Date();
     const inicio = new Date(hoje.getTime() - 30 * 24 * 60 * 60 * 1000);
     campoDe.value = comoData(inicio);
     campoAte.value = comoData(hoje);
+    if (campoMesOrcamento) {
+        campoMesOrcamento.value = comoMes(hoje);
+    }
 
     function comoData(data) {
         return data.toISOString().slice(0, 10);
+    }
+
+    function comoMes(data) {
+        return data.toISOString().slice(0, 7);
     }
 
     function avisar(texto, tipo) {
@@ -129,6 +146,81 @@ document.addEventListener("DOMContentLoaded", () => {
         }).join("");
     }
 
+    function escapar(valor) {
+        return String(valor ?? "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+
+    function avisarOrcamento(texto, tipo) {
+        if (!mensagemOrcamento) return;
+        mensagemOrcamento.textContent = texto || "";
+        mensagemOrcamento.className = texto ? `alert alert-${tipo || "info"} mx-3 mt-3 mb-0` : "d-none";
+    }
+
+    function formatarMoedaOrcamento(valor) {
+        return "R$ " + Number(valor).toLocaleString("pt-BR", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
+
+    function formatarPercentual(valor) {
+        if (valor == null) return "—";
+        return Number(valor).toLocaleString("pt-BR", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }) + "%";
+    }
+
+    function renderOrcamentos(itens) {
+        if (!tabelaOrcamentos) return;
+        if (!itens || !itens.length) {
+            tabelaOrcamentos.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">'
+                + 'Nenhum departamento ativo no seu escopo para este mês.</td></tr>';
+            return;
+        }
+        tabelaOrcamentos.innerHTML = itens.map((item) => {
+            const status = STATUS_ORCAMENTO[item.status]
+                || { texto: item.status, classe: "text-bg-secondary" };
+            const orcamento = item.orcamento == null
+                ? "Sem orçamento"
+                : formatarMoedaOrcamento(item.orcamento)
+                    + (item.orcamentoPadrao ? ' <span class="text-muted small">(padrão)</span>' : "");
+            return `
+                <tr>
+                    <td>${escapar(item.departmentName)}</td>
+                    <td class="text-end">${orcamento}</td>
+                    <td class="text-end">${formatarMoedaOrcamento(item.custoReal || 0)}</td>
+                    <td class="text-end">${formatarPercentual(item.pctUsado)}</td>
+                    <td><span class="badge ${status.classe}">${escapar(status.texto)}</span></td>
+                </tr>`;
+        }).join("");
+    }
+
+    async function carregarOrcamentos() {
+        if (!client || !tabelaOrcamentos || !campoMesOrcamento) return;
+        avisarOrcamento("");
+        try {
+            const resposta = await client.get(
+                `/v1/observability/orcamentos?mes=${encodeURIComponent(campoMesOrcamento.value)}`);
+            renderOrcamentos(resposta?.itens || []);
+        } catch (err) {
+            tabelaOrcamentos.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">'
+                + 'Não foi possível carregar o orçamento.</td></tr>';
+            if (err?.status === 403) {
+                avisarOrcamento("Você não tem permissão para visualizar o orçamento neste escopo.", "warning");
+            } else if (err?.status >= 500) {
+                avisarOrcamento("O serviço de orçamento está indisponível. Tente novamente em instantes.", "danger");
+            } else {
+                avisarOrcamento(err?.message || "Não foi possível carregar o orçamento.", "warning");
+            }
+        }
+    }
+
     async function carregar() {
         if (!client) {
             avisar("Cliente HTTP não carregado.", "warning");
@@ -166,5 +258,14 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    carregarDepartamentos().then(carregar);
+    if (campoMesOrcamento) {
+        campoMesOrcamento.addEventListener("change", () => {
+            if (campoMesOrcamento.value) carregarOrcamentos();
+        });
+    }
+
+    carregarDepartamentos().then(() => {
+        carregar();
+        carregarOrcamentos();
+    });
 });

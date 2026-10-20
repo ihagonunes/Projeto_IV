@@ -1,0 +1,81 @@
+<%- contentFor("espaco-head") %>
+<link href="/public/css/components/onboarding-card.css" rel="stylesheet">
+<link href="/public/css/pages/onboarding.css" rel="stylesheet">
+
+<div class="atlas-onboarding-wrapper step-bg-departamentos">
+
+    <%- include("../../../views/partials/wizard-stepper", { activeStep: 2 }) %>
+
+    <main class="atlas-content">
+
+        <div class="atlas-page-header">
+            <h1 class="atlas-page-title">Orçamento por departamento</h1>
+            <p class="atlas-page-subtitle">
+                Defina o orçamento mensal e o limiar de alerta. O orçamento alerta, mas não bloqueia o uso.
+            </p>
+        </div>
+
+        <div class="atlas-card">
+            <div class="row g-3 align-items-end mb-3">
+                <div class="col-md-4">
+                    <label for="orcamentoMes" class="form-label-custom">Mês de referência</label>
+                    <input type="month" class="form-control custom-input" id="orcamentoMes" required>
+                </div>
+            </div>
+
+            <div id="orcamentosMensagem" class="d-none"></div>
+
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Departamento</th>
+                            <th class="text-end">Orçamento (R$)</th>
+                            <th class="text-end">Limiar (%)</th>
+                            <th class="text-end">Custo real</th>
+                            <th class="text-end">% usado</th>
+                            <th>Situação</th>
+                            <th class="text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="orcamentosTableBody">
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-3">Carregando orçamentos...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <p class="text-muted small mb-0">
+                Sem valor definido, o departamento aparece como "Sem orçamento" (nunca como zero).
+                O histórico lista apenas os meses com orçamento próprio cadastrado.
+            </p>
+
+            <div class="atlas-form-footer">
+                <a href="/onboarding/departamentos/hub" class="btn btn-outline-secondary btn-pill">← voltar</a>
+            </div>
+        </div>
+
+        <div class="atlas-card mt-4">
+            <h2 class="atlas-section-title" id="historicoTitulo">Histórico dos últimos 12 meses</h2>
+            <div id="historicoMensagem" class="text-muted small">Selecione "Histórico" em um departamento.</div>
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Mês</th>
+                            <th class="text-end">Orçamento (R$)</th>
+                            <th class="text-end">Limiar (%)</th>
+                            <th>Atualizado em</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historicoTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<script src="/public/js/core/api-client.js"></script>
+<script src="/public/js/pages/orcamentos.js"></script>
