@@ -98,7 +98,9 @@ public class UsageMetricsJdbcAdapter implements UsageMetricsRepository {
     private void appendScopeAndPeriod(StringBuilder sql, List<Object> params,
                                       UsageMetricsFilter filter) {
         appendVisibility(sql, params, filter.visibility(), filter.requestedDepartmentId());
-        sql.append(" AND created_at >= ? AND created_at <= ?");
+        // Janela half-open [from, to): um registro exatamente no início do mês
+        // seguinte não pertence ao mês consultado (SPEC-02 §3).
+        sql.append(" AND created_at >= ? AND created_at < ?");
         params.add(Timestamp.from(filter.from()));
         params.add(Timestamp.from(filter.to()));
     }
