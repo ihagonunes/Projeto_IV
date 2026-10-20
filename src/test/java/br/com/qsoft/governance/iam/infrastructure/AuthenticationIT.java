@@ -71,7 +71,7 @@ class AuthenticationIT {
     @Test
     void shouldLoginWithValidCredentials() {
         Tenant tenant = tenant("auth");
-        User user = provisionUser.provision(new ProvisionUserCommand(tenant.id(), "ana@auth.com", "Ana", HierarchyLevel.MANAGER, "secret123", null, java.util.Set.of()));
+        User user = provisionUser.provision(new ProvisionUserCommand(tenant.id(), "ana@auth.com", "Ana", HierarchyLevel.MANAGER, "secret123", null));
 
         AuthenticatedUser result =
             authenticateUser.login(new LoginCommand(tenant.slug(), "ana@auth.com", "secret123"));
@@ -84,7 +84,7 @@ class AuthenticationIT {
     @Test
     void shouldRejectWrongPassword() {
         Tenant tenant = tenant("auth");
-        User user = provisionUser.provision(new ProvisionUserCommand(tenant.id(), "bob@auth.com", "Bob", HierarchyLevel.COLLABORATOR, "secret123", null, java.util.Set.of()));
+        User user = provisionUser.provision(new ProvisionUserCommand(tenant.id(), "bob@auth.com", "Bob", HierarchyLevel.COLLABORATOR, "secret123", null));
 
         assertThatThrownBy(() -> authenticateUser.login(new LoginCommand(tenant.slug(), "bob@auth.com", "errada")))
             .isInstanceOf(InvalidCredentialsException.class);

@@ -56,9 +56,6 @@ public class ProvisionUser {
 
         User user = User.create(UserId.random(), tenantId, email, name, level, command.departmentId());
         user.setPasswordHash(passwordEncoder.encode(password));
-        if (command.permissions() != null) {
-            command.permissions().forEach(user::grantPermission);
-        }
         return userRepository.save(user);
     }
 

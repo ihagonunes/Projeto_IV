@@ -6,7 +6,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import br.com.qsoft.governance.iam.api.model.Permission;
 import br.com.qsoft.governance.iam.api.query.AuthorizationQuery;
 import br.com.qsoft.governance.iam.application.port.InviteRepository;
 import br.com.qsoft.governance.iam.application.port.RoleRepository;
@@ -216,38 +215,37 @@ class IAMApplicationCoverageBoostTest {
         TenantId tenantId = t.id();
 
         // Null vs Blank for email, name, password
-        assertThatThrownBy(() -> useCase.provision(new ProvisionUserCommand(tenantId, null, "Name", HierarchyLevel.MANAGER, "pass", null, null)))
+        assertThatThrownBy(() -> useCase.provision(new ProvisionUserCommand(tenantId, null, "Name", HierarchyLevel.MANAGER, "pass", null)))
             .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> useCase.provision(new ProvisionUserCommand(tenantId, "  ", "Name", HierarchyLevel.MANAGER, "pass", null, null)))
-            .isInstanceOf(IllegalArgumentException.class);
-
-        assertThatThrownBy(() -> useCase.provision(new ProvisionUserCommand(tenantId, "a@b.com", null, HierarchyLevel.MANAGER, "pass", null, null)))
-            .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> useCase.provision(new ProvisionUserCommand(tenantId, "a@b.com", "  ", HierarchyLevel.MANAGER, "pass", null, null)))
+        assertThatThrownBy(() -> useCase.provision(new ProvisionUserCommand(tenantId, "  ", "Name", HierarchyLevel.MANAGER, "pass", null)))
             .isInstanceOf(IllegalArgumentException.class);
 
-        assertThatThrownBy(() -> useCase.provision(new ProvisionUserCommand(tenantId, "a@b.com", "Name", HierarchyLevel.MANAGER, null, null, null)))
+        assertThatThrownBy(() -> useCase.provision(new ProvisionUserCommand(tenantId, "a@b.com", null, HierarchyLevel.MANAGER, "pass", null)))
             .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> useCase.provision(new ProvisionUserCommand(tenantId, "a@b.com", "Name", HierarchyLevel.MANAGER, "  ", null, null)))
+        assertThatThrownBy(() -> useCase.provision(new ProvisionUserCommand(tenantId, "a@b.com", "  ", HierarchyLevel.MANAGER, "pass", null)))
+            .isInstanceOf(IllegalArgumentException.class);
+
+        assertThatThrownBy(() -> useCase.provision(new ProvisionUserCommand(tenantId, "a@b.com", "Name", HierarchyLevel.MANAGER, null, null)))
+            .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> useCase.provision(new ProvisionUserCommand(tenantId, "a@b.com", "Name", HierarchyLevel.MANAGER, "  ", null)))
             .isInstanceOf(IllegalArgumentException.class);
 
         // Inactive tenant
         Tenant inactiveTenant = Tenant.restore(TenantId.random(), "inact", "Inact", TenantStatus.INACTIVE, Instant.now(), Instant.now());
         tenantsById.put(inactiveTenant.id(), inactiveTenant);
-        assertThatThrownBy(() -> useCase.provision(new ProvisionUserCommand(inactiveTenant.id(), "a@b.com", "Name", HierarchyLevel.MANAGER, "pass", null, null)))
+        assertThatThrownBy(() -> useCase.provision(new ProvisionUserCommand(inactiveTenant.id(), "a@b.com", "Name", HierarchyLevel.MANAGER, "pass", null)))
             .isInstanceOf(TenantNotFoundException.class);
 
         // Existing email
         createActiveUser(tenantId);
-        assertThatThrownBy(() -> useCase.provision(new ProvisionUserCommand(tenantId, "user@test.com", "Name", HierarchyLevel.MANAGER, "pass", null, null)))
+        assertThatThrownBy(() -> useCase.provision(new ProvisionUserCommand(tenantId, "user@test.com", "Name", HierarchyLevel.MANAGER, "pass", null)))
             .isInstanceOf(UserEmailAlreadyExistsException.class);
 
         // Success with null permissions vs non-null permissions
-        User prov1 = useCase.provision(new ProvisionUserCommand(tenantId, "new1@test.com", "Name", HierarchyLevel.MANAGER, "pass", null, null));
+        User prov1 = useCase.provision(new ProvisionUserCommand(tenantId, "new1@test.com", "Name", HierarchyLevel.MANAGER, "pass", null));
         assertThat(prov1).isNotNull();
 
-        User prov2 = useCase.provision(new ProvisionUserCommand(tenantId, "new2@test.com", "Name", HierarchyLevel.MANAGER, "pass", null, Set.of(Permission.MANAGE_USERS)));
-        assertThat(prov2.permissions()).contains(Permission.MANAGE_USERS);
+        User prov2 = useCase.provision(new ProvisionUserCommand(tenantId, "new2@test.com", "Name", HierarchyLevel.MANAGER, "pass", null));
     }
 
     @Test

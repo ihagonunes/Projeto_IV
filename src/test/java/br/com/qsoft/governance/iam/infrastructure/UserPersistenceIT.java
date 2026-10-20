@@ -68,7 +68,7 @@ class UserPersistenceIT {
 
     private User provision(Tenant tenant, String email, String name, HierarchyLevel level) {
         return provisionUser.provision(new ProvisionUserCommand(
-            tenant.id(), email, name, level, "secret123", null, Set.of()));
+            tenant.id(), email, name, level, "secret123", null));
     }
 
     @Test
@@ -112,7 +112,7 @@ class UserPersistenceIT {
     void shouldRejectUnknownTenant() {
         assertThatThrownBy(() -> provisionUser.provision(new ProvisionUserCommand(
             TenantId.random(), "ana@x.com", "Ana", HierarchyLevel.MANAGER,
-            "secret123", null, Set.of())))
+            "secret123", null)))
             .isInstanceOf(TenantNotFoundException.class);
     }
 

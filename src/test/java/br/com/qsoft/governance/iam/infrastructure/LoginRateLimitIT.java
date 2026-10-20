@@ -95,7 +95,7 @@ class LoginRateLimitIT {
         try {
             provisionUser.provision(new ProvisionUserCommand(
                 tenant.id(), email, "User", HierarchyLevel.COLLABORATOR,
-                USER_PASSWORD, null, Set.of()));
+                USER_PASSWORD, null));
         } catch (UserEmailAlreadyExistsException ignored) {
             // já provisionado por um teste anterior
         }

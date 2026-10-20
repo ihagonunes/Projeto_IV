@@ -104,7 +104,7 @@ class RolePersistenceIT {
     @Test
     void shouldPersistRoleAssignment() {
         Tenant tenant = newTenant();
-        User user = provisionUser.provision(new ProvisionUserCommand(tenant.id(), "assign@rbac.com", "Assign", HierarchyLevel.MANAGER, "secret123", null, java.util.Set.of()));
+        User user = provisionUser.provision(new ProvisionUserCommand(tenant.id(), "assign@rbac.com", "Assign", HierarchyLevel.MANAGER, "secret123", null));
         Role role = roleRepository.findByTenantIdAndName(tenant.id(), "EXECUTIVE").orElseThrow();
 
         RoleAssignment saved = roleAssignmentRepository.save(RoleAssignment.grant(

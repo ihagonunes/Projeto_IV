@@ -8,7 +8,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import br.com.qsoft.governance.iam.api.model.Permission;
 import br.com.qsoft.governance.iam.application.port.UserSearchFilter;
 import br.com.qsoft.governance.iam.domain.user.HierarchyLevel;
 import br.com.qsoft.governance.iam.domain.user.User;
@@ -81,7 +80,6 @@ class UserPersistenceTest {
         entity.setHierarchyLevel(HierarchyLevel.MANAGER);
         entity.setDepartmentId(deptId);
         entity.setPasswordHash("hash123");
-        entity.setPermissions(Set.of(Permission.MANAGE_USERS));
         entity.setStatus(UserStatus.ACTIVE);
         entity.setCreatedAt(now);
         entity.setUpdatedAt(now);
@@ -93,13 +91,9 @@ class UserPersistenceTest {
         assertThat(entity.getHierarchyLevel()).isEqualTo(HierarchyLevel.MANAGER);
         assertThat(entity.getDepartmentId()).isEqualTo(deptId);
         assertThat(entity.getPasswordHash()).isEqualTo("hash123");
-        assertThat(entity.getPermissions()).containsExactly(Permission.MANAGE_USERS);
         assertThat(entity.getStatus()).isEqualTo(UserStatus.ACTIVE);
         assertThat(entity.getCreatedAt()).isEqualTo(now);
         assertThat(entity.getUpdatedAt()).isEqualTo(now);
-
-        entity.setPermissions(null);
-        assertThat(entity.getPermissions()).isEmpty();
     }
 
     @Test
@@ -119,7 +113,6 @@ class UserPersistenceTest {
             HierarchyLevel.COLLABORATOR,
             deptId,
             "passhash",
-            Set.of(Permission.MANAGE_TENANT),
             UserStatus.ACTIVE,
             now,
             now
@@ -138,7 +131,6 @@ class UserPersistenceTest {
         assertThat(restoredUser.hierarchyLevel()).isEqualTo(HierarchyLevel.COLLABORATOR);
         assertThat(restoredUser.departmentId()).isEqualTo(deptId);
         assertThat(restoredUser.passwordHash()).isEqualTo("passhash");
-        assertThat(restoredUser.permissions()).containsExactly(Permission.MANAGE_TENANT);
         assertThat(restoredUser.status()).isEqualTo(UserStatus.ACTIVE);
     }
 
@@ -442,7 +434,6 @@ class UserPersistenceTest {
             HierarchyLevel.COLLABORATOR,
             null,
             "hash",
-            Set.of(),
             UserStatus.ACTIVE,
             Instant.now(),
             Instant.now()

@@ -105,7 +105,7 @@ class IAMApplicationRecordsTest {
         TenantId tenantId = TenantId.random();
         UUID deptId = UUID.randomUUID();
         ProvisionUserCommand cmd = new ProvisionUserCommand(
-            tenantId, "ana@qsoft.com", "Ana", HierarchyLevel.MANAGER, "Pass123!", deptId, Set.of());
+            tenantId, "ana@qsoft.com", "Ana", HierarchyLevel.MANAGER, "Pass123!", deptId);
 
         assertThat(cmd.tenantId()).isEqualTo(tenantId);
         assertThat(cmd.email()).isEqualTo("ana@qsoft.com");
@@ -113,7 +113,6 @@ class IAMApplicationRecordsTest {
         assertThat(cmd.hierarchyLevel()).isEqualTo(HierarchyLevel.MANAGER);
         assertThat(cmd.password()).isEqualTo("Pass123!");
         assertThat(cmd.departmentId()).isEqualTo(deptId);
-        assertThat(cmd.permissions()).isEmpty();
     }
 
     @Test

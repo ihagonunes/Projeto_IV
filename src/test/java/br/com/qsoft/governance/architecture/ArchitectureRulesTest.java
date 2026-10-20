@@ -2,15 +2,22 @@ package br.com.qsoft.governance.architecture;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import br.com.qsoft.governance.iam.domain.rbac.GrantOrigin;
+import br.com.qsoft.governance.iam.domain.rbac.Role;
+import br.com.qsoft.governance.iam.domain.rbac.RoleAssignment;
+import br.com.qsoft.governance.sharedkernel.id.UserId;
 import com.tngtech.archunit.core.domain.Dependency;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
+import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.lang.ArchRule;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
@@ -121,8 +128,51 @@ class ArchitectureRulesTest {
             .check(classes());
     }
 
+    /**
+     * Regra 1 (SPEC-01 §10): autorização não lê o rótulo hierárquico. Nenhuma
+     * classe de `iam.application.rbac`, `iam.domain.rbac`, do
+     * `PermissionInterceptor` ou do `observability` depende de `HierarchyLevel`.
+     */
+    @Test
+    void authorizationMustNotDependOnHierarchyLevel() {
+        JavaClasses classes = classes();
+        String hierarchyLevel = ROOT + ".iam.domain.user.HierarchyLevel";
+
+        noClasses().that().resideInAnyPackage(
+                ROOT + ".iam.application.rbac..",
+                ROOT + ".iam.domain.rbac..",
+                ROOT + ".observability..")
+            .should().dependOnClassesThat().haveFullyQualifiedName(hierarchyLevel)
+            .check(classes);
+
+        noClasses().that().haveFullyQualifiedName(
+                ROOT + ".iam.infrastructure.web.PermissionInterceptor")
+            .should().dependOnClassesThat().haveFullyQualifiedName(hierarchyLevel)
+            .check(classes);
+    }
+
+    /**
+     * Regra 2 (SPEC-01 §10): o construtor e `grant` de `RoleAssignment` só são
+     * chamados pela aplicação, pelo próprio domínio rbac e pelo mapper JPA.
+     */
+    @Test
+    void roleAssignmentConstructionIsRestricted() {
+        JavaClasses classes = classes();
+
+        noClasses().that().resideOutsideOfPackages(
+                ROOT + ".iam.application..",
+                ROOT + ".iam.domain.rbac..",
+                ROOT + ".iam.infrastructure.persistence..")
+            .should().callConstructor(RoleAssignment.class)
+            .orShould().callMethod(RoleAssignment.class, "grant",
+                UserId.class, Role.class, UUID.class, GrantOrigin.class, UserId.class, Instant.class)
+            .check(classes);
+    }
+
     private JavaClasses classes() {
-        return new ClassFileImporter().importPackages(ROOT);
+        return new ClassFileImporter()
+            .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
+            .importPackages(ROOT);
     }
 
     private String moduleOf(String packageName) {

@@ -3,7 +3,6 @@ package br.com.qsoft.governance.iam.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import br.com.qsoft.governance.iam.api.model.Permission;
 import br.com.qsoft.governance.iam.application.port.TenantRepository;
 import br.com.qsoft.governance.iam.application.port.UserRepository;
 import br.com.qsoft.governance.iam.domain.exception.TenantNotFoundException;
@@ -16,7 +15,6 @@ import br.com.qsoft.governance.iam.domain.user.UserStatus;
 import br.com.qsoft.governance.sharedkernel.id.TenantId;
 import br.com.qsoft.governance.sharedkernel.id.UserId;
 import java.time.Instant;
-import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -89,17 +87,16 @@ class ProvisionUserTest {
     }
 
     @Test
-    void shouldProvisionUserWithPasswordAndPermissions() {
+    void shouldProvisionUserWithPassword() {
         Tenant tenant = activeTenant();
 
         User user = useCase.provision(new ProvisionUserCommand(
             tenant.id(), "admin@qsoft.com", "Admin", HierarchyLevel.EXECUTIVE,
-            "Qsoft@2026", null, EnumSet.allOf(Permission.class)));
+            "Qsoft@2026", null));
 
         assertThat(user.id()).isNotNull();
         assertThat(user.tenantId()).isEqualTo(tenant.id());
         assertThat(user.status()).isEqualTo(UserStatus.ACTIVE);
-        assertThat(user.isAdmin()).isTrue();
         assertThat(user.hasPasswordHash()).isTrue();
         assertThat(encoder.matches("Qsoft@2026", user.passwordHash())).isTrue();
     }
@@ -108,17 +105,17 @@ class ProvisionUserTest {
     void shouldRejectDuplicateEmail() {
         Tenant tenant = activeTenant();
         useCase.provision(new ProvisionUserCommand(
-            tenant.id(), "ana@qsoft.com", "Ana", HierarchyLevel.MANAGER, "senha123", null, null));
+            tenant.id(), "ana@qsoft.com", "Ana", HierarchyLevel.MANAGER, "senha123", null));
 
         assertThatThrownBy(() -> useCase.provision(new ProvisionUserCommand(
-            tenant.id(), "ana@qsoft.com", "Outra", HierarchyLevel.LEADER, "outra123", null, null)))
+            tenant.id(), "ana@qsoft.com", "Outra", HierarchyLevel.LEADER, "outra123", null)))
             .isInstanceOf(UserEmailAlreadyExistsException.class);
     }
 
     @Test
     void shouldRejectUnknownTenant() {
         assertThatThrownBy(() -> useCase.provision(new ProvisionUserCommand(
-            TenantId.random(), "ana@qsoft.com", "Ana", HierarchyLevel.MANAGER, "senha123", null, null)))
+            TenantId.random(), "ana@qsoft.com", "Ana", HierarchyLevel.MANAGER, "senha123", null)))
             .isInstanceOf(TenantNotFoundException.class);
     }
 
@@ -127,7 +124,7 @@ class ProvisionUserTest {
         Tenant tenant = activeTenant();
 
         assertThatThrownBy(() -> useCase.provision(new ProvisionUserCommand(
-            tenant.id(), "ana@qsoft.com", "Ana", HierarchyLevel.MANAGER, "  ", null, null)))
+            tenant.id(), "ana@qsoft.com", "Ana", HierarchyLevel.MANAGER, "  ", null)))
             .isInstanceOf(IllegalArgumentException.class);
     }
 }

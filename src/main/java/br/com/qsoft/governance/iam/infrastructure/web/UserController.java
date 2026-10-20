@@ -8,6 +8,7 @@ import br.com.qsoft.governance.iam.application.ChangeUserHierarchyLevel;
 import br.com.qsoft.governance.iam.application.ChangeUserHierarchyLevelCommand;
 import br.com.qsoft.governance.iam.application.ChangeUserStatus;
 import br.com.qsoft.governance.iam.application.ChangeUserStatusCommand;
+import br.com.qsoft.governance.iam.application.GetUserAccess;
 import br.com.qsoft.governance.iam.application.ListUsers;
 import br.com.qsoft.governance.iam.application.ListUsersCommand;
 import br.com.qsoft.governance.iam.application.RevokeRoleAssignment;
@@ -19,7 +20,6 @@ import br.com.qsoft.governance.iam.application.rbac.PolicyEvaluator;
 import br.com.qsoft.governance.iam.domain.exception.AuthorizationDeniedException;
 import br.com.qsoft.governance.iam.domain.exception.UserNotFoundException;
 import br.com.qsoft.governance.iam.domain.rbac.GrantOrigin;
-import br.com.qsoft.governance.iam.domain.rbac.Permission;
 import br.com.qsoft.governance.iam.domain.rbac.RoleAssignment;
 import br.com.qsoft.governance.iam.domain.user.HierarchyLevel;
 import br.com.qsoft.governance.iam.domain.user.User;
@@ -32,7 +32,6 @@ import br.com.qsoft.governance.sharedkernel.rbac.Resource;
 import br.com.qsoft.governance.sharedkernel.tenant.TenantContext;
 import br.com.qsoft.governance.sharedkernel.tenant.TenantContextHolder;
 import jakarta.validation.Valid;
-import java.util.Set;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -66,6 +65,7 @@ public class UserController {
     private final AssignRole assignRole;
     private final RevokeRoleAssignment revokeRoleAssignment;
     private final UserRepository userRepository;
+    private final GetUserAccess getUserAccess;
 
     public UserController(ChangeUserHierarchyLevel changeUserHierarchyLevel,
                           ChangeUserStatus changeUserStatus,
@@ -74,7 +74,8 @@ public class UserController {
                           PolicyEvaluator policyEvaluator,
                           AssignRole assignRole,
                           RevokeRoleAssignment revokeRoleAssignment,
-                          UserRepository userRepository) {
+                          UserRepository userRepository,
+                          GetUserAccess getUserAccess) {
         this.changeUserHierarchyLevel = changeUserHierarchyLevel;
         this.changeUserStatus = changeUserStatus;
         this.listUsers = listUsers;
@@ -83,6 +84,7 @@ public class UserController {
         this.assignRole = assignRole;
         this.revokeRoleAssignment = revokeRoleAssignment;
         this.userRepository = userRepository;
+        this.getUserAccess = getUserAccess;
     }
 
     /**
@@ -151,13 +153,12 @@ public class UserController {
         return ResponseEntity.ok(UserResponse.from(user));
     }
 
-    /** Permissões efetivas do próprio usuário autenticado (SPI-44/SPEC §7.3). */
+    /** Concessões e permissões efetivas do próprio usuário (SPEC-01 §7.3). */
     @GetMapping("/me/permissoes")
-    public ResponseEntity<EffectivePermissionsResponse> myPermissions() {
+    public ResponseEntity<UserAccessResponse> myPermissions() {
         TenantContext context = TenantContextHolder.require();
-        Set<Permission> permissions = policyEvaluator.effectivePermissions(
-            context.tenantId(), context.userId());
-        return ResponseEntity.ok(EffectivePermissionsResponse.from(context.userId().value(), permissions));
+        return ResponseEntity.ok(UserAccessResponse.from(
+            getUserAccess.forUser(context.tenantId(), context.userId())));
     }
 
     /**
@@ -167,7 +168,7 @@ public class UserController {
     @GetMapping("/{id}/permissoes")
     @RequiresPermission(resource = Resource.USER, action = Action.READ,
         targeting = Targeting.BY_TARGET)
-    public ResponseEntity<EffectivePermissionsResponse> userPermissions(@PathVariable UUID id) {
+    public ResponseEntity<UserAccessResponse> userPermissions(@PathVariable UUID id) {
         TenantContext context = TenantContextHolder.require();
         UserId targetId = UserId.of(id);
         User target = userRepository.findByTenantIdAndId(context.tenantId(), targetId)
@@ -181,9 +182,8 @@ public class UserController {
                 "Sem acesso às permissões deste usuário.");
         }
 
-        Set<Permission> permissions = policyEvaluator.effectivePermissions(
-            context.tenantId(), targetId);
-        return ResponseEntity.ok(EffectivePermissionsResponse.from(id, permissions));
+        return ResponseEntity.ok(UserAccessResponse.from(
+            getUserAccess.forUser(context.tenantId(), targetId)));
     }
 
     /**

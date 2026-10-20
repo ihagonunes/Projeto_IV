@@ -1,18 +1,17 @@
 package br.com.qsoft.governance.iam.domain.user;
 
-import br.com.qsoft.governance.iam.api.model.Permission;
 import br.com.qsoft.governance.sharedkernel.id.TenantId;
 import br.com.qsoft.governance.sharedkernel.id.UserId;
 import java.time.Instant;
-import java.util.EnumSet;
-import java.util.HashSet;
 import java.util.Objects;
-import java.util.Set;
 import java.util.UUID;
 
 /**
  * Aggregate de usuário do módulo IAM. Pertence a um Tenant e pode estar
  * associado a um Department (referência por ID, conforme ADR-05).
+ * <p>
+ * A autorização vem das concessões de papel ({@code iam_role_assignments}),
+ * nunca de um conjunto de permissões no usuário (ADR-36).
  * O domínio não depende de JPA/Spring (ADR-31).
  */
 public final class User {
@@ -24,14 +23,13 @@ public final class User {
     private HierarchyLevel hierarchyLevel;
     private UUID departmentId;
     private String passwordHash;
-    private final Set<Permission> permissions;
     private UserStatus status;
     private final Instant createdAt;
     private Instant updatedAt;
 
     private User(UserId id, TenantId tenantId, String email, String name,
                  HierarchyLevel hierarchyLevel, UUID departmentId, String passwordHash,
-                 Set<Permission> permissions, UserStatus status, Instant createdAt, Instant updatedAt) {
+                 UserStatus status, Instant createdAt, Instant updatedAt) {
         this.id = Objects.requireNonNull(id, "id");
         this.tenantId = Objects.requireNonNull(tenantId, "tenantId");
         this.email = Objects.requireNonNull(email, "email");
@@ -39,7 +37,6 @@ public final class User {
         this.hierarchyLevel = Objects.requireNonNull(hierarchyLevel, "hierarchyLevel");
         this.departmentId = departmentId;
         this.passwordHash = passwordHash;
-        this.permissions = permissions == null ? new HashSet<>() : new HashSet<>(permissions);
         this.status = Objects.requireNonNull(status, "status");
         this.createdAt = Objects.requireNonNull(createdAt, "createdAt");
         this.updatedAt = Objects.requireNonNull(updatedAt, "updatedAt");
@@ -49,15 +46,14 @@ public final class User {
                               HierarchyLevel hierarchyLevel, UUID departmentId) {
         Instant now = Instant.now();
         return new User(id, tenantId, email, name, hierarchyLevel, departmentId, null,
-            Set.of(), UserStatus.ACTIVE, now, now);
+            UserStatus.ACTIVE, now, now);
     }
 
     public static User restore(UserId id, TenantId tenantId, String email, String name,
                                HierarchyLevel hierarchyLevel, UUID departmentId, String passwordHash,
-                               Set<Permission> permissions, UserStatus status,
-                               Instant createdAt, Instant updatedAt) {
+                               UserStatus status, Instant createdAt, Instant updatedAt) {
         return new User(id, tenantId, email, name, hierarchyLevel, departmentId, passwordHash,
-            permissions, status, createdAt, updatedAt);
+            status, createdAt, updatedAt);
     }
 
     public UserId id() {
@@ -98,37 +94,6 @@ public final class User {
         return this;
     }
 
-    public Set<Permission> permissions() {
-        return Set.copyOf(permissions);
-    }
-
-    public boolean hasPermission(Permission permission) {
-        return permissions.contains(permission);
-    }
-
-    /**
-     * ADMIN é o conjunto completo de permissões, não um nível hierárquico (ADR-04).
-     */
-    public boolean isAdmin() {
-        return permissions.containsAll(EnumSet.allOf(Permission.class));
-    }
-
-    public User grantPermission(Permission permission) {
-        if (permission != null) {
-            permissions.add(permission);
-            this.updatedAt = Instant.now();
-        }
-        return this;
-    }
-
-    public User revokePermission(Permission permission) {
-        if (permission != null) {
-            permissions.remove(permission);
-            this.updatedAt = Instant.now();
-        }
-        return this;
-    }
-
     public UserStatus status() {
         return status;
     }
@@ -158,8 +123,8 @@ public final class User {
     }
 
     /**
-     * Altera o nível hierárquico do usuário. Exige um nível válido e não-nulo;
-     * ADMIN não é um nível hierárquico (ADR-04).
+     * Altera o rótulo hierárquico do usuário. O rótulo é organizacional e não
+     * tem efeito de autorização (ADR-36 item 9).
      */
     public User changeHierarchyLevel(HierarchyLevel newLevel) {
         if (newLevel == null) {

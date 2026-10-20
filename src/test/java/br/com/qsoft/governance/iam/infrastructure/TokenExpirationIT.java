@@ -115,7 +115,7 @@ class TokenExpirationIT {
         try {
             return provisionUser.provision(new ProvisionUserCommand(
                 tenant.id(), USER_EMAIL, "User", HierarchyLevel.COLLABORATOR,
-                USER_PASSWORD, null, Set.of()));
+                USER_PASSWORD, null));
         } catch (UserEmailAlreadyExistsException ignored) {
             return userRepository.findByTenantIdAndEmail(tenant.id(), USER_EMAIL).orElseThrow();
         }

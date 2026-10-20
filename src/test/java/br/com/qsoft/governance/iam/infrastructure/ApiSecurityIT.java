@@ -121,7 +121,7 @@ class ApiSecurityIT {
             .retrieve().body(Map.class);
 
         assertThat(response).isNotNull();
-        Iterable<String> permissions = (Iterable<String>) response.get("permissions");
+        Iterable<String> permissions = (Iterable<String>) response.get("permissoes");
         assertThat(permissions).contains("USER:MANAGE");
     }
 }

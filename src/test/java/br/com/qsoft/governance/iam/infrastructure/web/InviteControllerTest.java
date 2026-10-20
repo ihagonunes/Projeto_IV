@@ -95,7 +95,7 @@ class InviteControllerTest {
     private User sampleUser() {
         return User.restore(
             UserId.random(), TenantId.random(), "dev@qsoft.com", "Dev",
-            HierarchyLevel.COLLABORATOR, null, "hash", Set.of(),
+            HierarchyLevel.COLLABORATOR, null, "hash",
             UserStatus.ACTIVE, Instant.now(), Instant.now()
         );
     }

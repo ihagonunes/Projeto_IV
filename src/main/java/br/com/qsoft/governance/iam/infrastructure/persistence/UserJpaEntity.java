@@ -1,20 +1,14 @@
 package br.com.qsoft.governance.iam.infrastructure.persistence;
 
-import br.com.qsoft.governance.iam.api.model.Permission;
 import br.com.qsoft.governance.iam.domain.user.HierarchyLevel;
 import br.com.qsoft.governance.iam.domain.user.UserStatus;
-import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
-import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
 import java.time.Instant;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.UUID;
 import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.FilterDef;
@@ -23,6 +17,10 @@ import org.hibernate.annotations.ParamDef;
 /**
  * Persistência JPA do agregado User. O department_id é uma referência
  * cross-module persistida apenas como ID, sem FK SQL (ADR-29/ADR-05).
+ * <p>
+ * A tabela legada {@code user_permission} NÃO é mapeada: a autorização vem das
+ * concessões de papel (ADR-36). A tabela permanece no banco até o release
+ * seguinte (decisão 7 — DROP via V021+).
  * <p>
  * O {@code @Filter} transversal é a DEFESA SECUNDÁRIA de isolamento
  * (ADR-03): o filtro explícito por tenant_id nas queries é a defesa primária.
@@ -58,12 +56,6 @@ public class UserJpaEntity {
 
     @Column(name = "password_hash", length = 255)
     private String passwordHash;
-
-    @ElementCollection
-    @CollectionTable(name = "user_permission", joinColumns = @JoinColumn(name = "user_id"))
-    @Column(name = "permission", nullable = false, length = 40)
-    @Enumerated(EnumType.STRING)
-    private Set<Permission> permissions = new HashSet<>();
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
@@ -133,14 +125,6 @@ public class UserJpaEntity {
 
     public void setPasswordHash(String passwordHash) {
         this.passwordHash = passwordHash;
-    }
-
-    public Set<Permission> getPermissions() {
-        return permissions;
-    }
-
-    public void setPermissions(Set<Permission> permissions) {
-        this.permissions = permissions == null ? new HashSet<>() : new HashSet<>(permissions);
     }
 
     public UserStatus getStatus() {

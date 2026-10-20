@@ -15,7 +15,6 @@ import br.com.qsoft.governance.iam.domain.user.User;
 import br.com.qsoft.governance.sharedkernel.id.RoleId;
 import br.com.qsoft.governance.sharedkernel.id.UserId;
 import java.time.Instant;
-import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -82,8 +81,7 @@ public class AcceptInvite {
             name != null ? name : invite.email(),
             invite.hierarchyLevel(),
             password,
-            invite.departmentId(),
-            Set.of()
+            invite.departmentId()
         ));
 
         roleAssignmentRepository.save(RoleAssignment.grant(

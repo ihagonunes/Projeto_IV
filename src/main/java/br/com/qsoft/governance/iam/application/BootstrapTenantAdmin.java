@@ -10,7 +10,6 @@ import br.com.qsoft.governance.iam.domain.user.User;
 import br.com.qsoft.governance.sharedkernel.id.TenantId;
 import java.time.Instant;
 import java.util.Objects;
-import java.util.Set;
 import org.springframework.stereotype.Service;
 
 /**
@@ -42,7 +41,7 @@ public class BootstrapTenantAdmin {
         Objects.requireNonNull(tenantId, "tenantId é obrigatório.");
 
         User admin = provisionUser.provision(new ProvisionUserCommand(
-            tenantId, adminEmail, adminName, HierarchyLevel.EXECUTIVE, adminPassword, null, Set.of()));
+            tenantId, adminEmail, adminName, HierarchyLevel.EXECUTIVE, adminPassword, null));
 
         Role tenantAdmin = roleRepository.findByTenantIdAndName(tenantId, TENANT_ADMIN_ROLE)
             .orElseThrow(() -> new IllegalStateException(

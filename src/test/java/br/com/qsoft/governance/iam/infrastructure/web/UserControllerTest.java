@@ -12,21 +12,20 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import br.com.qsoft.governance.iam.application.AssignRole;
 import br.com.qsoft.governance.iam.application.ChangeUserHierarchyLevel;
 import br.com.qsoft.governance.iam.application.ChangeUserStatus;
+import br.com.qsoft.governance.iam.application.GetUserAccess;
 import br.com.qsoft.governance.iam.application.ListUsers;
 import br.com.qsoft.governance.iam.application.RevokeRoleAssignment;
 import br.com.qsoft.governance.iam.application.UpdateUser;
+import br.com.qsoft.governance.iam.application.UserAccessView;
 import br.com.qsoft.governance.iam.application.port.UserRepository;
 import br.com.qsoft.governance.iam.application.rbac.PolicyEvaluator;
 import br.com.qsoft.governance.iam.domain.exception.UserNotFoundException;
-import br.com.qsoft.governance.iam.domain.rbac.Permission;
 import br.com.qsoft.governance.iam.domain.user.HierarchyLevel;
 import br.com.qsoft.governance.iam.domain.user.User;
 import br.com.qsoft.governance.iam.domain.user.UserStatus;
 import br.com.qsoft.governance.sharedkernel.id.TenantId;
 import br.com.qsoft.governance.sharedkernel.id.UserId;
 import br.com.qsoft.governance.sharedkernel.query.PageResult;
-import br.com.qsoft.governance.sharedkernel.rbac.Action;
-import br.com.qsoft.governance.sharedkernel.rbac.Resource;
 import br.com.qsoft.governance.sharedkernel.tenant.TenantContext;
 import br.com.qsoft.governance.sharedkernel.tenant.TenantContextHolder;
 import java.time.Instant;
@@ -55,6 +54,7 @@ class UserControllerTest {
     private AssignRole assignRole;
     private RevokeRoleAssignment revokeRoleAssignment;
     private UserRepository userRepository;
+    private GetUserAccess getUserAccess;
     private MockMvc mockMvc;
 
     @BeforeEach
@@ -67,10 +67,11 @@ class UserControllerTest {
         assignRole = mock(AssignRole.class);
         revokeRoleAssignment = mock(RevokeRoleAssignment.class);
         userRepository = mock(UserRepository.class);
+        getUserAccess = mock(GetUserAccess.class);
 
         UserController controller = new UserController(
             changeUserHierarchyLevel, changeUserStatus, listUsers, updateUser,
-            policyEvaluator, assignRole, revokeRoleAssignment, userRepository);
+            policyEvaluator, assignRole, revokeRoleAssignment, userRepository, getUserAccess);
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
             .setControllerAdvice(new UserApiExceptionHandler())
             .build();
@@ -88,7 +89,7 @@ class UserControllerTest {
     private User sampleUser(TenantId tenantId) {
         return User.restore(
             UserId.random(), tenantId, "dev@qsoft.com", "Dev",
-            HierarchyLevel.COLLABORATOR, null, "hash", Set.of(),
+            HierarchyLevel.COLLABORATOR, null, "hash",
             UserStatus.ACTIVE, Instant.now(), Instant.now()
         );
     }
@@ -156,31 +157,32 @@ class UserControllerTest {
     }
 
     @Test
-    void deve_retornar200_quando_buscarPermissoesDoProprioUsuario() throws Exception {
+    void deve_retornar200_quando_buscarAcessoDoProprioUsuario() throws Exception {
         TenantId tenantId = TenantId.random();
         UserId userId = UserId.random();
         TenantContextHolder.set(new TenantContext(tenantId, userId));
-        when(policyEvaluator.effectivePermissions(any(TenantId.class), any(UserId.class)))
-            .thenReturn(Set.of(Permission.of(Resource.USER, Action.READ)));
+        when(getUserAccess.forUser(tenantId, userId))
+            .thenReturn(new UserAccessView(userId.value(), List.of(), Set.of()));
 
         mockMvc.perform(get("/api/v1/usuarios/me/permissoes"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.userId").value(userId.value().toString()))
-            .andExpect(jsonPath("$.permissions").isArray());
+            .andExpect(jsonPath("$.permissoes").isArray())
+            .andExpect(jsonPath("$.concessoes").isArray());
     }
 
     @Test
-    void deve_retornar200_quando_buscarPermissoesDeOutroUsuarioPermitido() throws Exception {
+    void deve_retornar200_quando_buscarAcessoDeOutroUsuarioPermitido() throws Exception {
         TenantId tenantId = TenantId.random();
         setContext(tenantId);
         UserId targetId = UserId.random();
         User target = User.restore(targetId, tenantId, "alvo@qsoft.com", "Alvo",
-            HierarchyLevel.COLLABORATOR, UUID.randomUUID(), "hash", Set.of(),
+            HierarchyLevel.COLLABORATOR, UUID.randomUUID(), "hash",
             UserStatus.ACTIVE, Instant.now(), Instant.now());
         when(userRepository.findByTenantIdAndId(tenantId, targetId)).thenReturn(Optional.of(target));
         when(policyEvaluator.isAllowed(any(), any(), any(), any(), any())).thenReturn(true);
-        when(policyEvaluator.effectivePermissions(any(TenantId.class), any(UserId.class)))
-            .thenReturn(Set.of());
+        when(getUserAccess.forUser(tenantId, targetId))
+            .thenReturn(new UserAccessView(targetId.value(), List.of(), Set.of()));
 
         mockMvc.perform(get("/api/v1/usuarios/" + targetId.value() + "/permissoes"))
             .andExpect(status().isOk())
@@ -193,7 +195,7 @@ class UserControllerTest {
         setContext(tenantId);
         UserId targetId = UserId.random();
         User target = User.restore(targetId, tenantId, "alvo@qsoft.com", "Alvo",
-            HierarchyLevel.COLLABORATOR, UUID.randomUUID(), "hash", Set.of(),
+            HierarchyLevel.COLLABORATOR, UUID.randomUUID(), "hash",
             UserStatus.ACTIVE, Instant.now(), Instant.now());
         when(userRepository.findByTenantIdAndId(tenantId, targetId)).thenReturn(Optional.of(target));
         when(policyEvaluator.isAllowed(any(), any(), any(), any(), any())).thenReturn(false);
