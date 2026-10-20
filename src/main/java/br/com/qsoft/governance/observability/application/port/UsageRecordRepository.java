@@ -17,6 +17,15 @@ public interface UsageRecordRepository {
 
     UsageRecord save(UsageRecord record);
 
+    /**
+     * Insere o registro de forma idempotente por {@code request_id}
+     * ({@code ON CONFLICT DO NOTHING}). A query nativa carrega {@code tenant_id}
+     * explicitamente.
+     *
+     * @return {@code true} se inseriu; {@code false} se o {@code request_id} já existia.
+     */
+    boolean insertIfAbsent(UsageRecord record);
+
     boolean existsByRequestId(UUID requestId);
 
     PageResult<UsageRecord> search(UsageRecordFilter filter, int page, int size);

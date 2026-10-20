@@ -8,6 +8,8 @@ import br.com.qsoft.governance.sharedkernel.tenant.TenantContextHolder;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.criteria.Predicate;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -17,6 +19,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,20 +30,51 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 public class UsageRecordRepositoryAdapter implements UsageRecordRepository {
 
+    private static final String INSERT_IF_ABSENT = """
+        INSERT INTO observability_usage_records
+            (id, request_id, tenant_id, department_id, user_id, model_id, provider_id,
+             input_tokens, output_tokens, estimated_cost, latency_ms, status, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT (request_id) DO NOTHING
+        """;
+
     private final UsageRecordJpaRepository jpaRepository;
+    private final JdbcTemplate jdbcTemplate;
     private final UsageRecordJpaMapper mapper = new UsageRecordJpaMapper();
 
     @PersistenceContext
     private EntityManager entityManager;
 
-    public UsageRecordRepositoryAdapter(UsageRecordJpaRepository jpaRepository) {
+    public UsageRecordRepositoryAdapter(UsageRecordJpaRepository jpaRepository,
+                                        JdbcTemplate jdbcTemplate) {
         this.jpaRepository = jpaRepository;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     @Override
     @Transactional
     public UsageRecord save(UsageRecord record) {
         return mapper.toDomain(jpaRepository.save(mapper.toEntity(record)));
+    }
+
+    @Override
+    @Transactional
+    public boolean insertIfAbsent(UsageRecord record) {
+        int rows = jdbcTemplate.update(INSERT_IF_ABSENT,
+            record.id(),
+            record.requestId(),
+            record.tenantId().value(),
+            record.departmentId(),
+            record.userId(),
+            record.modelId(),
+            record.providerId(),
+            record.inputTokens(),
+            record.outputTokens(),
+            record.estimatedCost(),
+            record.latencyMs(),
+            record.status(),
+            OffsetDateTime.ofInstant(record.createdAt(), ZoneOffset.UTC));
+        return rows > 0;
     }
 
     @Override

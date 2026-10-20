@@ -27,6 +27,15 @@ class RecordUsageTest {
         }
 
         @Override
+        public boolean insertIfAbsent(UsageRecord record) {
+            if (recordsByRequest.containsKey(record.requestId())) {
+                return false;
+            }
+            recordsByRequest.put(record.requestId(), record);
+            return true;
+        }
+
+        @Override
         public boolean existsByRequestId(UUID requestId) {
             return recordsByRequest.containsKey(requestId);
         }

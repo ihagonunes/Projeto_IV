@@ -2,23 +2,20 @@ package br.com.qsoft.governance.observability.infrastructure.event;
 
 import br.com.qsoft.governance.observability.application.RecordUsage;
 import br.com.qsoft.governance.sharedkernel.event.AIRequestCompleted;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 /**
  * Consome {@link AIRequestCompleted} como <b>efeito secundário</b> da completion
- * (ADR-13/SPI-70).
+ * (ADR-13/ADR-38).
  * <p>
- * SPI-74: uma falha do observability <b>não</b> invalida uma completion válida —
- * a exceção é contida e registrada de forma estruturada, <b>sem conteúdo
- * privado</b> (apenas o requestId e a mensagem técnica).
+ * A exceção <b>não</b> é contida aqui: o publicador do Gateway
+ * ({@code UsageDeliveryPublisher}) a captura e agenda a reentrega, sem
+ * invalidar a resposta ao cliente. A gravação é idempotente por
+ * {@code request_id} ({@code ON CONFLICT DO NOTHING}).
  */
 @Component
 public class AIRequestCompletedListener {
-
-    private static final Logger log = LoggerFactory.getLogger(AIRequestCompletedListener.class);
 
     private final RecordUsage recordUsage;
 
@@ -28,11 +25,6 @@ public class AIRequestCompletedListener {
 
     @EventListener
     public void on(AIRequestCompleted event) {
-        try {
-            recordUsage.record(event);
-        } catch (RuntimeException ex) {
-            log.warn("Falha ao registrar UsageRecord do request {}: {}",
-                event.requestId(), ex.getMessage());
-        }
+        recordUsage.record(event);
     }
 }

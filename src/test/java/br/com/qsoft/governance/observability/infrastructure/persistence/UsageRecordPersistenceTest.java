@@ -31,6 +31,7 @@ import org.mockito.quality.Strictness;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -48,6 +49,9 @@ class UsageRecordPersistenceTest {
 
     @Mock
     private EntityManager entityManager;
+
+    @Mock
+    private JdbcTemplate jdbcTemplate;
 
     @InjectMocks
     private UsageRecordRepositoryAdapter repositoryAdapter;
@@ -337,6 +341,30 @@ class UsageRecordPersistenceTest {
     }
 
     // --- Helper Methods ---
+
+    @Test
+    void deve_inserir_idempotente_com_on_conflict_e_tenant_id() {
+        UsageRecord record = criarRecordExemplo();
+        when(jdbcTemplate.update(any(String.class), any(Object[].class))).thenReturn(1);
+
+        boolean inserted = repositoryAdapter.insertIfAbsent(record);
+
+        assertThat(inserted).isTrue();
+        ArgumentCaptor<String> sql = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<Object[]> args = ArgumentCaptor.forClass(Object[].class);
+        verify(jdbcTemplate).update(sql.capture(), args.capture());
+        assertThat(sql.getValue())
+            .contains("ON CONFLICT (request_id) DO NOTHING")
+            .contains("tenant_id");
+        assertThat(args.getValue()[2]).isEqualTo(record.tenantId().value());
+    }
+
+    @Test
+    void deve_retornar_false_quando_request_id_ja_existir() {
+        when(jdbcTemplate.update(any(String.class), any(Object[].class))).thenReturn(0);
+
+        assertThat(repositoryAdapter.insertIfAbsent(criarRecordExemplo())).isFalse();
+    }
 
     private UsageRecord criarRecordExemplo() {
         return UsageRecord.restore(

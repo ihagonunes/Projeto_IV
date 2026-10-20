@@ -28,10 +28,7 @@ public class RecordUsage {
     @Transactional
     public boolean record(AIRequestCompleted event) {
         Objects.requireNonNull(event, "event");
-        if (usageRecordRepository.existsByRequestId(event.requestId())) {
-            return false;
-        }
-        usageRecordRepository.save(UsageRecord.fromEvent(UUID.randomUUID(), event));
-        return true;
+        return usageRecordRepository.insertIfAbsent(
+            UsageRecord.fromEvent(UUID.randomUUID(), event));
     }
 }

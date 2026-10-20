@@ -10,7 +10,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 
@@ -45,7 +45,7 @@ class AIRequestCompletedListenerTest {
     }
 
     @Test
-    void deve_capturar_excecao_sem_propagar_quando_record_usage_falhar() {
+    void deve_propagar_excecao_para_o_publicador_agendar_reentrega() {
         AIRequestCompleted event = new AIRequestCompleted(
             UUID.randomUUID(),
             UUID.randomUUID(),
@@ -62,7 +62,9 @@ class AIRequestCompletedListenerTest {
 
         doThrow(new RuntimeException("Database error")).when(recordUsage).record(event);
 
-        assertThatCode(() -> listener.on(event)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> listener.on(event))
+            .isInstanceOf(RuntimeException.class)
+            .hasMessage("Database error");
         verify(recordUsage).record(event);
     }
 }

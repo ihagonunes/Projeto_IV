@@ -14,6 +14,13 @@ spring:
     locations: classpath:db/migration
 
 app:
+  ai:
+    delivery:
+      # Determinístico nos ITs: o job é acionado explicitamente via runOnce().
+      enabled: false
+      interval-ms: 30000
+      max-attempts: 8
+      inflight-grace-ms: 90000
   security:
     jwt:
       # Segredo apenas para os testes de integração (>= 32 chars).

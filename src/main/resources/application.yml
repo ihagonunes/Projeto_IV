@@ -46,6 +46,14 @@ springdoc:
     enabled: ${OPENAPI_ENABLED:true}
 
 app:
+  ai:
+    delivery:
+      # Job de reentrega de AIRequestCompleted (ADR-38/SPEC-03 §3).
+      # Em testes de integração fica desligado e é acionado manualmente.
+      enabled: true
+      interval-ms: 30000
+      max-attempts: 8
+      inflight-grace-ms: 90000
   bootstrap:
     # Seed de demonstração (tenant + admin) DESABILITADO por padrão.
     # Para habilitar localmente: APP_BOOTSTRAP_DEMO_DATA=true e

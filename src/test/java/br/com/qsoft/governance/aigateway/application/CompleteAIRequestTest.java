@@ -84,6 +84,25 @@ class CompleteAIRequestTest {
         public Optional<RequestAttempt> findById(UUID requestId) {
             return Optional.ofNullable(attempts.get(requestId));
         }
+
+        @Override
+        public java.util.List<UUID> tenantsWithWork(java.time.Instant now,
+                                                    java.time.Instant staleBefore) {
+            return java.util.List.of();
+        }
+
+        @Override
+        public java.util.List<UUID> claimDueDeliveries(UUID tenantId, java.time.Instant now,
+                                                       java.time.Instant leaseUntil, int limit) {
+            return java.util.List.of();
+        }
+
+        @Override
+        public java.util.List<UUID> markStaleInFlight(UUID tenantId,
+                                                      java.time.Instant staleBefore,
+                                                      java.time.Instant now, int limit) {
+            return java.util.List.of();
+        }
     };
 
     @BeforeEach
@@ -218,6 +237,26 @@ class CompleteAIRequestTest {
             @Override
             public Optional<RequestAttempt> findById(UUID requestId) {
                 return Optional.empty();
+            }
+
+            @Override
+            public java.util.List<UUID> tenantsWithWork(java.time.Instant now,
+                                                        java.time.Instant staleBefore) {
+                return java.util.List.of();
+            }
+
+            @Override
+            public java.util.List<UUID> claimDueDeliveries(UUID tenantId, java.time.Instant now,
+                                                           java.time.Instant leaseUntil,
+                                                           int limit) {
+                return java.util.List.of();
+            }
+
+            @Override
+            public java.util.List<UUID> markStaleInFlight(UUID tenantId,
+                                                          java.time.Instant staleBefore,
+                                                          java.time.Instant now, int limit) {
+                return java.util.List.of();
             }
         };
         service = new CompleteAIRequest(identityQuery, resolveModelForUser, kind -> stub,

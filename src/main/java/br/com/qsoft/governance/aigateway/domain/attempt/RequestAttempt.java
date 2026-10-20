@@ -92,11 +92,11 @@ public record RequestAttempt(
             latencyMs, errorCode, deliveryAttempts + 1, nextDeliveryAt, createdAt, Instant.now());
     }
 
-    /** Entrega esgotada: {@code DEAD}. */
+    /** Entrega esgotada: {@code DEAD} (mantém o contador já no limite). */
     public RequestAttempt dead() {
         return new RequestAttempt(requestId, tenantId, userId, departmentId, purpose, modelId,
             providerId, authorizationStatus, denialReason, executionStatus, DeliveryStatus.DEAD,
             inputTokens, outputTokens, costStatus, estimatedCost, unitPriceInput, unitPriceOutput,
-            latencyMs, errorCode, deliveryAttempts + 1, null, createdAt, Instant.now());
+            latencyMs, errorCode, deliveryAttempts, null, createdAt, Instant.now());
     }
 }
