@@ -1,0 +1,2260 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QSOFT AI Governance Platform — Relatório técnico e executivo</title>
+<style>
+  :root{
+    --bg:#f5f7fa;
+    --surface:#ffffff;
+    --surface-2:#f8fafc;
+    --ink:#0f172a;
+    --ink-2:#334155;
+    --muted:#64748b;
+    --line:#e2e8f0;
+    --line-strong:#cbd5e1;
+    --navy:#0b1f33;
+    --navy-2:#12314f;
+    --teal:#0f766e;
+    --teal-soft:#ccfbf1;
+    --green:#15803d;
+    --green-soft:#dcfce7;
+    --amber:#b45309;
+    --amber-soft:#fef3c7;
+    --red:#b91c1c;
+    --red-soft:#fee2e2;
+    --blue:#1d4ed8;
+    --blue-soft:#dbeafe;
+    --violet:#6d28d9;
+    --violet-soft:#ede9fe;
+    --slate-soft:#f1f5f9;
+    --radius:14px;
+    --shadow:0 8px 24px rgba(15,23,42,.06);
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; color:var(--ink); background:var(--bg); line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  }
+  a{color:var(--teal); text-decoration:none}
+  a:hover{text-decoration:underline}
+  code{
+    font-family:var(--mono); font-size:.82em; background:var(--slate-soft);
+    border:1px solid var(--line); border-radius:5px; padding:1px 5px; color:#0f172a;
+  }
+  pre{
+    margin:10px 0 0; padding:14px 16px; overflow:auto; background:#0b1f33; color:#dbeafe;
+    border-radius:10px; font-family:var(--mono); font-size:.78rem; line-height:1.55;
+    border:1px solid #1e3a5f;
+  }
+  pre code{background:none; border:none; padding:0; color:inherit; font-size:inherit}
+  .skip{
+    position:absolute; left:-9999px; top:0; background:#fff; color:var(--ink);
+    padding:10px 14px; z-index:100; border-radius:0 0 8px 0;
+  }
+  .skip:focus{left:0}
+  /* Layout */
+  .layout{display:grid; grid-template-columns:290px minmax(0,1fr); min-height:100vh}
+  aside.sidebar{
+    position:sticky; top:0; height:100vh; overflow:auto;
+    background:var(--navy); color:#dbeafe; border-right:1px solid #17324d;
+    padding:20px 18px 28px;
+  }
+  .brand{display:flex; align-items:baseline; gap:8px; margin-bottom:6px}
+  .brand strong{font-size:1.06rem; letter-spacing:.02em; color:#fff}
+  .brand span{font-size:.68rem; letter-spacing:.14em; text-transform:uppercase; color:#93c5fd}
+  .side-sub{font-size:.76rem; color:#94a3b8; margin:0 0 14px}
+  .side-badge{
+    display:inline-flex; align-items:center; gap:7px; font-size:.72rem; font-weight:700;
+    background:rgba(20,184,166,.12); color:#99f6e4; border:1px solid rgba(45,212,191,.25);
+    border-radius:999px; padding:5px 9px; margin-bottom:14px;
+  }
+  .side-badge i{width:7px; height:7px; border-radius:50%; background:#2dd4bf; display:inline-block}
+  .search-box label{display:block; color:#93c5fd; font-size:.68rem; letter-spacing:.1em;
+    text-transform:uppercase; font-weight:700; margin:0 0 6px}
+  .search-box input{
+    width:100%; padding:9px 10px; border-radius:8px; border:1px solid #29445f;
+    background:#102a43; color:#e2e8f0; font-size:.82rem; outline:none;
+  }
+  .search-box input:focus{border-color:#2dd4bf; box-shadow:0 0 0 2px rgba(45,212,191,.18)}
+  .search-results{margin:8px 0 4px; font-size:.76rem; color:#cbd5e1}
+  .search-results button{
+    display:block; width:100%; text-align:left; background:#102a43; color:#e2e8f0;
+    border:1px solid #29445f; border-radius:7px; padding:7px 8px; margin:4px 0;
+    font-size:.76rem; cursor:pointer;
+  }
+  .search-results button:hover{border-color:#2dd4bf}
+  .search-results .none{color:#94a3b8; padding:4px 0}
+  nav.side-nav{margin:18px 0 16px; padding:0; list-style:none; display:grid; gap:2px}
+  nav.side-nav a{
+    display:block; padding:7px 8px; border-radius:7px; color:#cbd5e1; font-size:.8rem;
+    border-left:2px solid transparent;
+  }
+  nav.side-nav a:hover{background:#102a43; color:#fff; text-decoration:none}
+  nav.side-nav a.active{background:#102a43; color:#fff; border-left-color:#2dd4bf}
+  nav.side-nav .num{display:inline-block; width:26px; color:#5eead4; font-variant-numeric:tabular-nums}
+  .side-block{border-top:1px solid #1e3a5f; padding-top:13px; margin-top:10px}
+  .side-block h2{font-size:.68rem; letter-spacing:.12em; text-transform:uppercase;
+    color:#93c5fd; margin:0 0 8px}
+  .legend{display:grid; gap:6px; font-size:.74rem; color:#cbd5e1}
+  .legend span{display:flex; align-items:center; gap:7px}
+  .legend i{width:9px; height:9px; border-radius:3px; display:inline-block; flex:0 0 auto}
+  .side-meta{font-size:.7rem; color:#94a3b8; line-height:1.5; margin-top:12px}
+  main{min-width:0}
+  .topbar{
+    position:sticky; top:0; z-index:40; background:rgba(245,247,250,.92);
+    backdrop-filter:blur(10px); border-bottom:1px solid var(--line);
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    padding:10px 28px;
+  }
+  .topbar .crumbs{font-size:.78rem; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .topbar .actions{display:flex; gap:8px; flex:0 0 auto}
+  .btn{
+    border:1px solid var(--line-strong); background:#fff; color:var(--ink-2);
+    border-radius:8px; padding:6px 10px; font-size:.76rem; font-weight:700; cursor:pointer;
+  }
+  .btn:hover{border-color:var(--teal); color:var(--teal)}
+  .hero{
+    background:var(--navy); color:#e2e8f0; padding:36px 28px 30px;
+    border-bottom:1px solid #17324d;
+  }
+  .hero .inner{max-width:1180px}
+  .kicker{font-size:.7rem; letter-spacing:.16em; text-transform:uppercase; color:#5eead4; font-weight:800}
+  h1{font-size:clamp(1.55rem,2.6vw,2.35rem); line-height:1.15; margin:10px 0 10px; color:#fff; letter-spacing:-.02em}
+  .hero p{max-width:900px; color:#cbd5e1; margin:0 0 18px; font-size:.95rem}
+  .hero-meta{display:flex; flex-wrap:wrap; gap:7px; margin-bottom:18px}
+  .pill{display:inline-flex; align-items:center; gap:6px; font-size:.72rem; padding:5px 9px;
+    border-radius:999px; border:1px solid #29445f; background:#102a43; color:#dbeafe}
+  .pill b{color:#fff}
+  .kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px}
+  .kpi{background:#102a43; border:1px solid #29445f; border-radius:12px; padding:12px 14px}
+  .kpi strong{display:block; font-size:1.35rem; color:#fff; letter-spacing:-.02em}
+  .kpi span{display:block; font-size:.68rem; text-transform:uppercase; letter-spacing:.08em; color:#93c5fd; margin-top:3px}
+  .kpi small{display:block; color:#94a3b8; font-size:.7rem; margin-top:6px}
+  .content{padding:26px 28px 70px; max-width:1220px}
+  section{margin:0 0 42px; scroll-margin-top:64px}
+  .section-head{display:flex; align-items:flex-end; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-bottom:14px}
+  h2{font-size:1.3rem; margin:0; letter-spacing:-.01em}
+  h2 .num{color:var(--teal); font-variant-numeric:tabular-nums; margin-right:4px}
+  .section-head p{margin:3px 0 0; color:var(--muted); font-size:.88rem; max-width:820px}
+  h3{font-size:1rem; margin:18px 0 8px}
+  h4{font-size:.88rem; margin:0 0 6px}
+  p{margin:0 0 9px}
+  .small{font-size:.8rem}
+  .muted{color:var(--muted)}
+  .grid-2{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px}
+  .grid-3{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px}
+  .card{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:16px}
+  .card.flat{box-shadow:none}
+  .card h3:first-child,.card h4:first-child{margin-top:0}
+  .chips{display:flex; flex-wrap:wrap; gap:6px}
+  .chip{display:inline-flex; align-items:center; gap:5px; font-size:.7rem; font-weight:800;
+    padding:3px 8px; border-radius:999px; border:1px solid transparent; white-space:nowrap}
+  .chip.done{background:var(--green-soft); color:#166534; border-color:#bbf7d0}
+  .chip.partial{background:var(--amber-soft); color:#92400e; border-color:#fde68a}
+  .chip.planned{background:var(--blue-soft); color:#1e40af; border-color:#bfdbfe}
+  .chip.blocked{background:var(--red-soft); color:#991b1b; border-color:#fecaca}
+  .chip.unverified{background:var(--violet-soft); color:#5b21b6; border-color:#ddd6fe}
+  .chip.neutral{background:var(--slate-soft); color:#475569; border-color:var(--line)}
+  .chip .dot{width:7px; height:7px; border-radius:50%; background:currentColor; display:inline-block}
+  .callout{border-left:4px solid var(--teal); background:#f0fdfa; border-radius:8px;
+    padding:11px 13px; font-size:.86rem; color:var(--ink-2)}
+  .callout.warn{border-left-color:var(--amber); background:#fffbeb}
+  .callout.danger{border-left-color:var(--red); background:#fef2f2}
+  .callout.info{border-left-color:var(--blue); background:#eff6ff}
+  .callout b{color:var(--ink)}
+  .bar{height:9px; background:#e8eef6; border-radius:999px; overflow:hidden}
+  .bar > i{display:block; height:100%; width:0; border-radius:999px;
+    background:linear-gradient(90deg,var(--teal),#14b8a6); transition:width .8s ease}
+  .bar.amber > i{background:linear-gradient(90deg,#d97706,#f59e0b)}
+  .bar.red > i{background:linear-gradient(90deg,#dc2626,#ef4444)}
+  .progress-row .top{display:flex; justify-content:space-between; gap:8px; font-size:.78rem; margin-bottom:5px}
+  .progress-row .top b{font-variant-numeric:tabular-nums}
+  .table-wrap{overflow:auto; border:1px solid var(--line); border-radius:10px; background:#fff}
+  table{width:100%; border-collapse:collapse; min-width:520px}
+  th,td{padding:9px 10px; text-align:left; vertical-align:top; font-size:.78rem;
+    border-bottom:1px solid var(--line)}
+  th{background:var(--surface-2); color:#475569; font-size:.68rem; text-transform:uppercase;
+    letter-spacing:.06em; position:sticky; top:0; z-index:1}
+  tr:last-child td{border-bottom:none}
+  td code{white-space:nowrap}
+  .num{text-align:right; font-variant-numeric:tabular-nums}
+  .status-cell{white-space:nowrap}
+  details{border:1px solid var(--line); border-radius:10px; background:#fff; margin:8px 0}
+  details > summary{
+    cursor:pointer; padding:10px 12px; font-weight:800; font-size:.82rem; color:var(--ink-2);
+    list-style:none; display:flex; align-items:center; justify-content:space-between; gap:10px;
+  }
+  details > summary::-webkit-details-marker{display:none}
+  details > summary::after{content:"+"; font-size:1rem; color:var(--teal); font-weight:800}
+  details[open] > summary::after{content:"−"}
+  details .detail-body{padding:0 12px 12px}
+  .flow{display:grid; gap:9px}
+  .flow-row{display:flex; flex-wrap:wrap; gap:6px; align-items:center}
+  .node{border:1px solid var(--line); background:#fff; border-radius:8px; padding:7px 9px;
+    font-size:.73rem; font-weight:700; color:var(--ink-2)}
+  .node.teal{border-color:#99f6e4; background:#f0fdfa; color:#115e59}
+  .node.green{border-color:#bbf7d0; background:var(--green-soft); color:#166534}
+  .node.amber{border-color:#fde68a; background:var(--amber-soft); color:#92400e}
+  .node.red{border-color:#fecaca; background:var(--red-soft); color:#991b1b}
+  .node.blue{border-color:#bfdbfe; background:var(--blue-soft); color:#1e40af}
+  .node.violet{border-color:#ddd6fe; background:var(--violet-soft); color:#5b21b6}
+  .arrow{color:#94a3b8; font-weight:900; font-size:.95rem}
+  .arch{
+    display:grid; grid-template-columns:1.1fr 1.5fr 1.1fr; gap:12px; align-items:stretch;
+  }
+  .arch-col{display:grid; gap:8px; align-content:start}
+  .arch-label{font-size:.66rem; text-transform:uppercase; letter-spacing:.1em; color:var(--muted);
+    font-weight:800; margin-bottom:2px}
+  .mod{border:1px solid var(--line); border-radius:10px; padding:9px 10px; background:#fff}
+  .mod b{display:block; font-size:.8rem}
+  .mod span{display:block; color:var(--muted); font-size:.7rem; margin-top:2px}
+  .mod.core{border-color:#99f6e4; background:#f0fdfa}
+  .mod.iam{border-color:#bfdbfe; background:#f8fbff}
+  .mod.obs{border-color:#fde68a; background:#fffdf5}
+  .mod.ai{border-color:#ddd6fe; background:#faf8ff}
+  .mod.front{border-color:#fed7aa; background:#fffaf5}
+  .er{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px}
+  .er-box{border:1px solid var(--line); border-radius:10px; background:#fff; padding:10px}
+  .er-box b{display:block; font-size:.78rem; margin-bottom:4px; color:var(--teal)}
+  .er-box ul{margin:0; padding-left:16px; font-size:.72rem; color:var(--ink-2)}
+  .er-box li{margin:3px 0}
+  .risk{display:grid; grid-template-columns:72px 1fr; gap:10px; align-items:start;
+    border:1px solid var(--line); border-radius:9px; background:#fff; padding:9px 10px;
+    font-size:.8rem; margin-bottom:7px}
+  .sev{font-size:.64rem; text-transform:uppercase; letter-spacing:.06em; font-weight:900;
+    text-align:center; border-radius:5px; padding:3px 4px}
+  .sev.crit{background:#7f1d1d; color:#fff}
+  .sev.high{background:var(--red-soft); color:#991b1b}
+  .sev.med{background:var(--amber-soft); color:#92400e}
+  .sev.low{background:var(--blue-soft); color:#1e40af}
+  .steps{counter-reset:step; list-style:none; margin:0; padding:0; display:grid; gap:7px}
+  .steps li{counter-increment:step; display:flex; gap:9px; align-items:flex-start; font-size:.82rem}
+  .steps li::before{content:counter(step); flex:0 0 auto; width:21px; height:21px; border-radius:6px;
+    background:var(--navy); color:#fff; font-size:.68rem; font-weight:800; display:grid; place-items:center}
+  .footer{border-top:1px solid var(--line); margin-top:20px; padding:18px 0 0;
+    color:var(--muted); font-size:.74rem}
+  .footer b{color:var(--ink-2)}
+  .footer code{font-size:.72rem}
+  .toc-note{font-size:.72rem; color:#94a3b8; margin:8px 0 0}
+  .source{font-size:.7rem; color:var(--muted); font-style:normal}
+  .divider{height:1px; background:var(--line); margin:14px 0}
+  @media (max-width:1100px){
+    .layout{grid-template-columns:1fr}
+    aside.sidebar{position:static; height:auto; padding:16px 20px; border-right:none; border-bottom:1px solid #17324d}
+    nav.side-nav{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .side-block{display:none}
+    .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .arch{grid-template-columns:1fr}
+    .er{grid-template-columns:repeat(2,minmax(0,1fr))}
+  }
+  @media (max-width:760px){
+    .content{padding:20px 16px 50px}
+    .hero{padding:26px 16px 22px}
+    .topbar{padding:8px 16px}
+    .grid-2,.grid-3,.er{grid-template-columns:1fr}
+    nav.side-nav{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .kpis{grid-template-columns:1fr}
+    .risk{grid-template-columns:1fr}
+    th{position:static}
+  }
+  @media print{
+    aside.sidebar,.topbar,.search-box,.side-block{display:none}
+    .layout{display:block}
+    .hero{background:#fff; color:#000; border-bottom:2px solid #000}
+    .hero h1,.hero p,.kicker{color:#000}
+    .kpi{border:1px solid #999; background:#fff; color:#000}
+    .kpi strong,.kpi span,.kpi small{color:#000}
+    .content{max-width:none; padding:0}
+    section{page-break-inside:avoid; margin-bottom:22px}
+    details{border:1px solid #999}
+    details > summary::after{display:none}
+    a{color:#000; text-decoration:none}
+    .card,.risk,.table-wrap{box-shadow:none}
+  }
+</style>
+</head>
+<body>
+<a class="skip" href="#main-content">Ir para o conteúdo</a>
+
+<div class="layout">
+  <aside class="sidebar" aria-label="Sumário e busca">
+    <div class="brand"><strong>ATLAS</strong><span>QSOFT</span></div>
+    <p class="side-sub">Relatório técnico e executivo do projeto</p>
+    <div class="side-badge"><i></i> Sprint 3 · código concluído com 1 bloqueio</div>
+
+    <div class="search-box">
+      <label for="reportSearch">Buscar no relatório</label>
+      <input id="reportSearch" type="search" placeholder="ex.: autorização, orçamento, chat" autocomplete="off">
+      <div id="searchResults" class="search-results" aria-live="polite"></div>
+    </div>
+
+    <nav class="side-nav" aria-label="Seções">
+      <a href="#visao-geral"><span class="num">01</span>Visão geral executiva</a>
+      <a href="#status"><span class="num">02</span>Painel de status</a>
+      <a href="#escopo"><span class="num">03</span>Escopo e requisitos</a>
+      <a href="#usuarios"><span class="num">04</span>Usuários e histórias</a>
+      <a href="#stack"><span class="num">05</span>Stack e dependências</a>
+      <a href="#arquitetura"><span class="num">06</span>Arquitetura</a>
+      <a href="#contratos"><span class="num">07</span>Contratos e dados</a>
+      <a href="#apis"><span class="num">08</span>APIs e integrações</a>
+      <a href="#banco"><span class="num">09</span>Banco e persistência</a>
+      <a href="#execucao"><span class="num">10</span>Como executar</a>
+      <a href="#historico"><span class="num">11</span>Etapas e histórico</a>
+      <a href="#testes"><span class="num">12</span>Testes e qualidade</a>
+      <a href="#seguranca"><span class="num">13</span>Segurança e operação</a>
+      <a href="#pendencias"><span class="num">14</span>Pendências e riscos</a>
+      <a href="#referencias"><span class="num">15</span>Referências</a>
+    </nav>
+
+    <div class="side-block">
+      <h2>Legenda de status</h2>
+      <div class="legend">
+        <span><i style="background:#15803d"></i> Concluído e verificado</span>
+        <span><i style="background:#6d28d9"></i> Implementado, não verificado</span>
+        <span><i style="background:#b45309"></i> Em andamento / parcial</span>
+        <span><i style="background:#1d4ed8"></i> Planejado</span>
+        <span><i style="background:#b91c1c"></i> Bloqueado</span>
+        <span><i style="background:#64748b"></i> Não identificado</span>
+      </div>
+    </div>
+
+    <div class="side-meta">
+      <b>Escopo:</b> branch <code>IhanDevelopment</code>, commit <code>92fae90</code>.<br>
+      <b>Gerado em:</b> 20/10/2026.<br>
+      <b>Análise:</b> código, migrations, testes, docs e histórico Git.
+    </div>
+  </aside>
+
+  <div>
+    <div class="topbar">
+      <div class="crumbs">QSOFT / ATLAS · Relatório de projeto · Sprint 3</div>
+      <div class="actions">
+        <button class="btn" id="expandAll" type="button">Expandir detalhes</button>
+        <button class="btn" id="collapseAll" type="button">Recolher</button>
+      </div>
+    </div>
+
+    <header class="hero">
+      <div class="inner">
+        <div class="kicker">Plataforma QSOFT de Governança Corporativa de IA</div>
+        <h1>Relatório técnico e executivo do projeto</h1>
+        <p>
+          Um retrato do estado real do monólito modular: o problema que ele resolve, o que está
+          implementado e verificado, como os módulos se comunicam, quais contratos precisam ser
+          respeitados e o que ainda separa o projeto de uma operação de produção.
+        </p>
+        <div class="hero-meta">
+          <span class="pill">branch <b>IhanDevelopment</b></span>
+          <span class="pill">commit <b>92fae90</b></span>
+          <span class="pill">última atualização do código <b>20/10/2026</b></span>
+          <span class="pill">Java <b>21</b></span>
+          <span class="pill">Spring Boot <b>4.1.1</b></span>
+          <span class="pill">PostgreSQL <b>18</b></span>
+        </div>
+        <div class="kpis">
+          <div class="kpi"><strong>44</strong><span>endpoints HTTP mapeados</span><small>controllers Spring · 5 públicos</small></div>
+          <div class="kpi"><strong>19</strong><span>migrations Flyway</span><small>V001–V019 · V020 não necessária</small></div>
+          <div class="kpi"><strong>967</strong><span>testes verdes</span><small>806 unitários + 161 integração</small></div>
+          <div class="kpi"><strong>21/22</strong><span>tasks da Sprint 3</span><small>1 bloqueada: D2 (UI do chat)</small></div>
+        </div>
+      </div>
+    </header>
+
+    <main id="main-content" class="content">
+      <section id="visao-geral" data-title="Visão geral executiva">
+        <div class="section-head">
+          <div>
+            <h2><span class="num">01.</span> Visão geral executiva</h2>
+            <p>O projeto em dois minutos: problema, proposta, público e estado atual.</p>
+          </div>
+          <div class="chips"><span class="chip done"><span class="dot"></span> MVP avançado</span><span class="chip partial">1 UI bloqueada</span></div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3>Resumo em dois minutos</h3>
+            <p>
+              A <b>QSOFT AI Governance Platform</b> (frontend <b>ATLAS</b>) é uma plataforma
+              multi-tenant, white-label, para empresas governarem o uso corporativo de IA. O problema
+              central é o <b>Shadow AI</b>: uso de modelos e ferramentas sem controle de acesso,
+              política, custo ou privacidade.
+            </p>
+            <p>
+              A proposta é centralizar o acesso governado a modelos, políticas internas, observabilidade
+              de consumo e custo, orçamento por departamento, chat corporativo privado, agente de
+              políticas internas e indicadores executivos. A implementação é um <b>monólito modular
+              Java/Spring Boot</b>, com um único deploy e PostgreSQL, e um <b>BFF Node/Express/EJS</b>
+              que serve o frontend e encaminha <code>/api/*</code> ao backend.
+            </p>
+            <p>
+              O estado atual é de <b>MVP tecnicamente avançado</b>: autenticação, multi-tenancy, RBAC
+              com escopo, convites, departamentos, orçamento, catálogo de IA, execução com tentativas
+              duráveis, observabilidade, chat backend e agente backend estão implementados e cobertos
+              por testes. O frontend cobre onboarding, convites, usuários, dashboard e orçamento, mas
+              ainda tem lacunas (UI do chat, identidade visual e etapas legadas do onboarding).
+            </p>
+          </div>
+
+          <div class="card">
+            <h3>Problema, objetivo e valor</h3>
+            <div class="flow">
+              <div class="flow-row"><span class="node red">Shadow AI</span><span class="arrow">→</span><span class="node">acesso sem política</span><span class="arrow">→</span><span class="node amber">custo e risco sem visibilidade</span></div>
+            </div>
+            <p class="small" style="margin-top:10px">
+              <b>Objetivo principal:</b> permitir que a organização use IA com autorização determinística,
+              política por departamento, rastreabilidade de consumo e controle orçamentário sem
+              transformar governança em bloqueio indiscriminado.
+            </p>
+            <div class="grid-2" style="margin-top:10px">
+              <div>
+                <h4>Público-alvo</h4>
+                <ul class="small" style="padding-left:18px; margin:0">
+                  <li>Administrador do tenant (<code>TENANT_ADMIN</code>)</li>
+                  <li>Executivos e gestores de departamento</li>
+                  <li>Colaboradores usuários de IA</li>
+                  <li>QSOFT / operação da plataforma (futuro)</li>
+                </ul>
+              </div>
+              <div>
+                <h4>Proposta de valor</h4>
+                <ul class="small" style="padding-left:18px; margin:0">
+                  <li>Um deploy, um PostgreSQL, módulos lógicos fortes</li>
+                  <li>Política e escopo antes da chamada ao LLM</li>
+                  <li>Custo, tokens e latência observáveis</li>
+                  <li>Orçamento alerta (80%/100%) sem bloquear</li>
+                </ul>
+              </div>
+            </div>
+            <div class="callout info" style="margin-top:12px">
+              <b>Princípios registrados:</b> autorização antes de IA; indicadores não bloqueiam acesso;
+              conteúdo privado não alimenta analytics; um deploy e um PostgreSQL.
+              <span class="source">Fonte: <code>ai/project.md</code>.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-3" style="margin-top:12px">
+          <div class="card flat">
+            <h4>Principais entregas esperadas</h4>
+            <ul class="small" style="margin:0; padding-left:18px">
+              <li>Tenant/User/IAM e autorização determinística</li>
+              <li>Department/Area e escopos organizacionais</li>
+              <li>Catálogo Provider/Model e ModelPolicy</li>
+              <li>Chat corporativo privado com recibo</li>
+              <li>Agente de políticas internas com fontes</li>
+              <li>Observabilidade de uso/custo e orçamento</li>
+              <li>Engagement, AI Credits e Governance Score</li>
+            </ul>
+          </div>
+          <div class="card flat">
+            <h4>O que já está entregue</h4>
+            <ul class="small" style="margin:0; padding-left:18px">
+              <li>44 endpoints HTTP mapeados em 15 controllers</li>
+              <li>19 migrations Flyway (V001–V019)</li>
+              <li>806 testes unitários + 161 IT verdes</li>
+              <li>RBAC com escopo e convites reais</li>
+              <li>Orçamento mensal + status 80/100</li>
+              <li>Dashboard por departamento/modelo/usuário</li>
+              <li>Chat e agente com recibo/fontes no backend</li>
+            </ul>
+          </div>
+          <div class="card flat">
+            <h4>O que ainda separa de produção</h4>
+            <ul class="small" style="margin:0; padding-left:18px">
+              <li>UI do recibo do chat (D2, Lyn)</li>
+              <li>Provider real da demo (hoje STUB)</li>
+              <li>Correções no front (identidade visual e etapas legadas)</li>
+              <li>Auditoria de tenant (SPI-56)</li>
+              <li>Status de tenant por ator de plataforma (SPI-57)</li>
+              <li>Recuperação de senha (SPI-65)</li>
+              <li>Deploy, backup e observabilidade operacional</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="callout warn" style="margin-top:12px">
+          <b>Leitura correta do estado:</b> “implementado” não significa “pronto para produção”.
+          O relatório separa código existente, teste executado, comportamento verificado e decisão
+          pendente. As seções 2 e 12 explicam os critérios e as evidências.
+        </div>
+      </section>
+
+      <section id="status" data-title="Painel de status do projeto">
+        <div class="section-head">
+          <div>
+            <h2><span class="num">02.</span> Painel de status do projeto</h2>
+            <p>Fase, funcionalidades, testes, bloqueios, riscos e próximos marcos — sem percentual global inventado.</p>
+          </div>
+          <div class="chips"><span class="chip done">código em dia</span><span class="chip partial">front parcial</span><span class="chip blocked">D2</span></div>
+        </div>
+
+        <div class="grid-3">
+          <div class="card">
+            <h4>Fase atual</h4>
+            <p><b>Sprint 3 concluída no código, com uma UI bloqueada.</b> O pacote da Sprint 3 tem 22 tasks;
+              21 têm implementação e evidência de teste/verificação. A D2 (recibo na UI do chat) depende
+              do componente SPI-136 da Lyn e não existe neste repositório.</p>
+            <div class="chips"><span class="chip done">21/22 tasks com evidência</span><span class="chip blocked">D2</span></div>
+            <p class="source">Critério: task com implementação localizada + teste automatizado verde ou verificação direta registrada no repositório.</p>
+          </div>
+          <div class="card">
+            <h4>Última atualização</h4>
+            <p><b>Código:</b> 20/10/2026 · commit <code>92fae90</code> (relatório visual; código em <code>f28a271</code>).</p>
+            <p><b>Documentação:</b> <code>ai/</code> e <code>docs/development/</code> atualizados em 20/10/2026; <code>HOW_TO_RUN.md</code> ainda cita V001–V014 e 717+83 testes (desatualizado).</p>
+            <p class="source">Fontes: <code>git log</code>, <code>docs/development/HOW_TO_RUN.md</code>, <code>ai/testing.md</code>.</p>
+          </div>
+          <div class="card">
+            <h4>Testes conhecidos</h4>
+            <p><b>806 unitários</b> (inclui 6 regras ArchUnit) e <b>161 de integração</b>, com 0 falhas nos relatórios
+              Surefire/Failsafe disponíveis.</p>
+            <p><b>Cobertura JaCoCo:</b> 96,6% de linhas e 85,4% de branches no ciclo <code>mvn test</code> (unitário,
+              sem IT). É uma métrica do backend, não do front.</p>
+            <p class="source">Fontes: <code>target/surefire-reports</code>, <code>target/failsafe-reports</code>, <code>target/site/jacoco</code>.</p>
+          </div>
+        </div>
+
+        <h3>Critérios de status usados neste relatório</h3>
+        <div class="table-wrap">
+          <table>
+            <caption class="small muted" style="caption-side:bottom; text-align:left; padding:8px 10px">Critérios qualitativos; não há percentual global de conclusão do produto.</caption>
+            <thead><tr><th>Status</th><th>Critério</th><th>Exemplo neste projeto</th></tr></thead>
+            <tbody>
+              <tr><td><span class="chip done">Concluído e verificado</span></td><td>Código implementado, endpoint/caso de uso localizável e teste automatizado executado (unit/IT) ou verificação direta registrada.</td><td>Login/JWT, RBAC com escopo, orçamento mensal, chat backend.</td></tr>
+              <tr><td><span class="chip unverified">Implementado, não verificado</span></td><td>Código existe, mas não há teste específico ou execução contra o ambiente real.</td><td>Cliente OpenAI-compatible contra provider real; caminho Docker completo.</td></tr>
+              <tr><td><span class="chip partial">Em andamento / parcial</span></td><td>Parte da funcionalidade existe; há lacuna funcional conhecida.</td><td>Frontend de identidade visual; onboarding de IA/revisão; UI do chat.</td></tr>
+              <tr><td><span class="chip planned">Planejado</span></td><td>Documentado em escopo/EPIC, sem implementação localizada.</td><td>Engagement, Governance Score, módulo Project, auditoria de tenant.</td></tr>
+              <tr><td><span class="chip blocked">Bloqueado</span></td><td>Depende de decisão, ADR, dependência externa ou autorização de outro responsável.</td><td>D2 (Lyn), SPI-57 (ADR), SPI-65 (decisão), provider real (decisão 11).</td></tr>
+              <tr><td><span class="chip neutral">Não identificado</span></td><td>Não há evidência suficiente no repositório.</td><td>Backup/restore, deploy de produção, limites/custos do provider real, cobertura do front.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Inventário de funcionalidades</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Funcionalidade</th><th>Estado</th><th>Evidência principal</th><th>Lacuna / observação</th></tr></thead>
+            <tbody>
+              <tr><td>Registro de tenant + bootstrap do admin</td><td class="status-cell"><span class="chip done">concluído</span></td><td><code>TenantController.create</code>, <code>RegisterTenant</code>, <code>OnboardingFlowIT</code></td><td>Front cria tenant e faz login; passo “Administrador Principal” seguinte é redundante.</td></tr>
+              <tr><td>Login, JWT e revalidação de Tenant/User</td><td class="status-cell"><span class="chip done">concluído</span></td><td><code>AuthController</code>, <code>JwtTokenIssuer</code>, <code>TenantContextFilter</code>, <code>AuthenticationIT</code></td><td>JWT TTL 30 min; sem refresh token por decisão de escopo.</td></tr>
+              <tr><td>RBAC com concessões e escopo</td><td class="status-cell"><span class="chip done">concluído</span></td><td><code>PolicyEvaluator</code>, <code>AuthorizationQuery</code>, V015, <code>PolicyEvaluatorTest</code>, <code>UserGuardsIT</code></td><td>Concessões lidas a cada request, sem cache.</td></tr>
+              <tr><td>Convites e aceite</td><td class="status-cell"><span class="chip done">concluído</span></td><td><code>CreateInvite</code>, <code>AcceptInvite</code>, <code>InviteFlowIT</code>, <code>InviteDelegationIT</code></td><td>Token aparece uma vez; sem envio de e-mail (link copiado).</td></tr>
+              <tr><td>Gestão de usuários e guardas</td><td class="status-cell"><span class="chip done">concluído</span></td><td><code>UserController</code>, <code>UserGuardsIT</code>, <code>UserManagementIT</code></td><td>PATCH edita apenas departamento; nível é rótulo organizacional.</td></tr>
+              <tr><td>Departamentos e ModelPolicy</td><td class="status-cell"><span class="chip done">concluído</span></td><td><code>DepartmentController</code>, <code>DepartmentModelPolicyQuery</code>, <code>DepartmentManagementIT</code></td><td>ModelPolicy é validada pelo aigateway e persistida no department.</td></tr>
+              <tr><td>Orçamento mensal e status 80/100</td><td class="status-cell"><span class="chip done">concluído</span></td><td>V016, <code>UpsertMonthlyBudget</code>, <code>QueryBudgetStatus</code>, <code>DepartmentBudgetIT</code></td><td>Histórico não informa se o mês veio do padrão; o status informa.</td></tr>
+              <tr><td>Catálogo Provider/Model e roteamento</td><td class="status-cell"><span class="chip done">concluído</span></td><td><code>AIGatewayCatalogController</code>, <code>ResolveModelForUser</code>, <code>AIGatewayRoutingIT</code></td><td>GETs do catálogo exigem <code>AI_TOOL:MANAGE</code>, não <code>READ</code>.</td></tr>
+              <tr><td>Execução com tentativas duráveis e RF047</td><td class="status-cell"><span class="chip done">concluído</span></td><td>V017, <code>CompleteAIRequest</code>, <code>QueryRequestAttempts</code>, <code>AIGatewayAttemptsIT</code>, <code>UsageDeliveryIT</code></td><td>Provider real ainda não configurado; STUB é o caminho de demo.</td></tr>
+              <tr><td>Observabilidade de uso/custo e dashboard</td><td class="status-cell"><span class="chip done">concluído</span></td><td><code>UsageMetricsJdbcAdapter</code>, <code>QueryBudgetStatus</code>, <code>DashboardMetricsIT</code>, <code>UsageLoggingIT</code></td><td><code>/observability/usage</code> restringe gestor a filtrar apenas o próprio userId.</td></tr>
+              <tr><td>Chat privado backend + recibo</td><td class="status-cell"><span class="chip done">concluído</span></td><td><code>ChatConversationController</code>, <code>ReceiptResponse</code>, <code>ChatFlowIT</code></td><td>UI do recibo é a D2, bloqueada; não há componente de chat no front.</td></tr>
+              <tr><td>Agente de políticas backend</td><td class="status-cell"><span class="chip done">concluído</span></td><td><code>PolicyAgentController</code>, <code>AskPolicyAgent</code>, <code>PolicyAgentIT</code></td><td>Não há tela dedicada do agente; consumo é via API.</td></tr>
+              <tr><td>Onboarding frontend</td><td class="status-cell"><span class="chip partial">parcial</span></td><td><code>step-tenant.js</code>, <code>admin-convites.js</code>, <code>admin-usuarios.js</code></td><td>Etapas de IA e revisão usam rotas legadas (<code>/ia</code>, <code>/revisao</code>) com fallback local; passo de admin duplicado.</td></tr>
+              <tr><td>Identidade visual (white-label)</td><td class="status-cell"><span class="chip partial">parcial</span></td><td>Backend: <code>TenantController</code>; front: <code>identidade-visual.js</code></td><td>Front chama <code>/tenant/identidade-visual</code> (singular), mas o backend expõe <code>/tenants/me/identidade-visual</code>.</td></tr>
+              <tr><td>Engagement / AI Credits</td><td class="status-cell"><span class="chip planned">planejado</span></td><td><code>ai/epics/EPIC-004-engagement.md</code>; pacote <code>engagement</code> vazio</td><td>Sem código de produção localizado.</td></tr>
+              <tr><td>Governance Score</td><td class="status-cell"><span class="chip planned">planejado</span></td><td><code>ai/epics/EPIC-005-governance-score.md</code>; pacote <code>governancescore</code> vazio</td><td>Sem código de produção localizado.</td></tr>
+              <tr><td>Módulo Project</td><td class="status-cell"><span class="chip planned">planejado</span></td><td><code>ai/project.md</code>; pacote <code>project</code> vazio</td><td>Dimensão analítica futura.</td></tr>
+              <tr><td>Auditoria de criação/alteração do tenant</td><td class="status-cell"><span class="chip planned">planejado</span></td><td>SPI-56 em <code>docs/review/RELATORIO_STATUS_TASKS.md</code></td><td>Exige decisão de tabela/campos/retenção.</td></tr>
+              <tr><td>Status de tenant por ator de plataforma</td><td class="status-cell"><span class="chip blocked">bloqueado</span></td><td>SPI-57; ADR-03/30</td><td>Não há ator autorizado; exige ADR de escopo de plataforma.</td></tr>
+              <tr><td>Recuperação de senha</td><td class="status-cell"><span class="chip blocked">bloqueado</span></td><td>SPI-65; tela <code>redefinir-senha.ejs</code>; sem endpoint</td><td>Faltam canal de entrega e política de senha.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="grid-3" style="margin-top:14px">
+          <div class="card">
+            <h4>Bloqueios identificados</h4>
+            <ul class="small" style="margin:0; padding-left:18px">
+              <li><b>D2:</b> UI do recibo do chat — componente SPI-136 (Lyn) não existe.</li>
+              <li><b>SPI-57:</b> status de tenant — falta ADR de ator de plataforma.</li>
+              <li><b>SPI-65:</b> recuperação de senha — faltam decisões de canal e política.</li>
+              <li><b>Provider real:</b> decisão 11; demo validada com STUB.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h4>Riscos prioritários</h4>
+            <ul class="small" style="margin:0; padding-left:18px">
+              <li>Front de identidade visual quebrado (path divergente).</li>
+              <li>Compose sem <code>JWT_SECRET</code> → backend provavelmente não sobe no Docker.</li>
+              <li>GET do catálogo exige <code>AI_TOOL:MANAGE</code>; seletor de modelo do gestor pode vir vazio.</li>
+              <li>Etapas de IA/revisão do onboarding apontam para rotas legadas.</li>
+              <li>Sem testes de front/contrato; CDN para Bootstrap/fontes.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h4>Próximos marcos</h4>
+            <ol class="steps" style="margin:0">
+              <li>D2 com a Lyn (UI do recibo).</li>
+              <li>Corrigir front de identidade visual e onboarding.</li>
+              <li>Configurar provider real da demo.</li>
+              <li>Decidir e implementar SPI-56 (auditoria).</li>
+              <li>Preparar V021 (drop da trilha legada) no próximo release.</li>
+            </ol>
+          </div>
+        </div>
+
+        <div class="callout warn" style="margin-top:12px">
+          <b>Sem percentual global:</b> o repositório não define critérios de “produto 100% concluído”
+          nem mede cobertura funcional ponta a ponta. O único número de progresso apresentado é
+          <b>21 de 22 tasks do packet da Sprint 3</b>, com critério explícito.
+        </div>
+      </section>
+
+      <section id="escopo" data-title="Escopo, objetivos e requisitos">
+        <div class="section-head">
+          <div>
+            <h2><span class="num">03.</span> Escopo, objetivos e requisitos</h2>
+            <p>O que o projeto inclui, o que exclui e o estado de cada requisito verificável.</p>
+          </div>
+          <div class="chips"><span class="chip done">MVP definido</span><span class="chip planned">2 épicos sem código</span></div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3>Objetivos de negócio</h3>
+            <ul class="small" style="margin:0; padding-left:18px">
+              <li>Reduzir Shadow AI e uso corporativo não governado.</li>
+              <li>Dar ao gestor visibilidade de consumo e custo do seu departamento.</li>
+              <li>Comparar orçamento com realizado e alertar antes de estourar.</li>
+              <li>Preservar privacidade de conversas e documentos internos.</li>
+              <li>Oferecer um produto white-label, multi-tenant, para a QSOFT.</li>
+            </ul>
+            <h3>Objetivos técnicos</h3>
+            <ul class="small" style="margin:0; padding-left:18px">
+              <li>Monólito modular com fronteiras verificadas por ArchUnit.</li>
+              <li>Autorização determinística antes de qualquer chamada ao LLM.</li>
+              <li>PostgreSQL único, Flyway como única evolução de schema.</li>
+              <li>Uso/custo originados por <code>AIRequestCompleted</code>, sem conteúdo privado.</li>
+              <li>Contratos públicos entre módulos por <code>api.*</code>, IDs e eventos.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Escopo incluído</h3>
+            <p class="small">Tenant/User/IAM, Department/Area, Project mínimo, catálogo Provider/AITool/Model, ModelPolicy, chat privado, agente de políticas, observabilidade de uso/custo/orçamento, engagement/AI Credits, Governance Score, PostgreSQL e histórico analítico separado. <span class="source">Fonte: <code>ai/project.md</code>.</span></p>
+            <h3>Escopo explicitamente excluído</h3>
+            <div class="chips">
+              <span class="chip neutral">microservices</span><span class="chip neutral">broker/event bus</span>
+              <span class="chip neutral">fallback automático de modelo</span><span class="chip neutral">roteamento por custo/latência</span>
+              <span class="chip neutral">multiagentes</span><span class="chip neutral">RAG obrigatório</span>
+              <span class="chip neutral">pgvector obrigatório</span><span class="chip neutral">refresh token</span>
+              <span class="chip neutral">benchmarking entre tenants</span><span class="chip neutral">H2</span>
+            </div>
+            <p class="source" style="margin-top:8px">Fonte: <code>ai/project.md</code> §Fora de escopo; reforçado por <code>AGENTS.md</code> §19.</p>
+          </div>
+        </div>
+
+        <h3>Requisitos funcionais</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>Requisito</th><th>Origem</th><th>Estado</th><th>Evidência / lacuna</th></tr></thead>
+            <tbody>
+              <tr><td>FR-01</td><td>Registrar tenant e criar o primeiro admin <code>TENANT_ADMIN</code> na mesma transação.</td><td>SPEC-01 §7.1; ADR-37; SPI-169</td><td><span class="chip done">concluído</span></td><td><code>RegisterTenant</code>, <code>TenantController</code>, <code>OnboardingFlowIT</code>.</td></tr>
+              <tr><td>FR-02</td><td>Autenticar por e-mail/senha, com <code>tenantSlug</code> opcional e JWT stateless.</td><td>ADR-30/32; SPI-54</td><td><span class="chip done">concluído</span></td><td><code>AuthController</code>, <code>JwtTokenIssuer</code>, <code>AuthenticationIT</code>.</td></tr>
+              <tr><td>FR-03</td><td>Editar dados cadastrais e identidade visual do tenant.</td><td>SPI-52/53</td><td><span class="chip partial">parcial</span></td><td>Backend + testes; front de identidade visual com path errado.</td></tr>
+              <tr><td>FR-04</td><td>Autorizar por permissão, alvo e escopo (SELF/DEPARTMENT/TENANT).</td><td>ADR-33/34/36/37</td><td><span class="chip done">concluído</span></td><td><code>PolicyEvaluator</code>, <code>AuthorizationQuery</code>, V015, <code>UserGuardsIT</code>.</td></tr>
+              <tr><td>FR-05</td><td>Convidar usuário com papel e departamento; aceitar e definir senha.</td><td>SPEC-01 §7.2; SPI-46/29/30</td><td><span class="chip done">concluído</span></td><td><code>CreateInvite</code>, <code>AcceptInvite</code>, <code>InviteFlowIT</code>.</td></tr>
+              <tr><td>FR-06</td><td>Listar, editar departamento/rótulo, ativar/desativar e revogar concessões com guardas.</td><td>SPEC-01 §4; SPI-47/61/62/63/170</td><td><span class="chip done">concluído</span></td><td><code>UserController</code>, <code>UserGuardsIT</code>, <code>UserManagementIT</code>.</td></tr>
+              <tr><td>FR-07</td><td>CRUD de departamentos com remoção lógica e escopo de leitura.</td><td>SPEC-01 §6; SPI-94</td><td><span class="chip done">concluído</span></td><td><code>DepartmentController</code>, <code>DepartmentManagementIT</code>.</td></tr>
+              <tr><td>FR-08</td><td>Configurar ModelPolicy por departamento (default obrigatório quando há permitidos).</td><td>ADR-07/08; SPI-80/82</td><td><span class="chip done">concluído</span></td><td><code>ConfigureDepartmentPolicy</code>, <code>AIGatewayModelPolicyController</code>, tests.</td></tr>
+              <tr><td>FR-09</td><td>Cadastrar Provider/Model e consultar o catálogo do tenant.</td><td>ADR-09; SPI-79/81</td><td><span class="chip done">concluído</span></td><td><code>AIGatewayCatalogController</code>, <code>AIGatewayCatalogControllerTest</code>.</td></tr>
+              <tr><td>FR-10</td><td>Resolver modelo determinístico a partir da política do departamento.</td><td>ADR-08; SPI-83/84</td><td><span class="chip done">concluído</span></td><td><code>ResolveModelForUser</code>, <code>AIGatewayRoutingIT</code>.</td></tr>
+              <tr><td>FR-11</td><td>Registrar tentativa durável antes do provider, entregar uso de forma idempotente e consultar RF047.</td><td>ADR-38; SPI-171</td><td><span class="chip done">concluído</span></td><td>V017, <code>CompleteAIRequest</code>, <code>QueryRequestAttempts</code>, <code>AIGatewayAttemptsIT</code>, <code>UsageDeliveryIT</code>.</td></tr>
+              <tr><td>FR-12</td><td>Registrar uso/custo operacional e consultar histórico.</td><td>ADR-13/26; SPI-69–78</td><td><span class="chip done">concluído</span></td><td>V013/V014, <code>UsageRecordController</code>, <code>UsageLoggingIT</code>, <code>HistoricalUsageIT</code>.</td></tr>
+              <tr><td>FR-13</td><td>Dashboard com filtros de período/departamento/modelo/usuário, agrupamento e escopo.</td><td>SPI-88–101/113–116</td><td><span class="chip done">concluído</span></td><td><code>DashboardController</code>, <code>UsageMetricsJdbcAdapter</code>, <code>DashboardMetricsIT</code>.</td></tr>
+              <tr><td>FR-14</td><td>Orçamento mensal por departamento, resolução padrão e status OK/ALERTA/EXCEDIDO/SEM_ORCAMENTO.</td><td>SPEC-02; SPI-118–126</td><td><span class="chip done">concluído</span></td><td>V016, <code>QueryBudgetStatus</code>, <code>DepartmentBudgetIT</code>.</td></tr>
+              <tr><td>FR-15</td><td>Chat privado com histórico, recibo e isolamento por dono.</td><td>SPEC-04; SPI-172/134/136</td><td><span class="chip partial">backend concluído / UI bloqueada</span></td><td><code>ChatConversationController</code>, <code>ChatFlowIT</code>; D2 sem componente no front.</td></tr>
+              <tr><td>FR-16</td><td>Agente de políticas com recuperação escopada, fontes e ferramentas da allowlist.</td><td>SPEC-05; ADR-35; SPI-128–135</td><td><span class="chip done">backend concluído</span></td><td><code>PolicyAgentController</code>, <code>PolicyAgentIT</code>; sem tela dedicada.</td></tr>
+              <tr><td>FR-17</td><td>Medir adoção, licenças, treinamento e AI Credits.</td><td>EPIC-004; ADR-17–19</td><td><span class="chip planned">planejado</span></td><td>Pacote <code>engagement</code> vazio; sem endpoints.</td></tr>
+              <tr><td>FR-18</td><td>Produzir AI Adoption &amp; Governance Score por período, com missing data explícito.</td><td>EPIC-005; ADR-20/21/27</td><td><span class="chip planned">planejado</span></td><td>Pacote <code>governancescore</code> vazio; sem endpoints.</td></tr>
+              <tr><td>FR-19</td><td>Projeto como dimensão analítica mínima.</td><td>EPIC/ADR-24</td><td><span class="chip planned">planejado</span></td><td>Pacote <code>project</code> vazio; sem migration.</td></tr>
+              <tr><td>FR-20</td><td>Auditar criação/alteração do tenant.</td><td>SPI-56</td><td><span class="chip planned">decisão pendente</span></td><td>Sem código de auditoria; exige definição de persistência.</td></tr>
+              <tr><td>FR-21</td><td>Permitir que um ator de plataforma suspenda/reative tenant.</td><td>SPI-57</td><td><span class="chip blocked">bloqueado</span></td><td>Sem ator/ADR; bloqueio de tenant INACTIVE já existe.</td></tr>
+              <tr><td>FR-22</td><td>Recuperação de senha por link de uso único.</td><td>SPI-65</td><td><span class="chip blocked">bloqueado</span></td><td>Só tela; sem endpoint, canal de entrega ou política de senha.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Requisitos não funcionais</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>Requisito</th><th>Critério / evidência</th><th>Estado</th></tr></thead>
+            <tbody>
+              <tr><td>NFR-01</td><td>Isolamento multi-tenant em toda leitura/escrita.</td><td><code>tenant_id</code> explícito em SQL nativo; <code>TenantContextHolder</code>; ITs de Tenant A ≠ Tenant B.</td><td><span class="chip done">verificado</span></td></tr>
+              <tr><td>NFR-02</td><td>Autorização no backend, nunca no front ou no LLM.</td><td><code>@RequiresPermission</code>, <code>PolicyEvaluator</code>, <code>visibilityFor</code>; 401/403/404 testados.</td><td><span class="chip done">verificado</span></td></tr>
+              <tr><td>NFR-03</td><td>Privacidade: conteúdo de prompt/resposta/documento não entra em log nem analytics.</td><td>Testes de log em <code>ChatFlowIT</code>/<code>PolicyAgentIT</code>; schema sem coluna de conteúdo privado.</td><td><span class="chip done">verificado</span></td></tr>
+              <tr><td>NFR-04</td><td>Senhas com BCrypt, JWT HS256 de 30 min, rate limit de login.</td><td><code>SecurityBaselineConfig</code>, <code>JwtTokenIssuer</code>, <code>LoginAttemptLimiter</code>.</td><td><span class="chip done">verificado</span></td></tr>
+              <tr><td>NFR-05</td><td>PostgreSQL único, Flyway e <code>ddl-auto=validate</code>.</td><td><code>application.yml</code>; V001–V019; <code>PostgreSqlSmokeIT</code>.</td><td><span class="chip done">verificado</span></td></tr>
+              <tr><td>NFR-06</td><td>Fronteiras modulares e dependências permitidas.</td><td><code>ArchitectureRulesTest</code> (6 regras), allowlist em <code>ai/architecture.md</code>.</td><td><span class="chip done">verificado</span></td></tr>
+              <tr><td>NFR-07</td><td>Consultas do dashboard/orçamento com índices adequados.</td><td><code>ObservabilityQueryPlanIT</code> com 100k linhas; sem V020.</td><td><span class="chip done">verificado</span></td></tr>
+              <tr><td>NFR-08</td><td>Testabilidade: unit + integração + arquitetura.</td><td>806 unit + 161 IT; JaCoCo 96,6% linhas (unit-only).</td><td><span class="chip done">backend</span><span class="chip partial">front sem testes</span></td></tr>
+              <tr><td>NFR-09</td><td>Operabilidade: health, configuração por ambiente, Docker opcional.</td><td>Actuator health/info; <code>application.yml</code>; <code>Dockerfile</code>/<code>compose.yaml</code>.</td><td><span class="chip partial">parcial</span></td></tr>
+              <tr><td>NFR-10</td><td>Interface responsiva e acessível.</td><td>Views EJS + Bootstrap; sem auditoria de acessibilidade ou testes de front.</td><td><span class="chip unverified">não verificado</span></td></tr>
+              <tr><td>NFR-11</td><td>Contrato REST previsível sob <code>/api/v1</code>.</td><td>ADR-28; controllers por módulo; erros <code>{message}</code>.</td><td><span class="chip done">verificado</span></td></tr>
+              <tr><td>NFR-12</td><td>Sem dependências novas para o MVP.</td><td><code>pom.xml</code> e <code>package.json</code>; <code>ai/dependencies.md</code>.</td><td><span class="chip done">verificado</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="grid-2" style="margin-top:12px">
+          <div class="card">
+            <h3>Restrições técnicas e operacionais</h3>
+            <ul class="small" style="margin:0; padding-left:18px">
+              <li>Java 21 e Spring Boot 4.1.1; Maven único (não multi-módulo).</li>
+              <li>PostgreSQL é o único SGBD; H2 proibido.</li>
+              <li>Sem microservices, broker, Redis, pgvector, Spring AI ou SDK de provider.</li>
+              <li>Um deploy; módulos são fronteiras lógicas, não serviços.</li>
+              <li>JWT stateless de 30 min, sem refresh no MVP.</li>
+              <li>LLM nunca decide autorização; conteúdo privado não alimenta analytics.</li>
+              <li>Novas dependências exigem justificativa em <code>ai/dependencies.md</code> ou ADR.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Premissas e dependências</h3>
+            <ul class="small" style="margin:0; padding-left:18px">
+              <li>O tenant é sempre derivado do contexto autenticado.</li>
+              <li>O frontend é servido pelo BFF same-origin; o browser fala <code>/api/*</code>.</li>
+              <li>O provider da demo pode ser <code>STUB</code> até a decisão 11.</li>
+              <li>Não há serviço de e-mail; o convite é entregue por link copiado.</li>
+              <li>Docker é opcional no desenvolvimento, mas necessário para os ITs (Testcontainers).</li>
+              <li>O histórico QSOFT é massa analítica separada, sem FK operacional.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="callout info" style="margin-top:12px">
+          <b>Critérios de aceitação:</b> cada task da Sprint 3 tem critérios no packet correspondente
+          (<code>ai/tasks/sprint-03/TASK-S3-*.md</code>) e evidência em testes/ITs. Onde o critério não
+          foi atendido integralmente, a lacuna está na seção 14, não escondida como “concluído”.
+        </div>
+      </section>
+
+      <section id="usuarios" data-title="Usuários, user stories e fluxos">
+        <div class="section-head">
+          <div>
+            <h2><span class="num">04.</span> Usuários, user stories e fluxos de uso</h2>
+            <p>Histórias documentadas separadas das inferidas do código, com estado e evidência.</p>
+          </div>
+          <div class="chips"><span class="chip info">4 personas</span><span class="chip partial">front parcial</span></div>
+        </div>
+
+        <div class="grid-4" style="display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px">
+          <div class="card flat"><h4>Administrador do tenant</h4><p class="small" style="margin:0">Registra a empresa, administra usuários, convites, departamentos, catálogo, orçamento e branding. Papel <code>TENANT_ADMIN</code> (escopo TENANT, sem CHAT).</p></div>
+          <div class="card flat"><h4>Gestor / líder</h4><p class="small" style="margin:0">Concessão DEPARTMENT; vê usuários, custos e orçamento do departamento; pode convidar COLLABORATOR/LEADER no próprio escopo.</p></div>
+          <div class="card flat"><h4>Colaborador</h4><p class="small" style="margin:0">Concessão SELF; usa chat/agente e vê apenas o próprio uso. Não lista usuários nem administra o tenant.</p></div>
+          <div class="card flat"><h4>Operação / QSOFT</h4><p class="small" style="margin:0">Papel de plataforma ainda não implementado (SPI-57); hoje só health/Swagger e operação do deploy.</p></div>
+        </div>
+
+        <h3>Histórias documentadas</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>História</th><th>Origem</th><th>Critérios de aceitação</th><th>Estado</th><th>Evidência</th><th>Pendência</th></tr></thead>
+            <tbody>
+              <tr><td>US-01</td><td>Como visitante, quero registrar minha empresa e criar o administrador, para começar a usar a plataforma.</td><td>SPEC-01 §7.1; SPI-169/A4</td><td>Tenant, papéis e admin na mesma transação; admin loga.</td><td><span class="chip done">concluída</span></td><td><code>RegisterTenant</code>, <code>OnboardingFlowIT</code>.</td><td>Passo de admin seguinte no front é redundante.</td></tr>
+              <tr><td>US-02</td><td>Como usuário, quero entrar com e-mail e senha, para acessar meu tenant.</td><td>ADR-30/32</td><td>JWT válido; tenant por slug ou domínio; 401 genérico.</td><td><span class="chip done">concluída</span></td><td><code>AuthController</code>, <code>AuthenticationIT</code>.</td><td>Sem recuperação de senha (SPI-65).</td></tr>
+              <tr><td>US-03</td><td>Como administrador, quero organizar departamentos, para separar pessoas, custos e políticas.</td><td>SPEC-01 §6; SPI-94</td><td>CRUD com escopo; remoção lógica; 403 fora do escopo.</td><td><span class="chip done">concluída</span></td><td><code>DepartmentController</code>, <code>DepartmentManagementIT</code>.</td><td>—</td></tr>
+              <tr><td>US-04</td><td>Como admin/gestor, quero convidar uma pessoa com papel e departamento, para dar acesso governado.</td><td>SPEC-01 §7.2; SPI-46/A5</td><td>Papel de <code>/papeis</code>; depto obrigatório para papel DEPARTMENT; link único.</td><td><span class="chip done">concluída</span></td><td><code>CreateInvite</code>, <code>InviteDelegationIT</code>, <code>admin-convites.js</code>.</td><td>Sem envio de e-mail; entrega manual do link.</td></tr>
+              <tr><td>US-05</td><td>Como convidado, quero aceitar o convite e definir senha, para entrar no tenant.</td><td>SPI-29/30/A5</td><td>Token de uso único; expiração; revalidação do convidante.</td><td><span class="chip done">concluída</span></td><td><code>AcceptInvite</code>, <code>InviteFlowIT</code>.</td><td>—</td></tr>
+              <tr><td>US-06</td><td>Como usuário, quero ver minhas permissões e concessões, para entender meu escopo.</td><td>SPEC-01 §7.3; A9</td><td><code>permissoes</code> + <code>concessoes</code>; não é autorização.</td><td><span class="chip done">concluída</span></td><td><code>UserAccessResponse</code>, <code>GetUserAccess</code>.</td><td>Front usa apenas para UX.</td></tr>
+              <tr><td>US-07</td><td>Como administrador, quero listar/editar/desativar usuários, para manter o tenant organizado.</td><td>SPI-61/62/63/170</td><td>Escopo por visibilidade; dominância; ator ≠ alvo; último admin → 409.</td><td><span class="chip done">concluída</span></td><td><code>UserController</code>, <code>UserGuardsIT</code>.</td><td>Edição de nível é apenas rótulo.</td></tr>
+              <tr><td>US-08</td><td>Como administrador, quero atribuir/revogar concessões, para delegar acesso com escopo.</td><td>SPEC-01 §7.4; SPI-47/A6</td><td>ROLE:MANAGE; origem DIRECT; duplicada → 409; revogação lógica.</td><td><span class="chip done">concluída</span></td><td><code>AssignRole</code>, <code>RevokeRoleAssignment</code>, <code>RoleGrantIT</code>.</td><td>—</td></tr>
+              <tr><td>US-09</td><td>Como gestor, quero ver o dashboard do meu departamento, para acompanhar uso e custo.</td><td>SPEC-01/A3; F1/F2</td><td>Só o escopo da concessão; filtro fora → 403; groupBy.</td><td><span class="chip done">concluída</span></td><td><code>DashboardScopeResolver</code>, <code>DashboardMetricsIT</code>.</td><td>Seletor de modelo pode falhar para gestor (GET catálogo exige MANAGE).</td></tr>
+              <tr><td>US-10</td><td>Como colaborador, quero ver apenas o meu uso, para acompanhar meu consumo.</td><td>A3/F1</td><td>SelfOnly; sem filtro vê só o próprio uso; filtro de outro → 403.</td><td><span class="chip done">concluída</span></td><td><code>DashboardMetricsIT</code>, <code>QueryUsage</code>.</td><td><code>/observability/usage</code> limita gestor a filtrar o próprio userId.</td></tr>
+              <tr><td>US-11</td><td>Como administrador, quero configurar provider, modelo e política por departamento, para controlar o que cada área usa.</td><td>SPEC-03; SPI-79–86</td><td>ModelPolicy com default válido; roteamento determinístico.</td><td><span class="chip done">concluída</span></td><td><code>AIGatewayCatalogController</code>, <code>ResolveModelForUser</code>, tests.</td><td>Provider real ainda não escolhido; demo com STUB.</td></tr>
+              <tr><td>US-12</td><td>Como colaborador, quero conversar com a IA e ver o recibo, para entender modelo, tokens, custo e latência.</td><td>SPEC-04; SPI-172/134/136</td><td>Chat privado; recibo em toda resposta; custo ≠ KNOWN não vira zero.</td><td><span class="chip partial">backend / UI bloqueada</span></td><td><code>ChatConversationController</code>, <code>ChatFlowIT</code>.</td><td>D2: UI do recibo não existe; bloqueio Lyn.</td></tr>
+              <tr><td>US-13</td><td>Como colaborador, quero perguntar sobre políticas internas e ver as fontes, para decidir com segurança.</td><td>SPEC-05; SPI-128–135</td><td>Recuperação por tenant/depto; fontes; ferramentas allowlist; sem LLM sem resultado.</td><td><span class="chip done">backend</span></td><td><code>PolicyAgentController</code>, <code>PolicyAgentIT</code>.</td><td>Sem tela dedicada do agente.</td></tr>
+              <tr><td>US-14</td><td>Como admin/gestor, quero definir o orçamento mensal e o limiar, para planejar o gasto.</td><td>SPEC-02; SPI-118/125</td><td>Upsert por mês; histórico ≤ 24 meses; outro tenant → 404.</td><td><span class="chip done">concluída</span></td><td>V016, <code>DepartmentBudgetController</code>, <code>DepartmentBudgetIT</code>.</td><td>Histórico não indica o padrão.</td></tr>
+              <tr><td>US-15</td><td>Como gestor, quero ver o status do orçamento (OK/Alerta/Excedido), para agir antes do estouro.</td><td>SPEC-02; SPI-120/124</td><td>80%/100%; alerta não bloqueia; SelfOnly → 403.</td><td><span class="chip done">concluída</span></td><td><code>QueryBudgetStatus</code>, <code>BudgetStatusController</code>, <code>DashboardMetricsIT</code>.</td><td>Alertas calculados na leitura, não persistidos (decisão).</td></tr>
+              <tr><td>US-16</td><td>Como administrador, quero configurar a identidade visual do tenant, para ter a marca da empresa.</td><td>SPI-53</td><td>Logo/cores persistidos e editáveis.</td><td><span class="chip partial">parcial</span></td><td>Backend <code>TenantBranding*</code>, <code>UpdateTenantBrandingTest</code>.</td><td>Front chama path singular inexistente e espera <code>nomeExibicao</code>.</td></tr>
+              <tr><td>US-17</td><td>Como administrador, quero auditar criação/alteração do tenant, para rastrear mudanças.</td><td>SPI-56</td><td>Trilha com ator/timestamp/campos, sem segredo.</td><td><span class="chip planned">planejada</span></td><td>Sem código; exige decisão de tabela/retenção.</td><td>Não implementada.</td></tr>
+              <tr><td>US-18</td><td>Como usuário, quero recuperar minha senha, para voltar a acessar a conta.</td><td>SPI-65</td><td>Link de uso único, expiração, política de senha.</td><td><span class="chip blocked">bloqueada</span></td><td>Só tela <code>redefinir-senha.ejs</code>; sem endpoint.</td><td>Faltam canal de entrega e política de senha.</td></tr>
+              <tr><td>US-19</td><td>Como operador de plataforma, quero suspender/reativar um tenant, para responder a incidentes.</td><td>SPI-57</td><td>Ator autorizado; bloqueio de login/requests; auditoria.</td><td><span class="chip blocked">bloqueada</span></td><td>Status INACTIVE e filtro existem; sem endpoint.</td><td>Exige ADR de escopo de plataforma.</td></tr>
+              <tr><td>US-20</td><td>Como gestor de engajamento, quero medir licenças, treinamento e créditos, para acompanhar adoção.</td><td>EPIC-004</td><td>Indicadores sem bloquear acesso.</td><td><span class="chip planned">planejada</span></td><td>Pacote <code>engagement</code> vazio.</td><td>Sem implementação.</td></tr>
+              <tr><td>US-21</td><td>Como executivo, quero um score de governança por período, para comparar a evolução.</td><td>EPIC-005</td><td>Quatro dimensões; missing data explícito; snapshot mensal.</td><td><span class="chip planned">planejada</span></td><td>Pacote <code>governancescore</code> vazio.</td><td>Sem implementação.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Histórias inferidas do código (não documentadas como requisito)</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>História inferida</th><th>Evidência</th><th>Estado / risco</th></tr></thead>
+            <tbody>
+              <tr><td>US-I01</td><td>Como gestor, quero selecionar um modelo no dashboard, para filtrar custos por modelo.</td><td><code>dashboard.js</code> carrega <code>/v1/ai-gateway/models</code>; endpoint exige <code>AI_TOOL:MANAGE</code>.</td><td><span class="chip partial">parcial</span> — gestor tem <code>AI_TOOL:READ</code>, não MANAGE; seletor tende a ficar vazio.</td></tr>
+              <tr><td>US-I02</td><td>Como administrador, quero importar usuários em massa por planilha.</td><td><code>importacao.ejs</code>, rota <code>POST /api/usuarios/importar</code>; backend não implementa importação.</td><td><span class="chip planned">não implementada</span> — página/rota legada; não é requisito da Sprint 3.</td></tr>
+              <tr><td>US-I03</td><td>Como operador, quero consultar o health do backend.</td><td>Actuator <code>/actuator/health</code>; <code>application.yml</code>.</td><td><span class="chip done">disponível</span> — público; não testado em IT específico.</td></tr>
+              <tr><td>US-I04</td><td>Como administrador, quero listar o catálogo de modelos para escolher o default da política.</td><td><code>AIGatewayCatalogController</code> GET models/providers; front <code>step-ia.js</code> usa rotas legadas <code>/ia</code>.</td><td><span class="chip partial">parcial</span> — endpoint existe, mas front de onboarding não o consome corretamente.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Fluxos principais</h3>
+        <div class="grid-2">
+          <div class="card">
+            <h4>1. Registro e primeiro acesso</h4>
+            <ol class="steps">
+              <li>Visitante abre <code>/tenant</code> e envia empresa + slug + dados do admin.</li>
+              <li><code>POST /api/v1/tenants</code> cria tenant, 5 papéis, admin e concessão BOOTSTRAP.</li>
+              <li>Front autentica com <code>POST /api/v1/auth/login</code> e guarda o JWT.</li>
+              <li>Admin acessa onboarding/departamentos e o restante do sistema.</li>
+            </ol>
+            <p class="source">Evidência: <code>step-tenant.js</code>, <code>TenantController</code>, <code>OnboardingFlowIT</code>.</p>
+          </div>
+          <div class="card">
+            <h4>2. Convite e aceite</h4>
+            <ol class="steps">
+              <li>Admin/gestor escolhe e-mail, papel (de <code>/papeis</code>) e departamento.</li>
+              <li><code>POST /api/v1/convites</code> devolve o token uma única vez; front mostra o link.</li>
+              <li>Convidado abre <code>/aceitar-convite?token=…</code> e define senha.</li>
+              <li><code>POST /api/v1/convites/aceitar</code> cria usuário e concessão com escopo.</li>
+            </ol>
+            <p class="source">Evidência: <code>CreateInvite</code>, <code>AcceptInvite</code>, <code>InviteFlowIT</code>.</p>
+          </div>
+          <div class="card">
+            <h4>3. Chat e recibo</h4>
+            <ol class="steps">
+              <li>Usuário envia mensagem em <code>POST /api/v1/conversas</code> ou <code>/{id}/mensagens</code>.</li>
+              <li>Chat grava USER, monta histórico e chama <code>AICompletionService</code> fora de transação.</li>
+              <li>Gateway resolve modelo/política, registra tentativa, chama provider e publica uso.</li>
+              <li>Chat grava ASSISTANT com <code>requestId</code> e devolve conversa, mensagens e recibo.</li>
+            </ol>
+            <p class="source">Backend: <code>ChatFlowIT</code>. UI do recibo: D2 pendente.</p>
+          </div>
+          <div class="card">
+            <h4>4. Agente de políticas</h4>
+            <ol class="steps">
+              <li><code>POST /api/v1/agente-politicas/perguntas</code> recebe a pergunta.</li>
+              <li>Recuperação nativa filtra tenant, departamento e visibilidade do usuário.</li>
+              <li>Sem trechos: não chama LLM e responde que não encontrou política.</li>
+              <li>Com trechos: monta prompt, executa ferramentas allowlist e devolve fontes/recibo.</li>
+            </ol>
+            <p class="source">Evidência: <code>AskPolicyAgent</code>, <code>KnowledgeSearchJdbcAdapter</code>, <code>PolicyAgentIT</code>.</p>
+          </div>
+          <div class="card">
+            <h4>5. Dashboard e custos</h4>
+            <ol class="steps">
+              <li>Front envia período, departamento, modelo, usuário e agrupamento.</li>
+              <li>IAM resolve <code>visibilityFor(USAGE:READ)</code>; filtros fora do escopo → 403.</li>
+              <li>SQL nativo agrega por coluna whitelisted com <code>tenant_id</code>.</li>
+              <li>Resposta devolve chaves e métricas; front resolve nomes pelo catálogo.</li>
+            </ol>
+            <p class="source">Evidência: <code>DashboardScopeResolver</code>, <code>UsageMetricsJdbcAdapter</code>, <code>DashboardMetricsIT</code>.</p>
+          </div>
+          <div class="card">
+            <h4>6. Orçamento e alerta</h4>
+            <ol class="steps">
+              <li>Admin/gestor faz upsert do valor e limiar do mês.</li>
+              <li><code>BudgetResolution</code> resolve linha do mês → padrão → sem orçamento.</li>
+              <li><code>QueryBudgetStatus</code> soma o custo real em UTC e calcula o percentual.</li>
+              <li>Status OK/Alerta/Excedido é calculado na leitura; nada bloqueia a IA.</li>
+            </ol>
+            <p class="source">Evidência: <code>DepartmentBudgetIT</code>, <code>QueryBudgetStatusTest</code>.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="stack" data-title="Stack tecnológica e dependências">
+        <div class="section-head">
+          <div>
+            <h2><span class="num">05.</span> Stack tecnológica e dependências</h2>
+            <p>Versões verificáveis, finalidade e local de uso. “Declarada” não significa “usada”.</p>
+          </div>
+          <div class="chips"><span class="chip info">sem dependência nova</span><span class="chip neutral">CDN no front</span></div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Tecnologia / biblioteca</th><th>Categoria</th><th>Versão</th><th>Finalidade</th><th>Onde é usada</th><th>Justificativa / observação</th></tr></thead>
+            <tbody>
+              <tr><td>Java</td><td>Linguagem/runtime</td><td>21</td><td>Runtime LTS do backend</td><td><code>pom.xml</code>, Dockerfile</td><td>Baseline obrigatória.</td></tr>
+              <tr><td>Spring Boot</td><td>Framework</td><td>4.1.1</td><td>Bootstrap, DI, web, segurança, JPA</td><td><code>pom.xml</code></td><td>Baseline; parent do build.</td></tr>
+              <tr><td>Spring Web MVC</td><td>HTTP/REST</td><td>via Boot</td><td>Controllers REST</td><td><code>infrastructure/web</code></td><td>ADR-28.</td></tr>
+              <tr><td>Spring Data JPA / Hibernate</td><td>Persistência</td><td>via Boot</td><td>Entidades e repositórios</td><td><code>infrastructure/persistence</code></td><td><code>ddl-auto=validate</code>; schema é do Flyway.</td></tr>
+              <tr><td>PostgreSQL</td><td>Banco</td><td>18 (compose 18.6-alpine)</td><td>Único SGBD suportado</td><td>runtime e Testcontainers</td><td>H2 proibido.</td></tr>
+              <tr><td>Flyway</td><td>Migrations</td><td>via Boot + <code>flyway-database-postgresql</code></td><td>Evolução de schema</td><td><code>src/main/resources/db/migration</code></td><td>19 migrations V001–V019.</td></tr>
+              <tr><td>Spring Security + OAuth2 Resource Server</td><td>Segurança</td><td>via Boot</td><td>JWT Bearer, filtros, BCrypt</td><td><code>SecurityBaselineConfig</code></td><td>Nimbus JOSE via Spring Security.</td></tr>
+              <tr><td>Jakarta Bean Validation</td><td>Validação</td><td>via Boot</td><td>Validação de DTOs</td><td>records de request</td><td>Mensagens em português.</td></tr>
+              <tr><td>Spring Boot Actuator</td><td>Operação</td><td>via Boot</td><td>Health/info</td><td><code>/actuator/health</code></td><td>Exposição health/info.</td></tr>
+              <tr><td>springdoc OpenAPI</td><td>Documentação de API</td><td>3.1.0</td><td>Swagger UI/OpenAPI</td><td><code>/swagger-ui.html</code></td><td>Desligável por <code>OPENAPI_ENABLED</code>.</td></tr>
+              <tr><td>Jackson</td><td>JSON</td><td>via Boot (Jackson 3 / <code>tools.jackson</code>)</td><td>Serialização e erros</td><td>controllers/handlers</td><td>Sem configuração manual de ObjectMapper.</td></tr>
+              <tr><td>Maven</td><td>Build</td><td>3.9 (Dockerfile)</td><td>Build/testes</td><td><code>pom.xml</code></td><td>Projeto único, não multi-módulo.</td></tr>
+              <tr><td>JUnit 5 + Spring Boot Test</td><td>Teste</td><td>via Boot</td><td>Unitários e ITs</td><td><code>src/test/java</code></td><td>806 unitários.</td></tr>
+              <tr><td>ArchUnit</td><td>Teste de arquitetura</td><td>1.4.2</td><td>Fronteiras e allowlist</td><td><code>ArchitectureRulesTest</code></td><td>6 regras.</td></tr>
+              <tr><td>Testcontainers</td><td>Teste de integração</td><td>2.0.5</td><td>PostgreSQL real</td><td><code>*IT.java</code></td><td>Exige Docker; 161 testes.</td></tr>
+              <tr><td>JaCoCo</td><td>Cobertura</td><td>0.8.15</td><td>Relatório de cobertura</td><td><code>target/site/jacoco</code></td><td>Unit-only no ciclo <code>mvn test</code>.</td></tr>
+              <tr><td>Node.js</td><td>Runtime do front</td><td>18+ (documentado)</td><td>BFF Express/EJS</td><td><code>package.json</code>, <code>static/app.js</code></td><td>Não fixado em <code>.nvmrc</code>; versão declarada na doc.</td></tr>
+              <tr><td>Express</td><td>Framework web</td><td>4.21.2</td><td>Servidor BFF e proxy <code>/api</code></td><td><code>static/app.js</code></td><td>Same-origin.</td></tr>
+              <tr><td>EJS</td><td>Template engine</td><td>3.1.10</td><td>Views server-side</td><td><code>static/modules/*/views</code></td><td>Layouts via express-ejs-layouts.</td></tr>
+              <tr><td>express-ejs-layouts</td><td>Layout</td><td>2.5.1</td><td>Layout global</td><td><code>app.js</code></td><td>Views por módulo.</td></tr>
+              <tr><td>express-async-error-wrapper</td><td>Erros</td><td>1.0.4</td><td>Encapsular handlers async</td><td><code>routes/*.js</code></td><td>Evita unhandled rejection.</td></tr>
+              <tr><td>axios</td><td>HTTP server-side</td><td>1.20.0</td><td>Client dos controllers legados</td><td><code>config/api.js</code></td><td>Os controllers são inalcançáveis pelo browser (proxy os precede).</td></tr>
+              <tr><td>dotenv</td><td>Configuração</td><td>17.2.2</td><td>Carregar <code>.env</code></td><td><code>app.js</code>, <code>config/api.js</code></td><td>Segredos só em ambiente.</td></tr>
+              <tr><td>cookie-parser</td><td>HTTP</td><td>1.4.7</td><td>Cookies</td><td><code>app.js</code></td><td>Uso limitado; auth é Bearer.</td></tr>
+              <tr><td>lru-cache</td><td>Cache</td><td>7.10.1</td><td>Cache de views EJS</td><td><code>app.js</code></td><td>200 páginas.</td></tr>
+              <tr><td>compression</td><td>HTTP</td><td>1.8.1</td><td>Compressão</td><td><code>package.json</code></td><td><b>Declarada</b>; não encontrei uso em <code>app.js</code>.</td></tr>
+              <tr><td>multer</td><td>Upload</td><td>1.4.5-lts.1</td><td>Upload de arquivos</td><td><code>package.json</code></td><td><b>Declarada</b>; não encontrei uso no fluxo atual.</td></tr>
+              <tr><td>Bootstrap / Bootstrap Icons</td><td>UI</td><td>5.3.3 / 1.11.3</td><td>Estilo e ícones</td><td><code>views/partials/cabecalho.ejs</code></td><td>CDN externo; front exige internet para o estilo completo.</td></tr>
+              <tr><td>Google Fonts</td><td>UI</td><td>Poppins / Cinzel</td><td>Tipografia</td><td><code>cabecalho.ejs</code></td><td>CDN externo.</td></tr>
+              <tr><td>Docker / Compose</td><td>Infra</td><td>Postgres 18.6-alpine</td><td>Ambiente reproduzível</td><td><code>Dockerfile</code>, <code>compose.yaml</code></td><td>Opcional; compose não passa <code>JWT_SECRET</code>.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="grid-2" style="margin-top:12px">
+          <div class="card">
+            <h4>Dependências deliberadamente ausentes</h4>
+            <div class="chips">
+              <span class="chip neutral">H2</span><span class="chip neutral">Lombok</span>
+              <span class="chip neutral">MapStruct</span><span class="chip neutral">Spring Modulith</span>
+              <span class="chip neutral">Spring AI</span><span class="chip neutral">Redis</span>
+              <span class="chip neutral">Kafka/RabbitMQ</span><span class="chip neutral">pgvector</span>
+              <span class="chip neutral">Elasticsearch</span><span class="chip neutral">OpenTelemetry vendor</span>
+              <span class="chip neutral">SDK de provider</span>
+            </div>
+            <p class="source" style="margin-top:8px">Fonte: <code>ai/dependencies.md</code>. O provider é acessado por HTTP (<code>RestClient</code>), sem SDK.</p>
+          </div>
+          <div class="card">
+            <h4>Dependências declaradas × usadas</h4>
+            <p class="small">
+              <b>Usadas e centrais:</b> Spring Web/Data JPA/Security/Validation/Actuator, Flyway, PostgreSQL,
+              springdoc, JUnit, Testcontainers, ArchUnit, JaCoCo, Express, EJS, axios, dotenv, lru-cache.
+            </p>
+            <p class="small">
+              <b>Declaradas sem uso localizado:</b> <code>compression</code> e <code>multer</code>.
+              <b>Declaradas mas em código morto:</b> os controllers server-side que usam axios são
+              inalcançáveis porque o proxy <code>/api</code> é registrado antes das rotas em <code>app.js</code>.
+            </p>
+            <p class="source">Método: leitura de <code>package.json</code>, <code>app.js</code> e <code>modules/*/*.controller.js</code>.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="arquitetura" data-title="Arquitetura e organização do código">
+        <div class="section-head">
+          <div>
+            <h2><span class="num">06.</span> Arquitetura e organização do código</h2>
+            <p>Monólito modular implementado, com fronteiras verificadas; não confundir com os épicos ainda vazios.</p>
+          </div>
+          <div class="chips"><span class="chip done">ArchUnit verde</span><span class="chip info">1 deploy</span><span class="chip planned">3 pacotes vazios</span></div>
+        </div>
+
+        <div class="card">
+          <h3>Visão geral</h3>
+          <p>
+            O backend é um <b>monólito modular</b>: um único processo Spring Boot, um único build e um único
+            PostgreSQL. Cada módulo tem as camadas <code>api</code>, <code>application</code>,
+            <code>domain</code> e <code>infrastructure</code>. Outro módulo só pode importar
+            <code>&lt;module&gt;.api.*</code> e <code>sharedkernel</code>; o ArchUnit falha para import
+            interno cross-module.
+          </p>
+          <div class="arch" style="margin-top:14px">
+            <div class="arch-col">
+              <div class="arch-label">Apresentação</div>
+              <div class="mod front"><b>Browser / EJS</b><span>login, onboarding, dashboard, convites, usuários, orçamento</span></div>
+              <div class="mod front"><b>BFF Express</b><span>views + proxy <code>/api/*</code> same-origin</span></div>
+              <div class="arch-label" style="margin-top:6px">Contrato</div>
+              <div class="mod"><b>REST <code>/api/v1</code></b><span>44 endpoints mapeados</span></div>
+            </div>
+            <div class="arch-col">
+              <div class="arch-label">Módulos do monólito</div>
+              <div class="mod iam"><b>iam</b><span>Tenant, User, auth, papéis, concessões, convites</span></div>
+              <div class="mod"><b>department</b><span>Department, orçamento, ModelPolicy</span></div>
+              <div class="mod ai"><b>aigateway</b><span>Provider, Model, completion, tentativas</span></div>
+              <div class="mod ai"><b>chat</b><span>Conversation, Message, recibo</span></div>
+              <div class="mod ai"><b>agentpolicies</b><span>knowledge, agente, execuções</span></div>
+              <div class="mod obs"><b>observability</b><span>UsageRecord, custo, dashboard, BudgetStatus</span></div>
+              <div class="mod core"><b>sharedkernel</b><span>IDs, eventos, TenantContext, vocabulário RBAC</span></div>
+              <div class="mod"><b>platform</b><span>configuração transversal</span></div>
+            </div>
+            <div class="arch-col">
+              <div class="arch-label">Infraestrutura</div>
+              <div class="mod"><b>PostgreSQL 18</b><span>schema operacional + <code>historical</code></span></div>
+              <div class="mod"><b>Flyway</b><span>V001–V019</span></div>
+              <div class="mod"><b>Provider HTTP</b><span>OpenAI-compatible ou STUB</span></div>
+              <div class="arch-label" style="margin-top:6px">Não implementado</div>
+              <div class="mod"><b>engagement</b><span>pacote vazio</span></div>
+              <div class="mod"><b>governancescore</b><span>pacote vazio</span></div>
+              <div class="mod"><b>project</b><span>pacote vazio</span></div>
+            </div>
+          </div>
+          <p class="source" style="margin-top:10px">Diagrama HTML/CSS baseado em pacotes reais. Alternativa textual: Browser → BFF → REST → módulos → PostgreSQL; aigateway publica <code>AIRequestCompleted</code>, observability consome.</p>
+        </div>
+
+        <h3>Módulos, responsabilidades e estado</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Módulo</th><th>Responsabilidade</th><th>Camadas / classes-âncora</th><th>Estado</th></tr></thead>
+            <tbody>
+              <tr><td><code>sharedkernel</code></td><td>IDs, TenantContext, eventos, exceções base e vocabulário RBAC.</td><td><code>sharedkernel/id</code>, <code>event/AIRequestCompleted</code>, <code>rbac/*</code></td><td><span class="chip done">implementado</span></td></tr>
+              <tr><td><code>iam</code></td><td>Tenant, User, autenticação, papéis, concessões, convites, branding.</td><td><code>AuthController</code>, <code>UserController</code>, <code>InviteController</code>, <code>PolicyEvaluator</code></td><td><span class="chip done">implementado</span></td></tr>
+              <tr><td><code>department</code></td><td>Departamentos, orçamento mensal, ModelPolicy e contratos organizacionais.</td><td><code>DepartmentController</code>, <code>DepartmentBudgetController</code>, <code>DepartmentBudgetQuery</code></td><td><span class="chip done">implementado</span></td></tr>
+              <tr><td><code>aigateway</code></td><td>Catálogo, roteamento, completion, providers, tentativas duráveis.</td><td><code>AIGatewayCatalogController</code>, <code>CompleteAIRequest</code>, <code>OpenAiCompatibleProviderClient</code></td><td><span class="chip done">implementado</span></td></tr>
+              <tr><td><code>chat</code></td><td>Conversas privadas, mensagens e recibo.</td><td><code>ChatConversationController</code>, <code>ChatExchange</code>, <code>ReceiptResponse</code></td><td><span class="chip done">backend</span></td></tr>
+              <tr><td><code>agentpolicies</code></td><td>Documentos, chunks, busca nativa, agente e ferramentas.</td><td><code>PolicyAgentController</code>, <code>AskPolicyAgent</code>, <code>KnowledgeSearchJdbcAdapter</code></td><td><span class="chip done">backend</span></td></tr>
+              <tr><td><code>observability</code></td><td>UsageRecord, custo, dashboard, status de orçamento, histórico.</td><td><code>DashboardController</code>, <code>BudgetStatusController</code>, <code>UsageMetricsJdbcAdapter</code></td><td><span class="chip done">implementado</span></td></tr>
+              <tr><td><code>platform</code></td><td>Configuração de JWT, segurança, OpenAPI e agendamento.</td><td><code>JwtConfig</code>, <code>SecurityBaselineConfig</code>, <code>AiDeliverySchedulingConfig</code></td><td><span class="chip done">implementado</span></td></tr>
+              <tr><td><code>engagement</code></td><td>Licenças, treinamento, adoção e AI Credits.</td><td>Sem classes de produção.</td><td><span class="chip planned">planejado</span></td></tr>
+              <tr><td><code>governancescore</code></td><td>Score, breakdown, snapshot e histórico.</td><td>Sem classes de produção.</td><td><span class="chip planned">planejado</span></td></tr>
+              <tr><td><code>project</code></td><td>Dimensão analítica de projeto.</td><td>Sem classes de produção.</td><td><span class="chip planned">planejado</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="grid-2" style="margin-top:12px">
+          <div class="card">
+            <h4>Pontos de entrada</h4>
+            <ul class="small" style="margin:0; padding-left:18px">
+              <li><code>GovernanceApplication</code> — bootstrap Spring Boot.</li>
+              <li><code>src/main/resources/static/app.js</code> — BFF Express, views e proxy <code>/api</code>.</li>
+              <li><code>SecurityBaselineConfig</code> — cadeia stateless, rotas públicas e JWT.</li>
+              <li><code>TenantContextFilter</code> — revalida tenant/user e injeta o contexto.</li>
+              <li><code>PermissionInterceptor</code> — gate <code>@RequiresPermission</code>.</li>
+            </ul>
+            <h4 style="margin-top:12px">Persistência e estado</h4>
+            <p class="small">Estado de sessão é stateless (JWT); o front guarda o token em <code>localStorage/sessionStorage</code>. O backend persiste em PostgreSQL; não há Redis/cache distribuído. O cache LRU do Express é apenas de views.</p>
+          </div>
+          <div class="card">
+            <h4>Tratamento de erros</h4>
+            <ul class="small" style="margin:0; padding-left:18px">
+              <li>Cada módulo tem um <code>@RestControllerAdvice</code> e devolve <code>{ "message": "..." }</code>.</li>
+              <li>400: validação/entrada inválida; 401: sem contexto/token; 403: gate/escopo/domínio; 404: recurso de outro tenant/inexistente; 409: conflito; 502/503/504: provider/entrega.</li>
+              <li>O front traduz 401 para sessão expirada e 403/5xx/timeout para mensagens próprias.</li>
+              <li><b>Risco:</b> alguns handlers mapeiam qualquer <code>IllegalStateException</code> para 401, podendo mascarar bug interno.</li>
+            </ul>
+            <h4 style="margin-top:12px">Configuração</h4>
+            <p class="small"><code>application.yml</code> + variáveis de ambiente. JWT é obrigatório (≥32 chars), sem default inseguro. Demo seed é opt-in. O front usa <code>.env</code> próprio e nunca recebe <code>DB_*</code>.</p>
+          </div>
+        </div>
+
+        <details>
+          <summary>Decisões arquiteturais relevantes (ADRs)</summary>
+          <div class="detail-body">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>ADR</th><th>Decisão</th><th>Impacto no código</th></tr></thead>
+                <tbody>
+                  <tr><td>ADR-01/02/31</td><td>Monólito modular, comunicação por contratos públicos e allowlist.</td><td>Pacotes por módulo; ArchUnit; <code>api.*</code>.</td></tr>
+                  <tr><td>ADR-03/29</td><td>Isolamento por <code>tenant_id</code>; FK só intramódulo.</td><td>SQL tenant-aware; IDs cross-module sem FK.</td></tr>
+                  <tr><td>ADR-04/33/34/36/37</td><td>RBAC por papéis com concessões e escopo; negação por padrão.</td><td><code>PolicyEvaluator</code>, <code>AuthorizationQuery</code>, V015.</td></tr>
+                  <tr><td>ADR-30/32</td><td>JWT HS256, 30 min; <code>tenantSlug</code> opcional.</td><td><code>JwtTokenIssuer</code>, <code>AuthenticateUser</code>.</td></tr>
+                  <tr><td>ADR-06/07/08</td><td>Orçamento e ModelPolicy no department; default obrigatório.</td><td>V016, <code>DepartmentBudgetQuery</code>, <code>ConfigureDepartmentPolicy</code>.</td></tr>
+                  <tr><td>ADR-11/12/38</td><td>Completion única, tentativas duráveis e entrega idempotente.</td><td><code>AICompletionService</code>, V017, job de entrega.</td></tr>
+                  <tr><td>ADR-13/26</td><td>UsageRecord só de <code>AIRequestCompleted</code>; histórico separado.</td><td>V013/V014, listener, adapters.</td></tr>
+                  <tr><td>ADR-35/39</td><td>Agente com busca nativa e chat privado com recibo.</td><td>V018/V019, chat/agentpolicies.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </details>
+      </section>
+
+      <section id="contratos" data-title="Contratos, schemas e modelos de dados">
+        <div class="section-head">
+          <div>
+            <h2><span class="num">07.</span> Contratos, schemas e modelos de dados</h2>
+            <p>Os contratos que o frontend, os módulos e os testes precisam respeitar — com exemplos derivados do código.</p>
+          </div>
+          <div class="chips"><span class="chip info">44 endpoints</span><span class="chip info">UUID/UTC/BigDecimal</span><span class="chip partial">sem contract tests</span></div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3>Convenções globais</h3>
+            <ul class="small" style="margin:0; padding-left:18px">
+              <li>Base path <code>/api/v1</code>; JSON em requisição/resposta; UTF-8.</li>
+              <li>IDs são <code>UUID</code>; instantes são <code>Instant</code> em UTC; meses de orçamento são <code>YearMonth</code>/<code>DATE</code> no dia 1.</li>
+              <li>Valores monetários são <code>BigDecimal</code>; percentuais usam 2 casas e <code>HALF_UP</code>.</li>
+              <li>Paginação: <code>page</code> zero-based, <code>size</code> padrão 20, máximo 100; envelope com <code>content</code>, <code>totalElements</code>, <code>page</code>, <code>size</code>, <code>totalPages</code>.</li>
+              <li>Erros: <code>{ "message": "..." }</code>; sem stack trace/SQL/segredo.</li>
+              <li>Auth: <code>Authorization: Bearer &lt;jwt&gt;</code>; token com <code>sub</code>, <code>tenant_id</code>, <code>iat</code>, <code>exp</code>; sem permissões no token.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Contratos que não devem mudar sem revisão</h3>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Contrato</th><th>Consumidor</th><th>Por quê</th></tr></thead>
+                <tbody>
+                  <tr><td><code>AuthResponse { token, tokenType }</code></td><td>front, <code>auth.js</code></td><td>Login e renovação de sessão.</td></tr>
+                  <tr><td><code>UserAccessResponse { userId, concessoes, permissoes }</code></td><td>front, menus e concessões</td><td>Nomes usados para exibir menus; não é autorização.</td></tr>
+                  <tr><td><code>InviteResponse.token</code></td><td>front de convites</td><td>Link de aceite aparece uma única vez; listagem nunca devolve token.</td></tr>
+                  <tr><td><code>MonthlyBudgetResponse</code> e <code>BudgetStatusResponse</code></td><td>tela de orçamento/dashboard</td><td>Campos <code>valor</code>, <code>limiarAlerta</code>, <code>orcamentoPadrao</code>, <code>pctUsado</code>.</td></tr>
+                  <tr><td><code>CostGroupResponse { chave, requisicoes, tokensEntrada, tokensSaida, custoEstimado }</code></td><td>dashboard F1</td><td>Front resolve nomes por catálogo; mudar campos quebra a tabela.</td></tr>
+                  <tr><td><code>ChatTurnResponse.recibo</code></td><td>futura UI D2</td><td>Contrato da SPEC-04; inclui <code>statusCusto</code>.</td></tr>
+                  <tr><td><code>PolicyAnswerResponse</code></td><td>consumidores do agente</td><td>Fontes, ferramentas e recibo.</td></tr>
+                  <tr><td><code>RequestAttemptPageResponse</code></td><td>RF047/contador de inconclusivos</td><td>Filtro <code>costStatus</code> e <code>totalElements</code>.</td></tr>
+                  <tr><td>Erro <code>{ message }</code></td><td>front e integrações</td><td>Mensagens e handlers dependem desse envelope.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <h3>Payloads de referência</h3>
+        <div class="grid-2">
+          <div class="card">
+            <h4>Login</h4>
+            <pre><code>POST /api/v1/auth/login
+{
+  "tenantSlug": "acme",          // opcional; se ausente, resolve pelo domínio
+  "email": "admin@acme.com",
+  "password": "********"
+}
+
+200 OK
+{ "token": "&lt;jwt&gt;", "tokenType": "Bearer" }</code></pre>
+            <p class="source">Fonte: <code>AuthRequest</code>, <code>AuthResponse</code>, <code>AuthController</code>.</p>
+          </div>
+          <div class="card">
+            <h4>Registro de tenant + admin</h4>
+            <pre><code>POST /api/v1/tenants
+{
+  "slug": "acme",
+  "name": "ACME",
+  "emailDomain": "acme.com",
+  "adminName": "Ana",
+  "adminEmail": "ana@acme.com",
+  "adminPassword": "********"
+}
+
+201 Created
+{ "id": "&lt;uuid&gt;", "slug": "acme", "name": "ACME",
+  "emailDomain": "acme.com", "status": "ACTIVE",
+  "createdAt": "2026-10-20T12:00:00Z" }</code></pre>
+            <p class="source">Fonte: <code>TenantRequest</code>, <code>TenantResponse</code>. Senha não retorna.</p>
+          </div>
+          <div class="card">
+            <h4>Convite</h4>
+            <pre><code>POST /api/v1/convites
+{
+  "email": "colab@acme.com",
+  "roleKey": "LEADER",
+  "departmentId": "&lt;uuid&gt;",
+  "hierarchyLevel": "LEADER"      // opcional
+}
+
+201 Created
+{ "id": "&lt;uuid&gt;", "email": "colab@acme.com",
+  "hierarchyLevel": "LEADER", "token": "&lt;token-único&gt;",
+  "status": "PENDING", "expiresAt": "2026-10-22T12:00:00Z" }</code></pre>
+            <p class="source">Fonte: <code>CreateInviteRequest</code>, <code>InviteResponse</code>. <code>GET /convites</code> não devolve token.</p>
+          </div>
+          <div class="card">
+            <h4>Permissões e concessões</h4>
+            <pre><code>GET /api/v1/usuarios/me/permissoes
+
+200 OK
+{
+  "userId": "&lt;uuid&gt;",
+  "concessoes": [
+    { "id": "&lt;uuid&gt;", "papel": "MANAGER", "escopo": "DEPARTMENT",
+      "departmentId": "&lt;uuid&gt;", "origem": "INVITE" }
+  ],
+  "permissoes": ["USER:READ", "USAGE:READ", "DEPARTMENT:READ"]
+}</code></pre>
+            <p class="source">Fonte: <code>UserAccessResponse</code>. É UX; o backend reavalia a cada request.</p>
+          </div>
+          <div class="card">
+            <h4>Orçamento mensal</h4>
+            <pre><code>PUT /api/v1/departamentos/{id}/orcamentos/2026-10
+{ "amount": 1000.00, "alertThresholdPct": 80 }
+
+200 OK
+{ "mes": "2026-10", "departmentId": "&lt;uuid&gt;",
+  "valor": 1000.00, "limiarAlerta": 80,
+  "atualizadoPor": "&lt;uuid&gt;",
+  "criadoEm": "2026-10-20T12:00:00Z",
+  "atualizadoEm": "2026-10-20T12:00:00Z" }</code></pre>
+            <p class="source">Fonte: <code>MonthlyBudgetRequest/Response</code>, <code>DepartmentBudgetController</code>.</p>
+          </div>
+          <div class="card">
+            <h4>Status do orçamento</h4>
+            <pre><code>GET /api/v1/observability/orcamentos?mes=2026-10
+
+200 OK
+{
+  "mes": "2026-10",
+  "itens": [
+    { "departmentId": "&lt;uuid&gt;", "departmentName": "Marketing",
+      "orcamento": 1000.00, "custoReal": 850.40,
+      "pctUsado": 85.04, "limiarAlerta": 80,
+      "status": "ALERTA", "orcamentoPadrao": false }
+  ]
+}</code></pre>
+            <p class="source">Fonte: <code>BudgetStatusResponse</code>. <code>orcamento: null</code> = SEM_ORCAMENTO, nunca zero.</p>
+          </div>
+          <div class="card">
+            <h4>Custos por dimensão</h4>
+            <pre><code>GET /api/v1/observability/metrics/costs
+  ?groupBy=MODEL&from=2026-10-01T00:00:00Z&to=2026-11-01T00:00:00Z
+
+200 OK
+[ { "chave": "&lt;uuid-do-modelo&gt;", "requisicoes": 120,
+    "tokensEntrada": 10000, "tokensSaida": 20000,
+    "custoEstimado": 0.920000 } ]</code></pre>
+            <p class="source">Fonte: <code>CostGroupResponse</code>. O observability não resolve o nome do modelo; o front usa o catálogo.</p>
+          </div>
+          <div class="card">
+            <h4>Chat com recibo</h4>
+            <pre><code>POST /api/v1/conversas
+{ "mensagem": "Como funciona a política de viagens?", "requestedModelId": null }
+
+201 Created
+{
+  "conversa": { "id": "&lt;uuid&gt;", "titulo": "Como funciona...", "status": "ACTIVE" },
+  "mensagens": [ { "role": "USER", "content": "..." },
+                 { "role": "ASSISTANT", "content": "...", "requestId": "&lt;uuid&gt;" } ],
+  "recibo": {
+    "requestId": "&lt;uuid&gt;", "modelo": "stub-echo", "provider": "Stub",
+    "tokensEntrada": 120, "tokensSaida": 340,
+    "custoEstimado": 0.000920, "statusCusto": "KNOWN", "latenciaMs": 812
+  }
+}</code></pre>
+            <p class="source">Fonte: <code>ChatTurnResponse</code>, <code>ReceiptResponse</code>. Conteúdo não vai para log/evento.</p>
+          </div>
+          <div class="card">
+            <h4>Agente de políticas</h4>
+            <pre><code>POST /api/v1/agente-politicas/perguntas
+{ "pergunta": "Posso usar ChatGPT com dados de cliente?", "requestedModelId": null }
+
+200 OK
+{
+  "resposta": "...",
+  "fontes": [ { "documentId": "&lt;uuid&gt;", "titulo": "Política de Viagens",
+                "versao": 1, "trecho": "..." } ],
+  "ferramentasUsadas": ["buscar_politicas"],
+  "recibo": { "requestId": "&lt;uuid&gt;", "modelo": "...", "provider": "...",
+              "tokensEntrada": 120, "tokensSaida": 340,
+              "custoEstimado": 0.000920, "statusCusto": "KNOWN", "latenciaMs": 812 }
+}</code></pre>
+            <p class="source">Fonte: <code>PolicyAnswerResponse</code>. Sem trechos, o LLM não é chamado e <code>recibo</code> é nulo.</p>
+          </div>
+          <div class="card">
+            <h4>RF047 — tentativas</h4>
+            <pre><code>GET /api/v1/ai-gateway/tentativas
+  ?de=2026-10-01T00:00:00Z&amp;ate=2026-10-31T23:59:59Z
+  &amp;costStatus=INCONCLUSIVE&amp;page=0&amp;size=20
+
+200 OK
+{
+  "content": [ { "requestId": "&lt;uuid&gt;", "userId": "&lt;uuid&gt;",
+                 "departmentId": "&lt;uuid&gt;", "purpose": "CHAT",
+                 "executionStatus": "SUCCEEDED", "deliveryStatus": "DELIVERED",
+                 "costStatus": "INCONCLUSIVE", "estimatedCost": null,
+                 "createdAt": "2026-10-20T12:00:00Z" } ],
+  "totalElements": 1, "page": 0, "size": 20, "totalPages": 1
+}</code></pre>
+            <p class="source">Fonte: <code>RequestAttemptPageResponse</code>. Nunca expõe prompt/resposta/segredo.</p>
+          </div>
+          <div class="card">
+            <h4>Erro padrão</h4>
+            <pre><code>HTTP 403
+{ "message": "Permissão negada: DEPARTMENT:MANAGE." }
+
+HTTP 404
+{ "message": "Convite não encontrado." }
+
+HTTP 409
+{ "message": "Já existe uma concessão ativa idêntica." }</code></pre>
+            <p class="source">Fonte: handlers de cada módulo. Mensagens não incluem stack trace, SQL ou segredo.</p>
+          </div>
+        </div>
+
+        <h3>Contratos internos entre módulos</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Contrato / tipo</th><th>Produtor</th><th>Consumidor</th><th>Regra</th><th>Arquivo</th></tr></thead>
+            <tbody>
+              <tr><td><code>IdentityQuery.getUserContext(UserId)</code> → <code>UserContext</code></td><td>IAM</td><td>observability, aigateway, agentpolicies</td><td>Lê tenant, nível, departamento e status; não expõe domínio interno.</td><td><code>iam/api/query/IdentityQuery.java</code></td></tr>
+              <tr><td><code>AuthorizationQuery.isAllowed/visibilityFor</code></td><td>IAM</td><td>todos os módulos com endpoints</td><td>Decisão determinística por permissão, alvo e escopo; sem cache.</td><td><code>iam/api/query/AuthorizationQuery.java</code></td></tr>
+              <tr><td><code>DepartmentBudgetQuery.budgetFor/budgetsFor</code> → <code>BudgetLimitInfo</code></td><td>department</td><td>observability</td><td>Orçamento efetivo do mês; <code>amount == null</code> = sem orçamento.</td><td><code>department/api/query/DepartmentBudgetQuery.java</code></td></tr>
+              <tr><td><code>DepartmentModelPolicyQuery.findByDepartmentId</code> → <code>ModelPolicyInfo</code></td><td>department</td><td>aigateway</td><td>Política de modelos por departamento; IDs sem FK.</td><td><code>department/api/query/DepartmentModelPolicyQuery.java</code></td></tr>
+              <tr><td><code>OrganizationQuery.findById</code> → <code>DepartmentInfo</code></td><td>department</td><td>outros módulos</td><td>Dados organizacionais; tenant explícito.</td><td><code>department/api/query/OrganizationQuery.java</code></td></tr>
+              <tr><td><code>ConfigureDepartmentModelPolicy.configure</code></td><td>department (implementa)</td><td>aigateway (orquestra)</td><td>Valida IDs no catálogo e mantém o invariante do default.</td><td><code>department/api/command/ConfigureDepartmentModelPolicy.java</code></td></tr>
+              <tr><td><code>AICompletionService.complete(CompletionCommand)</code> → <code>CompletionResult</code></td><td>aigateway</td><td>chat, agentpolicies</td><td>Única porta para LLM; servidor resolve <code>requestId</code>/departamento.</td><td><code>aigateway/api/completion/AICompletionService.java</code></td></tr>
+              <tr><td><code>AIToolCatalogQuery.findModel/allModelsExist</code> → <code>CatalogModelInfo</code></td><td>aigateway</td><td>department/outros</td><td>Validação de ModelIds por tenant.</td><td><code>aigateway/api/query/AIToolCatalogQuery.java</code></td></tr>
+              <tr><td><code>ModelResolutionQuery.resolve</code> → <code>ResolvedModelInfo</code></td><td>aigateway</td><td>agentpolicies</td><td>Modelo aplicável ao usuário, sem expor roteamento.</td><td><code>aigateway/api/query/ModelResolutionQuery.java</code></td></tr>
+              <tr><td><code>AIRequestCompleted</code></td><td>aigateway</td><td>observability</td><td>Única origem de UsageRecord; sem prompt/resposta/segredo; custo calculado uma vez.</td><td><code>sharedkernel/event/AIRequestCompleted.java</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Enums e estados persistidos</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Enum</th><th>Valores</th><th>Onde aparece</th><th>Observação</th></tr></thead>
+            <tbody>
+              <tr><td><code>TenantStatus</code></td><td>ACTIVE, INACTIVE</td><td><code>iam_tenants.status</code></td><td>INACTIVE bloqueia login/requests via filtro.</td></tr>
+              <tr><td><code>UserStatus</code></td><td>ACTIVE, INACTIVE</td><td><code>app_user.status</code></td><td>Revalidado a cada request.</td></tr>
+              <tr><td><code>InviteStatus</code></td><td>PENDING, ACCEPTED, REVOKED</td><td><code>iam_invites.status</code></td><td>Token de uso único; expiração separada.</td></tr>
+              <tr><td><code>HierarchyLevel</code></td><td>COLLABORATOR, LEADER, MANAGER, EXECUTIVE</td><td><code>app_user.hierarchy_level</code></td><td>Rótulo organizacional; não autoriza.</td></tr>
+              <tr><td><code>ScopeType</code></td><td>SELF, DEPARTMENT, TENANT</td><td><code>iam_role_assignments.scope_type</code></td><td>Escopo fixo por papel; departamento só em DEPARTMENT.</td></tr>
+              <tr><td><code>DepartmentStatus</code></td><td>ACTIVE, INACTIVE</td><td><code>department_departments.status</code></td><td>INACTIVE = remoção lógica.</td></tr>
+              <tr><td><code>ModelStatus</code></td><td>AVAILABLE, DISABLED</td><td><code>aigateway_models.status</code></td><td>Só AVAILABLE pode ser roteado.</td></tr>
+              <tr><td><code>ProviderStatus/Kind</code></td><td>ACTIVE/INACTIVE; OPENAI_COMPATIBLE/STUB</td><td><code>aigateway_providers</code></td><td>STUB é o caminho de demo; real exige decisão.</td></tr>
+              <tr><td><code>ExecutionStatus</code></td><td>NOT_STARTED, IN_FLIGHT, SUCCEEDED, FAILED, TIMED_OUT, OUTCOME_UNKNOWN</td><td><code>aigateway_request_attempts</code></td><td>Estados de execução da tentativa.</td></tr>
+              <tr><td><code>DeliveryStatus</code></td><td>NOT_APPLICABLE, PENDING, DELIVERED, DEAD</td><td>tentativas</td><td>Entrega do evento de uso; DEAD após máximo de tentativas.</td></tr>
+              <tr><td><code>CostStatus</code></td><td>KNOWN, NOT_APPLICABLE, INCONCLUSIVE</td><td>tentativas/recibo</td><td><code>estimated_cost</code> só existe quando KNOWN.</td></tr>
+              <tr><td><code>ConversationStatus</code></td><td>ACTIVE, ARCHIVED</td><td><code>chat_conversations</code></td><td>Chat é privado por dono.</td></tr>
+              <tr><td><code>MessageRole</code></td><td>USER, ASSISTANT</td><td><code>chat_messages</code></td><td>Conteúdo não vai para log.</td></tr>
+              <tr><td><code>BudgetStatus</code></td><td>OK, ALERTA, EXCEDIDO, SEM_ORCAMENTO</td><td>resposta calculada</td><td>Não persistido; derivado na leitura.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout info" style="margin-top:12px">
+          <b>Compatibilidade:</b> não há versionamento além de <code>/api/v1</code> nem contract tests/OpenAPI diff
+          no CI. Renomear campos de <code>CostGroupResponse</code>, <code>BudgetStatusResponse</code>,
+          <code>UserAccessResponse</code> ou do recibo do chat quebra o frontend. Mudanças nesses contratos
+          exigem revisão dos consumidores e atualização de <code>docs/development/CONTRATO_API_FRONT_BACK.md</code>.
+        </div>
+      </section>
+
+      <section id="apis" data-title="APIs e integrações">
+        <div class="section-head">
+          <div>
+            <h2><span class="num">08.</span> APIs e integrações</h2>
+            <p>Rotas implementadas, autorização, corpo, resposta e evidência. Rotas apenas documentadas não entram como funcionais.</p>
+          </div>
+          <div class="chips"><span class="chip info">44 endpoints</span><span class="chip done">Spring MVC</span><span class="chip partial">1 provider externo</span></div>
+        </div>
+
+        <div class="callout info">
+          <b>Convenções da tabela:</b> <code>TO</code> = <code>TENANT_ONLY</code> (padrão, exige concessão
+          de escopo TENANT); <code>BT</code> = <code>BY_TARGET</code> (aceita qualquer concessão aplicável e
+          exige checagem fina no caso de uso). Todos os endpoints exigem JWT, exceto os marcados “público”.
+          Erros comuns: 400 validação, 401 sem contexto, 403 gate/escopo, 404 outro tenant, 409 conflito,
+          502/503/504 provider/entrega.
+        </div>
+
+        <details open>
+          <summary>Autenticação, tenant e usuários — 20 endpoints</summary>
+          <div class="detail-body">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Método / rota</th><th>Descrição</th><th>Auth / targeting</th><th>Entrada</th><th>Saída / status</th><th>Evidência</th></tr></thead>
+                <tbody>
+                  <tr><td><code>POST /api/v1/auth/login</code></td><td>Autentica e emite JWT.</td><td>público</td><td><code>AuthRequest { tenantSlug?, email, password }</code></td><td><code>AuthResponse { token, tokenType }</code> · 200/401/429</td><td><code>AuthController</code>, <code>AuthenticationIT</code></td></tr>
+                  <tr><td><code>POST /api/v1/tenants</code></td><td>Registra tenant, papéis e admin.</td><td>público</td><td><code>TenantRequest</code> (slug, name, emailDomain, adminName, adminEmail, adminPassword)</td><td><code>TenantResponse</code> · 201/400/409</td><td><code>OnboardingFlowIT</code></td></tr>
+                  <tr><td><code>GET /api/v1/tenants/me</code></td><td>Dados do tenant atual.</td><td>autenticado</td><td>—</td><td><code>TenantResponse</code> · 200</td><td><code>TenantManagementIT</code></td></tr>
+                  <tr><td><code>PUT /api/v1/tenants/me</code></td><td>Edita nome do tenant.</td><td>TENANT:MANAGE · TO</td><td><code>{ name }</code></td><td><code>TenantResponse</code> · 200/403</td><td><code>TenantControllerTest</code></td></tr>
+                  <tr><td><code>GET /api/v1/tenants/me/identidade-visual</code></td><td>Lê logo/cores.</td><td>autenticado</td><td>—</td><td><code>TenantBrandingResponse</code> · 200</td><td><code>TenantControllerTest</code></td></tr>
+                  <tr><td><code>PUT /api/v1/tenants/me/identidade-visual</code></td><td>Edita logo/cores.</td><td>TENANT:MANAGE · TO</td><td><code>TenantBrandingRequest</code> (logoUrl?, primaryColor?, secondaryColor?)</td><td><code>TenantBrandingResponse</code> · 200/400/403</td><td><code>UpdateTenantBrandingTest</code></td></tr>
+                  <tr><td><code>GET /api/v1/usuarios</code></td><td>Lista/busca usuários com escopo.</td><td>USER:READ · BT</td><td><code>page,size,hierarchyLevel,departmentId,name,email</code></td><td><code>UserPageResponse</code> · 200/403</td><td><code>UserManagementIT</code></td></tr>
+                  <tr><td><code>PATCH /api/v1/usuarios/{id}</code></td><td>Edita departamento do usuário.</td><td>USER:MANAGE · BT</td><td><code>{ departmentId }</code></td><td><code>UserResponse</code> · 200/403/404</td><td><code>UserGuardsIT</code></td></tr>
+                  <tr><td><code>PATCH /api/v1/usuarios/{id}/status</code></td><td>Ativa/inativa usuário.</td><td>USER:MANAGE · BT</td><td><code>{ status: ACTIVE|INACTIVE }</code></td><td><code>UserResponse</code> · 200/403/409</td><td><code>UserGuardsIT</code></td></tr>
+                  <tr><td><code>POST /api/v1/usuarios/{id}/nivel</code></td><td>Altera rótulo hierárquico.</td><td>USER:MANAGE · BT</td><td><code>{ hierarchyLevel }</code></td><td><code>UserResponse</code> · 200/403</td><td><code>UserGuardsIT</code></td></tr>
+                  <tr><td><code>GET /api/v1/usuarios/me/permissoes</code></td><td>Concessões e permissões do ator.</td><td>autenticado</td><td>—</td><td><code>UserAccessResponse</code> · 200</td><td><code>UserControllerTest</code></td></tr>
+                  <tr><td><code>GET /api/v1/usuarios/{id}/permissoes</code></td><td>Concessões de um usuário.</td><td>USER:READ · BT</td><td>—</td><td><code>UserAccessResponse</code> · 200/403/404</td><td><code>UserGuardsIT</code></td></tr>
+                  <tr><td><code>POST /api/v1/usuarios/{id}/concessoes</code></td><td>Atribui concessão direta.</td><td>ROLE:MANAGE · TO</td><td><code>{ roleKey, departmentId? }</code></td><td><code>AssignmentResponse</code> · 201/403/409</td><td><code>RoleGrantIT</code></td></tr>
+                  <tr><td><code>DELETE /api/v1/usuarios/{id}/concessoes/{concessaoId}</code></td><td>Revoga concessão logicamente.</td><td>ROLE:MANAGE · TO</td><td>—</td><td>204/403/409</td><td><code>RoleGrantIT</code></td></tr>
+                  <tr><td><code>GET /api/v1/papeis</code></td><td>Lista papéis e <code>concedivel</code>.</td><td>ROLE:READ · BT</td><td>—</td><td><code>RoleSummaryResponse[]</code> · 200/403</td><td><code>RoleGrantIT</code></td></tr>
+                  <tr><td><code>GET /api/v1/convites</code></td><td>Lista convites do ator (sem token).</td><td>INVITE:MANAGE · BT</td><td>—</td><td><code>InviteSummaryResponse[]</code> · 200/403</td><td><code>InviteDelegationIT</code></td></tr>
+                  <tr><td><code>POST /api/v1/convites</code></td><td>Emite convite com papel/departamento.</td><td>INVITE:MANAGE · BT</td><td><code>CreateInviteRequest</code></td><td><code>InviteResponse</code> · 201/400/403/409</td><td><code>InviteFlowIT</code></td></tr>
+                  <tr><td><code>POST /api/v1/convites/aceitar</code></td><td>Aceita convite e define senha.</td><td>público</td><td><code>{ token, name?, password }</code></td><td><code>AcceptInviteResponse</code> · 200/400/409</td><td><code>InviteFlowIT</code></td></tr>
+                  <tr><td><code>POST /api/v1/convites/{id}/reenviar</code></td><td>Gera novo token/expiração.</td><td>INVITE:MANAGE · BT</td><td>—</td><td><code>InviteResponse</code> · 200/400/403/404</td><td><code>InviteFlowIT</code> (cross-tenant 404)</td></tr>
+                  <tr><td><code>DELETE /api/v1/convites/{id}</code></td><td>Revoga convite não aceito.</td><td>INVITE:MANAGE · BT</td><td>—</td><td>204/400/403/404</td><td><code>InviteFlowIT</code></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="source">Observação: <code>GET /api/v1/tenants/me</code> e <code>GET /api/v1/usuarios/me/permissoes</code> são autenticados, mas não têm anotação de permissão específica; a barreira é o JWT válido + filtro de contexto.</p>
+          </div>
+        </details>
+
+        <details>
+          <summary>Departamentos e orçamento — 7 endpoints</summary>
+          <div class="detail-body">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Método / rota</th><th>Descrição</th><th>Auth / targeting</th><th>Entrada</th><th>Saída / status</th><th>Evidência</th></tr></thead>
+                <tbody>
+                  <tr><td><code>GET /api/v1/departamentos</code></td><td>Lista departamentos visíveis.</td><td>DEPARTMENT:READ · BT</td><td><code>search,status</code></td><td><code>DepartmentResponse[]</code> · 200/403</td><td><code>DepartmentManagementIT</code></td></tr>
+                  <tr><td><code>POST /api/v1/departamentos</code></td><td>Cria departamento.</td><td>DEPARTMENT:MANAGE · TO</td><td><code>DepartmentRequest { name, description?, leaderUserId?, monthlyBudget? }</code></td><td><code>DepartmentResponse</code> · 201/400/403/409</td><td><code>DepartmentManagementIT</code></td></tr>
+                  <tr><td><code>GET /api/v1/departamentos/{id}</code></td><td>Lê departamento por alvo.</td><td>DEPARTMENT:READ · BT</td><td>—</td><td><code>DepartmentResponse</code> · 200/403/404</td><td><code>DepartmentManagementIT</code></td></tr>
+                  <tr><td><code>PUT /api/v1/departamentos/{id}</code></td><td>Atualiza departamento.</td><td>DEPARTMENT:MANAGE · TO</td><td><code>DepartmentRequest</code></td><td><code>DepartmentResponse</code> · 200/400/403/404/409</td><td><code>DepartmentControllerTest</code></td></tr>
+                  <tr><td><code>DELETE /api/v1/departamentos/{id}</code></td><td>Remoção lógica (INACTIVE).</td><td>DEPARTMENT:MANAGE · TO</td><td>—</td><td>204/403/404</td><td><code>DepartmentManagementIT</code></td></tr>
+                  <tr><td><code>PUT /api/v1/departamentos/{id}/orcamentos/{mes}</code></td><td>Upsert do orçamento do mês (<code>AAAA-MM</code>).</td><td>DEPARTMENT:MANAGE · BT</td><td><code>MonthlyBudgetRequest { amount, alertThresholdPct? }</code></td><td><code>MonthlyBudgetResponse</code> · 200/400/403/404</td><td><code>DepartmentBudgetIT</code></td></tr>
+                  <tr><td><code>GET /api/v1/departamentos/{id}/orcamentos</code></td><td>Histórico entre <code>de</code> e <code>ate</code> (≤24 meses).</td><td>DEPARTMENT:READ · BT</td><td><code>de,ate</code></td><td><code>MonthlyBudgetResponse[]</code> · 200/400/403/404</td><td><code>DepartmentBudgetIT</code></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="source">O mês inválido retorna 400; departamento de outro tenant/inexistente retorna 404; intervalo &gt;24 meses retorna 400.</p>
+          </div>
+        </details>
+
+        <details>
+          <summary>AI Gateway — 8 endpoints</summary>
+          <div class="detail-body">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Método / rota</th><th>Descrição</th><th>Auth / targeting</th><th>Entrada</th><th>Saída / status</th><th>Evidência</th></tr></thead>
+                <tbody>
+                  <tr><td><code>GET /api/v1/ai-gateway/providers</code></td><td>Lista providers do tenant.</td><td>AI_TOOL:MANAGE · TO</td><td>—</td><td><code>ProviderResponse[]</code> · 200/403</td><td><code>AIGatewayCatalogControllerTest</code></td></tr>
+                  <tr><td><code>POST /api/v1/ai-gateway/providers</code></td><td>Cria provider (sem segredo; referência).</td><td>AI_TOOL:MANAGE · TO</td><td><code>ProviderRequest { name, kind?, baseUrl?, credentialRef?, timeoutMs? }</code></td><td><code>ProviderResponse</code> · 201/400/403/409</td><td><code>AIGatewayCatalogControllerTest</code></td></tr>
+                  <tr><td><code>GET /api/v1/ai-gateway/models</code></td><td>Lista modelos do tenant.</td><td>AI_TOOL:MANAGE · TO</td><td>—</td><td><code>ModelResponse[]</code> · 200/403</td><td><code>AIGatewayCatalogControllerTest</code></td></tr>
+                  <tr><td><code>POST /api/v1/ai-gateway/models</code></td><td>Cria modelo com preços.</td><td>AI_TOOL:MANAGE · TO</td><td><code>ModelRequest { providerId, name, externalName?, inputPricePer1k?, outputPricePer1k? }</code></td><td><code>ModelResponse</code> · 201/400/403/409</td><td><code>AIGatewayCatalogControllerTest</code></td></tr>
+                  <tr><td><code>PATCH /api/v1/ai-gateway/models/{id}/status</code></td><td>Ativa/desabilita modelo.</td><td>AI_TOOL:MANAGE · TO</td><td><code>{ status: AVAILABLE|DISABLED }</code></td><td><code>ModelResponse</code> · 200/400/403/404</td><td><code>AIGatewayCatalogControllerTest</code></td></tr>
+                  <tr><td><code>PUT /api/v1/ai-gateway/departments/{id}/model-policy</code></td><td>Configura ModelPolicy do departamento.</td><td>AI_TOOL:MANAGE · TO</td><td><code>{ allowedModelIds, defaultModelId }</code></td><td>204/400/403/404/409</td><td><code>AIGatewayModelPolicyControllerTest</code></td></tr>
+                  <tr><td><code>GET /api/v1/ai-gateway/models/permitido</code></td><td>Modelo aplicável ao ator.</td><td>autenticado</td><td><code>requestedModelId?</code></td><td><code>ResolvedModelResponse</code> · 200/403/409</td><td><code>AIGatewayRoutingIT</code></td></tr>
+                  <tr><td><code>GET /api/v1/ai-gateway/tentativas</code></td><td>Consulta paginada de tentativas (RF047).</td><td>USAGE:READ · BT</td><td><code>de,ate,status,deliveryStatus,costStatus,userId,departmentId,page,size</code></td><td><code>RequestAttemptPageResponse</code> · 200/403</td><td><code>AIGatewayAttemptsIT</code></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="callout warn" style="margin-top:10px">
+              <b>Divergência de UX:</b> os GETs de providers/models exigem <code>AI_TOOL:MANAGE</code>, mas
+              o papel <code>MANAGER</code> tem apenas <code>AI_TOOL:READ</code>. O front do dashboard tenta
+              listar modelos para todos; para gestor, a chamada tende a 403 e o seletor fica vazio.
+            </div>
+          </div>
+        </details>
+
+        <details>
+          <summary>Observability — 4 endpoints</summary>
+          <div class="detail-body">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Método / rota</th><th>Descrição</th><th>Auth / targeting</th><th>Entrada</th><th>Saída / status</th><th>Evidência</th></tr></thead>
+                <tbody>
+                  <tr><td><code>GET /api/v1/observability/usage</code></td><td>UsageRecord paginado e escopado.</td><td>USAGE:READ · BT</td><td><code>departmentId,userId,from,to,page,size</code></td><td><code>UsagePageResponse</code> · 200/403</td><td><code>UsageLoggingIT</code></td></tr>
+                  <tr><td><code>GET /api/v1/observability/metrics/usage</code></td><td>Série temporal + usuários ativos.</td><td>USAGE:READ · BT</td><td><code>from,to,departmentId,modelId,userId,granularity</code></td><td><code>UsageMetricsResponse</code> · 200/400/403</td><td><code>DashboardMetricsIT</code></td></tr>
+                  <tr><td><code>GET /api/v1/observability/metrics/costs</code></td><td>Custos agrupados por departamento/modelo/usuário.</td><td>USAGE:READ · BT</td><td><code>from,to,departmentId,modelId,userId,groupBy</code></td><td><code>CostGroupResponse[]</code> · 200/400/403</td><td><code>DashboardMetricsIT</code></td></tr>
+                  <tr><td><code>GET /api/v1/observability/orcamentos</code></td><td>Status orçado × realizado do mês.</td><td>USAGE:READ · BT</td><td><code>mes=AAAA-MM</code></td><td><code>BudgetStatusResponse</code> · 200/400/403</td><td><code>DepartmentBudgetIT</code></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="source">Filtros fora do escopo retornam 403; <code>SelfOnly</code> em <code>/orcamentos</code> retorna 403. O custo real usa janela UTC <code>[from,to)</code>.</p>
+          </div>
+        </details>
+
+        <details>
+          <summary>Chat e agente — 5 endpoints</summary>
+          <div class="detail-body">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Método / rota</th><th>Descrição</th><th>Auth / targeting</th><th>Entrada</th><th>Saída / status</th><th>Evidência</th></tr></thead>
+                <tbody>
+                  <tr><td><code>POST /api/v1/conversas</code></td><td>Cria conversa e envia a primeira mensagem.</td><td>CHAT:CREATE · BT</td><td><code>SendMessageRequest { mensagem, requestedModelId? }</code></td><td><code>ChatTurnResponse</code> · 201/400/403/409/502/503/504</td><td><code>ChatFlowIT</code></td></tr>
+                  <tr><td><code>GET /api/v1/conversas</code></td><td>Lista conversas do ator.</td><td>CHAT:READ · BT</td><td><code>page,size</code></td><td><code>ConversationPageResponse</code> · 200/403</td><td><code>ChatFlowIT</code></td></tr>
+                  <tr><td><code>GET /api/v1/conversas/{id}/mensagens</code></td><td>Mensagens de uma conversa do ator.</td><td>CHAT:READ · BT</td><td>—</td><td><code>MessageResponse[]</code> · 200/403/404</td><td><code>ChatFlowIT</code> (AZ12)</td></tr>
+                  <tr><td><code>POST /api/v1/conversas/{id}/mensagens</code></td><td>Envia nova mensagem na conversa.</td><td>CHAT:CREATE · BT</td><td><code>SendMessageRequest</code></td><td><code>ChatTurnResponse</code> · 201/400/403/404/409/502/503/504</td><td><code>ChatFlowIT</code></td></tr>
+                  <tr><td><code>POST /api/v1/agente-politicas/perguntas</code></td><td>Pergunta ao agente de políticas.</td><td>KNOWLEDGE_DOCUMENT:READ · BT</td><td><code>{ pergunta, requestedModelId? }</code></td><td><code>PolicyAnswerResponse</code> · 200/400/403/409/502/503/504</td><td><code>PolicyAgentIT</code></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="source">Conteúdo de chat/pergunta nunca vai para log (testes específicos). <code>CHAT</code> tem teto SELF: <code>TENANT_ADMIN</code> sem CHAT recebe 403; conversa de outra pessoa retorna 404.</p>
+          </div>
+        </details>
+
+        <h3>Integrações externas</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Serviço / provider</th><th>Finalidade</th><th>Operação utilizada</th><th>Cliente / configuração</th><th>Falhas / fallback</th><th>Estado</th></tr></thead>
+            <tbody>
+              <tr><td>Provider compatível com OpenAI</td><td>Executar completion de chat/agente.</td><td><code>POST {baseUrl}/chat/completions</code></td><td><code>OpenAiCompatibleProviderClient</code> via <code>RestClient</code>; <code>baseUrl</code>, <code>credentialRef</code> (nome de variável), <code>timeoutMs</code> 1s–120s.</td><td>HTTP de erro → 502; timeout → 504; conexão/parse → 502; credencial ausente → <code>CREDENTIAL_MISSING</code>. Sem fallback automático (fora de escopo).</td><td><span class="chip unverified">não verificado contra provider real</span></td></tr>
+              <tr><td>Provider STUB</td><td>Demo e testes determinísticos.</td><td>Comportamentos <code>stub-echo</code>, <code>stub-tool</code>, <code>stub-error</code>, <code>stub-timeout</code>.</td><td><code>StubProviderClient</code>; <code>ProviderKind.STUB</code>.</td><td>Erros simulados para 502/504; sem rede.</td><td><span class="chip done">verificado em IT</span></td></tr>
+              <tr><td>PostgreSQL</td><td>Persistência operacional e histórica.</td><td>JDBC/JPA/Flyway.</td><td><code>DB_*</code>; Hibernate <code>validate</code>.</td><td>Falha de conexão impede boot; sem retry customizado.</td><td><span class="chip done">verificado em IT</span></td></tr>
+              <tr><td>SMTP / e-mail</td><td>Entrega de convites ou reset.</td><td>—</td><td>Não há dependência/cliente de e-mail no projeto.</td><td>Convite é copiado manualmente; reset bloqueado.</td><td><span class="chip neutral">não implementado</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="banco" data-title="Banco de dados e persistência">
+        <div class="section-head">
+          <div>
+            <h2><span class="num">09.</span> Banco de dados e persistência</h2>
+            <p>PostgreSQL único, 19 migrations, FKs só intramódulo e isolamento por <code>tenant_id</code>.</p>
+          </div>
+          <div class="chips"><span class="chip done">Flyway V001–V019</span><span class="chip neutral">sem FK cross-module</span><span class="chip planned">V021 futura</span></div>
+        </div>
+
+        <div class="grid-3">
+          <div class="card"><h4>Banco e schema</h4><p class="small"><b>PostgreSQL 18</b>; schema <code>public</code> operacional e schema <code>historical</code> para massa analítica. Hibernate em <code>ddl-auto=validate</code>: o schema é criado/evoluído exclusivamente pelo Flyway.</p></div>
+          <div class="card"><h4>Tenant e integridade</h4><p class="small">Toda tabela de negócio carrega <code>tenant_id</code>. FKs só dentro do módulo (<code>app_user → iam_tenants</code>, <code>models → providers</code>, <code>messages → conversations</code>, etc.). Referências cross-module são UUIDs sem FK.</p></div>
+          <div class="card"><h4>Dados sensíveis</h4><p class="small">Nenhuma tabela de uso/analytics guarda prompt, resposta, documento ou segredo. Chat guarda o conteúdo da conversa no módulo <code>chat</code>, com acesso por dono. Tokens de convite são persistidos como hash SHA-256.</p></div>
+        </div>
+
+        <h3>Migrations e evolução</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Versão</th><th>Conteúdo</th><th>Estado</th><th>Observação</th></tr></thead>
+            <tbody>
+              <tr><td>V001–V006</td><td>Tenant, User, password hash, legado <code>user_permission</code>, RBAC, convites.</td><td><span class="chip done">aplicadas</span></td><td>Base IAM.</td></tr>
+              <tr><td>V007–V008</td><td>Domínio de e-mail único e branding do tenant.</td><td><span class="chip done">aplicadas</span></td><td>ADR-32/SPI-54.</td></tr>
+              <tr><td>V009–V012</td><td>Departamentos, catálogo Provider/Model, ModelPolicy, preços.</td><td><span class="chip done">aplicadas</span></td><td>Módulos department/aigateway.</td></tr>
+              <tr><td>V013–V014</td><td>UsageRecord operacional e schema <code>historical</code>.</td><td><span class="chip done">aplicadas</span></td><td>Índices e dataset QSOFT.</td></tr>
+              <tr><td>V015</td><td>Concessões com escopo, origem, auditoria e token hash.</td><td><span class="chip done">aplicada</span></td><td>Migração de dados legados com abortos.</td></tr>
+              <tr><td>V016</td><td>Orçamento mensal por departamento.</td><td><span class="chip done">aplicada</span></td><td>Constraints de mês/valor/limiar.</td></tr>
+              <tr><td>V017</td><td>Configuração de provider, <code>external_name</code> e tentativas duráveis.</td><td><span class="chip done">aplicada</span></td><td>ADR-38.</td></tr>
+              <tr><td>V018</td><td>Conversas e mensagens privadas.</td><td><span class="chip done">aplicada</span></td><td>ADR-39.</td></tr>
+              <tr><td>V019</td><td>Documentos, versões, chunks e execuções do agente.</td><td><span class="chip done">aplicada</span></td><td>Busca nativa <code>tsvector</code> em português.</td></tr>
+              <tr><td>V020</td><td>Índices de performance adicionais.</td><td><span class="chip neutral">não criada</span></td><td>Sem evidência de seq scan relevante; teto de migrations respeitado.</td></tr>
+              <tr><td>V021+</td><td><code>DROP TABLE user_permission</code> e limpeza da trilha legada.</td><td><span class="chip planned">próximo release</span></td><td>Decisão de não remover na Sprint 3.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Modelo de dados por módulo</h3>
+        <details open>
+          <summary>IAM — tenants, usuários, papéis, concessões e convites</summary>
+          <div class="detail-body">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Tabela</th><th>Campos principais / tipos</th><th>Chaves e restrições</th><th>Observação</th></tr></thead>
+                <tbody>
+                  <tr><td><code>iam_tenants</code></td><td><code>id UUID</code>, <code>slug VARCHAR(100)</code>, <code>name VARCHAR(200)</code>, <code>status VARCHAR(20)</code>, <code>email_domain VARCHAR(253)</code>, <code>logo_url</code>, <code>primary_color</code>, <code>secondary_color</code>, <code>created_at/updated_at</code></td><td>PK id; UNIQUE slug; UNIQUE email_domain</td><td>Tenant INACTIVE bloqueia acesso.</td></tr>
+                  <tr><td><code>app_user</code></td><td><code>id UUID</code>, <code>tenant_id UUID</code>, <code>email VARCHAR(255)</code>, <code>name VARCHAR(200)</code>, <code>password_hash</code>, <code>hierarchy_level</code>, <code>department_id UUID</code>, <code>status</code>, timestamps</td><td>PK id; UNIQUE (tenant_id,email); FK tenant</td><td><code>department_id</code> é cross-module por ID; nível é rótulo.</td></tr>
+                  <tr><td><code>iam_roles</code></td><td><code>id</code>, <code>tenant_id</code>, <code>name</code>, timestamps</td><td>PK; UNIQUE (tenant_id,name); FK tenant</td><td>5 papéis de sistema por tenant.</td></tr>
+                  <tr><td><code>iam_role_permissions</code></td><td><code>role_id</code>, <code>resource</code>, <code>action</code></td><td>PK composta; FK role</td><td>Match exato; <code>MANAGE</code> não implica as demais ações.</td></tr>
+                  <tr><td><code>iam_role_assignments</code></td><td><code>id</code>, <code>tenant_id</code>, <code>user_id</code>, <code>role_id</code>, <code>department_id</code>, <code>scope_type</code>, <code>origin</code>, <code>granted_by/at</code>, <code>revoked_at/by</code></td><td>PK; FKs intramódulo; UNIQUE parcial de concessão ativa; CHECK de escopo/departamento/revogação</td><td>Fonte de verdade da autorização.</td></tr>
+                  <tr><td><code>iam_invites</code></td><td><code>id</code>, <code>tenant_id</code>, <code>email</code>, <code>hierarchy_level</code>, <code>department_id</code>, <code>role_id</code>, <code>invited_by</code>, <code>token_hash</code>, <code>status</code>, <code>created_at/expires_at/accepted_at</code></td><td>PK; UNIQUE token_hash; FK tenant/role/invited_by; CHECK pending role</td><td>Token em hash; listagem não devolve token.</td></tr>
+                  <tr><td><code>user_permission</code> (legado)</td><td><code>user_id</code>, <code>permission</code></td><td>Sem tenant_id</td><td><b>Não é mais lida</b>; DROP planejado para V021.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </details>
+
+        <details>
+          <summary>Department — departamentos, ModelPolicy e orçamento</summary>
+          <div class="detail-body">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Tabela</th><th>Campos principais</th><th>Chaves / restrições</th><th>Observação</th></tr></thead>
+                <tbody>
+                  <tr><td><code>department_departments</code></td><td><code>id</code>, <code>tenant_id</code>, <code>name</code>, <code>description</code>, <code>leader_user_id</code>, <code>monthly_budget NUMERIC(15,2)</code>, <code>status</code>, timestamps</td><td>PK; UNIQUE (tenant_id,name)</td><td><code>monthly_budget</code> é o orçamento padrão.</td></tr>
+                  <tr><td><code>department_model_policies</code></td><td><code>department_id</code>, <code>tenant_id</code>, <code>default_model_id</code>, timestamps</td><td>PK department_id</td><td>IDs de modelo sem FK cross-module.</td></tr>
+                  <tr><td><code>department_model_policy_allowed_models</code></td><td><code>department_id</code>, <code>model_id</code></td><td>PK composta; FK política</td><td>Conjunto permitido.</td></tr>
+                  <tr><td><code>department_monthly_budgets</code></td><td><code>id</code>, <code>tenant_id</code>, <code>department_id</code>, <code>month DATE</code>, <code>amount NUMERIC(15,2)</code>, <code>alert_threshold_pct SMALLINT</code>, <code>updated_by</code>, timestamps</td><td>PK; UNIQUE (tenant,dept,month); FK department; CHECK amount ≥ 0, limiar 1–100, dia = 1</td><td>Linha do mês tem precedência sobre o padrão.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </details>
+
+        <details>
+          <summary>AIGateway — providers, models, tentativas</summary>
+          <div class="detail-body">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Tabela</th><th>Campos principais</th><th>Chaves / restrições</th><th>Observação</th></tr></thead>
+                <tbody>
+                  <tr><td><code>aigateway_providers</code></td><td><code>id</code>, <code>tenant_id</code>, <code>name</code>, <code>status</code>, <code>kind</code>, <code>base_url</code>, <code>credential_ref</code>, <code>timeout_ms</code></td><td>PK; UNIQUE (tenant,name); CHECK kind/credencial/timeout/url</td><td>Nunca guarda o segredo, só a referência.</td></tr>
+                  <tr><td><code>aigateway_models</code></td><td><code>id</code>, <code>tenant_id</code>, <code>provider_id</code>, <code>name</code>, <code>external_name</code>, <code>status</code>, <code>input_price_per_1k</code>, <code>output_price_per_1k</code></td><td>PK; UNIQUE (tenant,name); FK provider intramódulo</td><td>Preços fotografados na tentativa.</td></tr>
+                  <tr><td><code>aigateway_request_attempts</code></td><td><code>request_id</code>, <code>tenant_id</code>, <code>user_id</code>, <code>department_id</code>, <code>purpose</code>, <code>model_id</code>, <code>provider_id</code>, <code>authorization_status</code>, <code>execution_status</code>, <code>delivery_status</code>, <code>cost_status</code>, <code>estimated_cost</code>, tokens, preços, latência, erro, tentativas, timestamps</td><td>PK request_id; CHECKs de estados e custo; índices tenant/created, pending e inflight</td><td>Sem prompt/resposta/segredo; idempotência por request_id.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </details>
+
+        <details>
+          <summary>Observability — UsageRecord e histórico</summary>
+          <div class="detail-body">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Tabela</th><th>Campos principais</th><th>Chaves / índices</th><th>Observação</th></tr></thead>
+                <tbody>
+                  <tr><td><code>observability_usage_records</code></td><td><code>id</code>, <code>request_id</code>, <code>tenant_id</code>, <code>department_id</code>, <code>user_id</code>, <code>model_id</code>, <code>provider_id</code>, tokens, <code>estimated_cost</code>, <code>latency_ms</code>, <code>status</code>, <code>created_at</code></td><td>PK; UNIQUE request_id; índices (tenant,created), (tenant,department,created), (tenant,user,created)</td><td>Única origem: <code>AIRequestCompleted</code>; imutável; sem conteúdo privado.</td></tr>
+                  <tr><td><code>historical.*</code> (16 tabelas)</td><td>companies, departments, employees, projects, builds, deployments, issues, pull_requests, ai_tools, ai_models, ai_usage_logs, ai_billing, ai_budgets, ai_licenses, approved_ai_tools, security_events, training_records</td><td>Sem FK operacional; índices por company/timestamp</td><td>Massa analítica separada (ADR-26); script <code>scripts/db/load-historical.ps1</code>.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </details>
+
+        <details>
+          <summary>Chat e AgentPolicies</summary>
+          <div class="detail-body">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Tabela</th><th>Campos principais</th><th>Chaves / restrições</th><th>Observação</th></tr></thead>
+                <tbody>
+                  <tr><td><code>chat_conversations</code></td><td><code>id</code>, <code>tenant_id</code>, <code>owner_user_id</code>, <code>title</code>, <code>status</code>, timestamps</td><td>PK; CHECK status; índice (tenant,owner,updated)</td><td>Privada por dono; consultas filtram tenant + owner.</td></tr>
+                  <tr><td><code>chat_messages</code></td><td><code>id</code>, <code>tenant_id</code>, <code>conversation_id</code>, <code>role</code>, <code>content TEXT</code>, <code>request_id</code>, <code>created_at</code></td><td>PK; FK conversation; CHECK role USER/ASSISTANT</td><td>Conteúdo não vai para log/evento.</td></tr>
+                  <tr><td><code>agentpolicies_documents</code></td><td><code>id</code>, <code>tenant_id</code>, <code>title</code>, <code>tenant_wide</code>, timestamps</td><td>PK; UNIQUE (tenant,title)</td><td>Escopo por departamento em tabela separada.</td></tr>
+                  <tr><td><code>agentpolicies_document_scopes</code></td><td><code>document_id</code>, <code>tenant_id</code>, <code>department_id</code></td><td>PK composta; FK document</td><td>Referência de departamento por ID.</td></tr>
+                  <tr><td><code>agentpolicies_document_versions</code></td><td><code>id</code>, <code>tenant_id</code>, <code>document_id</code>, <code>version_number</code>, <code>status</code>, <code>created_at</code></td><td>PK; UNIQUE (document,version); 1 ACTIVE por document; CHECK status</td><td>DRAFT/PENDING_APPROVAL/ACTIVE/SUPERSEDED.</td></tr>
+                  <tr><td><code>agentpolicies_chunks</code></td><td><code>id</code>, <code>tenant_id</code>, <code>version_id</code>, <code>ordinal</code>, <code>text</code>, <code>search_vector TSVECTOR</code></td><td>PK; FK version; GIN(search_vector); índice tenant</td><td>Busca nativa em português; sem pgvector.</td></tr>
+                  <tr><td><code>agentpolicies_executions</code></td><td><code>id</code>, <code>tenant_id</code>, <code>user_id</code>, <code>request_id</code>, <code>status</code>, <code>document_ids UUID[]</code>, <code>tools_called VARCHAR(60)[]</code>, timestamps</td><td>PK; CHECK status</td><td>Metadados da execução; sem conteúdo.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </details>
+
+        <h3>Relacionamentos principais</h3>
+        <div class="er">
+          <div class="er-box"><b>IAM</b><ul><li><code>iam_tenants 1—N app_user</code></li><li><code>iam_tenants 1—N iam_roles</code></li><li><code>iam_roles 1—N iam_role_permissions</code></li><li><code>app_user 1—N iam_role_assignments</code></li><li><code>iam_roles 1—N iam_role_assignments</code></li><li><code>iam_tenants 1—N iam_invites</code></li></ul></div>
+          <div class="er-box"><b>Departamento</b><ul><li><code>department_departments 1—N department_monthly_budgets</code></li><li><code>department_departments 1—1 department_model_policies</code></li><li><code>department_model_policies 1—N allowed_models</code></li><li><code>department_departments.id</code> referenciado por <code>app_user.department_id</code> (sem FK)</li></ul></div>
+          <div class="er-box"><b>IA e observabilidade</b><ul><li><code>aigateway_providers 1—N aigateway_models</code></li><li><code>chat_conversations 1—N chat_messages</code></li><li><code>agentpolicies_documents 1—N versions 1—N chunks</code></li><li><code>aigateway_request_attempts.request_id</code> = <code>observability_usage_records.request_id</code> (sem FK)</li></ul></div>
+        </div>
+
+        <div class="callout warn" style="margin-top:12px">
+          <b>Limitações identificadas:</b> <code>user_permission</code> permanece no schema (legado, não lido);
+          não há FK entre módulos (por decisão); o histórico analítico não tem FK operacional (por decisão);
+          o dataset <code>historical</code> depende de carga manual via script, não do Flyway;
+          <code>scripts/db/fix-crossmodule.sql</code> referencia tabelas que não existem nas migrations e deve ser tratado como obsoleto.
+        </div>
+      </section>
+
+      <section id="execucao" data-title="Como executar e utilizar o projeto">
+        <div class="section-head">
+          <div>
+            <h2><span class="num">10.</span> Como executar e utilizar o projeto</h2>
+            <p>Guia prático baseado nos arquivos de configuração e na documentação. O que não foi executado está marcado.</p>
+          </div>
+          <div class="chips"><span class="chip info">Java 21</span><span class="chip info">Node 18+</span><span class="chip info">PostgreSQL/Docker</span></div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3>Pré-requisitos</h3>
+            <ul class="small" style="margin:0; padding-left:18px">
+              <li><b>JDK 21</b> e <b>Maven 3.9+</b> para o backend.</li>
+              <li><b>Node.js 18+</b> e npm para o BFF/frontend.</li>
+              <li><b>PostgreSQL 18</b> local <i>ou</i> Docker (Testcontainers exige Docker).</li>
+              <li>Git para versionamento.</li>
+            </ul>
+            <h3 style="margin-top:14px">Variáveis de ambiente (somente nomes)</h3>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Variável</th><th>Uso</th><th>Obrigatória?</th></tr></thead>
+                <tbody>
+                  <tr><td><code>DB_HOST</code>, <code>DB_PORT</code>, <code>DB_NAME</code>, <code>DB_USER</code>, <code>DB_PASSWORD</code></td><td>Conexão do backend</td><td>Sim (host/porta têm defaults; senha não)</td></tr>
+                  <tr><td><code>JWT_SECRET</code></td><td>Assinatura/validação HS256</td><td><b>Sim</b> — mínimo 32 caracteres; sem default</td></tr>
+                  <tr><td><code>SERVER_PORT</code></td><td>Porta do backend</td><td>Não (default 8080)</td></tr>
+                  <tr><td><code>OPENAPI_ENABLED</code></td><td>Swagger/OpenAPI</td><td>Não (default true)</td></tr>
+                  <tr><td><code>APP_BOOTSTRAP_DEMO_DATA</code> / <code>APP_BOOTSTRAP_DEMO_PASSWORD</code></td><td>Seed demo</td><td>Não (default false; exige as duas)</td></tr>
+                  <tr><td><code>API_PROXY_TARGET</code></td><td>Alvo do proxy do BFF</td><td>Não (default <code>http://localhost:8080</code>)</td></tr>
+                  <tr><td><code>SPRING_API_URL</code></td><td>Base axios dos controllers server-side</td><td>Não (default localhost:8080)</td></tr>
+                  <tr><td><code>PORT</code>, <code>IP</code></td><td>Bind do Express</td><td>Não (3000 / 127.0.0.1)</td></tr>
+                  <tr><td><code>QSOFT_TENANT_SLUG</code></td><td>Slug injetado no login</td><td>Não (login resolve pelo domínio)</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="source">Fonte: <code>.env.example</code>, <code>application.yml</code>. Nenhum valor secreto é reproduzido aqui.</p>
+          </div>
+
+          <div class="card">
+            <h3>Subir o backend</h3>
+            <pre><code># 1. Configuração
+Copy-Item .env.example .env      # PowerShell
+# edite DB_PASSWORD e JWT_SECRET (>= 32 chars)
+
+# 2. Banco (PostgreSQL local)
+# crie o database definido em DB_NAME
+
+# 3. Backend
+mvn spring-boot:run
+# ou
+./scripts/run-local.ps1          # Windows
+./scripts/run-local.sh           # Linux/macOS</code></pre>
+            <p class="small">Flyway aplica V001–V019 no boot; Hibernate apenas valida o schema. Health em <code>http://localhost:8080/actuator/health</code> e Swagger em <code>/swagger-ui.html</code> (se habilitado).</p>
+
+            <h3>Subir o frontend</h3>
+            <pre><code>npm install
+npm start
+# http://127.0.0.1:3000</code></pre>
+            <p class="small">O browser fala same-origin; o Express encaminha <code>/api/*</code> ao backend configurado em <code>API_PROXY_TARGET</code>.</p>
+
+            <h3>Docker</h3>
+            <pre><code>Copy-Item .env.example .env
+docker compose up --build</code></pre>
+            <div class="callout danger" style="margin-top:8px">
+              <b>Limitação conhecida:</b> o serviço <code>backend</code> do <code>compose.yaml</code> não
+              repassa <code>JWT_SECRET</code>; como a aplicação exige o segredo no boot, o container
+              provavelmente falha. Alternativa: <code>docker compose up postgres</code> + backend local,
+              ou <code>docker run</code> passando as variáveis. Não executei o compose para confirmar.
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-2" style="margin-top:12px">
+          <div class="card">
+            <h3>Executar testes e verificações</h3>
+            <pre><code>mvn -B test
+# unitários + ArchUnit + JaCoCo; não exige Docker
+
+mvn -B verify -Pintegration
+# inclui *IT com Testcontainers/PostgreSQL; exige Docker
+
+./scripts/check --changed
+./scripts/check
+./scripts/check-integration</code></pre>
+            <p class="small">No ambiente Windows/PowerShell usado neste projeto, os scripts <code>.sh</code> exigem um bash real; os comandos Maven diretos são a alternativa segura.</p>
+            <p class="source">Fonte: <code>pom.xml</code> (Surefire exclui <code>*IT</code>; Failsafe no profile), <code>scripts/check*</code>, <code>ai/testing.md</code>.</p>
+          </div>
+
+          <div class="card">
+            <h3>Exemplo mínimo de uso</h3>
+            <pre><code># 1. Registrar tenant + admin
+POST /api/v1/tenants
+{ "slug":"acme", "name":"ACME", "emailDomain":"acme.com",
+  "adminName":"Ana", "adminEmail":"ana@acme.com", "adminPassword":"********" }
+
+# 2. Login (guarde o token)
+POST /api/v1/auth/login
+{ "tenantSlug":"acme", "email":"ana@acme.com", "password":"********" }
+
+# 3. Criar departamento
+POST /api/v1/departamentos
+Authorization: Bearer &lt;jwt&gt;
+{ "name":"Marketing", "monthlyBudget":1000.00 }
+
+# 4. Convidar colaborador
+POST /api/v1/convites
+{ "email":"colab@acme.com", "roleKey":"COLLABORATOR" }
+
+# 5. Consultar o dashboard
+GET /api/v1/observability/metrics/costs?groupBy=DEPARTMENT
+Authorization: Bearer &lt;jwt&gt;</code></pre>
+            <p class="source">Sequência baseada em <code>OnboardingFlowIT</code> e nos DTOs reais. Os valores são placeholders.</p>
+          </div>
+        </div>
+
+        <h3>Problemas comuns e diagnóstico</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Sintoma</th><th>Causa provável</th><th>Ação</th><th>Evidência</th></tr></thead>
+            <tbody>
+              <tr><td>Backend não sobe</td><td><code>JWT_SECRET</code> ausente ou &lt; 32 chars</td><td>Definir a variável; não há default</td><td><code>JwtSecurityProperties</code>, <code>application.yml</code></td></tr>
+              <tr><td>Compose sobe o banco, mas o backend reinicia</td><td><code>compose.yaml</code> sem <code>JWT_SECRET</code></td><td>Subir PostgreSQL no compose e backend local, ou adicionar a variável ao serviço</td><td><code>compose.yaml</code>, <code>HOW_TO_RUN.md</code></td></tr>
+              <tr><td>Flyway/Hibernate falha no boot</td><td>Banco vazio/credenciais erradas ou migration divergente</td><td>Conferir <code>DB_*</code> e logs do Flyway; schema é <code>validate</code></td><td><code>application.yml</code></td></tr>
+              <tr><td>Front abre sem estilo</td><td>Bootstrap/fontes vêm de CDN; sem internet</td><td>Garantir acesso aos CDNs ou empacotar os assets</td><td><code>views/partials/cabecalho.ejs</code></td></tr>
+              <tr><td>Login retorna 401</td><td>Credenciais, tenant errado ou token antigo</td><td>Conferir e-mail/domínio/slug; limpar <code>authToken</code></td><td><code>AuthController</code>, <code>auth.js</code></td></tr>
+              <tr><td>Convite não chega por e-mail</td><td>Não há integração de e-mail</td><td>Copiar o link exibido na emissão/reenvio</td><td><code>admin-convites.js</code></td></tr>
+              <tr><td>Identidade visual não salva</td><td>Front chama <code>/tenant/identidade-visual</code>; backend usa <code>/tenants/me/identidade-visual</code></td><td>Corrigir o path e o contrato de resposta</td><td><code>identidade-visual.js</code>, <code>TenantController</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout info" style="margin-top:12px">
+          <b>O que foi realmente executado nesta análise:</b> leitura de código/docs, inspeção dos relatórios
+          Surefire/Failsafe/JaCoCo e do histórico Git. A suíte não foi reexecutada durante a geração deste HTML;
+          os números são os relatórios existentes no repositório. O front não foi navegado autenticado de ponta a ponta.
+        </div>
+      </section>
+
+      <section id="historico" data-title="Etapas de desenvolvimento e histórico">
+        <div class="section-head">
+          <div>
+            <h2><span class="num">11.</span> Etapas de desenvolvimento e histórico de entregas</h2>
+            <p>Fases reconstruídas de commits, packets e épicos; não é um changelog exaustivo.</p>
+          </div>
+          <div class="chips"><span class="chip info">2026-08 → 2026-10</span><span class="chip done">Sprint 3</span></div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Fase</th><th>Objetivo</th><th>Entregas previstas</th><th>Realizado / evidência</th><th>Pendências</th><th>Critério de conclusão</th></tr></thead>
+            <tbody>
+              <tr><td><b>Fundação</b><br><span class="source">25/08–09/2026</span></td><td>Criar o monólito modular, IAM, multi-tenancy e base de persistência.</td><td>Spring Boot, Flyway, JWT, Tenant/User, RBAC, department, catálogo, observability.</td><td>V001–V014; autenticação, RBAC, catálogo, uso/custo e dashboard; commits iniciais e merges.</td><td><span class="chip done">sem bloqueio estrutural</span></td><td>Build/testes verdes; isolamento por tenant.</td></tr>
+              <tr><td><b>Sprint 2</b><br><span class="source">08–18/09/2026</span></td><td>Consolidar IAM, RBAC, convites e observabilidade.</td><td>CRUD de usuários, convites, identidade visual, dashboard, dataset histórico.</td><td>V005–V015; <code>UserController</code>, <code>InviteController</code>, dashboard e histórico; testes.</td><td>Auditoria (SPI-56), reset (SPI-65), status de tenant (SPI-57).</td><td>Sem regressão de isolamento; endpoints cobertos.</td></tr>
+              <tr><td><b>Sprint 3 — Onda A</b><br><span class="source">06–20/10/2026</span></td><td>Autorização por concessão com escopo.</td><td>A1–A10: V015, avaliador, escopo, bootstrap, convites, concessões, guardas, front e docs.</td><td>V015; <code>PolicyEvaluator</code>; <code>OnboardingFlowIT</code>, <code>UserGuardsIT</code>, <code>RoleGrantIT</code>; front A9; docs A10.</td><td>D2 não pertence à onda A; front legado em etapas de IA/revisão.</td><td>RBAC fechado, ITs de escopo e guardas verdes.</td></tr>
+              <tr><td><b>Sprint 3 — Onda B</b><br><span class="source">20/10/2026</span></td><td>Orçamento por departamento e alerta.</td><td>B1–B3: V016, domínio, API, status, tela.</td><td><code>DepartmentBudgetIT</code> (9), <code>QueryBudgetStatusTest</code> (12), front de orçamento.</td><td>Histórico não indica padrão; upsert concorrente pode 500.</td><td>Status 80/100, isolamento e limites UTC testados.</td></tr>
+              <tr><td><b>Sprint 3 — Onda C</b><br><span class="source">20/10/2026</span></td><td>Provider, tentativas duráveis e RF047.</td><td>C1–C3: V017, adaptador, entrega idempotente, consulta.</td><td><code>OpenAiCompatibleProviderClient</code>, <code>StubProviderClient</code>, <code>UsageDeliveryIT</code>, <code>AIGatewayAttemptsIT</code>.</td><td>Provider real não escolhido/configurado.</td><td>Tentativa antes do provider, retry idempotente, RF047 escopada.</td></tr>
+              <tr><td><b>Sprint 3 — Onda D</b><br><span class="source">20/10/2026</span></td><td>Chat privado e recibo na UI.</td><td>D1 backend; D2 UI com Lyn.</td><td>D1: V018, <code>ChatConversationController</code>, <code>ChatFlowIT</code> (6).</td><td><span class="chip blocked">D2 bloqueada</span> — componente SPI-136 ausente.</td><td>Recibo em toda resposta e erros da SPEC-04.</td></tr>
+              <tr><td><b>Sprint 3 — Onda E</b><br><span class="source">20/10/2026</span></td><td>Conhecimento interno e agente de políticas.</td><td>E1–E2: V019, busca nativa, ferramentas, endpoint.</td><td><code>KnowledgeAccessIT</code>, <code>PolicyAgentIT</code> (6), <code>KnowledgeSchemaIT</code>.</td><td>Sem tela dedicada do agente.</td><td>Recuperação escopada, fontes, allowlist, sem LLM sem resultado.</td></tr>
+              <tr><td><b>Sprint 3 — Onda F</b><br><span class="source">20/10/2026</span></td><td>Dashboard por modelo/usuário, estados vazios e performance.</td><td>F1–F2 (+F6).</td><td><code>DashboardMetricsIT</code> (15), <code>ObservabilityQueryPlanIT</code>; groupBy e filtros; F6 404.</td><td>Seletor de modelo para gestor pode falhar; front sem testes.</td><td>GroupBy, RBAC, estados vazios e planos de execução verificados.</td></tr>
+              <tr><td><b>Fechamento</b><br><span class="source">20/10/2026</span></td><td>Documentação e matriz de autorização.</td><td>A10: emendas ADR, contratos, matriz e contrato front/back.</td><td><code>MATRIZ_PERMISSOES.md</code>, emendas ADR-04/30/33/34, <code>CONTRATO_API_FRONT_BACK.md</code>.</td><td>HOW_TO_RUN e dependências ainda com drift.</td><td>Documentação conferida contra código final.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="grid-3" style="margin-top:12px">
+          <div class="card">
+            <h4>Concluído com evidência</h4>
+            <ul class="small" style="margin:0; padding-left:18px">
+              <li>Autenticação, JWT, BCrypt e rate limit.</li>
+              <li>Tenant bootstrap, RBAC com escopo, convites.</li>
+              <li>Departamentos, ModelPolicy, orçamento.</li>
+              <li>Catálogo, roteamento, tentativas e RF047.</li>
+              <li>Usage/custo, dashboard, budget status.</li>
+              <li>Chat backend, agente backend.</li>
+              <li>Documentação canônica.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h4>Parcial / em andamento</h4>
+            <ul class="small" style="margin:0; padding-left:18px">
+              <li>Frontend de identidade visual (path errado).</li>
+              <li>Onboarding de IA/revisão (rotas legadas/fallback).</li>
+              <li>UI do chat/recibo (D2 ausente).</li>
+              <li>Seletor de modelo do dashboard para gestor.</li>
+              <li>Operação Docker (compose sem JWT).</li>
+              <li>Documentação de execução (HOW_TO_RUN antigo).</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h4>Planejado / bloqueado</h4>
+            <ul class="small" style="margin:0; padding-left:18px">
+              <li>Engagement, AI Credits, Governance Score.</li>
+              <li>Módulo Project.</li>
+              <li>Auditoria de tenant (decisão SPI-56).</li>
+              <li>Status de tenant por plataforma (SPI-57/ADR).</li>
+              <li>Recuperação de senha (SPI-65).</li>
+              <li>Provider real da demo (decisão 11).</li>
+              <li>V021 (drop legado) no próximo release.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="callout info" style="margin-top:12px">
+          <b>Ausência de cronologia detalhada:</b> o repositório não tem changelog por release nem tags; a linha
+          acima foi reconstruída de mensagens de commit, packets e documentos. Datas anteriores a 20/10 são
+          aproximadas pelo histórico Git e não devem ser tratadas como calendário oficial de release.
+        </div>
+      </section>
+
+      <section id="testes" data-title="Testes, qualidade e confiabilidade">
+        <div class="section-head">
+          <div>
+            <h2><span class="num">12.</span> Testes, qualidade e confiabilidade</h2>
+            <p>806 unitários + 161 IT verdes; cobertura de linha alta no backend, mas sem testes de front ou contrato.</p>
+          </div>
+          <div class="chips"><span class="chip done">0 falhas</span><span class="chip info">ArchUnit</span><span class="chip partial">front sem testes</span></div>
+        </div>
+
+        <div class="grid-4" style="display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px">
+          <div class="card flat"><strong style="font-size:1.5rem">806</strong><p class="small muted" style="margin:2px 0 0">testes unitários/arquitetura (Surefire)</p></div>
+          <div class="card flat"><strong style="font-size:1.5rem">161</strong><p class="small muted" style="margin:2px 0 0">testes de integração (Failsafe)</p></div>
+          <div class="card flat"><strong style="font-size:1.5rem">0</strong><p class="small muted" style="margin:2px 0 0">falhas/erros nos relatórios</p></div>
+          <div class="card flat"><strong style="font-size:1.5rem">96,6%</strong><p class="small muted" style="margin:2px 0 0">linhas no JaCoCo (unit-only)</p></div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3>Estratégia</h3>
+            <ul class="small" style="margin:0; padding-left:18px">
+              <li><b>Unitários:</b> invariantes de domínio, casos de uso, controllers MockMvc, handlers.</li>
+              <li><b>Integração:</b> Spring Boot real + PostgreSQL via Testcontainers; migrações, constraints, isolamento, RBAC e fluxos.</li>
+              <li><b>Arquitetura:</b> ArchUnit impede import interno cross-module, dependências fora da allowlist e violações de camada.</li>
+              <li><b>Frontend:</b> não há testes automatizados; a validação é manual/renderização.</li>
+              <li><b>E2E:</b> não há Selenium/Playwright no repositório; <code>ai/testing.md</code> diz que Selenium seria complementar.</li>
+            </ul>
+            <p class="source">Fonte: <code>ai/testing.md</code>, <code>pom.xml</code>, <code>src/test/java</code>.</p>
+          </div>
+          <div class="card">
+            <h3>Cobertura e limites</h3>
+            <div class="progress-row"><div class="top"><span>Linhas cobertas</span><b>96,6%</b></div><div class="bar"><i data-w="96.6"></i></div></div>
+            <div class="progress-row" style="margin-top:8px"><div class="top"><span>Branches cobertas</span><b>85,4%</b></div><div class="bar"><i data-w="85.4"></i></div></div>
+            <p class="small" style="margin-top:8px">JaCoCo: 5.182 linhas cobertas / 183 não cobertas; 1.142 branches cobertas / 196 não cobertas. É o ciclo <code>mvn test</code> (sem ITs), portanto subestima o comportamento coberto por integração.</p>
+            <p class="source">Fonte: <code>target/site/jacoco/jacoco.xml</code> (artefato local, não versionado).</p>
+          </div>
+        </div>
+
+        <h3>Testes de integração relevantes</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Classe</th><th>O que cobre</th><th>Relação com o estado do projeto</th></tr></thead>
+            <tbody>
+              <tr><td><code>OnboardingFlowIT</code></td><td>Registrar tenant, admin logar, convidar colaborador, colaborador ver só o permitido.</td><td>Prova o fluxo ponta a ponta da Onda A com <code>demo-data=false</code>.</td></tr>
+              <tr><td><code>UserGuardsIT</code></td><td>Dominância, ator = alvo, último admin, escopo de departamento.</td><td>Guarda as regras do ADR-37.</td></tr>
+              <tr><td><code>InviteFlowIT</code></td><td>Criar/aceitar/login, reuso, sem permissão, convite de outro tenant → 404.</td><td>Inclui a correção F6.</td></tr>
+              <tr><td><code>DepartmentBudgetIT</code></td><td>Upsert/histórico, 404 cross-tenant, MANAGER(A), COLLABORATOR 403, mês inválido, 24 meses, fronteira UTC, SEM_ORCAMENTO, V016.</td><td>Prova o orçamento e o status.</td></tr>
+              <tr><td><code>DashboardMetricsIT</code></td><td>Agregações, filtros, manager/self, tenant, groupBy modelo/usuário.</td><td>Prova F1/F2 e o escopo do dashboard.</td></tr>
+              <tr><td><code>AIGatewayRoutingIT</code></td><td>Roteamento determinístico, política e provider.</td><td>Prova ADR-08/09.</td></tr>
+              <tr><td><code>AIGatewayAttemptsIT</code></td><td>RF047, escopo, paginação, <code>costStatus</code>, tentativas.</td><td>Prova C3/F2.</td></tr>
+              <tr><td><code>UsageDeliveryIT</code></td><td>Entrega idempotente, retry, lease, DEAD.</td><td>Prova C2/ADR-38.</td></tr>
+              <tr><td><code>ChatFlowIT</code></td><td>Recibo × tentativa × UsageRecord, falha do provider, isolamento, log.</td><td>Prova D1.</td></tr>
+              <tr><td><code>PolicyAgentIT</code></td><td>Fontes, ferramentas, sem resultado, erros, log.</td><td>Prova E1/E2.</td></tr>
+              <tr><td><code>ObservabilityQueryPlanIT</code></td><td>100 mil linhas + EXPLAIN (ANALYZE, BUFFERS).</td><td>Evidência de performance; sem V020.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="grid-2" style="margin-top:12px">
+          <div class="card">
+            <h3>CI/CD</h3>
+            <p class="small">GitHub Actions em push para <code>main</code> e pull requests:</p>
+            <ul class="small" style="margin:0; padding-left:18px">
+              <li><code>mvn -B test</code> (unit + arquitetura).</li>
+              <li><code>mvn -B verify -Pintegration</code> (ITs com Testcontainers).</li>
+            </ul>
+            <p class="small">Não há job de frontend, lint, Qodana, build de imagem, deploy ou publicação. <code>qodana.yaml</code> existe, mas não está no workflow; aponta JDK 25, enquanto o projeto usa Java 21.</p>
+            <p class="source">Fonte: <code>.github/workflows/ci.yml</code>, <code>qodana.yaml</code>.</p>
+          </div>
+          <div class="card">
+            <h3>Lacunas de cobertura</h3>
+            <ul class="small" style="margin:0; padding-left:18px">
+              <li>Sem testes de frontend (JS/EJS), acessibilidade ou navegação.</li>
+              <li>Sem contract tests/OpenAPI diff entre front e backend.</li>
+              <li>Sem teste do provider OpenAI-compatible contra um provider real.</li>
+              <li>Sem teste do caminho Docker/compose completo.</li>
+              <li>Sem teste de carga/estresse; só EXPLAIN com 100k linhas.</li>
+              <li>Sem teste de backup/restore, deploy ou rollback.</li>
+              <li>Sem teste do fluxo de identidade visual no front (que está quebrado).</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="callout info" style="margin-top:12px">
+          <b>Testes existentes × executados:</b> os 806 + 161 vêm de relatórios Surefire/Failsafe
+          presentes no repositório e foram tratados como evidência de execução no HEAD de código.
+          Não reexecutei a suíte durante a geração deste relatório; um novo checkout precisa rodar
+          <code>mvn -B test</code> e <code>mvn -B verify -Pintegration</code> para reconfirmar.
+        </div>
+      </section>
+
+      <section id="seguranca" data-title="Segurança, configuração e operação">
+        <div class="section-head">
+          <div>
+            <h2><span class="num">13.</span> Segurança, configuração e operação</h2>
+            <p>Controles implementados, riscos confirmados e o que falta para operar em produção.</p>
+          </div>
+          <div class="chips"><span class="chip done">JWT + BCrypt</span><span class="chip done">RBAC</span><span class="chip partial">operação incompleta</span></div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3>Autenticação e autorização</h3>
+            <ul class="small" style="margin:0; padding-left:18px">
+              <li>Login por e-mail/senha; <code>tenantSlug</code> opcional; senha BCrypt.</li>
+              <li>JWT HS256, TTL 30 min, claims <code>sub</code> (UserId), <code>tenant_id</code>, <code>iat</code>, <code>exp</code>.</li>
+              <li><code>TenantContextFilter</code> revalida tenant/user ACTIVE e o vínculo tenant do token em cada request.</li>
+              <li>RBAC por concessões ativas, lidas a cada request; escopo SELF/DEPARTMENT/TENANT; <code>CHAT</code> sempre SELF.</li>
+              <li>Gate <code>TENANT_ONLY</code> por padrão; <code>BY_TARGET</code> exige checagem fina no caso de uso.</li>
+              <li>Rate limit de login em memória: 5 tentativas / 15 min por IP+e-mail (por instância).</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Segredos e configuração</h3>
+            <ul class="small" style="margin:0; padding-left:18px">
+              <li><code>JWT_SECRET</code> é obrigatório, sem default; mínimo 32 chars.</li>
+              <li><code>.env</code> é ignorado pelo Git; nenhum <code>.env</code> está rastreado. O exemplo contém apenas placeholders.</li>
+              <li>Credenciais de provider são referências (<code>credentialRef</code>) resolvidas de variável de ambiente; o segredo nunca é persistido.</li>
+              <li>Logs não devem conter token/senha/prompt/resposta; há testes específicos para chat/agente.</li>
+              <li>OpenAPI/Swagger pode ser desligado por <code>OPENAPI_ENABLED=false</code>.</li>
+            </ul>
+          </div>
+        </div>
+
+        <h3>Controles e riscos de segurança</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Controle / risco</th><th>Evidência</th><th>Avaliação</th></tr></thead>
+            <tbody>
+              <tr><td>Isolamento de tenant em leituras/escritas</td><td><code>tenant_id</code> em SQL nativo; repositórios tenant-scoped; ITs de dois tenants.</td><td><span class="chip done">controle implementado</span></td></tr>
+              <tr><td>Filtros fora do escopo</td><td><code>visibilityFor</code>/<code>isAllowed</code>; 403 em department/user/model do dashboard.</td><td><span class="chip done">verificado</span></td></tr>
+              <tr><td>Conteúdo privado em logs/analytics</td><td>Schemas sem prompt/resposta; testes de log em chat/agente.</td><td><span class="chip done">verificado</span></td></tr>
+              <tr><td>XSS em notificações do front</td><td><code>admin-convites.js</code>/<code>admin-usuarios.js</code> usam <code>textContent</code> para mensagens.</td><td><span class="chip done">corrigido na revisão</span></td></tr>
+              <tr><td>Token em <code>localStorage/sessionStorage</code></td><td><code>api-client.js</code>/<code>auth.js</code>.</td><td><span class="chip partial">risco inerente a SPA; mitigar CSP/XSS</span></td></tr>
+              <tr><td><code>IllegalStateException</code> → 401</td><td>Handlers de department, aigateway, chat, observability.</td><td><span class="chip partial">pode mascarar bug interno; revisar</span></td></tr>
+              <tr><td>CORS/CSRF</td><td>CSRF desabilitado por API stateless; CORS com defaults; front same-origin.</td><td><span class="chip partial">sem configuração explícita documentada</span></td></tr>
+              <tr><td>Uploads</td><td><code>multer</code> declarado; não há fluxo de upload ativo identificado.</td><td><span class="chip unverified">não verificado</span></td></tr>
+              <tr><td>Rate limit distribuído</td><td><code>LoginAttemptLimiter</code> em memória, por instância.</td><td><span class="chip partial">limitação conhecida; Redis exigiria decisão</span></td></tr>
+              <tr><td>Segredos em arquivo</td><td><code>.env</code> não rastreado; <code>.env.example</code> com placeholders.</td><td><span class="chip done">sem segredo no repositório</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="grid-2" style="margin-top:12px">
+          <div class="card">
+            <h3>Logging, monitoramento e operação</h3>
+            <ul class="small" style="margin:0; padding-left:18px">
+              <li>Actuator expõe health/info; probes habilitadas.</li>
+              <li>Logs padrão Spring/SLF4J; sem OpenTelemetry/Prometheus/tracing configurado.</li>
+              <li>Sem painel de métricas, alertas operacionais ou agregação de logs.</li>
+              <li>Sem backup/restore documentado; PostgreSQL é ponto único.</li>
+              <li>Sem deploy de produção; CI só valida build/testes.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Deploy e configuração</h3>
+            <ul class="small" style="margin:0; padding-left:18px">
+              <li><code>Dockerfile</code> multi-stage Maven → JRE 21, usuário não-root.</li>
+              <li><code>compose.yaml</code> com PostgreSQL 18.6 + backend; falta <code>JWT_SECRET</code> no backend.</li>
+              <li>Sem Helm/Kubernetes/Terraform, sem pipeline de CD, sem versionamento de imagem.</li>
+              <li>Configuração por variáveis de ambiente; sem profiles Spring específicos de produção.</li>
+              <li>Swagger/OpenAPI ligado por padrão; deve ser desligado em produção.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="callout danger" style="margin-top:12px">
+          <b>Vulnerabilidades confirmadas:</b> nenhuma exploração de segurança foi executada nesta análise.
+          O que está confirmado é o <b>front de identidade visual quebrado</b> (funcional, não necessariamente
+          segurança), o <b>compose sem JWT_SECRET</b> (falha operacional provável) e o <b>seletor de modelos
+          do gestor</b> sujeito a 403 por gate de catálogo. Riscos não confirmados estão marcados como
+          “não verificado”.
+        </div>
+      </section>
+
+      <section id="pendencias" data-title="Pendências, riscos e próximos passos">
+        <div class="section-head">
+          <div>
+            <h2><span class="num">14.</span> Pendências, riscos e próximos passos</h2>
+            <p>Lista priorizada, separando bug, débito técnico, requisito ausente, decisão e risco operacional.</p>
+          </div>
+          <div class="chips"><span class="chip high">3 altas</span><span class="chip med">8 médias</span><span class="chip low">7 baixas</span></div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>Tipo</th><th>Item</th><th>Justificativa</th><th>Prioridade</th><th>Estado / dependência</th><th>Critério de conclusão</th><th>Arquivos prováveis</th></tr></thead>
+            <tbody>
+              <tr><td>P-01</td><td>Bug</td><td>Corrigir o path e o contrato da identidade visual no front.</td><td>O front chama <code>/tenant/identidade-visual</code>; o backend expõe <code>/tenants/me/identidade-visual</code> e devolve <code>logoUrl/primaryColor/secondaryColor</code>, não <code>nomeExibicao</code>.</td><td><span class="chip high">alta</span></td><td><span class="chip partial">aberto</span></td><td>Tela carrega/salva branding contra o backend e trata 403/404.</td><td><code>public/js/pages/identidade-visual.js</code>, <code>TenantController</code></td></tr>
+              <tr><td>P-02</td><td>Risco operacional</td><td>Passar <code>JWT_SECRET</code> ao backend no compose.</td><td>O backend exige o segredo no boot; o serviço não o repassa. O caminho Docker provavelmente falha.</td><td><span class="chip high">alta</span></td><td><span class="chip unverified">inferido, não executado</span></td><td><code>docker compose up --build</code> sobe backend + banco com health.</td><td><code>compose.yaml</code>, <code>.env.example</code></td></tr>
+              <tr><td>P-03</td><td>Requisito / bloqueio</td><td>D2 — recibo na UI do chat.</td><td>Única task do packet sem implementação; componente SPI-136 reservado à Lyn.</td><td><span class="chip critical">crítica</span></td><td><span class="chip blocked">bloqueada</span> (Lyn)</td><td>Recibo em toda resposta; <code>statusCusto ≠ KNOWN</code> não vira zero; erros 403/404/409/502/503/504.</td><td>componente de chat (SPI-136), <code>ChatTurnResponse</code></td></tr>
+              <tr><td>P-04</td><td>Bug/UX</td><td>Seletor de modelo do dashboard para gestor.</td><td>GET de modelos exige <code>AI_TOOL:MANAGE</code>; gestor tem <code>AI_TOOL:READ</code>. A chamada pode retornar 403 e o seletor ficar vazio.</td><td><span class="chip med">média</span></td><td><span class="chip partial">aberto</span></td><td>Gestor consegue listar modelos permitidos ou o front esconde o seletor quando não pode.</td><td><code>AIGatewayCatalogController</code>, <code>dashboard.js</code></td></tr>
+              <tr><td>P-05</td><td>Débito front</td><td>Alinhar etapas de IA e revisão do onboarding.</td><td><code>step-ia.js</code> chama <code>/ia/provedores|modelos</code> e <code>step-revisao.js</code> chama <code>/revisao/confirmar</code>; o backend não expõe essas rotas. Há fallback local.</td><td><span class="chip med">média</span></td><td><span class="chip partial">aberto</span></td><td>Wizard usa os endpoints reais de catálogo/política ou remove a etapa.</td><td><code>step-ia.js</code>, <code>step-revisao.js</code>, <code>routes/ia.routes.js</code></td></tr>
+              <tr><td>P-06</td><td>UX</td><td>Remover duplicidade do passo “Administrador Principal”.</td><td>O admin já é criado e autenticado no passo da empresa; o passo seguinte coleta os mesmos dados e não envia nada.</td><td><span class="chip low">baixa</span></td><td><span class="chip partial">aberto</span></td><td>Fluxo tem um único ponto de criação do admin.</td><td><code>step-tenant.js</code>, <code>step-admin.js</code>, <code>tenant.ejs</code></td></tr>
+              <tr><td>P-07</td><td>Requisito</td><td>Histórico de orçamento indicar o padrão.</td><td>O histórico devolve só linhas explícitas e não tem <code>fromDefault</code>; o status do mês tem <code>orcamentoPadrao</code>.</td><td><span class="chip med">média</span></td><td><span class="chip partial">aberto</span></td><td>Contrato do histórico documenta/retorna a origem do valor.</td><td><code>MonthlyBudgetResponse</code>, <code>ListMonthlyBudgets</code></td></tr>
+              <tr><td>P-08</td><td>Concorrência</td><td>Upsert concorrente do mesmo mês pode retornar 500.</td><td>Find-then-save + unique constraint; dois PUTs simultâneos podem violar a constraint.</td><td><span class="chip low">baixa</span></td><td><span class="chip partial">aberto</span></td><td>Conflito tratado como 409 ou retry idempotente.</td><td><code>UpsertMonthlyBudget</code>, <code>DepartmentApiExceptionHandler</code></td></tr>
+              <tr><td>P-09</td><td>Funcional</td><td>Filtro de usuário em <code>/observability/usage</code> para gestor.</td><td><code>allowsUser</code> em <code>QueryUsage</code> só aceita o próprio userId para escopo Departments, embora o gestor veja o departamento.</td><td><span class="chip low">baixa</span></td><td><span class="chip partial">limitação conhecida</span></td><td>Gestor filtra usuários do departamento coberto, com 403 fora do escopo.</td><td><code>QueryUsage</code></td></tr>
+              <tr><td>P-10</td><td>Decisão</td><td>SPI-56 — auditoria de tenant.</td><td>Não há trilha de criação/alteração; exige definir tabela, campos, retenção e migration.</td><td><span class="chip med">média</span></td><td><span class="chip planned">decisão pendente</span></td><td>ADR/decisão registrada e trilha consultável sem segredo.</td><td><code>iam</code>, V021+</td></tr>
+              <tr><td>P-11</td><td>Bloqueio</td><td>SPI-57 — status de tenant por ator de plataforma.</td><td>O bloqueio de tenant INACTIVE existe, mas ninguém autorizado pode alterar o status; suspender pelo próprio tenant causa lockout.</td><td><span class="chip med">média</span></td><td><span class="chip blocked">ADR necessário</span></td><td>ADR de escopo de plataforma + endpoint com auditoria.</td><td><code>TenantController</code>, <code>SecurityBaselineConfig</code>, ADR</td></tr>
+              <tr><td>P-12</td><td>Bloqueio</td><td>SPI-65 — recuperação de senha.</td><td>Sem canal de entrega e sem política de senha; retornar token na API seria risco de sequestro.</td><td><span class="chip med">média</span></td><td><span class="chip blocked">decisão</span></td><td>Decisão de canal/política + endpoint de uso único + testes.</td><td><code>redefinir-senha.ejs</code>, <code>AuthController</code></td></tr>
+              <tr><td>P-13</td><td>Decisão</td><td>Provider real da demo.</td><td>Fluxo validado apenas com STUB; provider concreto e credencial não definidos.</td><td><span class="chip med">média</span></td><td><span class="chip blocked">decisão 11</span></td><td>Provider escolhido, credencial em ambiente e fluxo de chat/agente validado.</td><td><code>OpenAiCompatibleProviderClient</code>, configuração</td></tr>
+              <tr><td>P-14</td><td>Planejado</td><td>Engagement, Governance Score e Project.</td><td>Épicos no escopo do MVP, mas pacotes vazios; não há endpoints nem migrations.</td><td><span class="chip med">média</span></td><td><span class="chip planned">não iniciado</span></td><td>Módulos com domínio, persistência, API e testes proporcionais.</td><td><code>engagement</code>, <code>governancescore</code>, <code>project</code></td></tr>
+              <tr><td>P-15</td><td>Débito</td><td>Testes de front e de contrato.</td><td>Sem testes JS/EJS, sem contract tests/OpenAPI diff; mudanças de campo podem quebrar o front sem CI.</td><td><span class="chip med">média</span></td><td><span class="chip planned">não iniciado</span></td><td>Smoke tests de páginas + validação de payloads críticos no CI.</td><td><code>src/main/resources/static</code>, CI</td></tr>
+              <tr><td>P-16</td><td>Débito</td><td>Remover código morto/rotas legadas do front server-side.</td><td>Controllers <code>modules/*</code> são inalcançáveis pelo proxy; <code>POST /api/usuarios/importar</code> e <code>manual.ejs</code> não têm backend.</td><td><span class="chip low">baixa</span></td><td><span class="chip partial">aberto</span></td><td>Rotas/arquivos legados removidos ou conectados ao backend real.</td><td><code>static/modules</code>, <code>routes</code></td></tr>
+              <tr><td>P-17</td><td>Documentação</td><td>Atualizar <code>HOW_TO_RUN.md</code> e <code>ai/dependencies.md</code>.</td><td>HOW_TO_RUN cita V001–V014, 717+83 testes e chat planejado; dependencies diz OAuth2 “quando implementado”.</td><td><span class="chip low">baixa</span></td><td><span class="chip partial">aberto</span></td><td>Docs refletem V001–V019, 806+161, chat/agente implementados.</td><td><code>docs/development/HOW_TO_RUN.md</code>, <code>ai/dependencies.md</code></td></tr>
+              <tr><td>P-18</td><td>Operação</td><td>V021 e operação de produção.</td><td><code>user_permission</code> é legado e deve sair no próximo release; backup, deploy e observabilidade externa não existem.</td><td><span class="chip low">baixa</span></td><td><span class="chip planned">próximo release</span></td><td>Migration V021 aprovada + runbook de deploy/backup/rollback.</td><td><code>db/migration</code>, infra</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="grid-3" style="margin-top:12px">
+          <div class="card">
+            <h4>Bugs confirmados</h4>
+            <ul class="small" style="margin:0; padding-left:18px">
+              <li>Identidade visual front: path/contrato divergentes.</li>
+              <li>Onboarding IA/revisão: rotas legadas sem backend; fallback local.</li>
+              <li>Seletor de modelo do gestor: gate de catálogo.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h4>Dúvidas em aberto</h4>
+            <ul class="small" style="margin:0; padding-left:18px">
+              <li>Qual provider real será usado na demo (decisão 11)?</li>
+              <li>Auditoria de tenant: tabela dedicada, campos e retenção?</li>
+              <li>Ator de plataforma e escopo de suspensão de tenant?</li>
+              <li>Política/canal de recuperação de senha?</li>
+              <li>O histórico de orçamento deve sintetizar meses com o padrão?</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h4>Riscos não verificados</h4>
+            <ul class="small" style="margin:0; padding-left:18px">
+              <li>Comportamento real do provider (latência, custo, limites).</li>
+              <li>Backup/restore e continuidade do PostgreSQL.</li>
+              <li>Desempenho sob carga concorrente.</li>
+              <li>Acessibilidade e usabilidade do front.</li>
+              <li>Exposição de Swagger/Actuator em produção.</li>
+            </ul>
+          </div>
+        </div>
+
+        <h3>Sequência recomendada</h3>
+        <ol class="steps">
+          <li><b>Corrigir o front quebrado</b> (identidade visual e onboarding IA/revisão); são independentes do backend e reduzem ruído de demo.</li>
+          <li><b>Corrigir a configuração do compose</b> (<code>JWT_SECRET</code>) e validar o caminho Docker; é uma falha operacional objetiva.</li>
+          <li><b>Destravar a D2 com a Lyn</b>, ligando o recibo ao componente de chat e cobrindo os erros da SPEC-04.</li>
+          <li><b>Escolher e configurar o provider real</b> (decisão 11), mantendo o STUB para testes determinísticos.</li>
+          <li><b>Decidir a SPI-56</b> (auditoria) e implementar com migration reservada.</li>
+          <li><b>Adicionar testes de front/contrato</b> e atualizar a documentação de execução.</li>
+          <li><b>Planejar a V021</b> (drop da trilha legada) para o release seguinte, com janela e rollback.</li>
+          <li><b>Iniciar os épicos restantes</b> (Engagement, Governance Score, Project) somente após as decisões de produto.</li>
+        </ol>
+
+        <div class="callout info" style="margin-top:12px">
+          <b>Sem prazos ou responsáveis:</b> o repositório não contém cronograma por pessoa. A sequência
+          acima respeita dependências técnicas, não datas de calendário.
+        </div>
+      </section>
+
+      <section id="referencias" data-title="Referências e rastreabilidade">
+        <div class="section-head">
+          <div>
+            <h2><span class="num">15.</span> Referências e rastreabilidade</h2>
+            <p>Arquivos usados na análise, agrupados por categoria. Caminhos relativos à raiz do repositório.</p>
+          </div>
+          <div class="chips"><span class="chip info">branch IhanDevelopment</span><span class="chip info">commit 92fae90</span></div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3>Documentação</h3>
+            <ul class="small" style="margin:0; padding-left:18px">
+              <li><code>README.md</code> — baseline, modos de execução e estrutura.</li>
+              <li><code>AGENTS.md</code> — regras de arquitetura, segurança e DoD.</li>
+              <li><code>ai/project.md</code> — problema, objetivo, escopo e exclusões.</li>
+              <li><code>ai/tasks/sprint-03/INDEX.md</code>, <code>HANDOFF.md</code>, <code>SPEC-01..05</code>, <code>TASK-S3-*</code>.</li>
+              <li><code>ai/epics/EPIC-001..005</code> — objetivos por épico.</li>
+              <li><code>docs/development/MATRIZ_PERMISSOES.md</code> — matriz conferida.</li>
+              <li><code>docs/development/CONTRATO_API_FRONT_BACK.md</code> — contrato vigente.</li>
+              <li><code>docs/review/RELATORIO_STATUS_TASKS.md</code> — pendências históricas (SPI-56/57/65).</li>
+              <li><code>docs/review/AUDITORIA_DOCUMENTACAO.md</code> — drift documental.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Arquitetura e decisões</h3>
+            <ul class="small" style="margin:0; padding-left:18px">
+              <li><code>ai/architecture.md</code> — módulos, ownership, allowlist, segurança.</li>
+              <li><code>ai/contracts.md</code> — contratos públicos e eventos.</li>
+              <li><code>ai/decisions.md</code> — índice de ADRs e decisões abertas.</li>
+              <li><code>ai/adr/ADR-01,02,03,04,06,07,08,11,12,13,26,29,30,31,32,33,34,35,36,37,38,39</code>.</li>
+              <li><code>ai/testing.md</code> — estratégia de testes.</li>
+              <li><code>ai/dependencies.md</code> — catálogo e política.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="grid-2" style="margin-top:12px">
+          <div class="card">
+            <h3>Configuração e infraestrutura</h3>
+            <ul class="small" style="margin:0; padding-left:18px">
+              <li><code>pom.xml</code> — Java/Spring/dependências/plugins/perfis.</li>
+              <li><code>package.json</code> — dependências do BFF/front.</li>
+              <li><code>src/main/resources/application.yml</code> — datasource, Flyway, JWT, actuator.</li>
+              <li><code>.env.example</code> — nomes de variáveis (sem valores reais).</li>
+              <li><code>compose.yaml</code>, <code>Dockerfile</code> — ambiente Docker.</li>
+              <li><code>.github/workflows/ci.yml</code> — jobs de unit/IT.</li>
+              <li><code>qodana.yaml</code> — análise estática configurada, não usada no CI.</li>
+              <li><code>scripts/check</code>, <code>scripts/check-integration</code>, <code>scripts/run-local.*</code>.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Implementação — backend</h3>
+            <ul class="small" style="margin:0; padding-left:18px">
+              <li><code>GovernanceApplication</code> — entrypoint.</li>
+              <li><code>iam/infrastructure/web/*Controller</code>, <code>iam/application/rbac/*</code>.</li>
+              <li><code>department/infrastructure/web/*</code>, <code>department/api/*</code>.</li>
+              <li><code>aigateway/infrastructure/web/*</code>, <code>aigateway/api/completion/*</code>.</li>
+              <li><code>chat/infrastructure/web/*</code>, <code>agentpolicies/infrastructure/web/*</code>.</li>
+              <li><code>observability/infrastructure/web/*</code>, <code>observability/infrastructure/query/*</code>.</li>
+              <li><code>platform/config/*</code>, <code>sharedkernel/*</code>.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="grid-2" style="margin-top:12px">
+          <div class="card">
+            <h3>Implementação — frontend</h3>
+            <ul class="small" style="margin:0; padding-left:18px">
+              <li><code>src/main/resources/static/app.js</code> — BFF, proxy e views.</li>
+              <li><code>static/routes/*.js</code> — rotas de render e proxies.</li>
+              <li><code>static/public/js/core/api-client.js</code>, <code>auth.js</code>.</li>
+              <li><code>static/public/js/pages/dashboard.js</code>, <code>orcamentos.js</code>, <code>admin-convites.js</code>, <code>admin-usuarios.js</code>.</li>
+              <li><code>static/public/js/pages/onboarding/step-*.js</code>.</li>
+              <li><code>static/modules/*/views/*.ejs</code>, <code>static/views/partials/*</code>.</li>
+              <li><code>static/public/js/pages/identidade-visual.js</code> — evidência do bug de path.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Persistência, contratos e testes</h3>
+            <ul class="small" style="margin:0; padding-left:18px">
+              <li><code>src/main/resources/db/migration/V001..V019</code>.</li>
+              <li><code>iam/api/query/AuthorizationQuery.java</code>, <code>IdentityQuery.java</code>.</li>
+              <li><code>department/api/query/DepartmentBudgetQuery.java</code>, <code>DepartmentModelPolicyQuery.java</code>.</li>
+              <li><code>aigateway/api/completion/AICompletionService.java</code>, <code>CompletionCommand/Result</code>.</li>
+              <li><code>sharedkernel/event/AIRequestCompleted.java</code>.</li>
+              <li><code>src/test/java/**/*Test.java</code> e <code>**/*IT.java</code>.</li>
+              <li><code>ArchitectureRulesTest</code>, <code>OnboardingFlowIT</code>, <code>DepartmentBudgetIT</code>, <code>DashboardMetricsIT</code>, <code>ChatFlowIT</code>, <code>PolicyAgentIT</code>, <code>ObservabilityQueryPlanIT</code>.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <h3>Método, escopo e limitações</h3>
+          <p class="small">
+            <b>Escopo da análise:</b> branch <code>IhanDevelopment</code>, commit <code>92fae90</code>; leitura de
+            documentação, configuração, 15 controllers, DTOs, migrations V001–V019, testes e histórico Git.
+            As afirmações de implementação foram confrontadas com classes/rotas reais; as de teste vêm dos
+            relatórios Surefire/Failsafe presentes. Não executei a aplicação completa, não naveguei o front
+            autenticado, não testei provider real, Docker Compose, backup/restore, carga ou acessibilidade.
+          </p>
+          <p class="small">
+            <b>O relatório é um artefato estático</b> e não se atualiza sozinho. Para regenerar, repita a
+            investigação no commit desejado e substitua este arquivo; não há script de geração automática.
+            Não há segredos, tokens ou dados pessoais reais nos exemplos.
+          </p>
+        </div>
+
+        <footer class="footer">
+          <div class="wrap">
+            <b>QSOFT AI Governance Platform — Relatório técnico e executivo</b><br>
+            Gerado em 20/10/2026 · branch <code>IhanDevelopment</code> · commit <code>92fae90</code>.
+            Fontes principais: <code>ai/</code>, <code>docs/</code>, <code>pom.xml</code>,
+            <code>package.json</code>, <code>src/main/java</code>, <code>src/main/resources</code>,
+            <code>src/test/java</code>, <code>.github/workflows/ci.yml</code>.
+            <br>
+            <b>Limitação:</b> documento estático, baseado na evidência disponível; não substitui a execução
+            da suíte, a validação em ambiente real ou decisões de produto registradas em ADR.
+          </div>
+        </footer>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script>
+(function(){
+  var links = Array.prototype.slice.call(document.querySelectorAll('nav.side-nav a'));
+  var sections = links.map(function(a){ return document.querySelector(a.getAttribute('href')); });
+  function setActive(){
+    var pos = window.scrollY + 90, current = 0;
+    sections.forEach(function(sec, i){ if (sec && sec.offsetTop <= pos) current = i; });
+    links.forEach(function(a, i){ a.classList.toggle('active', i === current); });
+  }
+  window.addEventListener('scroll', setActive, {passive:true});
+  setActive();
+
+  document.getElementById('expandAll').addEventListener('click', function(){
+    document.querySelectorAll('details').forEach(function(d){ d.open = true; });
+  });
+  document.getElementById('collapseAll').addEventListener('click', function(){
+    document.querySelectorAll('details').forEach(function(d){ d.open = false; });
+  });
+
+  var input = document.getElementById('reportSearch');
+  var results = document.getElementById('searchResults');
+  var index = sections.map(function(sec, i){
+    return { id: links[i].getAttribute('href'), title: links[i].textContent.trim(), text: sec ? sec.innerText.toLowerCase() : '' };
+  });
+  function clearResults(){ results.innerHTML = ''; }
+  input.addEventListener('input', function(){
+    var q = input.value.trim().toLowerCase();
+    clearResults();
+    if (q.length < 2) return;
+    var matches = index.filter(function(item){ return item.text.indexOf(q) !== -1; }).slice(0, 6);
+    if (!matches.length) {
+      var none = document.createElement('div');
+      none.className = 'none';
+      none.textContent = 'Nenhuma seção encontrada.';
+      results.appendChild(none);
+      return;
+    }
+    matches.forEach(function(item){
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = item.title;
+      b.addEventListener('click', function(){
+        document.querySelector(item.id).scrollIntoView({behavior:'smooth', block:'start'});
+        input.value = '';
+        clearResults();
+      });
+      results.appendChild(b);
+    });
+  });
+  input.addEventListener('keydown', function(e){
+    if (e.key === 'Enter') {
+      var first = results.querySelector('button');
+      if (first) first.click();
+    }
+  });
+
+  // Barras de progresso: valores vêm de critérios declarados no relatório.
+  window.addEventListener('load', function(){
+    document.querySelectorAll('.bar > i[data-w]').forEach(function(el){
+      el.style.width = el.getAttribute('data-w') + '%';
+    });
+  });
+})();
+</script>
+</body>
+</html>
