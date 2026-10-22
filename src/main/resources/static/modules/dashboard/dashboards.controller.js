@@ -1,6 +1,6 @@
 "use strict";
 const provider = require("./dashboards.provider");
-const profiles = { colaborador: "Colaborador", lider: "Líder", gestor: "Gestor", executivo: "Executivo", agentes: "Análise de agentes" };
+const profiles = { colaborador: "Colaborador", lider: "Líder", gestor: "Gestor", executivo: "Executivo", agentes: "Análise de agentes", governanca: "Governança/TI" };
 // Seletores de apresentação, não autorização. Não aceitamos tenant/user via query.
 async function render(req, res, next) {
     const profile = req.params.profile;
@@ -9,7 +9,9 @@ async function render(req, res, next) {
         profile,
         period: ["semanal", "mensal"].includes(req.query.periodo) ? req.query.periodo : "semanal",
         state: ["normal", "vazio", "erro"].includes(req.query.estado) ? req.query.estado : "normal",
-        agent: ["politicas-demo", "orcamento-demo"].includes(req.query.agente) ? req.query.agente : ""
+        agent: ["politicas-demo", "orcamento-demo"].includes(req.query.agente) ? req.query.agente : "",
+        budgetPreview: profile === "gestor" && typeof req.query.limite === "string" && /^\d{1,6}(?:\.\d{1,2})?$/.test(req.query.limite) && Number(req.query.limite) > 0 && Number(req.query.limite) <= 100000
+            ? Number(req.query.limite) : null
     };
     try {
         const dashboard = await provider.getDashboard(selection);

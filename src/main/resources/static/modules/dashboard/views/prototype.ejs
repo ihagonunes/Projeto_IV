@@ -1,6 +1,6 @@
 <link rel="stylesheet" href="/public/css/pages/dashboards.css">
 <%
-const names = { colaborador: "Colaborador", lider: "Líder", gestor: "Gestor", executivo: "Executivo", agentes: "Análise de agentes" };
+const names = { colaborador: "Colaborador", lider: "Líder", gestor: "Gestor", executivo: "Executivo", agentes: "Análise de agentes", governanca: "Governança/TI" };
 const isAgent = selection.profile === "agentes";
 const number = value => value === null || value === undefined ? "—" : new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 }).format(value);
 const money = value => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2, maximumFractionDigits: 4 }).format(value);
@@ -14,7 +14,7 @@ const date = value => new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_
         <nav aria-label="Dashboards">
             <% for (const [key, name] of Object.entries(names)) { %>
             <a href="/dashboards/<%= key %>" class="demo-nav-link <%= selection.profile === key ? 'active' : '' %>" <%- selection.profile === key ? 'aria-current="page"' : '' %>>
-                <i class="bi <%= key === 'agentes' ? 'bi-cpu' : 'bi-grid-1x2' %>" aria-hidden="true"></i><%= name %>
+                <i class="bi <%= key === 'agentes' ? 'bi-cpu' : key === 'governanca' ? 'bi-shield-check' : 'bi-grid-1x2' %>" aria-hidden="true"></i><%= name %>
             </a>
             <% } %>
         </nav>
@@ -25,9 +25,9 @@ const date = value => new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_
     </aside>
     <main id="dashboard-main" class="demo-main">
         <header class="demo-header">
-            <div><p class="demo-eyebrow">WORKSPACE / <%= isAgent ? 'AGENTES DE IA' : 'MEU CONSUMO' %></p>
-                <h1><%= isAgent ? 'Análise de agentes' : 'Dashboard do ' + names[selection.profile] %></h1>
-                <p class="demo-muted"><%= isAgent ? 'Acompanhe execuções, custos e desempenho por etapa.' : 'Uma visão clara do uso de inteligência artificial.' %></p>
+            <div><p class="demo-eyebrow">WORKSPACE / <%= dashboard?.management ? 'ANÁLISE DEMONSTRATIVA' : isAgent ? 'AGENTES DE IA' : 'MEU CONSUMO' %></p>
+                <h1><%= selection.profile === 'governanca' ? 'Dashboard de Governança/TI' : isAgent ? 'Análise de agentes' : 'Dashboard do ' + names[selection.profile] %></h1>
+                <p class="demo-muted"><%= dashboard?.management ? 'Indicadores e controles ilustrativos, sem dados reais ou permissões nesta prévia.' : isAgent ? 'Acompanhe execuções, custos e desempenho por etapa.' : 'Uma visão clara do uso de inteligência artificial.' %></p>
             </div>
             <span class="demo-badge"><span aria-hidden="true">●</span> Dados simulados</span>
         </header>
@@ -60,6 +60,8 @@ const date = value => new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_
                 <p>Este é um erro simulado para validar a apresentação. Nenhum dado real foi consultado.</p>
                 <a class="btn btn-orange" href="?periodo=<%= selection.period %>&amp;estado=normal&amp;agente=<%= selection.agent %>">Tentar novamente</a>
             </section>
+        <% } else if (dashboard.management) { %>
+            <%- include('management', { dashboard }) %>
         <% } else if (dashboard.pending) { %>
             <section class="demo-panel demo-state"><i class="bi bi-sliders" aria-hidden="true"></i>
                 <h2>Visibilidade em definição</h2>
@@ -146,3 +148,4 @@ const date = value => new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_
 <script type="application/json" id="dashboard-data"><%- serialized %></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js" defer></script>
 <script src="/public/js/pages/dashboards.js" defer></script>
+<script src="/public/js/pages/management-dashboards.js" defer></script>

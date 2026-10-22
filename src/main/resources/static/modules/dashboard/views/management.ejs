@@ -1,0 +1,63 @@
+<% const data = dashboard.data; %>
+<div class="demo-period"><span><%= dashboard.period.label %></span><span>America/Sao_Paulo · amostra simulada</span></div>
+<% if (dashboard.state === 'vazio') { %>
+<section class="demo-panel demo-state" role="status">
+    <i class="bi bi-inbox" aria-hidden="true"></i>
+    <h2>Nenhum registro neste cenário</h2>
+    <p>Selecione “Com dados” para explorar a amostra demonstrativa.</p>
+</section>
+<% } else { %>
+<section class="demo-kpis demo-management-kpis" aria-label="Indicadores demonstrativos">
+    <% for (const item of data.kpis) { %>
+    <article class="demo-panel demo-kpi"><span><%= item.label %></span><strong><%= item.value %></strong><p><%= item.hint %></p></article>
+    <% } %>
+</section>
+
+<div class="demo-charts" aria-label="Gráficos demonstrativos">
+    <% data.charts.forEach((item, index) => { %>
+    <section class="demo-panel demo-chart-panel">
+        <div class="demo-section-title"><div><h2><%= item.title %></h2><p><%= item.subtitle %></p></div><span class="demo-chip"><%= selection.period === 'semanal' ? 'Semanal' : 'Mensal' %></span></div>
+        <div class="demo-chart"><canvas id="management-chart-<%= index %>" role="img" aria-label="<%= item.title %>">Valores disponíveis na tabela abaixo.</canvas></div>
+        <details class="demo-chart-data"><summary>Ver dados do gráfico</summary><div class="table-responsive"><table class="table demo-table">
+            <thead><tr><th scope="col">Categoria</th><% for (const dataset of item.datasets) { %><th scope="col"><%= dataset.label %></th><% } %></tr></thead>
+            <tbody><% item.labels.forEach((label, labelIndex) => { %><tr><td><%= label %></td><% for (const dataset of item.datasets) { %><td><%= dataset.values[labelIndex] %></td><% } %></tr><% }) %></tbody>
+        </table></div></details>
+    </section>
+    <% }) %>
+</div>
+<p id="management-chart-message" class="demo-notice" role="status" hidden></p>
+
+<div class="demo-management-grid">
+    <% for (const item of data.tables) { %>
+    <section class="demo-panel demo-records">
+        <div class="demo-section-title"><div><h2><%= item.title %></h2><p><%= item.subtitle %></p></div><span class="demo-chip">Demonstração</span></div>
+        <div class="table-responsive" role="region" aria-label="<%= item.title %>" tabindex="0"><table class="table demo-table">
+            <thead><tr><% for (const column of item.columns) { %><th scope="col"><%= column %></th><% } %></tr></thead>
+            <tbody><% for (const row of item.rows) { %><tr><% for (const cell of row) { %><td><%= cell %></td><% } %></tr><% } %></tbody>
+        </table></div>
+    </section>
+    <% } %>
+</div>
+
+<section class="demo-panel demo-insights" aria-label="Alertas e observações demonstrativas">
+    <div class="demo-section-title"><div><h2><%= selection.profile === 'lider' ? 'Gargalos e capacitação' : selection.profile === 'governanca' ? 'Indicadores de segurança' : 'Notas de interpretação' %></h2><p>Somente exemplos para validar a apresentação</p></div></div>
+    <div class="demo-insight-list"><% for (const note of data.notes) { %><p><i class="bi bi-info-circle" aria-hidden="true"></i><%= note %></p><% } %></div>
+</section>
+
+<% if (selection.profile === 'gestor') { %>
+<section class="demo-panel demo-preview-action"><i class="bi bi-sliders" aria-hidden="true"></i><div><h2>Gestão de orçamento · prévia</h2><p>Teste um limite mensal nesta tela. O ajuste afeta somente a visualização atual; nada será gravado.</p></div>
+    <form method="get" class="demo-budget-form" aria-label="Prévia de limite orçamentário">
+        <input type="hidden" name="periodo" value="<%= selection.period %>">
+        <input type="hidden" name="estado" value="normal">
+        <label for="limite">Limite mensal ilustrativo (R$)</label>
+        <input id="limite" name="limite" type="number" class="form-control custom-input" min="0.01" max="100000" step="0.01" required value="<%= data.budgetPreview %>">
+        <button class="btn btn-outline-secondary btn-sm" type="submit">Pré-visualizar ajuste</button>
+    </form>
+</section>
+<% } %>
+<% if (data.links.length) { %>
+<section class="demo-shortcuts" aria-label="Áreas administrativas existentes">
+    <% for (const link of data.links) { %><a class="demo-panel" href="<%= link.href %>"><i class="bi bi-arrow-up-right" aria-hidden="true"></i><span><%= link.label %><small>Abre área existente · sujeita às permissões reais</small></span></a><% } %>
+</section>
+<% } %>
+<% } %>

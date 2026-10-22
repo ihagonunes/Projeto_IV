@@ -3,7 +3,11 @@
 // propagando o contexto autenticado pelo contrato definido no backend.
 // Nunca usar fixtures como fallback silencioso para falhas de uma API real.
 const mocks = require("./mocks/dashboards.mock");
+const organizational = require("./mocks/organizational.mock");
 async function getDashboard(selection) {
+    if (["lider", "gestor", "executivo", "governanca"].includes(selection.profile)) {
+        return organizational.getDashboard(selection);
+    }
     return mocks.getDashboard(selection);
 }
 module.exports = { getDashboard };

@@ -5,6 +5,7 @@
     if (!payload) return;
     const dashboard = JSON.parse(payload.textContent);
     if (!dashboard || !dashboard.data) return;
+    if (dashboard.management) return;
 
     const rows = Array.from(document.querySelectorAll("[data-execution-row]"));
     if (rows.length) {
