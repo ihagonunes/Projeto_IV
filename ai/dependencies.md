@@ -56,3 +56,8 @@ Toda dependência nova deve responder:
 3. qual módulo é proprietário;
 4. qual custo de manutenção/teste;
 5. se altera propriedade arquitetural → ADR.
+
+
+## Frontend de demonstração dos dashboards
+
+Chart.js 4.4.8 via CDN fixada: gráficos combinados e barras horizontais empilhadas no módulo frontend dashboard. Bootstrap existente não fornece gráficos. Dispensa framework adicional e mudanças ao backend. Custo: acompanhar atualizações da CDN e validar responsividade; tabelas acessíveis permanecem disponíveis se o script falhar. Referência: https://www.chartjs.org/docs/latest/charts/mixed.html e docs/development/DASHBOARDS_DEMO.md.

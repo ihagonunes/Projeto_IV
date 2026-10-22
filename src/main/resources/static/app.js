@@ -140,6 +140,7 @@ app.use("/", require("./routes/usuarios.routes"));
 app.use("/", require("./routes/ia.routes"));
 app.use("/", require("./routes/revisao.routes"));
 app.use("/", require("./routes/dashboard.routes"));
+app.use("/", require("./routes/dash.routes"));
 
 // Depois de registrados todos os caminhos das rotas e seus
 // tratadores, registramos os tratadores que serão chamados
