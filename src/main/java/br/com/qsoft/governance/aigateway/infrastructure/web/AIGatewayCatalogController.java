@@ -9,6 +9,7 @@ import br.com.qsoft.governance.aigateway.application.CreateProviderCommand;
 import br.com.qsoft.governance.aigateway.application.ListModels;
 import br.com.qsoft.governance.aigateway.application.ListProviders;
 import br.com.qsoft.governance.iam.api.rbac.RequiresPermission;
+import br.com.qsoft.governance.iam.api.rbac.Targeting;
 import br.com.qsoft.governance.sharedkernel.rbac.Action;
 import br.com.qsoft.governance.sharedkernel.rbac.Resource;
 import br.com.qsoft.governance.sharedkernel.tenant.TenantContext;
@@ -33,6 +34,16 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/ai-gateway")
 public class AIGatewayCatalogController {
+
+    public record DashboardModelResponse(UUID id, String name) { }
+
+    @GetMapping("/models/dashboard")
+    @RequiresPermission(resource = Resource.USAGE, action = Action.READ,
+        targeting = Targeting.BY_TARGET)
+    public ResponseEntity<List<DashboardModelResponse>> dashboardModels() {
+        return ResponseEntity.ok(listModels.availableForDashboard(TenantContextHolder.require().tenantId())
+            .stream().map(model -> new DashboardModelResponse(model.id(), model.name())).toList());
+    }
 
     private final CreateProvider createProvider;
     private final ListProviders listProviders;

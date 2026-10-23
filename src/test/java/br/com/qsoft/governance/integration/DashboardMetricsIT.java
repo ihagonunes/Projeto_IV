@@ -3,10 +3,13 @@ package br.com.qsoft.governance.integration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import br.com.qsoft.governance.aigateway.application.CreateModel;
+import br.com.qsoft.governance.aigateway.application.ChangeModelStatus;
+import br.com.qsoft.governance.aigateway.application.ChangeModelStatusCommand;
 import br.com.qsoft.governance.aigateway.application.CreateModelCommand;
 import br.com.qsoft.governance.aigateway.application.CreateProvider;
 import br.com.qsoft.governance.aigateway.application.CreateProviderCommand;
 import br.com.qsoft.governance.aigateway.domain.model.Model;
+import br.com.qsoft.governance.aigateway.domain.model.ModelStatus;
 import br.com.qsoft.governance.aigateway.domain.provider.ProviderKind;
 import br.com.qsoft.governance.sharedkernel.event.AIRequestCompleted;
 import br.com.qsoft.governance.iam.application.port.TenantRepository;
@@ -62,6 +65,7 @@ class DashboardMetricsIT {
 
     private static final String SLUG = "dashdemo";
     private static final String ADMIN_EMAIL = "admin@dashdemo.com";
+    private static final String EXEC_EMAIL = "executive@dashdemo.com";
     private static final String MANAGER_EMAIL = "manager@dashdemo.com";
     private static final String COLLAB_EMAIL = "collab@dashdemo.com";
     private static final String IMPOSTOR_EMAIL = "impostor@dashdemo.com";
@@ -83,6 +87,9 @@ class DashboardMetricsIT {
     CreateModel createModel;
 
     @Autowired
+    ChangeModelStatus changeModelStatus;
+
+    @Autowired
     ApplicationEventPublisher eventPublisher;
 
     @Autowired
@@ -98,6 +105,9 @@ class DashboardMetricsIT {
     void setUp() {
         client = RestClient.builder().baseUrl("http://localhost:" + port).build();
         tenant = ensureTenant();
+        var bootstrap = testTenants.admin(tenant, ADMIN_EMAIL);
+        testTenants.ensureMember(tenant, bootstrap.id(), EXEC_EMAIL, "Executive", PASSWORD,
+            HierarchyLevel.EXECUTIVE, null, "EXECUTIVE");
         marketingDepartment = UUID.randomUUID();
         salesDepartment = UUID.randomUUID();
 
@@ -173,12 +183,53 @@ class DashboardMetricsIT {
     }
 
     @Test
+    void personalDashboardNeverReturnsColleaguesEvenForExecutive() {
+        User admin = userRepository.findByTenantIdAndEmail(tenant.id(), EXEC_EMAIL).orElseThrow();
+        User colleague = testTenants.ensureMember(tenant, admin.id(), "personal-" + UUID.randomUUID() + "@dashdemo.com",
+            "Colleague", PASSWORD, HierarchyLevel.COLLABORATOR, marketingDepartment, "COLLABORATOR");
+        usage(admin, marketingDepartment, 1000, 500);
+        usage(colleague, marketingDepartment, 9000000, 8000000);
+        String uri = "/api/v1/observability/metrics/me/";
+        String injectedFilter = "?modelId=" + model.id() + "&userId=" + colleague.id().value() + "&tenantId=" + UUID.randomUUID();
+        Map<?, ?> personal = getJson(login(EXEC_EMAIL), uri + "usage" + injectedFilter);
+        assertThat(personal.get("activeUsers")).isEqualTo(1);
+        var rows = (List<?>) personal.get("series");
+        long requests = rows.stream().map(row -> (Map<?, ?>) row)
+            .mapToLong(row -> ((Number) row.get("requests")).longValue()).sum();
+        assertThat(requests).isEqualTo(1);
+        var costs = client.get().uri(uri + "costs" + injectedFilter)
+            .header("Authorization", "Bearer " + login(EXEC_EMAIL))
+            .retrieve().body(new ParameterizedTypeReference<List<Map<String, Object>>>() { });
+        assertThat(costs).singleElement().satisfies(row -> {
+            assertThat(((Number) row.get("tokensEntrada")).longValue()).isEqualTo(1000);
+            assertThat(((Number) row.get("tokensSaida")).longValue()).isEqualTo(500);
+        });
+        assertThat(status(login(colleague.email()), uri + "usage" + injectedFilter)).isEqualTo(200);
+        assertThat(status("invalid.token.signature", uri + "usage")).isEqualTo(401);
+    }
+
+    @Test
+    void historicalDashboardEnforcesAuthenticationAndEffectiveScope() {
+        String path = "/api/v1/observability/metrics/historical";
+        assertThat(statusOf("GET", path, null, null)).isEqualTo(401);
+        String adminToken = login(EXEC_EMAIL);
+        assertThat(getJson(adminToken, path).get("sourceKind")).isEqualTo("HISTORICAL");
+        assertThat(status(adminToken, path + "?from=2026-08-01&to=2026-07-31")).isEqualTo(400);
+        assertThat(status(adminToken, path + "?from=2026-02-30")).isEqualTo(400);
+        User admin = userRepository.findByTenantIdAndEmail(tenant.id(), ADMIN_EMAIL).orElseThrow();
+        String member = "historical-" + UUID.randomUUID() + "@dashdemo.com";
+        testTenants.ensureMember(tenant, admin.id(), member, "Restricted", PASSWORD,
+            HierarchyLevel.MANAGER, marketingDepartment, "MANAGER");
+        assertThat(status(login(member), path)).isEqualTo(403);
+    }
+
+    @Test
     void shouldAggregateUsageAndCostByPeriodAndDepartment() {
         User admin = userRepository.findByTenantIdAndEmail(tenant.id(), ADMIN_EMAIL).orElseThrow();
         usage(admin, marketingDepartment, 1000, 2000);
         usage(admin, salesDepartment, 500, 500);
 
-        String token = login(ADMIN_EMAIL);
+        String token = login(EXEC_EMAIL);
         Map<?, ?> usageMetrics = getJson(token, "/api/v1/observability/metrics/usage");
         assertThat(usageMetrics.get("activeUsers")).isNotNull();
         assertThat((List<?>) usageMetrics.get("series")).isNotEmpty();
@@ -201,7 +252,7 @@ class DashboardMetricsIT {
 
         List<Map<String, Object>> costs = client.get()
             .uri("/api/v1/observability/metrics/costs?departmentId=" + marketingDepartment)
-            .header("Authorization", "Bearer " + login(ADMIN_EMAIL))
+            .header("Authorization", "Bearer " + login(EXEC_EMAIL))
             .retrieve().body(new ParameterizedTypeReference<List<Map<String, Object>>>() {
             });
 
@@ -343,11 +394,39 @@ class DashboardMetricsIT {
     }
 
     @Test
+    void dashboardCatalogIsAvailableWithoutAdministrativePermissionAndIsTenantScoped() {
+        User admin = userRepository.findByTenantIdAndEmail(tenant.id(), ADMIN_EMAIL).orElseThrow();
+        String email = "catalog-" + UUID.randomUUID() + "@dashdemo.com";
+        testTenants.ensureMember(tenant, admin.id(), email, "Colaborador", PASSWORD,
+            HierarchyLevel.COLLABORATOR, marketingDepartment, "COLLABORATOR");
+        Model disabled = createModel.create(new CreateModelCommand(tenant.id(), model.providerId(),
+            "disabled-" + UUID.randomUUID(), null, BigDecimal.ONE, BigDecimal.ONE));
+        changeModelStatus.change(new ChangeModelStatusCommand(tenant.id(), disabled.id(), ModelStatus.DISABLED));
+        Tenant other = testTenants.ensureTenant("catalogother", "Outro", "Admin", "admin@catalogother.com", PASSWORD);
+        UUID provider = createProvider.create(new CreateProviderCommand(other.id(),
+            "provider-" + UUID.randomUUID(), ProviderKind.STUB, null, null, null)).id();
+        Model foreign = createModel.create(new CreateModelCommand(other.id(), provider,
+            "foreign-" + UUID.randomUUID(), null, BigDecimal.ONE, BigDecimal.ONE));
+        String token = login(email);
+        List<Map<String, Object>> catalog = client.get().uri("/api/v1/ai-gateway/models/dashboard")
+            .header("Authorization", "Bearer " + token).retrieve()
+            .body(new ParameterizedTypeReference<List<Map<String, Object>>>() { });
+        assertThat(catalog).anyMatch(row -> row.get("id").equals(model.id().toString()));
+        assertThat(catalog).noneMatch(row -> row.get("id").equals(disabled.id().toString())
+            || row.get("id").equals(foreign.id().toString()));
+        assertThat(catalog).allSatisfy(row -> assertThat(row.keySet()).containsExactlyInAnyOrder("id", "name"));
+        assertThat(statusOf("GET", "/api/v1/ai-gateway/models/dashboard", null, null)).isEqualTo(401);
+    }
+
+    @Test
     void shouldRejectInconsistentPeriod() {
-        String token = login(ADMIN_EMAIL);
+        String token = login(EXEC_EMAIL);
 
         assertThat(status(token,
             "/api/v1/observability/metrics/usage?from=2026-02-01T00:00:00Z&to=2026-01-01T00:00:00Z"))
+            .isEqualTo(400);
+        assertThat(status(token,
+            "/api/v1/observability/metrics/usage?from=2026-02-01&to=2026-01-01"))
             .isEqualTo(400);
     }
 
@@ -367,7 +446,7 @@ class DashboardMetricsIT {
         User admin = userRepository.findByTenantIdAndEmail(tenant.id(), ADMIN_EMAIL).orElseThrow();
         usage(admin, marketingDepartment, 1000, 2000);
 
-        String token = login(ADMIN_EMAIL);
+        String token = login(EXEC_EMAIL);
 
         List<Map<String, Object>> byModel = costs(token,
             "?groupBy=MODEL&departmentId=" + marketingDepartment);
@@ -394,7 +473,7 @@ class DashboardMetricsIT {
         usage(admin, marketingDepartment, 1000, 2000);
         usage(collaborator, marketingDepartment, 500, 500);
 
-        List<Map<String, Object>> filtered = costs(login(ADMIN_EMAIL),
+        List<Map<String, Object>> filtered = costs(login(EXEC_EMAIL),
             "?groupBy=USER&departmentId=" + marketingDepartment
                 + "&modelId=" + model.id()
                 + "&userId=" + admin.id().value());
@@ -453,7 +532,7 @@ class DashboardMetricsIT {
         User otherAdmin = testTenants.admin(otherTenant, "admin@dashother.com");
         usageFor(otherTenant, otherAdmin, UUID.randomUUID(), 100, 100);
 
-        String adminToken = login(ADMIN_EMAIL);
+        String adminToken = login(EXEC_EMAIL);
         List<Map<String, Object>> byUser = costs(adminToken, "?groupBy=USER");
 
         assertThat(byUser).noneMatch(row ->

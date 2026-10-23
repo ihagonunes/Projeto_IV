@@ -6,15 +6,23 @@ target/
 
 # Environment / secrets
 .env
+.env.*
+!.env.example
 *.log
 
 # Local DB / Docker
 .pgdata/
 docker-data/
+*.dump
+*.backup
 
 # Runtime
 tmp/
 out/
+
+# Documentos e resultados locais das entregas
+/output/
+/EDA_QSOFT_corrigida.*
 
 ### IntelliJ IDEA ###
 .idea/

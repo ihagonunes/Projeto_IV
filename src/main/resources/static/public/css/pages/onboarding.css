@@ -6,7 +6,7 @@
 /* ── Wrapper principal das páginas de onboarding ───────────── */
 .atlas-onboarding-wrapper {
     display: flex;
-    min-height: 100vh;
+    min-height: var(--app-viewport-height, 100vh);
     background-color: #0B1020;
     background-image:
         radial-gradient(circle at 50% -12%, rgba(240, 194, 47, 0.16) 0%, transparent 60%),
@@ -169,7 +169,7 @@
     padding: 2rem 0;
     position: sticky;
     top: 0;
-    height: 100vh;
+    height: var(--app-viewport-height, 100vh);
     overflow-y: auto;
     z-index: 2;
 }
@@ -278,7 +278,7 @@
 .atlas-content {
     flex: 1;
     padding: 1.75rem 3rem;
-    min-height: 100vh;
+    min-height: var(--app-viewport-height, 100vh);
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -465,9 +465,9 @@
 /* ── Layout 30/70 para a página de Onboarding sem sidebar ───────────── */
 .onboarding-welcome-wrapper {
     display: flex;
-    width: 100vw;
-    height: 100vh;
-    max-height: 100vh;
+    width: var(--app-viewport-width, 100vw);
+    height: var(--app-viewport-height, 100vh);
+    max-height: var(--app-viewport-height, 100vh);
     background-color: var(--bg-color-main);
     overflow: hidden;
 }
@@ -475,8 +475,8 @@
 .onboarding-welcome-left {
     flex: 0 0 35%;
     max-width: 35%;
-    height: 100vh;
-    max-height: 100vh;
+    height: var(--app-viewport-height, 100vh);
+    max-height: var(--app-viewport-height, 100vh);
     background-color: var(--bg-color-card);
     border-right: 1px solid rgba(240, 194, 47, 0.15);
     display: flex;
@@ -515,8 +515,8 @@
     flex: 0 0 65%;
     max-width: 65%;
     padding: 2.2rem 3.5rem;
-    height: 100vh;
-    max-height: 100vh;
+    height: var(--app-viewport-height, 100vh);
+    max-height: var(--app-viewport-height, 100vh);
     background: radial-gradient(ellipse at 50% 100%, #131d36 0%, #0B1020 55%, #050814 100%);
     display: flex;
     flex-direction: column;

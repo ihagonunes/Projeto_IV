@@ -82,6 +82,7 @@ class DepartmentBudgetIT {
     private String adminBEmail;
     private String managerEmail;
     private String collaboratorEmail;
+    private String executiveEmail;
 
     @BeforeEach
     void setUp() {
@@ -95,6 +96,9 @@ class DepartmentBudgetIT {
         tenantA = testTenants.ensureTenant(slug, "Budget A", "Admin", adminAEmail, PASSWORD);
         tenantB = testTenants.ensureTenant(slug + "b", "Budget B", "Admin", adminBEmail, PASSWORD);
         adminA = testTenants.admin(tenantA, adminAEmail);
+        executiveEmail = "exec@" + slug + ".com";
+        testTenants.ensureMember(tenantA, adminA.id(), executiveEmail, "Executive", PASSWORD,
+            HierarchyLevel.EXECUTIVE, null, "EXECUTIVE");
 
         String tokenA = login(adminAEmail);
         departmentA = createDepartment(tokenA, "Marketing " + suffix(), null);
@@ -162,8 +166,9 @@ class DepartmentBudgetIT {
         assertThat(managerItems).extracting(item -> item.get("departmentId"))
             .containsExactly(departmentA.toString());
 
-        List<Map<String, Object>> adminItems = budgetItems(admin, "2026-10");
-        assertThat(adminItems).extracting(item -> item.get("departmentId"))
+        assertThat(budgetStatus(admin, "2026-10")).isEqualTo(403);
+        List<Map<String, Object>> executiveItems = budgetItems(login(executiveEmail), "2026-10");
+        assertThat(executiveItems).extracting(item -> item.get("departmentId"))
             .contains(departmentA.toString(), departmentB.toString());
     }
 
@@ -182,7 +187,7 @@ class DepartmentBudgetIT {
 
         assertThat(putBudgetStatus(token, departmentA, "2026-13", "1000.00")).isEqualTo(400);
         assertThat(historyStatus(token, departmentA, "2026-13", "2026-10")).isEqualTo(400);
-        assertThat(budgetStatus(token, "2026-13")).isEqualTo(400);
+        assertThat(budgetStatus(login(executiveEmail), "2026-13")).isEqualTo(400);
     }
 
     @Test
@@ -207,22 +212,22 @@ class DepartmentBudgetIT {
         insertUsage(tenantA.id(), departmentA, "2026-11-01T00:00:00Z", "400.00");
         insertUsage(tenantB.id(), departmentOtherTenant, "2026-10-15T12:00:00Z", "5000.00");
 
-        Map<String, Object> october = item(budgetReport(admin, "2026-10"), departmentA);
+        Map<String, Object> october = item(budgetReport(login(executiveEmail), "2026-10"), departmentA);
         assertThat(number(october.get("custoReal"))).isCloseTo(300.0, within(0.0001));
         assertThat(number(october.get("pctUsado"))).isCloseTo(30.0, within(0.0001));
         assertThat(october.get("status")).isEqualTo("OK");
 
-        Map<String, Object> november = item(budgetReport(admin, "2026-11"), departmentA);
+        Map<String, Object> november = item(budgetReport(login(executiveEmail), "2026-11"), departmentA);
         assertThat(number(november.get("custoReal"))).isCloseTo(400.0, within(0.0001));
         assertThat(number(november.get("pctUsado"))).isCloseTo(40.0, within(0.0001));
 
-        // Admin A não vê o departamento nem o custo do tenant B.
-        assertThat(budgetReport(admin, "2026-10"))
+        // Executivo A não vê o departamento nem o custo do tenant B.
+        assertThat(budgetReport(login(executiveEmail), "2026-10"))
             .extracting(item -> item.get("departmentId"))
             .doesNotContain(departmentOtherTenant.toString());
 
         // Orçamento padrão do departamento (dept B, sem linha do mês) entra como default.
-        Map<String, Object> defaultItem = item(budgetReport(admin, "2026-10"), departmentB);
+        Map<String, Object> defaultItem = item(budgetReport(login(executiveEmail), "2026-10"), departmentB);
         assertThat(number(defaultItem.get("orcamento"))).isCloseTo(1500.0, within(0.0001));
         assertThat(defaultItem.get("orcamentoPadrao")).isEqualTo(true);
         assertThat(defaultItem.get("limiarAlerta")).isEqualTo(80);
@@ -233,7 +238,7 @@ class DepartmentBudgetIT {
         String admin = login(adminAEmail);
         insertUsage(tenantA.id(), departmentNoBudget, "2026-10-10T10:00:00Z", "42.00");
 
-        Map<String, Object> item = item(budgetReport(admin, "2026-10"), departmentNoBudget);
+        Map<String, Object> item = item(budgetReport(login(executiveEmail), "2026-10"), departmentNoBudget);
 
         assertThat(item.get("orcamento")).isNull();
         assertThat(item.get("pctUsado")).isNull();

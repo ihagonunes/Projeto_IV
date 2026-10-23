@@ -49,6 +49,9 @@ class HistoricalUsageIT {
     @Autowired
     HistoricalUsageAdapter historicalUsageAdapter;
 
+    @Autowired
+    br.com.qsoft.governance.observability.infrastructure.query.HistoricalDashboardAdapter dashboard;
+
     private final UUID tenantA = UUID.randomUUID();
     private final UUID tenantB = UUID.randomUUID();
 
@@ -107,5 +110,69 @@ class HistoricalUsageIT {
 
         assertThat(summary.requests()).isZero();
         assertThat(summary.inputTokens()).isZero();
+    }
+
+    @Test
+    void dashboardScopesEveryQueryIncludingMetadataAndSelectedEmployee() {
+        usage(tenantA, "D1", "2026-07-01T12:00:00", 3, 100, 100, 10);
+        usage(tenantA, "D1", "2026-07-02T12:00:00", 5, 100, 100, 10);
+        usage(tenantA, "D2", "2026-08-01T12:00:00", 90, 100, 100, 10);
+        usage(tenantB, "D1", "2026-09-01T12:00:00", 999, 100, 100, 10);
+        jdbcTemplate.update("UPDATE historical.ai_usage_logs SET employee_id=CASE WHEN request_count=5 THEN 'E2' ELSE 'E1' END");
+        var self = new br.com.qsoft.governance.observability.application.port.HistoricalDashboardQuery.Scope(false, java.util.Set.of(), "E1");
+        var f = new br.com.qsoft.governance.observability.application.port.HistoricalDashboardQuery.Filter(
+            TenantId.of(tenantA), null, null, null, null, self);
+        // E1 also has a D2 record: SELF sees both own records, never E2 or tenant B.
+        assertThat(dashboard.series(f).stream().mapToLong(r -> r.requests()).sum()).isEqualTo(93);
+        assertThat(dashboard.coverage(f).to()).isEqualTo(LocalDate.parse("2026-08-01"));
+        assertThat(dashboard.activeUsers(f)).isEqualTo(1);
+        var department = new br.com.qsoft.governance.observability.application.port.HistoricalDashboardQuery.Scope(false, java.util.Set.of("D1"), null);
+        var selected = new br.com.qsoft.governance.observability.application.port.HistoricalDashboardQuery.Filter(
+            TenantId.of(tenantA), null, null, null, null, department, "E2");
+        assertThat(dashboard.series(selected).stream().mapToLong(r -> r.requests()).sum()).isEqualTo(5);
+        var missing = new br.com.qsoft.governance.observability.application.port.HistoricalDashboardQuery.Scope(false, java.util.Set.of(), null);
+        var denied = new br.com.qsoft.governance.observability.application.port.HistoricalDashboardQuery.Filter(
+            TenantId.of(tenantA), null, null, null, null, missing);
+        assertThat(dashboard.series(denied)).isEmpty();
+        assertThat(dashboard.departments(denied)).isEmpty();
+        assertThat(dashboard.models(denied)).isEmpty();
+        assertThat(dashboard.coverage(denied).to()).isNull();
+    }
+
+    @Test
+    void dashboardFiltersTenantAndIncludesWholeFinalDayWithUnknownPrices() {
+        usage(tenantA, "D1", "2026-07-31T23:59:59.999999", 3, 1000, 500, 10);
+        usage(tenantA, "D2", "2026-07-31T10:00:00", 7, 2000, 3000, 10);
+        usage(tenantA, "D1", "2026-08-01T00:00:00", 99, 999, 999, 10);
+        usage(tenantB, "D1", "2026-07-31T12:00:00", 999, 999, 999, 10);
+        var f = new br.com.qsoft.governance.observability.application.port.HistoricalDashboardQuery.Filter(
+            TenantId.of(tenantA), LocalDate.parse("2026-07-31"), LocalDate.parse("2026-07-31"), "D1", null);
+        assertThat(dashboard.series(f)).singleElement().satisfies(row -> assertThat(row.requests()).isEqualTo(3));
+        assertThat(dashboard.costs(f)).singleElement().satisfies(row -> {
+            assertThat(row.estimatedCostUsd()).isNull();
+            assertThat(row.unpricedRecords()).isEqualTo(1);
+        });
+        var foreign = new br.com.qsoft.governance.observability.application.port.HistoricalDashboardQuery.Filter(
+            TenantId.of(UUID.randomUUID()), f.from(), f.to(), null, null);
+        assertThat(dashboard.series(foreign)).isEmpty();
+        assertThat(dashboard.models(foreign.tenantId())).isEmpty();
+        assertThat(dashboard.departments(foreign.tenantId())).isEmpty();
+    }
+
+    @Test
+    void dashboardUsesTokenTotalsWithoutMultiplyingByRequests() {
+        String model = UUID.randomUUID().toString();
+        jdbcTemplate.update("INSERT INTO historical.ai_models(model_id,model_name,input_price_usd_per_1k_tokens,output_price_usd_per_1k_tokens) VALUES (?,?,?,?)", model, "Modelo", 2, 4);
+        usage(tenantA, "D1", "2026-07-01T12:00:00", 20, 1000, 500, 10);
+        jdbcTemplate.update("UPDATE historical.ai_usage_logs SET model_id = ?, employee_id = 'E1' WHERE company_id = ?", model, tenantA.toString());
+        var f = new br.com.qsoft.governance.observability.application.port.HistoricalDashboardQuery.Filter(
+            TenantId.of(tenantA), LocalDate.parse("2026-07-01"), LocalDate.parse("2026-07-31"), null, model);
+        assertThat(dashboard.costs(f)).singleElement().satisfies(row -> {
+            assertThat(row.requests()).isEqualTo(20);
+            assertThat(row.estimatedCostUsd()).isEqualByComparingTo("4");
+            assertThat(row.unpricedRecords()).isZero();
+        });
+        assertThat(dashboard.activeUsers(f)).isEqualTo(1);
+        assertThat(dashboard.models(TenantId.of(tenantB))).isEmpty();
     }
 }

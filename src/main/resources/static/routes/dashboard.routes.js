@@ -1,24 +1,7 @@
 const express = require("express");
-const wrap = require("express-async-error-wrapper");
-
+const dashboards = require("../modules/dashboard/dashboards.controller");
 const router = express.Router();
-
-// ---------------------------------------------------------------------------
-// Rotas de RENDER (paginas)
-// ---------------------------------------------------------------------------
-
-/**
- * GET /dashboard -> painel de uso e custo (SPI-92/93/95).
- *
- * A pagina apenas renderiza; os dados vem do backend via /api/v1/observability
- * (proxy same-origin do BFF). O escopo (proprio/departamento/tenant) e o filtro
- * por tenant sao aplicados no backend a partir do JWT (SPI-94, ADR-04/ADR-30).
- */
-router.get("/dashboard", wrap(async (req, res) => {
-    res.render("dashboard/views/index", {
-        titulo: "Dashboard",
-        bodyClass: "bg-light auth-bg"
-    });
-}));
-
+// SPI-92: apresentação apenas. O perfil da URL não concede acesso a dados.
+router.get("/dashboard", dashboards.render);
+router.get("/dashboard/:profile", dashboards.render);
 module.exports = router;

@@ -86,7 +86,13 @@ ArchUnit deve falhar para qualquer dependência não declarada ou import interno
 - FK/JPA association cross-module proibida.
 - Flyway é a única evolução de schema.
 - Hibernate usa `ddl-auto=validate`.
-- histórico QSOFT fica em `historical_*`, sem FK operacional.
+- histórico QSOFT fica no schema `historical` (V014), sem FK operacional; não
+  confundir com as tabelas legadas `public.historical_*` do dump antigo.
+- vínculos para identidades históricas são de propriedade IAM
+  (`iam_legacy_user_links`) e department (`department_legacy_links`, V020).
+  Observability acessa somente suas portas públicas HistoricalIdentityQuery e
+  HistoricalDepartmentQuery. RBAC é resolvido pelo IAM atual; logs permanecem
+  históricos e toda consulta limita company_id ao tenant autenticado (ADR-26).
 
 ## AI Gateway
 

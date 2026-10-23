@@ -10,10 +10,8 @@ import br.com.qsoft.governance.sharedkernel.rbac.Action;
 import br.com.qsoft.governance.sharedkernel.rbac.Resource;
 import br.com.qsoft.governance.sharedkernel.tenant.TenantContext;
 import br.com.qsoft.governance.sharedkernel.tenant.TenantContextHolder;
-import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -42,12 +40,35 @@ public class DashboardController {
     }
 
     /** Série temporal de requisições + usuários ativos (SPI-88). */
+    @GetMapping("/me/usage")
+    @RequiresPermission(resource = Resource.USAGE, action = Action.READ,
+        targeting = Targeting.BY_TARGET)
+    public ResponseEntity<UsageMetricsResponse> ownUsage(
+            @RequestParam(required = false) String from,
+            @RequestParam(required = false) String to,
+            @RequestParam(required = false) UUID modelId,
+            @RequestParam(required = false) UsageMetricsRepository.Granularity granularity) {
+        // A página pessoal limita até atores com concessão TENANT ao próprio ID.
+        return usage(from, to, null, modelId, TenantContextHolder.require().userId().value(), granularity);
+    }
+
+    @GetMapping("/me/costs")
+    @RequiresPermission(resource = Resource.USAGE, action = Action.READ,
+        targeting = Targeting.BY_TARGET)
+    public ResponseEntity<List<CostGroupResponse>> ownCosts(
+            @RequestParam(required = false) String from,
+            @RequestParam(required = false) String to,
+            @RequestParam(required = false) UUID modelId) {
+        return costs(from, to, null, modelId, TenantContextHolder.require().userId().value(),
+            UsageMetricsRepository.CostGroupBy.MODEL);
+    }
+
     @GetMapping("/usage")
     @RequiresPermission(resource = Resource.USAGE, action = Action.READ,
         targeting = Targeting.BY_TARGET)
     public ResponseEntity<UsageMetricsResponse> usage(
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
+            @RequestParam(required = false) String from,
+            @RequestParam(required = false) String to,
             @RequestParam(required = false) UUID departmentId,
             @RequestParam(required = false) UUID modelId,
             @RequestParam(required = false) UUID userId,
@@ -55,7 +76,8 @@ public class DashboardController {
         TenantContext context = TenantContextHolder.require();
         return ResponseEntity.ok(UsageMetricsResponse.from(queryUsageMetrics.series(
             new DashboardQueryCommand(context.tenantId(), context.userId(),
-                departmentId, modelId, userId, from, to, granularity))));
+                departmentId, modelId, userId, DashboardDateParameter.parse(from, false),
+                DashboardDateParameter.parse(to, true), granularity))));
     }
 
     /**
@@ -67,8 +89,8 @@ public class DashboardController {
     @RequiresPermission(resource = Resource.USAGE, action = Action.READ,
         targeting = Targeting.BY_TARGET)
     public ResponseEntity<List<CostGroupResponse>> costs(
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
+            @RequestParam(required = false) String from,
+            @RequestParam(required = false) String to,
             @RequestParam(required = false) UUID departmentId,
             @RequestParam(required = false) UUID modelId,
             @RequestParam(required = false) UUID userId,
@@ -79,7 +101,8 @@ public class DashboardController {
             : groupBy;
         List<CostGroupResponse> costs = queryCostMetrics.byGroup(
                 new DashboardQueryCommand(context.tenantId(), context.userId(),
-                    departmentId, modelId, userId, from, to,
+                    departmentId, modelId, userId, DashboardDateParameter.parse(from, false),
+                    DashboardDateParameter.parse(to, true),
                     UsageMetricsRepository.Granularity.DAY),
                 resolvedGroup)
             .stream()

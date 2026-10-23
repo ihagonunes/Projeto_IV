@@ -14,6 +14,7 @@ O agente não deve carregar toda a documentação por padrão.
 | 2 | `ai/adr/ADR-XX-*.md` | Somente ADR relacionado à tarefa. |
 | 2 | `ai/epics/EPIC-XXX-*.md` | Somente epic relacionado. |
 | 2 | `ai/tasks/TASK-*.md` | Quando existir task packet. |
+| 2 | `docs/development/DASHBOARD_INDICADORES_E_CALCULOS.md` | Indicadores dos dashboards: fórmulas, fontes existentes e lacunas propostas; não substitui ADRs. |
 | 3 | Código/testes | Somente caminhos apontados pelo plano/diff. |
 | 4 | `docs/reference/*` | Apenas quando o contexto condensado não bastar. |
 

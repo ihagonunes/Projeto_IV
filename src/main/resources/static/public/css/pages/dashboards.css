@@ -1,0 +1,62 @@
+/* Estilos compartilhados do dashboard por perfil; tokens ATLAS e Bootstrap. */
+.dashboard-demo { color-scheme: dark; }
+.demo-shell { display: grid; grid-template-columns: 218px minmax(0, 1fr); min-height: var(--app-viewport-height, 100vh); }
+.demo-sidebar { padding: 24px 18px; background: var(--bg-color-card); border-right: 1px solid #25314a; display: flex; flex-direction: column; gap: 28px; }
+.demo-brand { display: block; font-size: 30px; text-decoration: none; }
+.demo-brand span { display: block; font: 11px var(--font-family-base); color: #a9b4c9; letter-spacing: 1px; margin-top: 5px; }
+.demo-eyebrow { color: #a9b4c9; font-size: 10px; letter-spacing: 1.3px; margin: 0 0 10px; }
+.demo-main { padding: 24px clamp(16px, 2vw, 32px); min-width: 0; width: 100%; margin: 0; align-self: start; }
+.demo-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; }
+.demo-header h1 { font-size: clamp(23px, 2.3vw, 32px); font-weight: 600; margin-bottom: 10px; }
+.demo-muted { color: #a9b4c9; }
+.demo-header p { font-size: 12px; }
+.demo-filters { display: flex; align-items: end; flex-wrap: wrap; gap: 12px; padding: 12px 0; }
+.demo-filters > div { flex: 1; min-width: 170px; max-width: 290px; }
+.demo-filters label { display: block; margin-bottom: 7px; color: #b6c2d7; font-size: 11px; }
+.demo-filters select { font-size: 12px; min-height: 42px; }
+.demo-filters button { min-height: 42px; font-size: 12px; }
+.demo-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+.demo-panel { background: var(--bg-color-card); border: 1px solid #25314a; border-radius: 12px; min-width: 0; }
+.demo-kpi { padding: 16px 18px; border-top: 2px solid #f0c22f60; }
+.demo-kpi > span { font-size: 11px; color: #b7c3d8; display: block; }
+.demo-kpi strong { font-size: clamp(22px, 2vw, 32px); font-weight: 600; display: block; margin: 8px 0 6px; line-height: 1.3; overflow-wrap: anywhere; }
+.demo-kpi strong small { font-size: 13px; font-weight: 400; color: #a9b4c9; }
+.demo-kpi p { font-size: 10px; line-height: 1.8; color: #a9b4c9; margin: 0; }
+.demo-charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 16px; margin: 16px 0; align-items: start; }
+.demo-chart-panel { padding: 18px; }
+.demo-section-title { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
+.demo-section-title h2 { font-size: 15px; font-weight: 500; margin: 0 0 8px; }
+.demo-section-title p { font-size: 10px; color: #a9b4c9; margin: 0; }
+.dashboard-demo .table { --bs-table-bg: transparent; --bs-table-color: #d3dcec; --bs-table-border-color: #25314a; }
+.demo-records { padding: 18px 18px 0; overflow: hidden; }
+.demo-table { font-size: 11px; vertical-align: middle; }
+.demo-table th { font-size: 10px; color: #a9b4c9; font-weight: 500; padding: 10px 12px; white-space: nowrap; }
+.demo-table td { padding: 11px 12px; }
+.demo-table small { display: block; color: #a9b4c9; font-size: 9px; margin-top: 5px; white-space: nowrap; }
+.demo-footer { border-top: 1px solid #25314a; margin-top: 20px; padding-top: 16px; display: flex; justify-content: space-between; gap: 15px; flex-wrap: wrap; color: #a9b4c9; font-size: 10px; }
+.demo-skip { position: absolute; left: 10px; top: -80px; padding: 12px; background: #10182d; z-index: 10; }
+.demo-skip:focus { top: 10px; }
+.dashboard-demo :focus-visible { outline: 2px solid var(--color-primary); outline-offset: 4px; }
+.dashboard-demo [hidden] { display: none !important; }
+@media (max-width: 1099px) { .demo-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 767px) {
+    .demo-shell { grid-template-columns: 1fr; }
+    .demo-sidebar { padding: 18px; gap: 14px; border-right: 0; border-bottom: 1px solid #25314a; }
+    .demo-brand { font-size: 24px; }
+    .demo-main { padding: 20px 16px; }
+    .demo-header { flex-direction: column; gap: 0; }
+    .demo-kpis { gap: 10px; }
+    .demo-kpi { padding: 16px 12px; }
+    .demo-chart-panel, .demo-records { padding: 16px; }
+    .demo-section-title { flex-wrap: wrap; }
+    .demo-filters > div { max-width: none; }
+}
+@media (prefers-reduced-motion: reduce) { .dashboard-demo * { transition: none !important; animation: none !important; } }
+
+/* Em telas amplas, aviso e filtros compartilham a linha sem comprimir os controles. */
+.demo-header > div > p:last-child { margin-bottom: 0; }
+@media (min-width: 1440px) {
+    .demo-main { display: grid; grid-template-columns: minmax(280px, 1fr) minmax(700px, 2fr); column-gap: 20px; align-content: start; }
+    .demo-main > * { grid-column: 1 / -1; }
+    .demo-main > .demo-filters { grid-column: 2; }
+}

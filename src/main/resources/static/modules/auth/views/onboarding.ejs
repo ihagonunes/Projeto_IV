@@ -21,18 +21,28 @@
                     credenciais de IA.
                 </p>
                 <div class="d-flex gap-3 flex-wrap justify-content-center">
+                    <% if (profile === 'administrador') { %>
                     <a href="/tenant" class="btn btn-outline-gold btn-pill fw-bold px-4 py-2"
                         style="font-size:0.92rem;">
                         Novo Cadastro →
                     </a>
+                    <a href="/tenant/identidade-visual" class="btn btn-outline-gold btn-pill fw-bold px-4 py-2"
+                        style="font-size:0.92rem;">
+                        <i class="bi bi-palette me-1"></i> Identidade visual
+                    </a>
+                    <% } %>
+                    <% if (['gestor', 'executivo', 'administrador'].includes(profile)) { %>
                     <a href="/convites" class="btn btn-outline-gold btn-pill fw-bold px-4 py-2"
                         style="font-size:0.92rem;">
                         <i class="bi bi-envelope-paper me-1"></i> Convites
                     </a>
+                    <% } %>
+                    <% if (profile !== 'administrador') { %>
                     <a href="/dashboard" class="btn btn-outline-gold btn-pill fw-bold px-4 py-2"
                         style="font-size:0.92rem;">
                         <i class="bi bi-bar-chart-line me-1"></i> Dashboard
                     </a>
+                    <% } %>
                     <a href="/login" class="btn btn-outline-secondary btn-pill px-4 py-2"
                         style="font-size:0.92rem;">Voltar ao Login</a>
                 </div>

@@ -33,6 +33,7 @@ router.get("/redefinir-senha", wrap(async (req, res) => {
 router.get("/onboarding", wrap(async (req, res) => {
     res.render("auth/views/onboarding", {
         titulo: "Onboarding",
+        profile: res.locals.dashboardProfile || "colaborador",
         bodyClass: "bg-light auth-bg onboarding-bg"
     });
 }));

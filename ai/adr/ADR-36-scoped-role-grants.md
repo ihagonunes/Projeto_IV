@@ -82,3 +82,27 @@ Além disso, `GET /api/v1/observability/usage` não aplica escopo algum.
   e ADR-34 (`targeting`).
 - A V015 expande o schema e faz o backfill. Ela aborta em caso ambíguo. O `DROP` de
   `user_permission` fica para uma migration do release seguinte (V021+; V016–V019 estão reservadas na Sprint 3).
+
+## Emenda 23/10/2026 — administração separada dos dashboards (FEAT-DASH-001 local)
+
+Vulpi definiu duas experiências: EXECUTIVE consulta dashboards e gera convites;
+TENANT_ADMIN cadastra empresas, gera convites e edita identidade visual, sem
+página de dashboard. Não criar tabela de autenticação ou login paralelo: ambos
+usam app_user e concessões atuais; hierarchyLevel continua sem autorizar acesso.
+
+Retirar USAGE:READ e GOVERNANCE_SCORE:READ do papel TENANT_ADMIN no catálogo de
+domínio e nos papéis persistidos pela V021. Permanecem 18 permissões técnicas e
+administrativas. Não retirar concessões ou permissões dos demais papéis, nem
+transformar EXECUTIVE em administrador. A autorização por concessões continua
+aditiva: permissões analíticas exigem papel analítico explícito.
+
+O BFF mostra no onboarding os botões do perfil administrativo e redireciona
+qualquer /dashboard desse perfil para /onboarding, inclusive perfis na URL.
+As APIs de métricas retornam 403 para conta exclusivamente TENANT_ADMIN.
+Cadastro e branding são páginas administrativas; o backend mantém TENANT:MANAGE
+para edição da empresa e identidade visual. O cadastro inicial público da API
+mantém seu contrato existente de bootstrap de novo tenant.
+
+Alternativa descartada: esconder só o botão, que deixaria as APIs analíticas
+acessíveis. Consequência: testes analíticos usam EXECUTIVE; testes de administração
+usam TENANT_ADMIN. A V015 permanece imutável; V021 atualiza bases existentes.

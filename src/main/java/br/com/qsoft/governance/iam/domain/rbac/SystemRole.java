@@ -21,7 +21,7 @@ public enum SystemRole {
     LEADER(ScopeType.DEPARTMENT, 2, leaderPermissions()),
     MANAGER(ScopeType.DEPARTMENT, 3, managerPermissions()),
     EXECUTIVE(ScopeType.TENANT, 4, executivePermissions()),
-    /** Administrativo, fora da escada de postos. Sem CHAT. */
+    /** Administrativo, fora da escada de postos. Sem CHAT ou leitura analítica. */
     TENANT_ADMIN(ScopeType.TENANT, 100, tenantAdminPermissions());
 
     private final ScopeType scope;
@@ -118,8 +118,6 @@ public enum SystemRole {
         permissions.add(p(Resource.KNOWLEDGE_DOCUMENT, Action.MANAGE));
         permissions.add(p(Resource.LICENSE, Action.MANAGE));
         permissions.add(p(Resource.TRAINING, Action.MANAGE));
-        permissions.add(p(Resource.USAGE, Action.READ));
-        permissions.add(p(Resource.GOVERNANCE_SCORE, Action.READ));
         return Set.copyOf(permissions);
     }
 

@@ -74,6 +74,20 @@ class AIGatewayCatalogControllerTest {
     // --- Provider Endpoints ---
 
     @Test
+    void dashboardCatalogReturnsOnlyIdentifiersAndNamesForContextTenant() throws Exception {
+        Model model = Model.create(UUID.randomUUID(), tenantId, UUID.randomUUID(), "Aprovado",
+            null, BigDecimal.ONE, BigDecimal.ONE);
+        when(listModels.availableForDashboard(tenantId)).thenReturn(List.of(model));
+        mockMvc.perform(get("/api/v1/ai-gateway/models/dashboard"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].id").value(model.id().toString()))
+            .andExpect(jsonPath("$[0].name").value("Aprovado"))
+            .andExpect(jsonPath("$[0].providerId").doesNotExist())
+            .andExpect(jsonPath("$[0].externalName").doesNotExist());
+        verify(listModels).availableForDashboard(tenantId);
+    }
+
+    @Test
     void deve_listar_providers_com_sucesso() throws Exception {
         Provider provider = Provider.create(UUID.randomUUID(), tenantId, "OpenAI",
             br.com.qsoft.governance.aigateway.domain.provider.ProviderKind.STUB, null, null, null);

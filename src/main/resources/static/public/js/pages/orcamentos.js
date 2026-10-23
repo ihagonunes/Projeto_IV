@@ -18,6 +18,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     const historicoTitulo = document.getElementById("historicoTitulo");
     const historicoMensagem = document.getElementById("historicoMensagem");
     const historicoCorpo = document.getElementById("historicoTableBody");
+    const editor = document.getElementById("orcamentoEditor");
+    const editorForm = document.getElementById("orcamentoEditorForm");
+    const editorValor = document.getElementById("orcamentoEditorValor");
+    const editorLimiar = document.getElementById("orcamentoEditorLimiar");
+    const editorMensagem = document.getElementById("orcamentoEditorMensagem");
+    const editorSalvar = document.getElementById("orcamentoEditorSalvar");
+    const editorCancelar = document.getElementById("orcamentoEditorCancelar");
+    let edicao = null;
+    let salvando = false;
+    let statusVersao = 0;
+    let historicoVersao = 0;
 
     const STATUS = {
         OK: { texto: "OK", classe: "text-bg-success" },
@@ -75,7 +86,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     function mensagemDeErro(err, padrao) {
         if (err?.status === 403) {
-            return "Você não tem permissão para consultar o orçamento deste escopo.";
+            return "Você não tem permissão para esta operação de orçamento.";
         }
         if (err?.status === 404) {
             return "Departamento não encontrado.";
@@ -97,6 +108,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     async function carregarStatus() {
+        const versao = ++statusVersao;
+        itensAtuais = [];
+        corpo.innerHTML = '<tr><td colspan="7">Carregando orçamentos…</td></tr>';
         if (!client) {
             avisar("Cliente HTTP não carregado.", "warning");
             return;
@@ -105,13 +119,17 @@ document.addEventListener("DOMContentLoaded", async () => {
         try {
             const resposta = await client.get(
                 `/v1/observability/orcamentos?mes=${encodeURIComponent(mesInput.value)}`);
+            if (versao !== statusVersao) return;
             itensAtuais = Array.isArray(resposta?.itens) ? resposta.itens : [];
             renderizarTabela(itensAtuais);
+            return true;
         } catch (err) {
+            if (versao !== statusVersao) return;
             itensAtuais = [];
             corpo.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">'
                 + 'Não foi possível carregar os orçamentos.</td></tr>';
             avisar(mensagemDeErro(err, "Não foi possível carregar os orçamentos."), "danger");
+            return false;
         }
     }
 
@@ -126,16 +144,18 @@ document.addEventListener("DOMContentLoaded", async () => {
         itens.forEach((item) => {
             const status = STATUS[item.status] || { texto: item.status, classe: "text-bg-secondary" };
             const origem = item.orcamentoPadrao ? ' <span class="text-muted small">(padrão)</span>' : "";
-            const orcamentoCelula = podeEditar
-                ? `<input type="number" min="0" step="0.01" class="form-control form-control-sm text-end"
-                        data-campo="valor" value="${item.orcamento == null ? "" : Number(item.orcamento)}"
-                        placeholder="Sem orçamento" aria-label="Orçamento de ${escapar(item.departmentName)}">`
-                : `${escapar(formatarMoeda(item.orcamento))}${origem}`;
-            const limiarCelula = podeEditar
-                ? `<input type="number" min="1" max="100" step="1" class="form-control form-control-sm text-end"
-                        data-campo="limiar" value="${Number(item.limiarAlerta)}"
-                        aria-label="Limiar de alerta de ${escapar(item.departmentName)}">`
-                : String(item.limiarAlerta);
+            const orcamentoCelula = `${escapar(formatarMoeda(item.orcamento))}${origem}`;
+            const limiarCelula = String(item.limiarAlerta);
+            // O percentual e o status são calculados pelo backend. A largura é apenas visual.
+            const percentual = Number(item.pctUsado);
+            const temPercentual = item.pctUsado != null && Number.isFinite(percentual);
+            const largura = temPercentual ? Math.min(100, Math.max(0, percentual))
+                : item.status === "EXCEDIDO" ? 100 : 0;
+            const cor = item.status === "SEM_ORCAMENTO" ? "bg-secondary"
+                : percentual >= 100 || item.status === "EXCEDIDO" ? "bg-danger"
+                : percentual >= 80 ? "bg-warning" : "bg-success";
+            const progresso = item.status === "SEM_ORCAMENTO" ? "Sem orçamento"
+                : temPercentual ? formatarPercentual(percentual) : "Percentual não aplicável";
 
             const tr = document.createElement("tr");
             tr.dataset.departmentId = item.departmentId;
@@ -144,10 +164,15 @@ document.addEventListener("DOMContentLoaded", async () => {
                 <td class="text-end">${orcamentoCelula}</td>
                 <td class="text-end">${limiarCelula}</td>
                 <td class="text-end">${escapar(item.custoReal == null ? "—" : formatarMoeda(item.custoReal))}</td>
-                <td class="text-end">${formatarPercentual(item.pctUsado)}</td>
+                <td style="min-width:160px"><div>${escapar(progresso)}</div>
+                    <div class="progress" role="progressbar" aria-label="Consumo de ${escapar(item.departmentName)}"
+                        aria-valuemin="0" aria-valuemax="100" aria-valuenow="${largura}"
+                        aria-valuetext="${escapar(progresso)}">
+                        <div class="progress-bar ${cor}" style="width:${largura}%"></div>
+                    </div></td>
                 <td><span class="badge ${status.classe}">${escapar(status.texto)}</span></td>
                 <td class="text-end text-nowrap">
-                    ${podeEditar ? '<button type="button" class="btn btn-sm btn-outline-primary me-1" data-acao="salvar">Salvar</button>' : ""}
+                    ${podeEditar ? '<button type="button" class="btn btn-sm btn-outline-primary me-1" data-acao="editar">Editar</button>' : ""}
                     <button type="button" class="btn btn-sm btn-outline-secondary" data-acao="historico">Histórico</button>
                 </td>`;
             corpo.appendChild(tr);
@@ -163,43 +188,66 @@ document.addEventListener("DOMContentLoaded", async () => {
         const item = itensAtuais.find((atual) => String(atual.departmentId) === String(departmentId));
         if (!item) return;
 
-        if (botao.dataset.acao === "salvar") {
-            await salvar(linha, item);
+        if (botao.dataset.acao === "editar") {
+            if (!podeEditar) return;
+            edicao = { item, mes: mesInput.value };
+            editorValor.value = item.orcamento == null ? "" : String(item.orcamento);
+            editorLimiar.value = String(item.limiarAlerta);
+            editorMensagem.textContent = "";
+            document.getElementById("orcamentoEditorDepartamento").textContent = `${item.departmentName} — ${edicao.mes}`;
+            editor.showModal();
         } else if (botao.dataset.acao === "historico") {
             await carregarHistorico(departmentId, item.departmentName);
         }
     });
 
-    async function salvar(linha, item) {
-        const valor = linha.querySelector('[data-campo="valor"]').value.trim();
-        const limiar = linha.querySelector('[data-campo="limiar"]').value.trim();
+    async function salvar(event) {
+        event.preventDefault();
+        if (!podeEditar || !edicao || salvando) return;
+        const { item, mes } = edicao;
+        const valor = editorValor.value.trim();
+        const limiar = editorLimiar.value.trim();
         if (valor === "") {
-            avisar(`Informe o orçamento de ${item.departmentName}.`, "warning");
+            editorMensagem.textContent = `Informe o orçamento de ${item.departmentName}.`;
             return;
         }
         const threshold = limiar === "" ? 80 : Number(limiar);
-        if (!Number.isFinite(Number(valor)) || Number(valor) < 0) {
-            avisar("O orçamento deve ser um valor maior ou igual a zero.", "warning");
+        if (!/^\d{1,13}(\.\d{1,2})?$/.test(valor) || !Number.isFinite(Number(valor))) {
+            editorMensagem.textContent = "Informe um valor não negativo, com até 13 dígitos inteiros e duas casas decimais.";
             return;
         }
         if (!Number.isInteger(threshold) || threshold < 1 || threshold > 100) {
-            avisar("O limiar deve ser um número inteiro entre 1 e 100.", "warning");
+            editorMensagem.textContent = "O limiar deve ser um número inteiro entre 1 e 100.";
             return;
         }
 
         try {
+            salvando = true;
+            editorMensagem.textContent = "";
+            editorSalvar.disabled = true;
+            editorCancelar.disabled = true;
             await client.put(
-                `/v1/departamentos/${departmentId}/orcamentos/${mesInput.value}`,
+                `/v1/departamentos/${item.departmentId}/orcamentos/${mes}`,
                 { amount: valor, alertThresholdPct: threshold });
-            avisar(`Orçamento de ${item.departmentName} atualizado.`, "success");
-            await carregarStatus();
-            if (String(historicoDepartamentoId) === String(departmentId)) {
-                await carregarHistorico(departmentId, item.departmentName);
+            editor.close();
+            if (await carregarStatus()) {
+                avisar(`Orçamento de ${item.departmentName} atualizado.`, "success");
+            }
+            if (String(historicoDepartamentoId) === String(item.departmentId)) {
+                await carregarHistorico(item.departmentId, item.departmentName);
             }
         } catch (err) {
-            avisar(mensagemDeErro(err, "Não foi possível salvar o orçamento."), "danger");
+            editorMensagem.textContent = mensagemDeErro(err, "Não foi possível salvar o orçamento.");
+        } finally {
+            salvando = false;
+            editorSalvar.disabled = false;
+            editorCancelar.disabled = false;
         }
     }
+
+    editorForm.addEventListener("submit", salvar);
+    editorCancelar.addEventListener("click", () => editor.close());
+    editor.addEventListener("cancel", event => { if (salvando) event.preventDefault(); });
 
     function somarMeses(mes, delta) {
         const [ano, numeroMes] = mes.split("-").map(Number);
@@ -208,6 +256,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     async function carregarHistorico(departmentId, departmentName) {
+        const versao = ++historicoVersao;
         if (!mesInput.value) {
             avisarHistorico("Selecione um mês de referência para consultar o histórico.");
             return;
@@ -220,6 +269,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             const de = somarMeses(mesInput.value, -11);
             const lista = await client.get(
                 `/v1/departamentos/${departmentId}/orcamentos?de=${de}&ate=${mesInput.value}`);
+            if (versao !== historicoVersao) return;
             const registros = Array.isArray(lista) ? lista : [];
             if (!registros.length) {
                 historicoCorpo.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">'
@@ -234,21 +284,26 @@ document.addEventListener("DOMContentLoaded", async () => {
                     <td>${escapar(formatarData(registro.atualizadoEm))}</td>
                 </tr>`).join("");
         } catch (err) {
+            if (versao !== historicoVersao) return;
             historicoCorpo.innerHTML = "";
             avisarHistorico(mensagemDeErro(err, "Não foi possível carregar o histórico."));
         }
     }
 
     mesInput.addEventListener("change", () => {
-        if (!mesInput.value) return;
-        carregarStatus();
-        if (historicoDepartamentoId) {
-            const item = itensAtuais.find(
-                (atual) => String(atual.departmentId) === String(historicoDepartamentoId));
-            if (item) {
-                carregarHistorico(item.departmentId, item.departmentName);
-            }
+        ++historicoVersao;
+        historicoCorpo.innerHTML = "";
+        historicoDepartamentoId = null;
+        historicoTitulo.textContent = "Histórico dos últimos 12 meses";
+        avisarHistorico('Selecione "Histórico" em um departamento.');
+        if (!mesInput.value) {
+            ++statusVersao;
+            itensAtuais = [];
+            corpo.innerHTML = "";
+            avisar("Selecione um mês de referência.", "warning");
+            return;
         }
+        carregarStatus();
     });
 
     await carregarPermissoes();

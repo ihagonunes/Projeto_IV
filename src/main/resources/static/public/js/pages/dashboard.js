@@ -18,75 +18,31 @@ document.addEventListener("DOMContentLoaded", () => {
     const kpiRequests = document.getElementById("kpiRequests");
     const kpiActiveUsers = document.getElementById("kpiActiveUsers");
     const kpiCusto = document.getElementById("kpiCusto");
-    const kpiCustoLabel = document.getElementById("kpiCustoLabel");
-    const kpiCustoDetalhe = document.getElementById("kpiCustoDetalhe");
-    const carregando = document.getElementById("dashboardLoading");
     const grafico = document.getElementById("graficoSeries");
     const tabela = document.getElementById("tabelaCustos");
-    const campoMesOrcamento = document.getElementById("orcamentoMes");
-    const tabelaOrcamentos = document.getElementById("tabelaOrcamentos");
-    const mensagemOrcamento = document.getElementById("orcamentoMensagem");
-    const campoAgrupamento = document.getElementById("filtroAgrupamento");
-    const campoModelo = document.getElementById("filtroModelo");
-    const campoUsuario = document.getElementById("filtroUsuario");
-    const colunaUsuario = document.getElementById("filtroUsuarioCol");
-    const tituloCustos = document.getElementById("tituloCustos");
-    const thCustoDimensao = document.getElementById("thCustoDimensao");
 
     const nomesPorId = {};
-    const nomesModelo = {};
-    const nomesUsuario = {};
     let dadosAtuais = { usage: null, costs: [] };
-
-    const DIMENSOES = {
-        DEPARTMENT: {
-            titulo: "Tokens e custo por departamento",
-            coluna: "Departamento",
-            vazio: "Sem consumo por departamento no período.",
-            nome: (id) => nomesPorId[id] || "Sem departamento"
-        },
-        MODEL: {
-            titulo: "Tokens e custo por modelo",
-            coluna: "Modelo",
-            vazio: "Sem consumo por modelo no período.",
-            nome: (id) => nomesModelo[id] || id || "Sem modelo"
-        },
-        USER: {
-            titulo: "Tokens e custo por usuário",
-            coluna: "Usuário",
-            vazio: "Sem consumo por usuário no período.",
-            nome: (id) => nomesUsuario[id] || id || "Sem usuário"
-        }
-    };
-
-    const STATUS_ORCAMENTO = {
-        OK: { texto: "OK", classe: "text-bg-success" },
-        ALERTA: { texto: "Alerta", classe: "text-bg-warning" },
-        EXCEDIDO: { texto: "Excedido", classe: "text-bg-danger" },
-        SEM_ORCAMENTO: { texto: "Sem orçamento", classe: "text-bg-secondary" }
-    };
 
     // Periodo padrao: ultimos 30 dias (mesmo default do backend).
     const hoje = new Date();
     const inicio = new Date(hoje.getTime() - 30 * 24 * 60 * 60 * 1000);
     campoDe.value = comoData(inicio);
     campoAte.value = comoData(hoje);
-    if (campoMesOrcamento) {
-        campoMesOrcamento.value = comoMes(hoje);
-    }
 
     function comoData(data) {
         return data.toISOString().slice(0, 10);
     }
 
-    function comoMes(data) {
-        return data.toISOString().slice(0, 7);
-    }
-
-    function avisar(texto, tipo) {
+    function avisar(texto) {
         if (!mensagem) return;
-        mensagem.textContent = texto || "";
-        mensagem.className = texto ? `alert alert-${tipo || "info"}` : "d-none";
+        if (texto) {
+            mensagem.innerHTML = '<i class="bi bi-exclamation-triangle" aria-hidden="true"></i> ' + texto;
+            mensagem.hidden = false;
+        } else {
+            mensagem.textContent = "";
+            mensagem.hidden = true;
+        }
     }
 
     function queryString() {
@@ -96,90 +52,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (campoDepartamento.value) {
             params.set("departmentId", campoDepartamento.value);
         }
-        if (campoModelo?.value) {
-            params.set("modelId", campoModelo.value);
-        }
-        if (campoUsuario?.value) {
-            params.set("userId", campoUsuario.value);
-        }
         return params.toString();
-    }
-
-    function dimensaoAtual() {
-        return DIMENSOES[campoAgrupamento?.value] || DIMENSOES.DEPARTMENT;
-    }
-
-    function atualizarCabecalhoCustos() {
-        const dimensao = dimensaoAtual();
-        if (tituloCustos) tituloCustos.textContent = dimensao.titulo;
-        if (thCustoDimensao) thCustoDimensao.textContent = dimensao.coluna;
-    }
-
-    function adicionarOpcao(select, valor, texto) {
-        if (!select) return;
-        const opcao = document.createElement("option");
-        opcao.value = valor;
-        opcao.textContent = texto;
-        select.appendChild(opcao);
-    }
-
-    async function carregarModelos() {
-        if (!client) return;
-        try {
-            const resposta = await client.get("/v1/ai-gateway/models");
-            const lista = Array.isArray(resposta) ? resposta : (resposta?.content || []);
-            lista.forEach((item) => {
-                nomesModelo[item.id] = item.name;
-                adicionarOpcao(campoModelo, item.id, item.name);
-            });
-        } catch (e) {
-            // MODEL:READ indisponível: o seletor fica apenas com "Todos".
-        }
-    }
-
-    async function carregarUsuarios() {
-        if (!client) return;
-        try {
-            const resposta = await client.get("/v1/usuarios?size=100");
-            const lista = Array.isArray(resposta) ? resposta : (resposta?.content || []);
-            lista.forEach((item) => {
-                nomesUsuario[item.id] = item.name || item.email;
-                adicionarOpcao(campoUsuario, item.id, item.name || item.email);
-            });
-        } catch (e) {
-            // USER:READ indisponível: o seletor fica apenas com "Todos".
-        }
-    }
-
-    /**
-     * Visibilidade é decisão do backend; /me/permissoes serve só para a
-     * experiência do front (ADR-36 item 9). SELF não expõe o filtro de usuário.
-     */
-    async function carregarVisao() {
-        if (!client || !colunaUsuario) return;
-        try {
-            const acesso = await client.get("/v1/usuarios/me/permissoes");
-            const escopos = (acesso?.concessoes || []).map((concessao) => concessao.escopo);
-            const visao = escopos.includes("TENANT")
-                ? "TENANT"
-                : (escopos.includes("DEPARTMENT") ? "DEPARTMENT" : "SELF");
-            if (visao !== "TENANT") {
-                // Só o escopo TENANT pode filtrar por qualquer departamento (A9).
-                const colunaDepartamento = campoDepartamento?.closest(".col-md-4");
-                if (colunaDepartamento) colunaDepartamento.classList.add("d-none");
-                campoDepartamento.value = "";
-            }
-            if (visao === "SELF") {
-                colunaUsuario.classList.add("d-none");
-                return;
-            }
-            await carregarUsuarios();
-        } catch (err) {
-            if (err?.status === 401) {
-                window.location.href = "/sessao-expirada";
-            }
-            colunaUsuario.classList.add("d-none");
-        }
     }
 
     function formatarMoeda(valor) {
@@ -187,59 +60,6 @@ document.addEventListener("DOMContentLoaded", () => {
             minimumFractionDigits: 2,
             maximumFractionDigits: 4
         });
-    }
-
-    let carregamentosAtivos = 0;
-
-    function iniciarCarregamento() {
-        carregamentosAtivos += 1;
-        if (carregando) carregando.classList.remove("d-none");
-    }
-
-    function finalizarCarregamento() {
-        carregamentosAtivos = Math.max(0, carregamentosAtivos - 1);
-        if (carregamentosAtivos === 0 && carregando) carregando.classList.add("d-none");
-    }
-
-    function mensagemDeErro(err, padrao) {
-        if (err?.status === 401) {
-            window.location.href = "/sessao-expirada";
-            return "Sua sessão expirou. Redirecionando para o login...";
-        }
-        if (err?.status === 403) {
-            return "Você não tem permissão para consultar estes dados.";
-        }
-        if (err?.timeout) {
-            return "A consulta demorou demais. Tente novamente.";
-        }
-        if (err?.status >= 500) {
-            return "O serviço está indisponível. Tente novamente em instantes.";
-        }
-        return err?.message || padrao;
-    }
-
-    function comTimeout(promise, ms) {
-        return Promise.race([
-            promise,
-            new Promise((_, reject) => {
-                setTimeout(() => {
-                    const error = new Error("Tempo limite da consulta excedido.");
-                    error.timeout = true;
-                    reject(error);
-                }, ms);
-            })
-        ]);
-    }
-
-    function definirKpi(elemento, valor, formatador) {
-        if (!elemento) return;
-        if (valor == null) {
-            elemento.textContent = "Sem dados no período";
-            elemento.classList.add("fs-6", "text-muted");
-            return;
-        }
-        elemento.textContent = formatador(valor);
-        elemento.classList.remove("fs-6", "text-muted");
     }
 
     async function carregarDepartamentos() {
@@ -259,39 +79,25 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function limpar() {
-        [kpiRequests, kpiActiveUsers, kpiCusto].forEach((elemento) => {
-            if (!elemento) return;
-            elemento.textContent = "—";
-            elemento.classList.remove("fs-6", "text-muted");
-        });
+        kpiRequests.textContent = "—";
+        kpiActiveUsers.textContent = "—";
+        kpiCusto.textContent = "—";
         grafico.innerHTML = "";
         tabela.innerHTML = "";
     }
 
     function renderKpis(usage, costs) {
-        const serie = usage?.series || [];
-        if (!serie.length) {
-            definirKpi(kpiRequests, null);
-            definirKpi(kpiActiveUsers, null);
-        } else {
-            const total = serie.reduce((soma, p) => soma + Number(p.requests || 0), 0);
-            definirKpi(kpiRequests, total, (valor) => valor.toLocaleString("pt-BR"));
-            definirKpi(kpiActiveUsers, Number(usage?.activeUsers || 0),
-                (valor) => valor.toLocaleString("pt-BR"));
-        }
-
-        if (!costs || !costs.length) {
-            definirKpi(kpiCusto, null);
-        } else {
-            const custo = costs.reduce((soma, c) => soma + Number(c.custoEstimado || 0), 0);
-            definirKpi(kpiCusto, custo, formatarMoeda);
-        }
+        const total = (usage?.series || []).reduce((soma, p) => soma + Number(p.requests || 0), 0);
+        kpiRequests.textContent = total.toLocaleString("pt-BR");
+        kpiActiveUsers.textContent = Number(usage?.activeUsers || 0).toLocaleString("pt-BR");
+        const custo = (costs || []).reduce((soma, c) => soma + Number(c.estimatedCost || 0), 0);
+        kpiCusto.textContent = formatarMoeda(custo);
     }
 
     function renderSeries(usage) {
         const serie = usage?.series || [];
         if (!serie.length) {
-            grafico.innerHTML = '<p class="text-muted mb-0">Sem dados no período.</p>';
+            grafico.innerHTML = '<p class="demo-muted" style="padding:20px 0;">Sem requisições registradas no período.</p>';
             return;
         }
         const maximo = Math.max(...serie.map((p) => Number(p.requests || 0)), 1);
@@ -299,150 +105,33 @@ document.addEventListener("DOMContentLoaded", () => {
             const valor = Number(ponto.requests || 0);
             const largura = Math.max((valor / maximo) * 100, 1);
             return `
-                <div class="d-flex align-items-center gap-2 mb-2">
-                    <div class="text-muted small" style="width: 130px;">${ponto.period}</div>
-                    <div class="flex-grow-1 bg-body-secondary rounded" style="height: 14px;">
-                        <div class="bg-primary rounded" style="height: 14px; width: ${largura}%;"></div>
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+                    <div style="width:110px;font-size:11px;color:#a9b4c9;text-align:right;flex-shrink:0;">${ponto.period}</div>
+                    <div style="flex:1;height:16px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden;">
+                        <div style="height:100%;width:${largura}%;background:linear-gradient(90deg,var(--color-primary),#d4a520);border-radius:4px;transition:width .4s;"></div>
                     </div>
-                    <div class="small fw-semibold" style="width: 60px; text-align: right;">${valor.toLocaleString("pt-BR")}</div>
+                    <div style="width:60px;font-size:12px;font-weight:500;text-align:right;">${valor.toLocaleString("pt-BR")}</div>
                 </div>`;
         }).join("");
     }
 
     function renderCustos(costs) {
-        const dimensao = dimensaoAtual();
         if (!costs || !costs.length) {
-            tabela.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">'
-                + 'Sem dados no período.</td></tr>';
+            tabela.innerHTML = '<tr><td colspan="4" class="text-center py-5" style="color:#a9b4c9;">Sem consumo por departamento no período.</td></tr>';
             return;
         }
         tabela.innerHTML = costs.map((c) => {
-            const nome = dimensao.nome(c.chave);
+            const nome = c.departmentId
+                ? (nomesPorId[c.departmentId] || "Departamento")
+                : "Sem departamento";
             return `
                 <tr>
-                    <td>${escapar(nome)}</td>
-                    <td class="text-end">${Number(c.requisicoes || 0).toLocaleString("pt-BR")}</td>
-                    <td class="text-end">${Number(c.tokensEntrada || 0).toLocaleString("pt-BR")} / ${Number(c.tokensSaida || 0).toLocaleString("pt-BR")}</td>
-                    <td class="text-end">${formatarMoeda(c.custoEstimado)}</td>
+                    <td>${nome}</td>
+                    <td>${Number(c.requests || 0).toLocaleString("pt-BR")}</td>
+                    <td>${Number(c.inputTokens || 0).toLocaleString("pt-BR")} / ${Number(c.outputTokens || 0).toLocaleString("pt-BR")}</td>
+                    <td>${formatarMoeda(c.estimatedCost)}</td>
                 </tr>`;
         }).join("");
-    }
-
-    function escapar(valor) {
-        return String(valor ?? "")
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#39;");
-    }
-
-    function avisarOrcamento(texto, tipo) {
-        if (!mensagemOrcamento) return;
-        mensagemOrcamento.textContent = texto || "";
-        mensagemOrcamento.className = texto ? `alert alert-${tipo || "info"} mx-3 mt-3 mb-0` : "d-none";
-    }
-
-    function formatarMoedaOrcamento(valor) {
-        return "R$ " + Number(valor).toLocaleString("pt-BR", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        });
-    }
-
-    function formatarPercentual(valor) {
-        if (valor == null) return "—";
-        return Number(valor).toLocaleString("pt-BR", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        }) + "%";
-    }
-
-    function renderOrcamentos(itens) {
-        if (!tabelaOrcamentos) return;
-        if (!itens || !itens.length) {
-            tabelaOrcamentos.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">'
-                + 'Sem dados no período.</td></tr>';
-            return;
-        }
-        tabelaOrcamentos.innerHTML = itens.map((item) => {
-            const status = STATUS_ORCAMENTO[item.status]
-                || { texto: item.status, classe: "text-bg-secondary" };
-            const orcamento = item.orcamento == null
-                ? "Sem orçamento"
-                : formatarMoedaOrcamento(item.orcamento)
-                    + (item.orcamentoPadrao ? ' <span class="text-muted small">(padrão)</span>' : "");
-            return `
-                <tr>
-                    <td>${escapar(item.departmentName)}</td>
-                    <td class="text-end">${orcamento}</td>
-                    <td class="text-end">${formatarMoedaOrcamento(item.custoReal || 0)}</td>
-                    <td class="text-end">${formatarPercentual(item.pctUsado)}</td>
-                    <td><span class="badge ${status.classe}">${escapar(status.texto)}</span></td>
-                </tr>`;
-        }).join("");
-    }
-
-    async function carregarOrcamentos() {
-        if (!client || !tabelaOrcamentos || !campoMesOrcamento) return;
-        avisarOrcamento("");
-        iniciarCarregamento();
-        try {
-            const resposta = await comTimeout(client.get(
-                `/v1/observability/orcamentos?mes=${encodeURIComponent(campoMesOrcamento.value)}`),
-                20000);
-            renderOrcamentos(resposta?.itens || []);
-        } catch (err) {
-            tabelaOrcamentos.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">'
-                + 'Sem dados no período.</td></tr>';
-            avisarOrcamento(mensagemDeErro(err, "Não foi possível carregar o orçamento."),
-                err?.status === 403 ? "warning" : "danger");
-        } finally {
-            finalizarCarregamento();
-        }
-    }
-
-    /**
-     * Custo conhecido + tentativas inconclusivas (F2). O contador vem da RF047
-     * (C3), nunca de uma dependência observability → aigateway. Sem a RF047,
-     * o contador fica oculto.
-     */
-    async function carregarInconclusivos() {
-        if (!client) return;
-        if (kpiCustoLabel) kpiCustoLabel.textContent = "Custo estimado";
-        if (kpiCustoDetalhe) {
-            kpiCustoDetalhe.textContent = "";
-            kpiCustoDetalhe.classList.add("d-none");
-        }
-        try {
-            const params = new URLSearchParams();
-            params.set("costStatus", "INCONCLUSIVE");
-            params.set("size", "1");
-            if (campoDe.value) params.set("de", `${campoDe.value}T00:00:00Z`);
-            if (campoAte.value) params.set("ate", `${campoAte.value}T23:59:59Z`);
-            if (campoDepartamento.value) {
-                params.set("departmentId", campoDepartamento.value);
-            }
-            if (campoUsuario?.value) {
-                params.set("userId", campoUsuario.value);
-            }
-            const pagina = await comTimeout(
-                client.get(`/v1/ai-gateway/tentativas?${params.toString()}`), 15000);
-            const total = Number(pagina?.totalElements || 0);
-            if (total > 0) {
-                if (kpiCustoLabel) kpiCustoLabel.textContent = "Custo conhecido";
-                if (kpiCustoDetalhe) {
-                    kpiCustoDetalhe.textContent = total.toLocaleString("pt-BR")
-                        + " tentativa(s) inconclusiva(s) fora do custo conhecido.";
-                    kpiCustoDetalhe.classList.remove("d-none");
-                }
-            }
-        } catch (err) {
-            if (err?.status === 401) {
-                window.location.href = "/sessao-expirada";
-            }
-            // Contador complementar: oculto quando a RF047 não está disponível.
-        }
     }
 
     async function carregar() {
@@ -451,26 +140,19 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
         avisar("");
-        iniciarCarregamento();
         try {
-            const filtros = queryString();
-            const agrupamento = encodeURIComponent(campoAgrupamento?.value || "DEPARTMENT");
-            const [usage, costs] = await comTimeout(Promise.all([
-                client.get(`/v1/observability/metrics/usage?${filtros}`),
-                client.get(`/v1/observability/metrics/costs?${filtros}&groupBy=${agrupamento}`)
-            ]), 20000);
+            const [usage, costs] = await Promise.all([
+                client.get(`/v1/observability/metrics/usage?${queryString()}`),
+                client.get(`/v1/observability/metrics/costs?${queryString()}`)
+            ]);
             dadosAtuais = { usage, costs: costs || [] };
             renderKpis(dadosAtuais.usage, dadosAtuais.costs);
             renderSeries(dadosAtuais.usage);
             renderCustos(dadosAtuais.costs);
-            carregarInconclusivos();
         } catch (err) {
             dadosAtuais = { usage: null, costs: [] };
             limpar();
-            avisar(mensagemDeErro(err, "Não foi possível carregar as métricas."),
-                err?.status === 403 ? "warning" : "danger");
-        } finally {
-            finalizarCarregamento();
+            avisar(err?.message || "Não foi possível carregar as métricas.");
         }
     }
 
@@ -489,24 +171,5 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    if (campoMesOrcamento) {
-        campoMesOrcamento.addEventListener("change", () => {
-            if (campoMesOrcamento.value) carregarOrcamentos();
-        });
-    }
-
-    if (campoAgrupamento) {
-        campoAgrupamento.addEventListener("change", () => {
-            atualizarCabecalhoCustos();
-            carregar();
-        });
-    }
-
-    (async () => {
-        atualizarCabecalhoCustos();
-        await carregarVisao();
-        await Promise.all([carregarDepartamentos(), carregarModelos()]);
-        await carregar();
-        await carregarOrcamentos();
-    })();
+    carregarDepartamentos().then(carregar);
 });

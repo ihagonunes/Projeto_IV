@@ -120,10 +120,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 email: adminEmail,
                 password: adminSenha
             });
-            const token = login?.token || login?.accessToken || login?.access_token;
-            if (token) {
-                window.API.setToken(token);
-            }
+            if (!login?.authenticated) throw new Error("Não foi possível iniciar a sessão.");
+            localStorage.setItem("qsoft.session", "1");
 
             sessionStorage.setItem("onboarding_tenant", JSON.stringify({
                 nomeEmpresa,

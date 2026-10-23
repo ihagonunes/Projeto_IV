@@ -71,3 +71,12 @@ Consequências desta emenda:
   (`POST /api/v1/tenants`); o onboarding/frontend precisa enviar o campo.
 - Restrição: tenants legados sem domínio continuam usando o passo 3 até que o
   domínio seja cadastrado.
+
+## Emenda 23/10/2026 — domínios das identidades importadas
+
+O importador local reconcilia email_domain dos tenants do manifesto com o domínio
+único dos usuários da empresa legada. Exige mapeamento injetivo, domínio único por
+empresa e ausência de colisão com outro tenant. O login e sua resolução permanecem
+os mesmos. As contas bootstrap mantêm acesso pelo fallback de slug existente;
+verificar esse acesso antes e depois da carga. Não mudar email de usuário nem
+introduzir resolução global por email sem tenant.

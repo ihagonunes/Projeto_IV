@@ -18,6 +18,13 @@
 
 ## Teste
 
+Ferramentas de carga histórica (BUGFIX-DB-001): Node.js 24, já usado pelo BFF,
+e cliente `psql` do PostgreSQL. O importador usa somente módulos nativos do Node,
+sem novas bibliotecas npm/Maven. O teste `HistoricalLoaderIT` executa o CLI Node
+real contra PostgreSQL/Testcontainers e requer `node` e `psql` no PATH. A CI
+prepara explicitamente essas ferramentas; a execução local não exige Docker,
+exceto para a suíte de integração.
+
 | Biblioteca | Uso |
 |---|---|
 | JUnit 5 / Spring Boot Test | unit/application/API tests |
