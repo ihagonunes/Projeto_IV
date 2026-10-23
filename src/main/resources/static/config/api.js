@@ -1,6 +1,6 @@
 const axios = require("axios");
 
-require("dotenv").config({ encoding: "utf8" });
+require("./environment");
 
 /**
  * Instância centralizada do axios apontando para o back Spring Boot.

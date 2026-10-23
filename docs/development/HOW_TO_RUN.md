@@ -2,7 +2,12 @@
 
 Guia prático para rodar a Plataforma de Governança de IA (Monólito Modular + BFF Node) localmente.
 
-> Pré-requisitos: JDK 21, Maven 3.9+, Git, Node.js 18+ (para o frontend), e um dos: **PostgreSQL 18 local** ou **Docker** (para o modo reproduzível e para os testes de integração).
+> **Instalação atual da equipe:** usar o [setup automático](BANCO_E_IMPORTACAO_HISTORICA.md#instalação-da-equipe--comece-aqui)
+> para banco vazio, migrations, importação do snapshot e contas por perfil.
+> Começar por `npm run setup:local -- --init-env .env.team.local`.
+> Os [resultados de validação](VALIDACAO_E_PENDENCIAS.md) registram a versão mais recente.
+
+> Pré-requisitos: JDK 21, Maven 3.9+, Git, Node.js 24, e um dos: **PostgreSQL 18 local** ou **Docker** (para o modo reproduzível e para os testes de integração).
 
 ---
 
@@ -26,12 +31,11 @@ Guia prático para rodar a Plataforma de Governança de IA (Monólito Modular + 
 | `chat`, `agentpolicies` | 🚧 Planejados para a Sprint 3 (`ai/tasks/sprint-03/`) |
 | `project`, `engagement`, `governancescore` | ⏳ Planejados |
 
-Migrations Flyway: **`V001`–`V014`** (a Sprint 3 reserva V015–V019). Testes, em 18/10/2026: **717**
-unitários/arquitetura + **83** de integração.
+Migrations Flyway atuais: **`V001`–`V021`**. Os testes e pendências atualizados
+estão em [Validação e pendências](VALIDACAO_E_PENDENCIAS.md).
 
-> Correção de autorização em andamento (Sprint 3): hoje um tenant criado por `POST /tenants` **não**
-> ganha nenhum usuário. O primeiro acesso só existe pelo seed de demonstração. Ver
-> `docs/review/VERIFICACAO_FASE0.md` (N01) e a TASK-S3-A4.
+> `POST /api/v1/tenants` recebe os dados do primeiro administrador e cria sua
+> concessão TENANT_ADMIN. O setup usa esse fluxo; o seed de demonstração é opcional.
 
 ---
 
@@ -185,7 +189,8 @@ Endpoints principais (prefixo `/api/v1`):
 
 > **Dados de demonstração (opcional):** habilite `APP_BOOTSTRAP_DEMO_DATA=true` e `APP_BOOTSTRAP_DEMO_PASSWORD=<senha>` para o backend criar, na inicialização, o tenant `qsoft` e o admin `admin@qsoft.com`. Sem isso, o seed **não** roda (padrão seguro).
 >
-> **Importante:** hoje, o único caminho para o primeiro usuário com acesso é o seed de demonstração. Depois da TASK-S3-A4, `POST /api/v1/tenants` passa a receber os dados do primeiro administrador.
+> **Primeiro acesso:** o setup automático ou `POST /api/v1/tenants` criam o tenant
+> e o primeiro administrador. Consulte os emails gerados no relatório local do setup.
 
 ---
 

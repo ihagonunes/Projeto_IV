@@ -72,6 +72,8 @@ class AIGatewayAttemptsIT {
     private String managerEmail;
     private String collabEmail;
     private String otherAdminEmail;
+    private String executiveEmail;
+    private String otherExecutiveEmail;
     private UUID departmentA;
     private UUID departmentB;
     private UUID attemptA1;
@@ -100,6 +102,12 @@ class AIGatewayAttemptsIT {
         User collaborator = testTenants.ensureMember(tenant, admin.id(), collabEmail,
             "Collab", PASSWORD, HierarchyLevel.COLLABORATOR, departmentA, "COLLABORATOR");
         User otherAdmin = testTenants.admin(other, otherAdminEmail);
+        executiveEmail = "exec@" + slug + ".com";
+        otherExecutiveEmail = "exec@" + slug + "x.com";
+        testTenants.ensureMember(tenant, admin.id(), executiveEmail, "Executive", PASSWORD,
+            HierarchyLevel.EXECUTIVE, null, "EXECUTIVE");
+        testTenants.ensureMember(other, otherAdmin.id(), otherExecutiveEmail, "Executive", PASSWORD,
+            HierarchyLevel.EXECUTIVE, null, "EXECUTIVE");
 
         t0 = Instant.now().minusSeconds(120);
         attemptA1 = insertAttempt(tenant, departmentA, collaborator.id().value(),
@@ -113,8 +121,9 @@ class AIGatewayAttemptsIT {
     }
 
     @Test
-    void adminVeSomenteAsTentativasDoProprioTenant() {
-        Map<String, Object> page = page(adminEmail, "");
+    void executivoVeSomenteAsTentativasDoProprioTenantEAdminNaoTemLeituraAnalitica() {
+        assertThat(status(adminEmail, "")).isEqualTo(403);
+        Map<String, Object> page = page(executiveEmail, "");
 
         assertThat(ids(page)).containsExactlyInAnyOrder(
             attemptA1.toString(), attemptA2.toString(), attemptA3.toString());
@@ -132,13 +141,13 @@ class AIGatewayAttemptsIT {
 
         assertThat(status(managerEmail, "?departmentId=" + departmentB)).isEqualTo(403);
 
-        Map<String, Object> otherPage = page(otherAdminEmail, "");
+        Map<String, Object> otherPage = page(otherExecutiveEmail, "");
         assertThat(ids(otherPage)).containsExactly(attemptOther.toString());
     }
 
     @Test
     void tr07_filtroPorDeliveryStatusDeadDevolveATentativaEsgotada() {
-        Map<String, Object> page = page(adminEmail, "?deliveryStatus=DEAD");
+        Map<String, Object> page = page(executiveEmail, "?deliveryStatus=DEAD");
 
         assertThat(ids(page)).containsExactly(attemptA3.toString());
         assertThat(page.get("totalElements")).isEqualTo(1);
@@ -153,7 +162,7 @@ class AIGatewayAttemptsIT {
         UUID inconclusive = insertInconclusiveAttempt(tenant, departmentA,
             admin.id().value(), t0.plusSeconds(95));
 
-        Map<String, Object> page = page(adminEmail, "?costStatus=INCONCLUSIVE");
+        Map<String, Object> page = page(executiveEmail, "?costStatus=INCONCLUSIVE");
 
         assertThat(ids(page)).containsExactly(inconclusive.toString());
         assertThat(page.get("totalElements")).isEqualTo(1);
@@ -173,12 +182,12 @@ class AIGatewayAttemptsIT {
 
     @Test
     void paginacaoZeroBasedComTotalCorreto() {
-        Map<String, Object> first = page(adminEmail, "?page=0&size=2");
+        Map<String, Object> first = page(executiveEmail, "?page=0&size=2");
         assertThat((List<?>) first.get("content")).hasSize(2);
         assertThat(first.get("totalElements")).isEqualTo(3);
         assertThat(first.get("totalPages")).isEqualTo(2);
 
-        Map<String, Object> second = page(adminEmail, "?page=1&size=2");
+        Map<String, Object> second = page(executiveEmail, "?page=1&size=2");
         assertThat((List<?>) second.get("content")).hasSize(1);
     }
 
@@ -187,7 +196,7 @@ class AIGatewayAttemptsIT {
         String from = t0.plusSeconds(50).toString();
         String to = t0.plusSeconds(65).toString();
 
-        Map<String, Object> page = page(adminEmail,
+        Map<String, Object> page = page(executiveEmail,
             "?de=" + from + "&ate=" + to);
 
         assertThat(ids(page)).containsExactly(attemptA1.toString());
@@ -195,7 +204,7 @@ class AIGatewayAttemptsIT {
 
     @Test
     void respostaTrazApenasMetadados() {
-        Map<String, Object> page = page(adminEmail, "");
+        Map<String, Object> page = page(executiveEmail, "");
 
         @SuppressWarnings("unchecked")
         Map<String, Object> item = ((List<Map<String, Object>>) page.get("content")).get(0);

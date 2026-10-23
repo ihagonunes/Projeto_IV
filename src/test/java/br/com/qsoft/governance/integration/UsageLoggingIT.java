@@ -60,6 +60,7 @@ class UsageLoggingIT {
     private static final String TENANT_SLUG = "usagedemo";
     private static final String OTHER_SLUG = "usageother";
     private static final String ADMIN_EMAIL = "admin@usagedemo.com";
+    private static final String EXEC_EMAIL = "exec@usagedemo.com";
     private static final String COLLAB_EMAIL = "colab@usagedemo.com";
     private static final String ADMIN_PASSWORD = "secret123";
 
@@ -94,7 +95,11 @@ class UsageLoggingIT {
         client = RestClient.builder().baseUrl("http://localhost:" + port).build();
         Tenant tenant = testTenants.ensureTenant(
             TENANT_SLUG, "Usage Demo", "Admin", ADMIN_EMAIL, ADMIN_PASSWORD);
-        testTenants.ensureTenant(OTHER_SLUG, "Usage Other", "Admin", "admin@usageother.com", ADMIN_PASSWORD);
+        Tenant other = testTenants.ensureTenant(OTHER_SLUG, "Usage Other", "Admin", "admin@usageother.com", ADMIN_PASSWORD);
+        testTenants.ensureMember(tenant, testTenants.admin(tenant, ADMIN_EMAIL).id(), EXEC_EMAIL,
+            "Executive", ADMIN_PASSWORD, HierarchyLevel.EXECUTIVE, null, "EXECUTIVE");
+        testTenants.ensureMember(other, testTenants.admin(other, "admin@usageother.com").id(), "exec@usageother.com",
+            "Executive", ADMIN_PASSWORD, HierarchyLevel.EXECUTIVE, null, "EXECUTIVE");
         testTenants.ensureMember(tenant, testTenants.admin(tenant, ADMIN_EMAIL).id(), COLLAB_EMAIL,
             "Colab", ADMIN_PASSWORD, HierarchyLevel.COLLABORATOR, null, "COLLABORATOR");
     }
@@ -152,7 +157,7 @@ class UsageLoggingIT {
         assertThat(usageRecordRepository.existsByRequestId(requestId)).isTrue();
 
         Map<?, ?> page = client.get().uri("/api/v1/observability/usage")
-            .header("Authorization", "Bearer " + login(ADMIN_EMAIL, ADMIN_PASSWORD))
+            .header("Authorization", "Bearer " + login(EXEC_EMAIL, ADMIN_PASSWORD))
             .retrieve().body(Map.class);
         assertThat(page.get("totalElements")).isNotNull();
         assertThat(page.toString()).contains(requestId.toString());
@@ -169,7 +174,7 @@ class UsageLoggingIT {
             1000, 2000, new BigDecimal("0.070000"), 150, "COMPLETED"));
 
         Map<?, ?> page = client.get().uri("/api/v1/observability/usage?size=100")
-            .header("Authorization", "Bearer " + login(ADMIN_EMAIL, ADMIN_PASSWORD))
+            .header("Authorization", "Bearer " + login(EXEC_EMAIL, ADMIN_PASSWORD))
             .retrieve().body(Map.class);
         long occurrences = page.toString().split(requestId.toString(), -1).length - 1;
         assertThat(occurrences).isEqualTo(1);
@@ -182,7 +187,7 @@ class UsageLoggingIT {
         complete(tenant, requestId);
 
         Map<?, ?> page = client.get().uri("/api/v1/observability/usage?size=100")
-            .header("Authorization", "Bearer " + login("admin@usageother.com", ADMIN_PASSWORD))
+            .header("Authorization", "Bearer " + login("exec@usageother.com", ADMIN_PASSWORD))
             .retrieve().body(Map.class);
         assertThat(page.toString()).doesNotContain(requestId.toString());
     }

@@ -14,7 +14,7 @@ class SystemRoleTest {
         assertThat(SystemRole.LEADER.permissions()).hasSize(7);
         assertThat(SystemRole.MANAGER.permissions()).hasSize(13);
         assertThat(SystemRole.EXECUTIVE.permissions()).hasSize(14);
-        assertThat(SystemRole.TENANT_ADMIN.permissions()).hasSize(20);
+        assertThat(SystemRole.TENANT_ADMIN.permissions()).hasSize(18);
     }
 
     @Test
@@ -30,7 +30,8 @@ class SystemRoleTest {
     @Test
     void tenantAdminHasNoChatPermission() {
         assertThat(SystemRole.TENANT_ADMIN.permissions())
-            .noneMatch(permission -> permission.resource() == Resource.CHAT);
+            .noneMatch(permission -> permission.resource() == Resource.CHAT
+                || permission.resource() == Resource.USAGE || permission.resource() == Resource.GOVERNANCE_SCORE);
     }
 
     @Test

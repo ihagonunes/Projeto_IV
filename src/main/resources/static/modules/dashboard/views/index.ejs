@@ -1,149 +1,157 @@
-<div class="container py-4" style="max-width: 1100px;">
+<%- contentFor("espaco-head") %>
+<link rel="stylesheet" href="/public/css/pages/dashboards.css">
+<link rel="stylesheet" href="/public/css/pages/dashboard.css?v=20261019-session-actions">
+<%- contentFor("body") %>
 
-    <div class="d-flex justify-content-between align-items-start mb-4">
-        <div>
-            <h1 class="h4 mb-1">Dashboard de uso</h1>
-            <p class="text-muted mb-0">Consumo de IA no seu escopo de acesso.</p>
-        </div>
-        <div class="d-flex gap-2">
-            <a href="/onboarding/departamentos/listar" class="btn btn-outline-secondary btn-sm">Departamentos</a>
-            <a href="/onboarding" class="btn btn-outline-secondary btn-sm">Onboarding</a>
-        </div>
-    </div>
-
-    <!-- Filtros (SPI-90/91) -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <form id="dashboardFiltros" class="row g-3 align-items-end" novalidate>
-                <div class="col-md-3">
-                    <label class="form-label" for="filtroDe">De</label>
-                    <input type="date" class="form-control" id="filtroDe" required>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label" for="filtroAte">Até</label>
-                    <input type="date" class="form-control" id="filtroAte" required>
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label" for="filtroDepartamento">Departamento</label>
-                    <select class="form-select" id="filtroDepartamento">
-                        <option value="">Todos (meu escopo)</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <button class="btn btn-primary w-100" type="submit">Aplicar</button>
-                </div>
-
-                <div class="w-100"></div>
-
-                <div class="col-md-3">
-                    <label class="form-label" for="filtroAgrupamento">Agrupar por</label>
-                    <select class="form-select" id="filtroAgrupamento">
-                        <option value="DEPARTMENT" selected>Departamento</option>
-                        <option value="MODEL">Modelo</option>
-                        <option value="USER">Usuário</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label" for="filtroModelo">Modelo</label>
-                    <select class="form-select" id="filtroModelo">
-                        <option value="">Todos</option>
-                    </select>
-                </div>
-                <div class="col-md-3" id="filtroUsuarioCol">
-                    <label class="form-label" for="filtroUsuario">Usuário</label>
-                    <select class="form-select" id="filtroUsuario">
-                        <option value="">Todos</option>
-                    </select>
-                </div>
+<a class="demo-skip" href="#dashboard-main">Pular para o conteúdo</a>
+<div class="demo-shell dashboard-shell">
+    <aside class="demo-sidebar dashboard-sidebar" aria-labelledby="dashboard-filters-title">
+        <div class="demo-brand atlas-brand"><img src="/public/img/atlas-name.png" alt="ATLAS" class="dashboard-brand-image"><span>Governança de IA</span></div>
+        <section class="dashboard-filter-panel">
+            <h2 id="dashboard-filters-title"><i class="bi bi-sliders" aria-hidden="true"></i> Filtros</h2>
+            <p class="demo-muted dashboard-filter-description"><%= panel.scope %></p>
+            <form id="metrics-filters" data-scope="<%= profile === 'colaborador' ? 'self' : 'authorized' %>" class="demo-filters dashboard-sidebar-filters" aria-label="Filtros do dashboard">
+                <div><label for="metrics-from">De</label><input id="metrics-from" type="date" class="form-control custom-input" required></div>
+                <div><label for="metrics-to">Até</label><input id="metrics-to" type="date" class="form-control custom-input" required></div>
+                <div><label for="metrics-model">Modelo</label><select id="metrics-model" class="form-select custom-input" disabled><option value="">Todos os modelos</option></select></div>
+                <div id="metrics-user-field" hidden><label for="metrics-user">Usuário</label><input id="metrics-user" type="search" list="metrics-users" class="form-control custom-input" autocomplete="off" placeholder="Buscar pelo nome"><datalist id="metrics-users"></datalist></div>
+                <% if (['gestor', 'executivo', 'administrador'].includes(profile)) { %>
+                <div><label for="dashboard-area">Departamento</label><select id="dashboard-area" class="form-select custom-input" disabled><option value="">Todos os departamentos</option></select></div>
+                <% } %>
+                <button id="metrics-apply" type="submit" class="btn btn-orange" disabled>Aplicar filtros</button>
             </form>
+        </section>
+        <div class="dashboard-session-actions d-grid gap-2 w-100" aria-label="Navegação e sessão">
+            <a href="/onboarding" class="btn btn-outline-secondary btn-sm w-100 d-flex align-items-center justify-content-center gap-2"><i class="bi bi-arrow-left" aria-hidden="true"></i><span>Voltar ao onboarding</span></a>
+            <button type="button" id="dashboardLogout" class="btn btn-outline-secondary btn-sm w-100 d-flex align-items-center justify-content-center gap-2"><i class="bi bi-box-arrow-right" aria-hidden="true"></i><span>Sair</span></button>
         </div>
-    </div>
-
-    <div id="dashboardMensagem" class="d-none"></div>
-
-    <div id="dashboardLoading" class="d-none text-muted small mb-3" role="status">
-        <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
-        Carregando dados...
-    </div>
-
-    <!-- KPIs (SPI-92) -->
-    <div class="row g-3 mb-4">
-        <div class="col-md-4">
-            <div class="card h-100">
-                <div class="card-body">
-                    <div class="text-muted small">Requisições no período</div>
-                    <div class="fs-3 fw-semibold" id="kpiRequests">—</div>
-                </div>
+    </aside>
+    <main id="dashboard-main" class="demo-main dashboard-main">
+        <header class="demo-header">
+            <div>
+                <p class="demo-eyebrow">WORKSPACE / <%= panel.scope.toLocaleUpperCase('pt-BR') %></p>
+                <h1><%= panel.title %></h1>
+                <p class="demo-muted"><%= panel.description %></p>
             </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card h-100">
-                <div class="card-body">
-                    <div class="text-muted small">Usuários ativos</div>
-                    <div class="fs-3 fw-semibold" id="kpiActiveUsers">—</div>
+        </header>
+        <% if (profile !== 'colaborador') { %>
+        <section id="budget-notification" class="demo-panel p-3 mb-4" aria-labelledby="budget-notification-title" hidden>
+            <h2 id="budget-notification-title" class="h5">Orçamento do mês</h2>
+            <p id="budget-notification-message" role="status" aria-live="polite"></p>
+            <details id="budget-notification-details" hidden>
+                <summary><i id="budget-notification-icon" class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+                    <span id="budget-notification-summary"></span>
+                    <span id="budget-notification-count" class="badge text-bg-warning"></span>
+                </summary>
+                <ul id="budget-notification-items" class="mt-3 mb-0"></ul>
+            </details>
+            <button id="budget-notification-retry" type="button" class="btn btn-outline-secondary btn-sm" hidden>Tentar novamente</button>
+        </section>
+        <% } %>
+        <section class="demo-panel p-3 mb-4" aria-labelledby="historical-title">
+            <h2 id="historical-title" class="h5"><%= profile === 'colaborador' ? 'Meu consumo de IA' : 'Histórico de consumo' %></h2>
+            <p>Dados importados da empresa. Custo estimado em USD pelo catálogo histórico; não corresponde ao faturamento.</p>
+            <p id="historical-message" role="status" aria-live="polite">Carregando histórico…</p>
+            <div id="historical-content" hidden>
+                <p id="historical-coverage" class="demo-muted"></p>
+                <div class="demo-kpis">
+                    <article class="demo-kpi"><span>Requisições históricas</span><strong id="historical-requests">—</strong></article>
+                    <article class="demo-kpi"><span>Funcionários ativos no período</span><strong id="historical-active">—</strong></article>
+                    <article class="demo-kpi"><span>Tokens entrada / saída</span><strong id="historical-tokens">—</strong></article>
+                    <article class="demo-kpi"><span>Custo histórico estimado (USD)</span><strong id="historical-cost">—</strong></article>
                 </div>
+                <h3 class="h6 mt-3">Requisições por dia</h3>
+                <div id="historical-series"></div>
+                <h3 class="h6 mt-3">Consumo por modelo</h3>
+                <div class="table-responsive"><table class="table demo-table"><thead><tr><th>Modelo</th><th>Requisições</th><th>Tokens entrada / saída</th><th>Custo estimado (USD)</th></tr></thead><tbody id="historical-costs"></tbody></table></div>
             </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card h-100">
-                <div class="card-body">
-                    <div class="text-muted small" id="kpiCustoLabel">Custo estimado</div>
-                    <div class="fs-3 fw-semibold" id="kpiCusto">—</div>
-                    <div class="small text-muted d-none" id="kpiCustoDetalhe"></div>
-                </div>
+            <button id="historical-retry" class="btn btn-outline-secondary btn-sm" hidden>Tentar novamente</button>
+        </section>
+        <% if (profile !== 'colaborador') { %>
+        <section class="demo-panel p-3 mb-4" aria-label="Métricas de uso filtradas">
+            <h2 class="h5">Uso e custo no período</h2>
+            <p id="metrics-message" role="status" aria-live="polite">Carregando métricas…</p>
+            <div class="demo-kpis">
+                <article class="demo-kpi"><span>Requisições</span><strong id="metrics-requests">—</strong></article>
+                <article class="demo-kpi"><span>Usuários ativos</span><strong id="metrics-active">—</strong></article>
+                <article class="demo-kpi"><span>Tokens de entrada / saída</span><strong id="metrics-tokens">—</strong></article>
+                <article class="demo-kpi"><span>Custo estimado</span><strong id="metrics-cost">—</strong></article>
             </div>
+            <h3 class="h6">Requisições ao longo do tempo</h3>
+            <div id="metrics-series" aria-label="Série temporal de requisições"></div>
+            <h3 class="h6 mt-3">Custo por modelo</h3>
+            <div class="table-responsive"><table class="table demo-table"><thead><tr><th>Modelo</th><th>Requisições</th><th>Tokens entrada / saída</th><th>Custo estimado</th></tr></thead><tbody id="metrics-costs"></tbody></table></div>
+        </section>
+        <% } %>
+        <section class="demo-kpis" aria-label="Indicadores">
+            <% for (const label of panel.kpis) { %>
+            <article class="demo-panel demo-kpi"><span><%= label %></span><strong aria-label="Indicador ainda não conectado">—</strong><p>Aguardando integração</p></article>
+            <% } %>
+        </section>
+        <% if (panel.actions) { %>
+        <section class="dashboard-actions mb-3" aria-label="Ações">
+            <% for (const action of panel.actions) { %><button type="button" class="btn btn-outline-secondary" disabled><%= action %></button><% } %>
+        </section>
+        <% } %>
+        <% if (panel.management) { const section = panel.management; %>
+        <section class="demo-panel demo-chart-panel mb-3" aria-label="<%= section.title %>">
+            <div class="demo-section-title"><div><h2><%= section.title %></h2><p><%= section.description %></p></div></div>
+            <% if (section.fields) { %>
+            <div class="row g-3 mb-3"><% for (const field of section.fields) { %><div class="col-12 col-md-4"><div class="dashboard-budget"><span><%= field %></span><strong>—</strong></div></div><% } %></div>
+            <% } %>
+            <div class="dashboard-actions"><% for (const action of section.actions) { %><button type="button" class="btn btn-outline-secondary btn-sm" disabled><%= action %></button><% } %></div>
+            <p class="demo-muted small mb-0 mt-3">Ações disponíveis após a integração.</p>
+        </section>
+        <% } %>
+        <div class="demo-charts">
+            <% for (const [title, description] of panel.charts) { %>
+            <section class="demo-panel demo-chart-panel">
+                <div class="demo-section-title"><div><h2><%= title %></h2><p><%= description %></p></div></div>
+                <div class="dashboard-chart-slot"><i class="bi bi-bar-chart" aria-hidden="true"></i><span>Área reservada para o gráfico</span><small>Aguardando integração dos indicadores</small></div>
+            </section>
+            <% } %>
         </div>
-    </div>
-
-    <!-- Orçamento do mês (SPEC-02 §5; SPI-124) -->
-    <div class="card mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center gap-2">
-            <span>Orçamento do mês</span>
-            <input type="month" class="form-control form-control-sm" id="orcamentoMes"
-                   style="max-width: 170px;" aria-label="Mês de referência do orçamento">
-        </div>
-        <div id="orcamentoMensagem" class="d-none mx-3 mt-3"></div>
-        <div class="table-responsive">
-            <table class="table mb-0 align-middle">
-                <thead>
-                    <tr>
-                        <th>Departamento</th>
-                        <th class="text-end">Orçamento</th>
-                        <th class="text-end">Custo real</th>
-                        <th class="text-end">% usado</th>
-                        <th>Situação</th>
-                    </tr>
-                </thead>
-                <tbody id="tabelaOrcamentos"></tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- Série temporal (SPI-88) -->
-    <div class="card mb-4">
-        <div class="card-header">Requisições por período</div>
-        <div class="card-body" id="graficoSeries"></div>
-    </div>
-
-    <!-- Custos por dimensão (SPI-89/97/98/99) -->
-    <div class="card">
-        <div class="card-header" id="tituloCustos">Tokens e custo por departamento</div>
-        <div class="table-responsive">
-            <table class="table mb-0 align-middle">
-                <thead>
-                    <tr>
-                        <th id="thCustoDimensao">Departamento</th>
-                        <th class="text-end">Requisições</th>
-                        <th class="text-end">Tokens (entrada/saída)</th>
-                        <th class="text-end">Custo estimado</th>
-                    </tr>
-                </thead>
-                <tbody id="tabelaCustos"></tbody>
-            </table>
-        </div>
-    </div>
-
+        <% for (const section of (panel.analytics || [])) { %>
+        <section class="dashboard-analytics mb-4" aria-label="<%= section.title %>">
+            <div class="demo-section-title"><div><h2><%= section.title %></h2><p class="dashboard-method-note"><%= section.description %></p></div></div>
+            <div class="demo-kpis">
+                <% for (const label of section.kpis) { %>
+                <article class="demo-panel demo-kpi"><span><%= label %></span><strong aria-label="Indicador ainda não conectado">—</strong><p>Aguardando integração</p></article>
+                <% } %>
+            </div>
+            <div class="demo-charts">
+                <% for (const [title, description] of section.charts) { %>
+                <section class="demo-panel demo-chart-panel">
+                    <div class="demo-section-title"><div><h3 class="dashboard-chart-title"><%= title %></h3><p><%= description %></p></div></div>
+                    <div class="dashboard-chart-slot"><i class="bi bi-bar-chart" aria-hidden="true"></i><span>Área reservada para o gráfico</span><small>Aguardando integração dos indicadores</small></div>
+                </section>
+                <% } %>
+            </div>
+        </section>
+        <% } %>
+        <% if (panel.highlights) { %>
+        <div class="row g-3 mb-3"><% for (const title of panel.highlights) { %>
+            <div class="col-12 col-lg-6"><section class="demo-panel demo-chart-panel h-100"><div class="demo-section-title"><div><h2><%= title %></h2></div></div><div class="dashboard-highlight-slot">Área reservada para destaques e alertas.</div></section></div>
+        <% } %></div>
+        <% } %>
+        <% for (const [title, description, columns] of panel.tables) { %>
+        <section class="demo-panel demo-records mb-3">
+            <div class="demo-section-title"><div><h2><%= title %></h2><p><%= description %></p></div></div>
+            <div class="table-responsive"><table class="table demo-table">
+                <caption class="visually-hidden"><%= title %> — estrutura sem dados</caption>
+                <thead><tr><% for (const column of columns) { %><th scope="col"><%= column %></th><% } %></tr></thead>
+                <tbody><tr><td colspan="<%= columns.length %>" class="text-center py-5 demo-muted">Área reservada para os registros após a integração.</td></tr></tbody>
+            </table></div>
+        </section>
+        <% } %>
+        <footer class="demo-footer">ATLAS · <%= panel.scope %><span>Governança de IA</span></footer>
+    </main>
 </div>
-
-<script src="/public/js/core/api-client.js"></script>
-<script src="/public/js/pages/dashboard.js"></script>
+<script src="/public/js/core/api-client.js?v=cookie-session-20261022"></script>
+<script src="/public/js/core/auth.js?v=cookie-session-20261022"></script>
+<script src="/public/js/core/session-actions.js?v=cookie-session-20261022"></script>
+<% if (profile !== 'colaborador') { %>
+<script src="/public/js/pages/dashboard-metrics.js?v=legacy-identity-20261022"></script>
+<script src="/public/js/pages/dashboard-budget-alerts.js?v=cookie-session-20261022"></script>
+<% } %>
+<script src="/public/js/pages/dashboard-historical.js?v=legacy-identity-20261022"></script>

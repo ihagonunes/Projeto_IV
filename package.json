@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "main": "src/main/resources/static/app.js",
   "scripts": {
-    "start": "node src/main/resources/static/app"
+    "start": "node src/main/resources/static/app",
+    "setup:local": "node scripts/setup-local.js"
   },
   "author": "ESPM",
   "license": "MIT",

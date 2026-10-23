@@ -20,4 +20,10 @@ public class ListModels {
     public List<Model> list(TenantId tenantId) {
         return modelRepository.findByTenantId(Objects.requireNonNull(tenantId, "tenantId"));
     }
+
+    public List<Model> availableForDashboard(TenantId tenantId) {
+        return list(tenantId).stream()
+            .filter(Model::isAvailable)
+            .toList();
+    }
 }

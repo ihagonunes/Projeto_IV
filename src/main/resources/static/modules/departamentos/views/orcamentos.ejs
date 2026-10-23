@@ -33,7 +33,7 @@
                             <th class="text-end">Orçamento (R$)</th>
                             <th class="text-end">Limiar (%)</th>
                             <th class="text-end">Custo real</th>
-                            <th class="text-end">% usado</th>
+                            <th>Consumo do orçamento</th>
                             <th>Situação</th>
                             <th class="text-end">Ações</th>
                         </tr>
@@ -77,5 +77,26 @@
     </main>
 </div>
 
-<script src="/public/js/core/api-client.js"></script>
+<dialog id="orcamentoEditor" class="border-0 rounded p-4" aria-labelledby="orcamentoEditorTitulo">
+    <form id="orcamentoEditorForm">
+        <h2 id="orcamentoEditorTitulo" class="h5">Editar orçamento mensal</h2>
+        <p id="orcamentoEditorDepartamento"></p>
+        <div class="mb-3">
+            <label for="orcamentoEditorValor" class="form-label">Orçamento (R$)</label>
+            <input id="orcamentoEditorValor" type="number" min="0" max="9999999999999.99" step="0.01" required class="form-control" aria-describedby="orcamentoEditorAjuda">
+            <small id="orcamentoEditorAjuda">Informe um valor não negativo, com até duas casas decimais.</small>
+        </div>
+        <div class="mb-3">
+            <label for="orcamentoEditorLimiar" class="form-label">Limiar de alerta (%)</label>
+            <input id="orcamentoEditorLimiar" type="number" min="1" max="100" step="1" required class="form-control">
+        </div>
+        <p id="orcamentoEditorMensagem" role="alert"></p>
+        <div class="d-flex justify-content-end gap-2">
+            <button id="orcamentoEditorCancelar" type="button" class="btn btn-outline-secondary">Cancelar</button>
+            <button id="orcamentoEditorSalvar" type="submit" class="btn btn-primary">Salvar orçamento</button>
+        </div>
+    </form>
+</dialog>
+
+<script src="/public/js/core/api-client.js?v=cookie-session-20261022"></script>
 <script src="/public/js/pages/orcamentos.js"></script>

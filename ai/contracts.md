@@ -2,6 +2,18 @@
 
 Contratos são Java APIs internas entre módulos. Não equivalem automaticamente a HTTP.
 
+## HTTP — filtros de métricas (POPROJ-53)
+
+- `GET /api/v1/observability/metrics/usage` e `/costs`: `from`/`to` opcionais
+  aceitam data ISO (`YYYY-MM-DD`, limites de dia UTC inclusivos) ou timestamp ISO.
+  O padrão existente é uma janela de 30 dias até agora; intervalo invertido → 400.
+  `modelId` e `userId` são combináveis e preservam a visibilidade aplicada pelo backend.
+- `GET /api/v1/ai-gateway/models/dashboard`: `USAGE:READ` em qualquer escopo;
+  catálogo do tenant autenticado com modelos `AVAILABLE`, somente `{ id, name }`.
+  Não concede administração do catálogo nem amplia o escopo de consumo.
+- Rótulos dos modelos nas métricas são resolvidos na apresentação; não existe
+  dependência síncrona de `observability` para `aigateway`.
+
 ## Módulos
 
 | Módulo | Contratos públicos principais |
@@ -239,3 +251,27 @@ Response:
 - sem `/ai/complete` público;
 - paginação `page`/`size`, zero-based;
 - default 20, máximo 100.
+
+Navegador: BFF intercepta POST `/api/v1/auth/login`, estabelece cookie HttpOnly e
+retorna `{authenticated:true}` sem JWT. POST `/api/v1/auth/logout` expira cookie;
+GET `/api/v1/auth/session` valida sessão no Spring. Header `X-Qsoft-Request: 1`
+e origem válida protegem escritas com cookie (ADR-30 emendado). API Spring direta
+mantém Bearer. `/observability/metrics/me/usage` e `/me/costs` restringem dados
+ao userId autenticado, independentemente da concessão mais ampla do ator.
+
+## Dashboard histórico (FEAT-DASH-001, identificação local)
+
+Desde V021, TENANT_ADMIN não concede USAGE:READ nem GOVERNANCE_SCORE:READ.
+Administrador usa o mesmo login por email/senha e gerencia cadastro, convites
+e branding; conta exclusivamente administrativa recebe 403 nas APIs analíticas.
+EXECUTIVE mantém escopo TENANT analítico, sem TENANT:MANAGE. Ver emenda ADR-36.
+
+`GET /api/v1/observability/metrics/historical`: autenticação + USAGE:READ com
+visibilidade IAM efetiva SELF/DEPARTMENT/TENANT, com vínculos explícitos por tenant.
+`GET /api/v1/observability/metrics/historical/me` fixa o usuário autenticado.
+Sem vínculo pessoal autorizado retorna 403; nunca amplia para o tenant.
+No endpoint geral, userId opcional é UUID atual validado pelo resolvedor de escopo.
+from/to ISO date inclusivos; departmentId/modelId são IDs textuais da fonte.
+Resposta inclui sourceKind HISTORICAL, USD, período/cobertura, catálogos do tenant,
+ativos, série diária e custos por modelo com unpricedRecords. Não soma operação,
+não expõe conteúdo/segredos; ver `docs/development/DASHBOARD_E_ORCAMENTOS.md`.

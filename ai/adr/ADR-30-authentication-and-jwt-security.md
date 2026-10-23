@@ -27,3 +27,25 @@ O `tenantSlug` no login é **opcional**. Quando ausente, o tenant é resolvido p
 tenants legados sem domínio, pelo fallback do primeiro rótulo do domínio (ADR-32 e sua
 emenda SPI-54). O `tenant_id` das operações protegidas continua vindo exclusivamente do
 JWT. O Status permanece `ACCEPTED`.
+
+## Emenda — cookie de navegador no BFF (22/10/2026, SPI-94 / FEAT-DASH-001)
+
+O Spring mantém JWT Bearer stateless de 30 minutos e revalida usuário/tenant no
+banco a cada request. Para o navegador, o BFF estabelece cookie `qsoft_access`
+HttpOnly, SameSite=Strict, Path=/, Secure em produção e duração de 30 minutos.
+O JWT não volta no JSON do login do BFF nem fica em local/sessionStorage.
+O BFF traduz cookie para Authorization e não confia em ID de usuário enviado pelo
+cliente. Cookie prevalece sobre Bearer explícito quando ambos estiverem presentes.
+
+Rotas pessoais do dashboard usam o ID autenticado mesmo para contas administrativas.
+Dados históricos empresariais não são fallback para ausência de dados pessoais.
+O indicador local `qsoft.session` serve só à navegação e não concede acesso.
+A abertura do dashboard valida a sessão pelo backend antes de renderizar.
+
+CSRF da API Spring continua desabilitado para Bearer; o BFF exige header
+`X-Qsoft-Request: 1` e origem válida nas operações autenticadas por cookie,
+incluindo login/logout. Rejeita Sec-Fetch-Site cross-site. Atrás de TLS/proxy,
+configurar BFF_PUBLIC_ORIGIN com a origem externa exata e HTTPS em produção.
+Logout expira o cookie no BFF; não introduz revogação global de JWT nem refresh.
+Alternativa de token opaco persistido no banco (exemplo CadastroPessoas) foi
+considerada; preservou-se o emissor/validador JWT e os contratos existentes.

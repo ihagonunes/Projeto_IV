@@ -3,7 +3,7 @@
 // Dois usos coexistem após o merge:
 //   - window.ApiClient: usado pelos módulos do frontend (fornecido pela refatoração);
 //   - window.API: usado pelo fluxo de autenticação (auth.js / login.js).
-// Ambos compartilham a mesma chave de token ("authToken").
+// Ambos usam cookie HttpOnly same-origin; nenhum JWT é persistido em storage.
 
 // ---------------------------------------------------------------------------
 // window.ApiClient — wrapper usado nos módulos (views/pages do frontend)
@@ -19,13 +19,11 @@ class ApiClient {
             'Accept': 'application/json'
         };
 
-        const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-        if (token) {
-            defaultHeaders['Authorization'] = `Bearer ${token}`;
-        }
+        defaultHeaders['X-Qsoft-Request'] = '1';
 
         const config = {
             ...options,
+            credentials: 'same-origin',
             headers: {
                 ...defaultHeaders,
                 ...options.headers
@@ -44,6 +42,9 @@ class ApiClient {
             }
 
             if (!response.ok) {
+                if (response.status === 401 && window.Auth && window.Auth.handleSessionExpired) {
+                    window.Auth.handleSessionExpired();
+                }
                 const errorMessage = (data && data.message) || (data && data.error) || `Erro HTTP ${response.status}: ${response.statusText}`;
                 const error = new Error(errorMessage);
                 error.status = response.status;
@@ -88,7 +89,7 @@ window.ApiClient = ApiClient;
 // ---------------------------------------------------------------------------
 // window.API — wrapper de fetch para o fluxo de autenticação (auth.js / login.js)
 // Base /api/v1 (encaminhada pelo BFF em /api/*) e JWT Bearer (ADR-28/ADR-30).
-// Chave de token alinhada ao ApiClient ("authToken").
+// O Spring continua recebendo Bearer, traduzido pelo BFF a partir do cookie.
 // ---------------------------------------------------------------------------
 (function () {
     "use strict";
@@ -98,15 +99,16 @@ window.ApiClient = ApiClient;
     var STORAGE_TOKEN = "authToken";
 
     function getStoredToken() {
-        try { return localStorage.getItem(STORAGE_TOKEN) || sessionStorage.getItem(STORAGE_TOKEN) || null; } catch (e) { return null; }
+        return null; // JWT somente no cookie HttpOnly, nunca acessível ao JavaScript.
     }
 
     function setStoredToken(token) {
-        try { localStorage.setItem(STORAGE_TOKEN, token); } catch (e) { /* quota/private mode */ }
+        clearStoredToken(); // Compatibilidade: não voltar a persistir JWT no navegador.
     }
 
     function clearStoredToken() {
         try { localStorage.removeItem(STORAGE_TOKEN); } catch (e) { /* ignore */ }
+        try { sessionStorage.removeItem(STORAGE_TOKEN); } catch (e) { /* ignore */ }
     }
 
     async function request(path, options) {
@@ -115,7 +117,7 @@ window.ApiClient = ApiClient;
         var body = options.body;
         var extraHeaders = options.headers || {};
 
-        var headers = { "Accept": "application/json" };
+        var headers = { "Accept": "application/json", "X-Qsoft-Request": "1" };
         var token = getStoredToken();
         if (token) {
             headers["Authorization"] = "Bearer " + token;
@@ -124,7 +126,7 @@ window.ApiClient = ApiClient;
             headers[key] = extraHeaders[key];
         });
 
-        var init = { method: method, headers: headers };
+        var init = { method: method, headers: headers, credentials: "same-origin" };
         if (body !== undefined && body !== null) {
             headers["Content-Type"] = "application/json";
             init.body = JSON.stringify(body);
@@ -153,6 +155,7 @@ window.ApiClient = ApiClient;
         return data;
     }
 
+    clearStoredToken(); // Remove tokens persistidos pela implementação anterior.
     window.API = {
         baseUrl: API_BASE_URL,
         getToken: getStoredToken,

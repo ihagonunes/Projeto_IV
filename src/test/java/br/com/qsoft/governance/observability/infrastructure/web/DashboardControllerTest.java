@@ -58,6 +58,34 @@ class DashboardControllerTest {
     }
 
     @Test
+    void personalEndpointAlwaysUsesAuthenticatedUserNotClientParameter() throws Exception {
+        when(queryCostMetrics.byGroup(any(), any())).thenReturn(List.of());
+        mockMvc.perform(get("/api/v1/observability/metrics/me/costs")
+                .param("userId", UUID.randomUUID().toString())
+                .param("tenantId", UUID.randomUUID().toString()))
+            .andExpect(status().isOk());
+        var captor = org.mockito.ArgumentCaptor.forClass(DashboardQueryCommand.class);
+        verify(queryCostMetrics).byGroup(captor.capture(), eq(UsageMetricsRepository.CostGroupBy.MODEL));
+        assertThat(captor.getValue().targetUserId()).isEqualTo(userId.value());
+        assertThat(captor.getValue().tenantId()).isEqualTo(tenantId);
+        assertThat(captor.getValue().departmentId()).isNull();
+    }
+
+    @Test
+    void acceptsIsoDatesAndForwardsInclusiveUtcDayBoundaries() throws Exception {
+        when(queryCostMetrics.byGroup(any(DashboardQueryCommand.class), any())).thenReturn(List.of());
+        mockMvc.perform(get("/api/v1/observability/metrics/costs")
+                .param("from", "2026-10-01").param("to", "2026-10-21"))
+            .andExpect(status().isOk());
+        var captor = org.mockito.ArgumentCaptor.forClass(DashboardQueryCommand.class);
+        verify(queryCostMetrics).byGroup(captor.capture(), any());
+        assertThat(captor.getValue().from()).isEqualTo(Instant.parse("2026-10-01T00:00:00Z"));
+        assertThat(captor.getValue().to()).isEqualTo(Instant.parse("2026-10-21T23:59:59.999999999Z"));
+        mockMvc.perform(get("/api/v1/observability/metrics/usage").param("from", "2026-02-30"))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void deve_consultar_metricas_de_uso_com_sucesso() throws Exception {
         Instant now = Instant.now();
         UsageMetricsSeries series = new UsageMetricsSeries(

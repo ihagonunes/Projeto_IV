@@ -31,5 +31,26 @@ jobs:
           java-version: "21"
           cache: maven
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: PostgreSQL client for historical loader tests
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
       - name: PostgreSQL integration via Testcontainers
         run: mvn -B verify -Pintegration
+
+  frontend-and-import-tools:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - name: Frontend and import tool tests
+        run: node --test src/test/frontend/*.test.js

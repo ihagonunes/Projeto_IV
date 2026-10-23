@@ -121,22 +121,14 @@
                     <!-- Nome da Marca / Exibição -->
                     <div class="mb-4">
                         <label for="nomeExibicao" class="form-label-custom fw-semibold">Nome de Exibição da Marca *</label>
-                        <input type="text" class="form-control custom-input" id="nomeExibicao" required
+                        <input type="text" class="form-control custom-input" id="nomeExibicao" readonly
                             placeholder="Ex: Acceletec Solutions">
                         <div class="field-explanation mt-1">Este nome será exibido ao lado da logo ou como texto principal no cabeçalho.</div>
                     </div>
 
-                    <!-- Subtítulo / Slogan curto -->
+                    <!-- Referência do logotipo persistida pela API de branding -->
                     <div class="mb-4">
-                        <label for="sloganMarca" class="form-label-custom fw-semibold">Slogan / Subtítulo da Empresa</label>
-                        <input type="text" class="form-control custom-input" id="sloganMarca"
-                            placeholder="Ex: Inovação & Tecnologia Corporativa">
-                        <div class="field-explanation mt-1">Exibido em relatórios institucionais e cabeçalhos secundários.</div>
-                    </div>
-
-                    <!-- Upload de Logotipo -->
-                    <div class="mb-4">
-                        <label class="form-label-custom fw-semibold">Upload do Logotipo Principal *</label>
+                        <label class="form-label-custom fw-semibold">Logotipo Principal</label>
                         <div class="upload-zone d-flex flex-column align-items-center justify-content-center p-4"
                             style="border: 2px dashed rgba(240, 194, 47, 0.3); border-radius: 12px; background: rgba(11, 16, 32, 0.4);">
                             
@@ -146,12 +138,10 @@
                             </div>
 
                             <i id="uploadIcon" class="bi bi-cloud-upload" style="font-size: 2.2rem; color: var(--color-primary); opacity: 0.75;"></i>
-                            <input type="file" id="logoFile" class="d-none" accept="image/png, image/jpeg, image/svg+xml">
-                            <label for="logoFile" class="btn btn-outline-secondary btn-pill mt-3 px-4" style="cursor: pointer;">
-                                Selecionar imagem do logo
-                            </label>
+                            <label for="logoUrl" class="form-label mt-3">URL da imagem</label>
+                            <input type="url" id="logoUrl" class="form-control custom-input" maxlength="500" placeholder="https://exemplo.com/logo.png">
                             <span class="text-center mt-2" style="font-size: 0.75rem; color: var(--text-color-muted);">
-                                Formatos aceitos: PNG, JPG ou SVG · Fundo transparente recomendado · Máx 2MB
+                                Informe o endereço público da imagem. Deixe vazio para remover o logotipo.
                             </span>
                         </div>
                     </div>
@@ -212,7 +202,7 @@
                 </div>
 
                 <div class="mt-4 pt-3 border-top text-center">
-                    <a href="/tenant/editar" class="text-decoration-none text-muted small">← Voltar para Dados da Empresa</a>
+                    <a href="/onboarding" class="text-decoration-none text-muted small">← Voltar para o Onboarding</a>
                 </div>
             </div>
         </div>
@@ -222,5 +212,5 @@
 </div>
 
 <!-- Scripts -->
-<script src="/public/js/core/api-client.js"></script>
-<script src="/public/js/pages/identidade-visual.js"></script>
+<script src="/public/js/core/api-client.js?v=cookie-session-20261022"></script>
+<script src="/public/js/pages/identidade-visual.js?v=admin-branding-20261023"></script>

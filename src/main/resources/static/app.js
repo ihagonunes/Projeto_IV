@@ -23,7 +23,7 @@ const wrap = require("express-async-error-wrapper");
 const cookieParser = require("cookie-parser"); // https://stackoverflow.com/a/16209531/3569421
 const http = require("http");
 
-require("dotenv").config({ encoding: "utf8" });
+require("./config/environment");
 
 // Configura o cache, para armazenar as 200 últimas páginas
 // já processadas, por ordem de uso
@@ -31,19 +31,19 @@ const ejs = require("ejs");
 
 const LRU = require("lru-cache");
 const cache = new LRU({
-	max: 200
+    max: 200
 });
 
 // Ver comentários no pacote https://github.com/tech-espm/labs-teem :)
 if (!("remove" in cache)) {
-	if (("delete" in cache))
-		cache.remove = cache.delete;
-	else if (("del" in cache))
-		cache.remove = cache.delete;
+    if (("delete" in cache))
+        cache.remove = cache.delete;
+    else if (("del" in cache))
+        cache.remove = cache.delete;
 }
 if (!("reset" in cache)) {
-	if (("clear" in cache))
-		cache.reset = cache.clear;
+    if (("clear" in cache))
+        cache.reset = cache.clear;
 }
 ejs.cache = cache;
 
@@ -61,12 +61,14 @@ app.disable("etag");
 // Explica para o express qual será o diretório de onde serviremos os
 // arquivos estáticos (js, css, imagens etc...)
 app.use("/public", express.static(path.join(__dirname, "public"), {
-	cacheControl: true,
-	etag: false,
-	maxAge: "30d"
+    cacheControl: true,
+    etag: false,
+    maxAge: "30d"
 }));
 
 app.use(cookieParser());
+const browserSession = require("./modules/auth/browser-session").createBrowserSession(require("./config/api"));
+app.use(browserSession.router);
 
 // BFF: repassa chamadas /api/* para o backend Spring Boot (Monólito Modular).
 // O frontend consome a API REST /api/v1 de forma same-origin, sem acesso direto a MYSQL.
@@ -74,8 +76,14 @@ app.use(cookieParser());
 const API_PROXY_TARGET = new URL(process.env.API_PROXY_TARGET || "http://localhost:8080");
 
 app.use("/api", (req, res) => {
-    const headers = Object.assign({}, req.headers);
+    const headers = browserSession.headersFor(req);
     headers.host = API_PROXY_TARGET.host;
+    const token = req.cookies[browserSession.cookieName];
+    if (token && !['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+        let allowed = false;
+        browserSession.protect(req, res, () => { allowed = true; });
+        if (!allowed) return;
+    }
 
     const proxyReq = http.request({
         hostname: API_PROXY_TARGET.hostname,
@@ -84,6 +92,11 @@ app.use("/api", (req, res) => {
         method: req.method,
         headers: headers
     }, (proxyRes) => {
+        proxyRes.headers["cache-control"] = "no-store";
+        // A allowlist CORS da API Bearer não autoriza leitura cross-origin do cookie do BFF.
+        delete proxyRes.headers["access-control-allow-origin"];
+        delete proxyRes.headers["access-control-allow-credentials"];
+        if (proxyRes.statusCode === 401 && token) browserSession.clear(res);
         res.writeHead(proxyRes.statusCode, proxyRes.headers);
         proxyRes.pipe(res);
     });
@@ -108,8 +121,8 @@ app.use(express.urlencoded({ extended: true })); // http://expressjs.com/en/api.
 // Configura os diretórios de views: layout global + views de cada módulo.
 // O Express procura o template primeiro em views/ e depois em modules/.
 app.set("views", [
-	path.join(__dirname, "views"),
-	path.join(__dirname, "modules")
+    path.join(__dirname, "views"),
+    path.join(__dirname, "modules")
 ]);
 
 // Define o view engine como o ejs e importa o express-ejs-layouts
@@ -121,10 +134,10 @@ app.use(require("express-ejs-layouts"));
 // Nosso middleware para evitar cache das páginas e api
 // (deixa depois do static, pois os arquivos static devem usar cache e coisas)
 app.use((req, res, next) => {
-	res.header("Cache-Control", "private, no-cache, no-store, must-revalidate");
-	res.header("Expires", "-1");
-	res.header("Pragma", "no-cache");
-	next();
+    res.header("Cache-Control", "private, no-cache, no-store, must-revalidate");
+    res.header("Expires", "-1");
+    res.header("Pragma", "no-cache");
+    next();
 });
 
 // ---------------------------------------------------------------------------
@@ -132,14 +145,18 @@ app.use((req, res, next) => {
 // NENHUMA rota de API ou lógica de negócio deve ser adicionada aqui.
 // Novas funcionalidades = novo arquivo em modules/ e um app.use abaixo.
 // ---------------------------------------------------------------------------
+app.get("/onboarding", browserSession.requireSession);
 app.use("/", require("./routes/auth.routes"));
+app.get(["/tenant", "/tenant/editar", "/tenant/identidade-visual"], browserSession.requireSession, browserSession.requireAdministration);
 app.use("/", require("./routes/tenant.routes"));
 app.use("/", require("./routes/admin.routes"));
 app.use("/", require("./routes/departamentos.routes"));
 app.use("/", require("./routes/usuarios.routes"));
 app.use("/", require("./routes/ia.routes"));
 app.use("/", require("./routes/revisao.routes"));
+app.use(["/dashboard", "/dashboard/:profile"], browserSession.requireSession, browserSession.requireDashboard);
 app.use("/", require("./routes/dashboard.routes"));
+
 
 // Depois de registrados todos os caminhos das rotas e seus
 // tratadores, registramos os tratadores que serão chamados
@@ -154,9 +171,9 @@ app.use("/", require("./routes/dashboard.routes"));
 //
 // Registra os tratadores de erro
 app.use((err, req, res, next) => {
-	res.status(err.status || 500);
+    res.status(err.status || 500);
 
-	res.render("erro", { mensagem: err.message });
+    res.render("erro", { mensagem: err.message });
 });
 
 // Persistência é responsabilidade do backend Spring Boot (Monólito Modular).
@@ -167,5 +184,5 @@ const ip = process.env.IP || "127.0.0.1";
 const porta = parseInt(process.env.PORT) || 3000;
 
 const server = app.listen(porta, ip, () => {
-	console.log(`Servidor Express executando em ${ip}:${porta}`);
+    console.log(`Servidor Express executando em ${ip}:${porta}`);
 });

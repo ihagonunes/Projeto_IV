@@ -1,6 +1,6 @@
 // auth.js
 // Login, persistência de token/sessão e guarda de rotas, conforme ADR-30.
-// Autenticação: POST /api/v1/auth/login (tenantSlug + email + password) → JWT Bearer.
+// Login no BFF estabelece cookie HttpOnly; qsoft.session é apenas uma guarda visual.
 (function () {
     "use strict";
 
@@ -20,14 +20,13 @@
     }
 
     function isAuthenticated() {
-        return !!getToken();
+        try { return localStorage.getItem("qsoft.session") === "1"; } catch (e) { return false; }
     }
 
     async function login(credentials) {
-        // Garante que nenhum token expirado seja enviado na requisição de login.
-        // O api-client injeta o Bearer automaticamente se houver token em storage,
-        // o que faz o Spring Security rejeitar a requisição com 401 antes de autenticar.
+        // A rota de login do BFF nunca repassa o cookie anterior ao Spring.
         API.clearToken();
+        try { localStorage.removeItem("qsoft.session"); } catch (e) { /* ignore */ }
         try { localStorage.removeItem(STORAGE_USER); } catch (e) { /* ignore */ }
 
         var body = {
@@ -35,7 +34,7 @@
             password: (credentials && credentials.password) || ""
         };
         // tenantSlug: do chamador (ex.: onboarding) ou do slug injetado pelo BFF
-        // (window.QSOFT_TENANT_SLUG). O backend exige tenantSlug no login (ADR-30).
+        // (window.QSOFT_TENANT_SLUG). Opcional conforme ADR-32.
         var tenantSlug = (credentials && credentials.tenantSlug) || window.QSOFT_TENANT_SLUG;
         if (tenantSlug) {
             body.tenantSlug = tenantSlug;
@@ -44,20 +43,19 @@
         var response = await API.post("/auth/login", body);
 
 
-        // O contrato do backend retorna o JWT; aceita os nomes mais comuns para resiliência.
-        var token = response && (response.accessToken || response.token || response.access_token);
-        if (!token) {
-            throw new Error("O servidor não retornou um token de acesso.");
-        }
-
-        API.setToken(token);
+        if (!response || !response.authenticated) throw new Error("A sessão não foi estabelecida.");
+        try { localStorage.setItem("qsoft.session", "1"); } catch (e) { /* guarda visual; API valida cookie */ }
         setUser(response && response.user ? response.user : null);
         return response;
     }
 
-    function logout() {
+    async function logout() {
         API.clearToken();
         try { localStorage.removeItem(STORAGE_USER); } catch (e) { /* ignore */ }
+        try { sessionStorage.removeItem(STORAGE_USER); } catch (e) { /* ignore */ }
+        try { localStorage.removeItem("qsoft.session"); } catch (e) { /* ignore */ }
+        // Só redirecionar depois de o servidor expirar o cookie HttpOnly.
+        await API.post("/auth/logout");
         window.location.href = "/login";
     }
 
@@ -77,6 +75,7 @@
     function handleSessionExpired() {
         API.clearToken();
         try { localStorage.removeItem(STORAGE_USER); } catch (e) { /* ignore */ }
+        try { localStorage.removeItem("qsoft.session"); } catch (e) { /* ignore */ }
         window.location.href = "/sessao-expirada";
     }
 
