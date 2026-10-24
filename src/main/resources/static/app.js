@@ -156,6 +156,8 @@ app.use("/", require("./routes/ia.routes"));
 app.use("/", require("./routes/revisao.routes"));
 app.use(["/dashboard", "/dashboard/:profile"], browserSession.requireSession, browserSession.requireDashboard);
 app.use("/", require("./routes/dashboard.routes"));
+// SPI-136: rotas de apresentação do chat; contratos Spring permanecem inalterados.
+app.use("/", require("./routes/chat.routes")(browserSession.requireSession));
 
 
 // Depois de registrados todos os caminhos das rotas e seus

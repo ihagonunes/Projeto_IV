@@ -4,7 +4,8 @@
   "main": "src/main/resources/static/app.js",
   "scripts": {
     "start": "node src/main/resources/static/app",
-    "setup:local": "node scripts/setup-local.js"
+    "setup:local": "node scripts/setup-local.js",
+    "test:chat": "node --test src/test/frontend/chat.test.js"
   },
   "author": "ESPM",
   "license": "MIT",
