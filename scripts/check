@@ -30,6 +30,6 @@ if [[ "$mode" == "changed" ]] && git rev-parse --is-inside-work-tree >/dev/null 
 fi
 
 echo "==> Compilação + unit/architecture tests"
-mvn -B test
+mvn -B clean test
 
 echo "==> Checks concluídos"

@@ -90,11 +90,9 @@ cp .env.example .env      # ajuste DB_* e JWT_SECRET
 docker compose up --build
 ```
 
-> ⚠️ **Limitação conhecida:** o serviço `backend` do `compose.yaml` não repassa `JWT_SECRET`, e a
-> aplicação exige ≥ 32 caracteres para subir. Até o `compose.yaml` ser ajustado
-> (`AUDITORIA_DOCUMENTACAO.md`, item 2), o backend do compose provavelmente falha no boot
-> (inferido, não executado). Alternativas: `docker compose up postgres` + backend local (Modo A),
-> ou o container avulso abaixo.
+> O serviço `backend` repassa `JWT_SECRET` (obrigatório, mínimo de 32 caracteres) e, opcionalmente,
+> `APP_BOOTSTRAP_DEMO_DATA` e `APP_BOOTSTRAP_DEMO_PASSWORD`. Sem `JWT_SECRET`, o
+> `docker compose` falha antes de subir o backend.
 
 #### Backend em container avulso
 
