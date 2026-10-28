@@ -2,7 +2,7 @@
 
 ## Metadados
 - **Onda:** H (partida) · **Ordem:** 1 · **Depende de:** —
-- **Jira:** **a criar**: "Linha de base verde, compose e testes do front no CI" (`INDEX.md` §6)
+- **Jira:** SPI-173
 - **Área:** build, `compose.yaml`, `.github/workflows/ci.yml`
 - **Pendências de origem:**
   - `docs/development/VALIDACAO_E_PENDENCIAS.md` (pendência 1);

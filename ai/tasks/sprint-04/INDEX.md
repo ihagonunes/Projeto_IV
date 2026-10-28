@@ -150,7 +150,7 @@ que já existem.
 | Jira | Ação | Tarefa |
 |---|---|---|
 | SPI-87 | Manter | P2 |
-| SPI-102 a 110 | **Fechar como duplicatas** de SPI-118 a 126, já concluídas | — |
+| SPI-102 a 110 | **Fechadas como duplicatas** de SPI-118 a 126 em 28/10 | — |
 | SPI-131 | Redefinir: projeção determinística no observability, não tool do agente | B1 |
 | SPI-133 | Redefinir: recibo durável e valores = `UsageRecord` | C2 (+ P1) |
 | SPI-137 | Redefinir: ADR-35 já aceito na opção A; registrar as emendas e dependências da Sprint 4 | H3 |
@@ -170,8 +170,8 @@ que já existem.
 
 | Jira | Ação | Tarefa |
 |---|---|---|
-| SPI-128, SPI-130 (ainda "A fazer" na Sprint 3) | **Fechar**: implementadas na E1/E2 da Sprint 3 (`819107d`, `f9119ec`) | — |
-| A criar | "Linha de base verde, compose e testes do front no CI" | H1 |
+| SPI-128, SPI-130 (estavam "A fazer" na Sprint 3) | **Fechadas** em 28/10: implementadas na E1/E2 da Sprint 3 (`819107d`, `f9119ec`) | — |
+| SPI-173 (criada em 28/10, Sprint 4) | "Linha de base verde, compose com JWT_SECRET e testes do front no CI" | H1 |
 | (não criar agora) | "Remover tabela legada user_permission (V024)", adiada pela S4-D8 | H2, fora da sprint |
 | Sprint 3 (ativa) | Encerrar no Jira; todas as tarefas estão concluídas, exceto SPI-128/130 acima | — |
 

@@ -67,7 +67,5 @@ Siga o HANDOFF e entregue o relatório da §7.
   **fora** do repositório.
 - Autorizar branch, commit e push; revisar os PRs.
 - Coordenar com a Lyn a S4-C3 (UI do chat) e a E6, se ela também cuidar dos dashboards.
-- No Jira:
-  - fechar SPI-102 a 110 (duplicatas) e SPI-128/130 (já implementadas);
-  - encerrar a Sprint 3;
-  - criar a tarefa da H1 (`INDEX.md` §6); a H2 foi adiada (S4-D8).
+- No Jira: encerrar a Sprint 3 pela interface (o resto do `INDEX.md` §6 já foi aplicado em 28/10;
+  H1 = SPI-173; a H2 foi adiada pela S4-D8).
