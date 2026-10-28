@@ -43,6 +43,9 @@ Este arquivo é um índice. Leia somente o ADR relacionado à tarefa.
 | ADR-37 | Provisionamento, delegação e revogação de concessões | ACCEPTED | `ai/adr/ADR-37-grant-provisioning-and-delegation.md` |
 | ADR-38 | Provider real, tentativas duráveis e entrega idempotente de uso | ACCEPTED | `ai/adr/ADR-38-ai-execution-attempts-and-usage-delivery.md` |
 | ADR-39 | Chat privado e recibo de execução | ACCEPTED | `ai/adr/ADR-39-private-chat-and-execution-receipt.md` |
+| ADR-40 | Engagement no MVP: fontes, elegíveis e parâmetros de adoção, treinamento e AI Credits | ACCEPTED | `ai/adr/ADR-40-engagement-mvp-sources-and-formulas.md` |
+| ADR-41 | Projeção determinística de orçamento (Pesquisa Operacional) | ACCEPTED | `ai/adr/ADR-41-deterministic-budget-projection.md` |
+| ADR-42 | Ciclo de vida da conversa, recibo durável e modelos do usuário (emenda ADR-39) | ACCEPTED | `ai/adr/ADR-42-chat-lifecycle-and-durable-receipt.md` |
 
 ## Decisões abertas (pendentes de ADR)
 
