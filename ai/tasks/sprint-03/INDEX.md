@@ -1,5 +1,7 @@
 # Sprint 3 — Plano de execução (SPI)
 
+> **Status (27/10/2026): concluída e integrada na `main`.** O que foi entregue e o que ficou pendente está em `docs/review/ESTADO_POS_SPRINT3.md`; o plano seguinte, em `ai/tasks/sprint-04/INDEX.md`.
+
 - **Período:** 06/10/2026 a **23/10/2026**. Restam 5 dias úteis a partir de 19/10.
 - **Origem:** `docs/review/VERIFICACAO_FASE0.md` (verificação do plano N01–N05 contra o código) e
   as decisões do responsável de 18/10/2026.
