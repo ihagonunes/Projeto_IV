@@ -3,6 +3,7 @@ package br.com.qsoft.governance.iam.application.port;
 import br.com.qsoft.governance.iam.domain.user.User;
 import br.com.qsoft.governance.sharedkernel.id.TenantId;
 import br.com.qsoft.governance.sharedkernel.id.UserId;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -45,4 +46,13 @@ public interface UserRepository {
     Optional<User> findByTenantIdAndEmail(TenantId tenantId, String email);
 
     boolean existsByTenantIdAndEmail(TenantId tenantId, String email);
+
+    /**
+     * Lista os usuários {@code ACTIVE} do tenant, com filtro explícito por
+     * {@code tenant_id} (ADR-03). Default falha alto para implementações em
+     * memória que não precisam da listagem.
+     */
+    default List<User> findActiveByTenantId(TenantId tenantId) {
+        throw new UnsupportedOperationException("findActiveByTenantId não implementado");
+    }
 }

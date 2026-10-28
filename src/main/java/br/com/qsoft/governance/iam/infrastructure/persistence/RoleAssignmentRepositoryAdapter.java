@@ -8,6 +8,8 @@ import br.com.qsoft.governance.sharedkernel.id.TenantId;
 import br.com.qsoft.governance.sharedkernel.id.UserId;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -60,6 +62,14 @@ public class RoleAssignmentRepositoryAdapter implements RoleAssignmentRepository
     public long countActiveByTenantIdAndRoleId(TenantId tenantId, RoleId roleId) {
         return jpaRepository.countByTenantIdAndRoleIdAndRevokedAtIsNull(
             tenantId.value(), roleId.value());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Set<UserId> findUserIdsWithOnlyTenantAdminGrant(TenantId tenantId) {
+        return jpaRepository.findUserIdsWithOnlyTenantAdminGrant(tenantId.value()).stream()
+            .map(UserId::of)
+            .collect(Collectors.toUnmodifiableSet());
     }
 
     @Override

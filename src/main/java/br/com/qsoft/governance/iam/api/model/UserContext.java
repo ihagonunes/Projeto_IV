@@ -15,6 +15,16 @@ public record UserContext(
     TenantId tenantId,
     String hierarchyLevel,
     UUID departmentId,
-    String status
+    String status,
+    String name
 ) {
+
+    /**
+     * Construtor legado sem {@code name}, mantido para não quebrar callers
+     * existentes. O adapter de produção usa o construtor completo.
+     */
+    public UserContext(UserId userId, TenantId tenantId, String hierarchyLevel,
+                       UUID departmentId, String status) {
+        this(userId, tenantId, hierarchyLevel, departmentId, status, null);
+    }
 }
