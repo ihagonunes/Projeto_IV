@@ -3,11 +3,14 @@ package br.com.qsoft.governance.integration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import br.com.qsoft.governance.GovernanceApplication;
+import br.com.qsoft.governance.aigateway.application.ChangeModelStatus;
+import br.com.qsoft.governance.aigateway.application.ChangeModelStatusCommand;
 import br.com.qsoft.governance.aigateway.application.CreateModel;
 import br.com.qsoft.governance.aigateway.application.CreateModelCommand;
 import br.com.qsoft.governance.aigateway.application.CreateProvider;
 import br.com.qsoft.governance.aigateway.application.CreateProviderCommand;
 import br.com.qsoft.governance.aigateway.domain.model.Model;
+import br.com.qsoft.governance.aigateway.domain.model.ModelStatus;
 import br.com.qsoft.governance.aigateway.domain.provider.ProviderKind;
 import br.com.qsoft.governance.iam.domain.tenant.Tenant;
 import br.com.qsoft.governance.iam.domain.user.HierarchyLevel;
@@ -76,6 +79,9 @@ class ChatFlowIT {
     CreateModel createModel;
 
     @Autowired
+    ChangeModelStatus changeModelStatus;
+
+    @Autowired
     JdbcTemplate jdbcTemplate;
 
     private RestClient client;
@@ -87,6 +93,7 @@ class ChatFlowIT {
     private String collabEmail;
     private String otherAdminEmail;
     private String otherCollabEmail;
+    private UUID providerId;
     private Model echoModel;
     private Model errorModel;
 
@@ -118,7 +125,7 @@ class ChatFlowIT {
         testTenants.ensureMember(other, otherAdmin.id(), otherCollabEmail, "Other Collab",
             PASSWORD, HierarchyLevel.COLLABORATOR, UUID.randomUUID(), "COLLABORATOR");
 
-        UUID providerId = createProvider.create(new CreateProviderCommand(
+        providerId = createProvider.create(new CreateProviderCommand(
             tenant.id(), "Stub " + UUID.randomUUID(), ProviderKind.STUB, null, null, null)).id();
         echoModel = createModel.create(new CreateModelCommand(
             tenant.id(), providerId, "echo " + UUID.randomUUID(), "stub-echo",
@@ -256,12 +263,178 @@ class ChatFlowIT {
             Map.of("mensagem", ""))).isEqualTo(400);
     }
 
+    @Test
+    void ch01_outroUsuarioDoMesmoTenantRecebe404EAdminRecebe403() {
+        String id = conversationId(post(managerEmail, "/api/v1/conversas",
+            Map.of("mensagem", "conversa do manager")));
+
+        assertThat(status(executiveEmail, "/api/v1/conversas/" + id + "/mensagens"))
+            .isEqualTo(404);
+        assertThat(patchStatus(executiveEmail, "/api/v1/conversas/" + id,
+            Map.of("status", "ARCHIVED"))).isEqualTo(404);
+        assertThat(deleteStatus(executiveEmail, "/api/v1/conversas/" + id)).isEqualTo(404);
+        assertThat(status(collabEmail, "/api/v1/conversas/" + id + "/mensagens"))
+            .isEqualTo(404);
+        assertThat(patchStatus(collabEmail, "/api/v1/conversas/" + id,
+            Map.of("status", "ARCHIVED"))).isEqualTo(404);
+        assertThat(deleteStatus(collabEmail, "/api/v1/conversas/" + id)).isEqualTo(404);
+
+        assertThat(status(adminEmail, "/api/v1/conversas/" + id + "/mensagens")).isEqualTo(403);
+        assertThat(patchStatus(adminEmail, "/api/v1/conversas/" + id,
+            Map.of("status", "ARCHIVED"))).isEqualTo(403);
+        assertThat(deleteStatus(adminEmail, "/api/v1/conversas/" + id)).isEqualTo(403);
+    }
+
+    @Test
+    void ch02_outroTenantRecebe404NasRotasPorId() {
+        String id = conversationId(post(managerEmail, "/api/v1/conversas",
+            Map.of("mensagem", "conversa do manager")));
+
+        assertThat(status(otherCollabEmail, "/api/v1/conversas/" + id + "/mensagens"))
+            .isEqualTo(404);
+        assertThat(patchStatus(otherCollabEmail, "/api/v1/conversas/" + id,
+            Map.of("status", "ARCHIVED"))).isEqualTo(404);
+        assertThat(deleteStatus(otherCollabEmail, "/api/v1/conversas/" + id)).isEqualTo(404);
+    }
+
+    @Test
+    void ch03_arquivarSomeDaListaBloqueiaEnvioERestaurarVolta() {
+        String id = conversationId(post(managerEmail, "/api/v1/conversas",
+            Map.of("mensagem", "conversa do manager")));
+
+        assertThat(patchStatus(managerEmail, "/api/v1/conversas/" + id,
+            Map.of("status", "ARCHIVED"))).isEqualTo(200);
+        assertThat(get(managerEmail, "/api/v1/conversas").get("totalElements")).isEqualTo(0);
+        assertThat(get(managerEmail, "/api/v1/conversas?status=ARCHIVED").get("totalElements"))
+            .isEqualTo(1);
+
+        assertThat(postStatus(managerEmail, "/api/v1/conversas/" + id + "/mensagens",
+            Map.of("mensagem", "não deveria entrar"))).isEqualTo(409);
+        assertThat(postErrorBody(managerEmail, "/api/v1/conversas/" + id + "/mensagens",
+            Map.of("mensagem", "não deveria entrar")))
+            .contains("CONVERSATION_ARCHIVED");
+
+        assertThat(patchStatus(managerEmail, "/api/v1/conversas/" + id,
+            Map.of("status", "ACTIVE"))).isEqualTo(200);
+        assertThat(postStatus(managerEmail, "/api/v1/conversas/" + id + "/mensagens",
+            Map.of("mensagem", "voltou a funcionar"))).isEqualTo(201);
+    }
+
+    @Test
+    void ch04_excluirSomeDeTodasAsListasERetorna404() {
+        String id = conversationId(post(managerEmail, "/api/v1/conversas",
+            Map.of("mensagem", "conversa do manager")));
+
+        assertThat(deleteStatus(managerEmail, "/api/v1/conversas/" + id)).isEqualTo(204);
+        assertThat(get(managerEmail, "/api/v1/conversas").get("totalElements")).isEqualTo(0);
+        assertThat(get(managerEmail, "/api/v1/conversas?status=ARCHIVED").get("totalElements"))
+            .isEqualTo(0);
+        assertThat(status(managerEmail, "/api/v1/conversas/" + id + "/mensagens"))
+            .isEqualTo(404);
+        assertThat(patchStatus(managerEmail, "/api/v1/conversas/" + id,
+            Map.of("titulo", "renomeada"))).isEqualTo(404);
+        assertThat(postStatus(managerEmail, "/api/v1/conversas/" + id + "/mensagens",
+            Map.of("mensagem", "não deveria entrar"))).isEqualTo(404);
+        assertThat(deleteStatus(managerEmail, "/api/v1/conversas/" + id)).isEqualTo(404);
+    }
+
+    @Test
+    void ch08_buscaTrataCuringasComoLiteraisENaoVazaEntreDonos() {
+        post(managerEmail, "/api/v1/conversas", Map.of("mensagem", "100% pronto"));
+        post(managerEmail, "/api/v1/conversas", Map.of("mensagem", "a_b teste"));
+        post(collabEmail, "/api/v1/conversas", Map.of("mensagem", "100% do colaborador"));
+
+        Map<String, Object> percent = getWithQuery(managerEmail, "/api/v1/conversas", "q", "%");
+        assertThat(percent.get("totalElements")).isEqualTo(1);
+        assertThat(percent.toString()).contains("100% pronto").doesNotContain("colaborador");
+
+        Map<String, Object> underscore = getWithQuery(managerEmail, "/api/v1/conversas", "q", "_");
+        assertThat(underscore.get("totalElements")).isEqualTo(1);
+        assertThat(underscore.toString()).contains("a_b teste");
+
+        Map<String, Object> collabPercent = getWithQuery(collabEmail, "/api/v1/conversas", "q", "%");
+        assertThat(collabPercent.get("totalElements")).isEqualTo(1);
+        assertThat(collabPercent.toString()).contains("colaborador").doesNotContain("100% pronto");
+    }
+
+    @Test
+    void ch09_modelosDoUsuarioRespeitamPoliticaEIndisponibilidade() {
+        changeModelStatus.change(new ChangeModelStatusCommand(
+            tenant.id(), errorModel.id(), ModelStatus.DISABLED));
+        createModel.create(new CreateModelCommand(tenant.id(), providerId,
+            "fora da política " + UUID.randomUUID(), null,
+            new BigDecimal("0.01"), new BigDecimal("0.03")));
+
+        Map<String, Object> response = get(collabEmail, "/api/v1/conversas/modelos");
+        assertThat(response.get("defaultModelId")).isEqualTo(echoModel.id().toString());
+
+        List<?> models = (List<?>) response.get("models");
+        assertThat(models).hasSize(2);
+        Map<?, ?> errorEntry = models.stream()
+            .map(item -> (Map<?, ?>) item)
+            .filter(item -> errorModel.id().toString().equals(item.get("id")))
+            .findFirst().orElseThrow();
+        assertThat(errorEntry.get("available")).isEqualTo(false);
+        assertThat(errorEntry.get("unavailableReason")).isEqualTo("MODEL_UNAVAILABLE");
+        assertThat(models.toString()).doesNotContain("fora da política");
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private UUID createDepartment() {
         Map<String, Object> response = post(adminEmail, "/api/v1/departamentos",
             Map.of("name", "Chat Dept " + UUID.randomUUID()));
         return UUID.fromString((String) response.get("id"));
+    }
+
+    private String conversationId(Map<String, Object> created) {
+        return (String) ((Map<?, ?>) created.get("conversa")).get("id");
+    }
+
+    private Map<String, Object> patch(String email, String uri, Object body) {
+        return client.patch().uri(uri)
+            .header("Authorization", "Bearer " + login(email))
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(body)
+            .retrieve().body(new org.springframework.core.ParameterizedTypeReference<>() {
+            });
+    }
+
+    private int patchStatus(String email, String uri, Object body) {
+        try {
+            patch(email, uri, body);
+            return 200;
+        } catch (RestClientResponseException ex) {
+            return ex.getStatusCode().value();
+        }
+    }
+
+    private int deleteStatus(String email, String uri) {
+        try {
+            client.delete().uri(uri)
+                .header("Authorization", "Bearer " + login(email))
+                .retrieve().toBodilessEntity();
+            return 204;
+        } catch (RestClientResponseException ex) {
+            return ex.getStatusCode().value();
+        }
+    }
+
+    private String postErrorBody(String email, String uri, Object body) {
+        try {
+            post(email, uri, body);
+            return "";
+        } catch (RestClientResponseException ex) {
+            return ex.getResponseBodyAsString();
+        }
+    }
+
+    private Map<String, Object> getWithQuery(String email, String path, String name, String value) {
+        return client.get()
+            .uri(builder -> builder.path(path).queryParam(name, value).build())
+            .header("Authorization", "Bearer " + login(email))
+            .retrieve().body(new org.springframework.core.ParameterizedTypeReference<>() {
+            });
     }
 
     private Map<String, Object> post(String email, String uri, Object body) {

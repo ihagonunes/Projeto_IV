@@ -7,6 +7,8 @@ import br.com.qsoft.governance.aigateway.api.completion.CompletionResult;
 import br.com.qsoft.governance.chat.application.port.ChatMessageRepository;
 import br.com.qsoft.governance.chat.domain.ChatMessage;
 import br.com.qsoft.governance.chat.domain.Conversation;
+import br.com.qsoft.governance.chat.domain.ConversationArchivedException;
+import br.com.qsoft.governance.chat.domain.ConversationNotFoundException;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -33,6 +35,12 @@ public class ChatExchange {
     }
 
     public ChatTurn exchange(Conversation conversation, String content, UUID requestedModelId) {
+        if (conversation.isDeleted()) {
+            throw new ConversationNotFoundException();
+        }
+        if (conversation.isArchived()) {
+            throw new ConversationArchivedException();
+        }
         ChatMessage userMessage = ChatMessage.user(UUID.randomUUID(), conversation.tenantId(),
             conversation.id(), content);
         writer.persistUserMessage(conversation, userMessage);

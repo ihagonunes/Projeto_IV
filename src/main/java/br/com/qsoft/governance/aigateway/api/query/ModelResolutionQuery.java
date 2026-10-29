@@ -1,5 +1,6 @@
 package br.com.qsoft.governance.aigateway.api.query;
 
+import br.com.qsoft.governance.aigateway.api.model.AllowedModels;
 import br.com.qsoft.governance.aigateway.api.model.ResolvedModelInfo;
 import br.com.qsoft.governance.sharedkernel.id.TenantId;
 import br.com.qsoft.governance.sharedkernel.id.UserId;
@@ -13,4 +14,10 @@ import java.util.UUID;
 public interface ModelResolutionQuery {
 
     Optional<ResolvedModelInfo> resolve(TenantId tenantId, UserId userId, UUID requestedModelId);
+
+    /**
+     * Modelos da política do departamento atual do usuário, com o padrão e o
+     * motivo de indisponibilidade. Sem política/departamento → lista vazia.
+     */
+    AllowedModels allowedModels(TenantId tenantId, UserId userId);
 }

@@ -11,6 +11,7 @@ import br.com.qsoft.governance.chat.application.port.ChatMessageRepository;
 import br.com.qsoft.governance.chat.application.port.ConversationRepository;
 import br.com.qsoft.governance.chat.domain.ChatMessage;
 import br.com.qsoft.governance.chat.domain.Conversation;
+import br.com.qsoft.governance.chat.domain.ConversationArchivedException;
 import br.com.qsoft.governance.chat.domain.ConversationNotFoundException;
 import br.com.qsoft.governance.sharedkernel.id.TenantId;
 import br.com.qsoft.governance.sharedkernel.id.UserId;
@@ -131,6 +132,18 @@ class ChatExchangeTest {
 
         assertThat(messages).hasSize(1);
         assertThat(messages.get(0).role().name()).isEqualTo("USER");
+    }
+
+    @Test
+    void conversaArquivadaRejeitaEnvioSemGravarMensagem() {
+        Conversation conversation = persistedConversation(owner).archive();
+
+        assertThatThrownBy(() -> sendMessage.send(new SendMessageCommand(
+            tenantId, owner, conversation.id(), "olá", modelId)))
+            .isInstanceOf(ConversationArchivedException.class);
+
+        assertThat(messages).isEmpty();
+        assertThat(completions).isEmpty();
     }
 
     @Test

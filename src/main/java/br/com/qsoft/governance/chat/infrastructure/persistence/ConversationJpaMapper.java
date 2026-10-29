@@ -16,6 +16,7 @@ public final class ConversationJpaMapper {
         entity.setStatus(conversation.status());
         entity.setCreatedAt(conversation.createdAt());
         entity.setUpdatedAt(conversation.updatedAt());
+        entity.setDeletedAt(conversation.deletedAt());
         return entity;
     }
 
@@ -27,7 +28,8 @@ public final class ConversationJpaMapper {
             entity.getTitle(),
             entity.getStatus(),
             entity.getCreatedAt(),
-            entity.getUpdatedAt()
+            entity.getUpdatedAt(),
+            entity.getDeletedAt()
         );
     }
 }

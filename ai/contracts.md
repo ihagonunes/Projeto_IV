@@ -21,14 +21,26 @@ Contratos são Java APIs internas entre módulos. Não equivalem automaticamente
 | iam | `IdentityQuery` (`getUserContext`/`eligibleUsers`; `UserContext` inclui `name`), `HistoricalIdentityQuery` (`employeeId`/`employeeIds`), `AuthorizationQuery` (`isAllowed`/`visibilityFor`), `@RequiresPermission`/`Targeting` em `iam.api.rbac` (ADR-34/ADR-36/ADR-37/ADR-40) |
 | department | `OrganizationQuery`, `DepartmentBudgetQuery` (`budgetFor`/`budgetsFor` + `BudgetLimitInfo`), `DepartmentModelPolicyQuery` |
 | project | `ProjectQueryPort` |
-| aigateway | `AICompletionService`, `ModelResolutionQuery`, `AIToolCatalogQuery`, catálogo administrativo |
-| chat | commands/queries de Conversation/Message |
+| aigateway | `AICompletionService`, `ModelResolutionQuery` (`resolve`/`allowedModels`), `AIToolCatalogQuery`, catálogo administrativo |
+| chat | `ListConversations` (status/q), `UpdateConversation`, `DeleteConversation`, commands/queries de Conversation/Message |
 | agentpolicies | `KnowledgeAccessService`, `AskPolicyAgent`, KnowledgeDocument commands/queries |
 | observability | `UsageActivityQuery` (dias ativos por usuário, dia UTC e `tenant_id` explícito), `UsageMetricsQueryPort`, `CostMetricsQueryPort`, `BudgetStatusQueryPort` (implementado por `QueryBudgetStatus`) |
 | engagement | `LicenseQueryPort`, `TrainingQueryPort`, `EngagementMetricsQueryPort`, `AICreditsQueryPort` |
 | governancescore | `GovernanceScoreQueryPort`, Breakdown, Department scores, History |
 
 `AlertQueryPort` foi substituído pelo status de orçamento calculado na leitura (sem tabela nova, sem evento e sem bloqueio — A105).
+
+### Chat (ADR-42)
+
+- `GET /api/v1/conversas?status=ACTIVE|ARCHIVED&q=&page=&size=` — só conversas do ator,
+  `q` literal (ILIKE escapado), ordem `updated_at DESC, id DESC`; `DELETED` nunca aparece.
+- `PATCH /api/v1/conversas/{id}` — `titulo` e/ou `status` (`ACTIVE`/`ARCHIVED`); excluída → 404.
+- `DELETE /api/v1/conversas/{id}` — exclusão lógica (`DELETED` + `deleted_at`), 204.
+- `GET /api/v1/conversas/modelos` — `ModelResolutionQuery.allowedModels` (política do departamento,
+  `available`/`unavailableReason`).
+- Erros do chat: `{ "message": "...", "code": "..." }`, com códigos estáveis
+  (`CONVERSATION_NOT_FOUND`, `CONVERSATION_ARCHIVED`, `MODEL_NOT_ALLOWED`, `NO_MODEL_CONFIGURED`,
+  `PROVIDER_FAILURE`, `PROVIDER_TIMEOUT`, `ATTEMPT_NOT_RECORDED`, `INVALID_REQUEST`).
 
 ## Autorização (ADR-34/ADR-36/ADR-37)
 
