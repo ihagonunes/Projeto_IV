@@ -35,6 +35,9 @@ public class ChatMessageJpaEntity {
     @Column(name = "request_id")
     private UUID requestId;
 
+    @Column(name = "client_message_id", length = 64)
+    private String clientMessageId;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -88,6 +91,14 @@ public class ChatMessageJpaEntity {
 
     public void setRequestId(UUID requestId) {
         this.requestId = requestId;
+    }
+
+    public String getClientMessageId() {
+        return clientMessageId;
+    }
+
+    public void setClientMessageId(String clientMessageId) {
+        this.clientMessageId = clientMessageId;
     }
 
     public Instant getCreatedAt() {

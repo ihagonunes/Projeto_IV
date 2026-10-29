@@ -15,7 +15,7 @@ public record ChatTurnResponse(
             ConversationResponse.from(turn.conversation()),
             List.of(MessageResponse.from(turn.userMessage()),
                 MessageResponse.from(turn.assistantMessage())),
-            ReceiptResponse.from(turn.completion())
+            turn.completion() == null ? null : ReceiptResponse.from(turn.completion())
         );
     }
 }

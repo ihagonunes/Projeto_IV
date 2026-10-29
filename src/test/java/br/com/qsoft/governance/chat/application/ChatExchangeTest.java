@@ -7,6 +7,7 @@ import br.com.qsoft.governance.aigateway.api.completion.AICompletionService;
 import br.com.qsoft.governance.aigateway.api.completion.CompletionCommand;
 import br.com.qsoft.governance.aigateway.api.completion.CompletionResult;
 import br.com.qsoft.governance.aigateway.api.exception.AIProviderFailureException;
+import br.com.qsoft.governance.aigateway.api.query.AttemptReceiptQuery;
 import br.com.qsoft.governance.chat.application.port.ChatMessageRepository;
 import br.com.qsoft.governance.chat.application.port.ConversationRepository;
 import br.com.qsoft.governance.chat.domain.ChatMessage;
@@ -96,20 +97,23 @@ class ChatExchangeTest {
         return result;
     };
 
+    private final AttemptReceiptQuery receiptQuery = (tenantId, owner, ids) -> Map.of();
     private final ChatMessageWriter writer =
         new ChatMessageWriter(conversationRepository, messageRepository);
     private final ChatExchange exchange =
         new ChatExchange(writer, messageRepository, completionService);
-    private final SendMessage sendMessage = new SendMessage(conversationRepository, exchange);
+    private final ChatTurnReplay replay = new ChatTurnReplay(messageRepository, receiptQuery);
+    private final SendMessage sendMessage =
+        new SendMessage(conversationRepository, messageRepository, exchange, replay);
     private final ListMessages listMessages =
-        new ListMessages(conversationRepository, messageRepository);
+        new ListMessages(conversationRepository, messageRepository, receiptQuery);
 
     @Test
     void enviaMensagemEGravaARespostaComRequestId() {
         Conversation conversation = persistedConversation(owner);
 
         ChatTurn turn = sendMessage.send(new SendMessageCommand(
-            tenantId, owner, conversation.id(), "olá", modelId));
+            tenantId, owner, conversation.id(), "olá", modelId, null));
 
         assertThat(messages).hasSize(2);
         assertThat(turn.userMessage().role().name()).isEqualTo("USER");
@@ -127,7 +131,7 @@ class ChatExchangeTest {
         failure = new AIProviderFailureException("HTTP_500");
 
         assertThatThrownBy(() -> sendMessage.send(new SendMessageCommand(
-            tenantId, owner, conversation.id(), "olá", modelId)))
+            tenantId, owner, conversation.id(), "olá", modelId, null)))
             .isInstanceOf(AIProviderFailureException.class);
 
         assertThat(messages).hasSize(1);
@@ -139,7 +143,7 @@ class ChatExchangeTest {
         Conversation conversation = persistedConversation(owner).archive();
 
         assertThatThrownBy(() -> sendMessage.send(new SendMessageCommand(
-            tenantId, owner, conversation.id(), "olá", modelId)))
+            tenantId, owner, conversation.id(), "olá", modelId, null)))
             .isInstanceOf(ConversationArchivedException.class);
 
         assertThat(messages).isEmpty();
@@ -151,7 +155,7 @@ class ChatExchangeTest {
         Conversation conversation = persistedConversation(owner);
 
         assertThatThrownBy(() -> sendMessage.send(new SendMessageCommand(
-            tenantId, UserId.random(), conversation.id(), "olá", modelId)))
+            tenantId, UserId.random(), conversation.id(), "olá", modelId, null)))
             .isInstanceOf(ConversationNotFoundException.class);
         assertThat(messages).isEmpty();
 

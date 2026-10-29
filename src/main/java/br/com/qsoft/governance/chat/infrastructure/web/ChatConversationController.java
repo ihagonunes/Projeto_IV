@@ -2,6 +2,7 @@ package br.com.qsoft.governance.chat.infrastructure.web;
 
 import br.com.qsoft.governance.aigateway.api.model.AllowedModels;
 import br.com.qsoft.governance.aigateway.api.query.ModelResolutionQuery;
+import br.com.qsoft.governance.chat.application.ChatTurn;
 import br.com.qsoft.governance.chat.application.DeleteConversation;
 import br.com.qsoft.governance.chat.application.ListConversations;
 import br.com.qsoft.governance.chat.application.ListMessages;
@@ -72,10 +73,11 @@ public class ChatConversationController {
         targeting = Targeting.BY_TARGET)
     public ResponseEntity<ChatTurnResponse> start(@Valid @RequestBody SendMessageRequest request) {
         TenantContext context = TenantContextHolder.require();
-        ChatTurnResponse response = ChatTurnResponse.from(startConversation.start(
+        ChatTurn turn = startConversation.start(
             new StartConversationCommand(context.tenantId(), context.userId(),
-                request.mensagem(), request.requestedModelId())));
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+                request.mensagem(), request.requestedModelId(), request.clientMessageId()));
+        return ResponseEntity.status(turn.replayed() ? HttpStatus.OK : HttpStatus.CREATED)
+            .body(ChatTurnResponse.from(turn));
     }
 
     @GetMapping
@@ -125,10 +127,16 @@ public class ChatConversationController {
     @GetMapping("/{id}/mensagens")
     @RequiresPermission(resource = Resource.CHAT, action = Action.READ,
         targeting = Targeting.BY_TARGET)
-    public ResponseEntity<List<MessageResponse>> messages(@PathVariable UUID id) {
+    public ResponseEntity<List<MessageResponse>> messages(
+            @PathVariable UUID id,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size) {
         TenantContext context = TenantContextHolder.require();
-        return ResponseEntity.ok(listMessages.list(context.tenantId(), context.userId(), id)
-            .stream().map(MessageResponse::from).toList());
+        return ResponseEntity.ok(listMessages.list(context.tenantId(), context.userId(), id,
+                page, size)
+            .stream()
+            .map(view -> MessageResponse.from(view.message(), view.receipt()))
+            .toList());
     }
 
     @PostMapping("/{id}/mensagens")
@@ -137,10 +145,11 @@ public class ChatConversationController {
     public ResponseEntity<ChatTurnResponse> send(@PathVariable UUID id,
                                                  @Valid @RequestBody SendMessageRequest request) {
         TenantContext context = TenantContextHolder.require();
-        ChatTurnResponse response = ChatTurnResponse.from(sendMessage.send(
+        ChatTurn turn = sendMessage.send(
             new SendMessageCommand(context.tenantId(), context.userId(), id,
-                request.mensagem(), request.requestedModelId())));
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+                request.mensagem(), request.requestedModelId(), request.clientMessageId()));
+        return ResponseEntity.status(turn.replayed() ? HttpStatus.OK : HttpStatus.CREATED)
+            .body(ChatTurnResponse.from(turn));
     }
 
     private static ConversationStatus parseListStatus(String status) {

@@ -9,6 +9,7 @@ public record StartConversationCommand(
     TenantId tenantId,
     UserId owner,
     String message,
-    UUID requestedModelId
+    UUID requestedModelId,
+    String clientMessageId
 ) {
 }

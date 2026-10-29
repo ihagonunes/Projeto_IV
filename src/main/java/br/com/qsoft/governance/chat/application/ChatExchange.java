@@ -35,6 +35,11 @@ public class ChatExchange {
     }
 
     public ChatTurn exchange(Conversation conversation, String content, UUID requestedModelId) {
+        return exchange(conversation, content, requestedModelId, null);
+    }
+
+    public ChatTurn exchange(Conversation conversation, String content, UUID requestedModelId,
+                             String clientMessageId) {
         if (conversation.isDeleted()) {
             throw new ConversationNotFoundException();
         }
@@ -42,7 +47,7 @@ public class ChatExchange {
             throw new ConversationArchivedException();
         }
         ChatMessage userMessage = ChatMessage.user(UUID.randomUUID(), conversation.tenantId(),
-            conversation.id(), content);
+            conversation.id(), content, clientMessageId);
         writer.persistUserMessage(conversation, userMessage);
 
         List<ChatMessage> history = messageRepository.findLastMessages(

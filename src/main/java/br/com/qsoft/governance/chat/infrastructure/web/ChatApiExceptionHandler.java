@@ -9,6 +9,8 @@ import br.com.qsoft.governance.aigateway.api.exception.NoModelConfiguredExceptio
 import br.com.qsoft.governance.aigateway.api.exception.ProviderInactiveException;
 import br.com.qsoft.governance.chat.domain.ConversationArchivedException;
 import br.com.qsoft.governance.chat.domain.ConversationNotFoundException;
+import br.com.qsoft.governance.chat.domain.TurnInProgressOrFailedException;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,6 +30,17 @@ public class ChatApiExceptionHandler {
     @ExceptionHandler(ConversationArchivedException.class)
     public ResponseEntity<Map<String, String>> handleArchived(ConversationArchivedException ex) {
         return error(HttpStatus.CONFLICT, "CONVERSATION_ARCHIVED", ex.getMessage());
+    }
+
+    @ExceptionHandler(TurnInProgressOrFailedException.class)
+    public ResponseEntity<Map<String, Object>> handleTurnInProgress(
+            TurnInProgressOrFailedException ex) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("message", ex.getMessage());
+        body.put("code", "TURN_IN_PROGRESS_OR_FAILED");
+        body.put("messageId", ex.messageId());
+        body.put("requestId", ex.requestId());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
     }
 
     @ExceptionHandler(ModelNotAllowedException.class)

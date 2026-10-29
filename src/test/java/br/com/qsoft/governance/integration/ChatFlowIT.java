@@ -7,12 +7,15 @@ import br.com.qsoft.governance.aigateway.application.ChangeModelStatus;
 import br.com.qsoft.governance.aigateway.application.ChangeModelStatusCommand;
 import br.com.qsoft.governance.aigateway.application.CreateModel;
 import br.com.qsoft.governance.aigateway.application.CreateModelCommand;
+import br.com.qsoft.governance.aigateway.api.model.ReceiptInfo;
+import br.com.qsoft.governance.aigateway.api.query.AttemptReceiptQuery;
 import br.com.qsoft.governance.aigateway.application.CreateProvider;
 import br.com.qsoft.governance.aigateway.application.CreateProviderCommand;
 import br.com.qsoft.governance.aigateway.application.port.ModelRepository;
 import br.com.qsoft.governance.aigateway.domain.model.Model;
 import br.com.qsoft.governance.aigateway.domain.model.ModelStatus;
 import br.com.qsoft.governance.aigateway.domain.provider.ProviderKind;
+import br.com.qsoft.governance.iam.application.port.UserRepository;
 import br.com.qsoft.governance.iam.domain.tenant.Tenant;
 import br.com.qsoft.governance.iam.domain.user.HierarchyLevel;
 import br.com.qsoft.governance.iam.domain.user.User;
@@ -85,6 +88,12 @@ class ChatFlowIT {
 
     @Autowired
     ModelRepository modelRepository;
+
+    @Autowired
+    UserRepository userRepository;
+
+    @Autowired
+    AttemptReceiptQuery receiptQuery;
 
     @Autowired
     JdbcTemplate jdbcTemplate;
@@ -284,11 +293,19 @@ class ChatFlowIT {
         assertThat(patchStatus(collabEmail, "/api/v1/conversas/" + id,
             Map.of("status", "ARCHIVED"))).isEqualTo(404);
         assertThat(deleteStatus(collabEmail, "/api/v1/conversas/" + id)).isEqualTo(404);
+        assertThat(postStatus(executiveEmail, "/api/v1/conversas/" + id + "/mensagens",
+            Map.of("mensagem", "não deveria entrar"))).isEqualTo(404);
+        assertThat(postStatus(collabEmail, "/api/v1/conversas/" + id + "/mensagens",
+            Map.of("mensagem", "não deveria entrar"))).isEqualTo(404);
 
         assertThat(status(adminEmail, "/api/v1/conversas/" + id + "/mensagens")).isEqualTo(403);
         assertThat(patchStatus(adminEmail, "/api/v1/conversas/" + id,
             Map.of("status", "ARCHIVED"))).isEqualTo(403);
         assertThat(deleteStatus(adminEmail, "/api/v1/conversas/" + id)).isEqualTo(403);
+        assertThat(postStatus(adminEmail, "/api/v1/conversas/" + id + "/mensagens",
+            Map.of("mensagem", "não deveria entrar"))).isEqualTo(403);
+        assertThat(postStatus(adminEmail, "/api/v1/conversas",
+            Map.of("mensagem", "não deveria entrar"))).isEqualTo(403);
     }
 
     @Test
@@ -301,6 +318,8 @@ class ChatFlowIT {
         assertThat(patchStatus(otherCollabEmail, "/api/v1/conversas/" + id,
             Map.of("status", "ARCHIVED"))).isEqualTo(404);
         assertThat(deleteStatus(otherCollabEmail, "/api/v1/conversas/" + id)).isEqualTo(404);
+        assertThat(postStatus(otherCollabEmail, "/api/v1/conversas/" + id + "/mensagens",
+            Map.of("mensagem", "não deveria entrar"))).isEqualTo(404);
     }
 
     @Test
@@ -437,6 +456,150 @@ class ChatFlowIT {
             UUID.fromString(requestId));
         assertThat(attempt.get("cost_status")).isEqualTo("INCONCLUSIVE");
         assertThat(attempt.get("error_code")).isEqualTo("PRICE_MISSING");
+    }
+
+    @Test
+    void ch05_reciboDuravelBateComEnvioEUsageRecord() {
+        Map<String, Object> created = post(managerEmail, "/api/v1/conversas",
+            Map.of("mensagem", "a b"));
+        String conversationId = conversationId(created);
+        Map<?, ?> sentReceipt = (Map<?, ?>) created.get("recibo");
+        String requestId = (String) sentReceipt.get("requestId");
+
+        List<?> messages = getList(managerEmail,
+            "/api/v1/conversas/" + conversationId + "/mensagens");
+        Map<?, ?> assistant = messages.stream()
+            .map(item -> (Map<?, ?>) item)
+            .filter(item -> "ASSISTANT".equals(item.get("role")))
+            .findFirst().orElseThrow();
+        Map<?, ?> durableReceipt = (Map<?, ?>) assistant.get("recibo");
+
+        assertThat(durableReceipt).isNotNull();
+        assertThat(durableReceipt.get("requestId")).isEqualTo(requestId);
+        assertThat(durableReceipt.get("tokensEntrada"))
+            .isEqualTo(sentReceipt.get("tokensEntrada"));
+        assertThat(durableReceipt.get("tokensSaida"))
+            .isEqualTo(sentReceipt.get("tokensSaida"));
+        assertThat(new BigDecimal(durableReceipt.get("custoEstimado").toString()))
+            .isEqualByComparingTo(new BigDecimal(sentReceipt.get("custoEstimado").toString()));
+        assertThat(durableReceipt.get("statusCusto"))
+            .isEqualTo(sentReceipt.get("statusCusto"));
+
+        Map<String, Object> usage = jdbcTemplate.queryForMap(
+            "SELECT input_tokens, output_tokens, estimated_cost "
+                + "FROM observability_usage_records WHERE request_id = ?",
+            UUID.fromString(requestId));
+        assertThat(((Number) usage.get("input_tokens")).longValue())
+            .isEqualTo(((Number) durableReceipt.get("tokensEntrada")).longValue());
+        assertThat(((Number) usage.get("output_tokens")).longValue())
+            .isEqualTo(((Number) durableReceipt.get("tokensSaida")).longValue());
+        assertThat((BigDecimal) usage.get("estimated_cost"))
+            .isEqualByComparingTo(new BigDecimal(durableReceipt.get("custoEstimado").toString()));
+
+        List<?> firstPage = getList(managerEmail,
+            "/api/v1/conversas/" + conversationId + "/mensagens?page=0&size=1");
+        List<?> secondPage = getList(managerEmail,
+            "/api/v1/conversas/" + conversationId + "/mensagens?page=1&size=1");
+        assertThat(firstPage).hasSize(1);
+        assertThat(secondPage).hasSize(1);
+        assertThat(((Map<?, ?>) firstPage.get(0)).get("role")).isEqualTo("USER");
+        assertThat(((Map<?, ?>) secondPage.get(0)).get("role")).isEqualTo("ASSISTANT");
+    }
+
+    @Test
+    void ch06_reciboNaoDevolveTentativaDeOutroDono() {
+        Map<String, Object> created = post(managerEmail, "/api/v1/conversas",
+            Map.of("mensagem", "a b"));
+        String requestId = (String) ((Map<?, ?>) created.get("recibo")).get("requestId");
+        User manager = userRepository.findByTenantIdAndEmail(tenant.id(), managerEmail)
+            .orElseThrow();
+        User executive = userRepository.findByTenantIdAndEmail(tenant.id(), executiveEmail)
+            .orElseThrow();
+
+        Map<UUID, ReceiptInfo> own = receiptQuery.receipts(
+            tenant.id(), manager.id(), Set.of(UUID.fromString(requestId)));
+        Map<UUID, ReceiptInfo> other = receiptQuery.receipts(
+            tenant.id(), executive.id(), Set.of(UUID.fromString(requestId)));
+
+        assertThat(own).containsKey(UUID.fromString(requestId));
+        assertThat(other).isEmpty();
+    }
+
+    @Test
+    void ch07_clientMessageIdRepetidoDevolveMesmoTurnoSemNovaTentativa() {
+        String clientMessageId = "client-" + UUID.randomUUID().toString().replace("-", "");
+        User manager = userRepository.findByTenantIdAndEmail(tenant.id(), managerEmail)
+            .orElseThrow();
+        int attemptsBefore = jdbcTemplate.queryForObject(
+            "SELECT count(*) FROM aigateway_request_attempts WHERE tenant_id = ? AND user_id = ?",
+            Integer.class, tenant.id().value(), manager.id().value());
+
+        Map<String, Object> first = post(managerEmail, "/api/v1/conversas",
+            Map.of("mensagem", "a b", "clientMessageId", clientMessageId));
+        String firstRequest = (String) ((Map<?, ?>) first.get("recibo")).get("requestId");
+
+        Map<String, Object> second = post(managerEmail, "/api/v1/conversas",
+            Map.of("mensagem", "a b", "clientMessageId", clientMessageId));
+        String secondRequest = (String) ((Map<?, ?>) second.get("recibo")).get("requestId");
+
+        assertThat(secondRequest).isEqualTo(firstRequest);
+        int attemptsAfter = jdbcTemplate.queryForObject(
+            "SELECT count(*) FROM aigateway_request_attempts WHERE tenant_id = ? AND user_id = ?",
+            Integer.class, tenant.id().value(), manager.id().value());
+        assertThat(attemptsAfter).isEqualTo(attemptsBefore + 1);
+
+        String conversationId = conversationId(first);
+        String messageClientId = "msg-" + UUID.randomUUID().toString().replace("-", "");
+        int attemptsBeforeMessage = attemptsAfter;
+        Map<String, Object> messageFirst = post(managerEmail,
+            "/api/v1/conversas/" + conversationId + "/mensagens",
+            Map.of("mensagem", "c d", "clientMessageId", messageClientId));
+        Map<String, Object> messageSecond = post(managerEmail,
+            "/api/v1/conversas/" + conversationId + "/mensagens",
+            Map.of("mensagem", "c d", "clientMessageId", messageClientId));
+        assertThat(((Map<?, ?>) messageSecond.get("recibo")).get("requestId"))
+            .isEqualTo(((Map<?, ?>) messageFirst.get("recibo")).get("requestId"));
+        assertThat(jdbcTemplate.queryForObject(
+            "SELECT count(*) FROM aigateway_request_attempts WHERE tenant_id = ? AND user_id = ?",
+            Integer.class, tenant.id().value(), manager.id().value()))
+            .isEqualTo(attemptsBeforeMessage + 1);
+
+        String stalledClientId = "stalled-" + UUID.randomUUID().toString().replace("-", "");
+        jdbcTemplate.update("""
+            INSERT INTO chat_messages
+                (id, tenant_id, conversation_id, role, content, client_message_id, created_at)
+            VALUES (?, ?, ?, 'USER', ?, ?, now())
+            """, UUID.randomUUID(), tenant.id().value(), UUID.fromString(conversationId),
+            "stalled", stalledClientId);
+        assertThat(postErrorBody(managerEmail,
+            "/api/v1/conversas/" + conversationId + "/mensagens",
+            Map.of("mensagem", "stalled", "clientMessageId", stalledClientId)))
+            .contains("TURN_IN_PROGRESS_OR_FAILED");
+
+        assertThat(postStatus(managerEmail, "/api/v1/conversas",
+            Map.of("mensagem", "inválido", "clientMessageId", "curto")))
+            .isEqualTo(400);
+    }
+
+    @Test
+    void ch10_conteudoNaoVaiParaLogNaListagemDeMensagens() {
+        String prompt = "segredo-listagem-" + UUID.randomUUID();
+        Map<String, Object> created = post(managerEmail, "/api/v1/conversas",
+            Map.of("mensagem", prompt));
+        String id = conversationId(created);
+
+        Logger root = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        root.addAppender(appender);
+        try {
+            getList(managerEmail, "/api/v1/conversas/" + id + "/mensagens");
+        } finally {
+            root.detachAppender(appender);
+        }
+
+        assertThat(appender.list)
+            .noneMatch(event -> event.getFormattedMessage().contains(prompt));
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

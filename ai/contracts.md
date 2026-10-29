@@ -21,7 +21,7 @@ Contratos são Java APIs internas entre módulos. Não equivalem automaticamente
 | iam | `IdentityQuery` (`getUserContext`/`eligibleUsers`; `UserContext` inclui `name`), `HistoricalIdentityQuery` (`employeeId`/`employeeIds`), `AuthorizationQuery` (`isAllowed`/`visibilityFor`), `@RequiresPermission`/`Targeting` em `iam.api.rbac` (ADR-34/ADR-36/ADR-37/ADR-40) |
 | department | `OrganizationQuery`, `DepartmentBudgetQuery` (`budgetFor`/`budgetsFor` + `BudgetLimitInfo`), `DepartmentModelPolicyQuery` |
 | project | `ProjectQueryPort` |
-| aigateway | `AICompletionService`, `ModelResolutionQuery` (`resolve`/`allowedModels`), `AIToolCatalogQuery`, catálogo administrativo |
+| aigateway | `AICompletionService`, `ModelResolutionQuery` (`resolve`/`allowedModels`), `AttemptReceiptQuery` (recibo por tenant + dono), `AIToolCatalogQuery`, catálogo administrativo |
 | chat | `ListConversations` (status/q), `UpdateConversation`, `DeleteConversation`, commands/queries de Conversation/Message |
 | agentpolicies | `KnowledgeAccessService`, `AskPolicyAgent`, KnowledgeDocument commands/queries |
 | observability | `UsageActivityQuery` (dias ativos por usuário, dia UTC e `tenant_id` explícito), `UsageMetricsQueryPort`, `CostMetricsQueryPort`, `BudgetStatusQueryPort` (implementado por `QueryBudgetStatus`) |
@@ -34,10 +34,17 @@ Contratos são Java APIs internas entre módulos. Não equivalem automaticamente
 
 - `GET /api/v1/conversas?status=ACTIVE|ARCHIVED&q=&page=&size=` — só conversas do ator,
   `q` literal (ILIKE escapado), ordem `updated_at DESC, id DESC`; `DELETED` nunca aparece.
+- `GET /api/v1/conversas/{id}/mensagens?page=&size=` — ordem ascendente, padrão 50, máximo 200;
+  cada ASSISTANT traz `recibo` via `AttemptReceiptQuery`.
 - `PATCH /api/v1/conversas/{id}` — `titulo` e/ou `status` (`ACTIVE`/`ARCHIVED`); excluída → 404.
 - `DELETE /api/v1/conversas/{id}` — exclusão lógica (`DELETED` + `deleted_at`), 204.
 - `GET /api/v1/conversas/modelos` — `ModelResolutionQuery.allowedModels` (política do departamento,
   `available`/`unavailableReason`).
+- `POST /api/v1/conversas` e `POST /api/v1/conversas/{id}/mensagens` aceitam
+  `clientMessageId` (8–64, `[A-Za-z0-9_-]`): repetição concluída → 200 com o mesmo turno;
+  sem ASSISTANT/requestId → 409 `TURN_IN_PROGRESS_OR_FAILED`.
+- `AttemptReceiptQuery.receipts(tenant, owner, requestIds)` — lote de até 100 ids, sempre com
+  `tenant_id` e `user_id = owner`; retorna `ReceiptInfo` de `aigateway.api`.
 - Erros do chat: `{ "message": "...", "code": "..." }`, com códigos estáveis
   (`CONVERSATION_NOT_FOUND`, `CONVERSATION_ARCHIVED`, `MODEL_NOT_ALLOWED`, `NO_MODEL_CONFIGURED`,
   `PROVIDER_FAILURE`, `PROVIDER_TIMEOUT`, `ATTEMPT_NOT_RECORDED`, `INVALID_REQUEST`).

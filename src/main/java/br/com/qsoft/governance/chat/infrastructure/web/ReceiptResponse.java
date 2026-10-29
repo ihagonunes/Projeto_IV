@@ -1,6 +1,7 @@
 package br.com.qsoft.governance.chat.infrastructure.web;
 
 import br.com.qsoft.governance.aigateway.api.completion.CompletionResult;
+import br.com.qsoft.governance.aigateway.api.model.ReceiptInfo;
 import java.math.BigDecimal;
 import java.util.UUID;
 
@@ -29,6 +30,19 @@ public record ReceiptResponse(
             result.estimatedCost(),
             result.costStatus(),
             result.latencyMs()
+        );
+    }
+
+    public static ReceiptResponse from(ReceiptInfo info) {
+        return new ReceiptResponse(
+            info.requestId(),
+            info.modelName(),
+            info.providerName(),
+            info.inputTokens(),
+            info.outputTokens(),
+            info.estimatedCost(),
+            info.costStatus(),
+            info.latencyMs() == null ? 0 : info.latencyMs()
         );
     }
 }

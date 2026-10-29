@@ -10,6 +10,7 @@ public record SendMessageCommand(
     UserId owner,
     UUID conversationId,
     String message,
-    UUID requestedModelId
+    UUID requestedModelId,
+    String clientMessageId
 ) {
 }

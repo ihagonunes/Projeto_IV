@@ -102,6 +102,20 @@ class ChatDomainTest {
     }
 
     @Test
+    void clientMessageIdAceitaFormatoE8a64Caracteres() {
+        ChatMessage message = ChatMessage.user(UUID.randomUUID(), tenantId, conversationId,
+            "x", "client_123");
+
+        assertThat(message.clientMessageId()).isEqualTo("client_123");
+        assertThatThrownBy(() -> ChatMessage.user(UUID.randomUUID(), tenantId, conversationId,
+            "x", "curto"))
+            .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> ChatMessage.user(UUID.randomUUID(), tenantId, conversationId,
+            "x", "inválido!"))
+            .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
     void respostaExigeRequestIdDoReceipt() {
         assertThatThrownBy(() -> ChatMessage.assistant(UUID.randomUUID(), tenantId, conversationId,
             "resposta", null))
