@@ -115,7 +115,8 @@ class AIGatewayRoutingIT {
         String providerId = (String) post("/api/v1/ai-gateway/providers",
             adminToken, Map.of("name", "OpenAI " + name)).get("id");
         return UUID.fromString((String) post("/api/v1/ai-gateway/models",
-            adminToken, Map.of("providerId", providerId, "name", name)).get("id"));
+            adminToken, Map.of("providerId", providerId, "name", name,
+                "inputPricePer1k", 0.01, "outputPricePer1k", 0.03)).get("id"));
     }
 
     private UUID createDepartment(String adminToken, String name) {

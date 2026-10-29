@@ -107,6 +107,31 @@ docker run --rm -p 8080:8080 \
 
 > Os **testes de integração não usam esse container**: eles sobem um **PostgreSQL 18.6 via Testcontainers** em `mvn verify -Pintegration`.
 
+### Provider real (OPENAI_COMPATIBLE)
+
+O provider real é opcional e usa apenas configuração; não há SDK nem dependência nova.
+
+1. Defina a chave no ambiente do **backend** (nunca no repositório). O nome da variável é a
+   `credentialRef` cadastrada no provider:
+
+   ```bash
+   # exemplo; não comite este valor
+   export QSOFT_LLM_API_KEY=<chave-do-fornecedor>
+   ```
+
+   Para Ollama local, cadastre o provider com `credentialRef` nulo: nenhum header
+   `Authorization` é enviado.
+
+2. Cadastre o provider (`POST /api/v1/ai-gateway/providers`) com `kind=OPENAI_COMPATIBLE`,
+   `baseUrl` do fornecedor e `credentialRef=QSOFT_LLM_API_KEY`.
+3. Cadastre o modelo (`POST /api/v1/ai-gateway/models`) com `externalName` do fornecedor e os
+   dois preços por 1.000 tokens. Modelos `AVAILABLE` exigem preço; zero explícito é aceito.
+4. Configure a política do departamento (`PUT /api/v1/ai-gateway/departments/{id}/model-policy`)
+   e use o chat.
+
+A chave existe apenas no ambiente do backend; ela não é devolvida em DTO, log ou banco. Variável
+ausente → `CREDENTIAL_MISSING` (502).
+
 ---
 
 ## 3. Rodar o frontend (BFF Node)

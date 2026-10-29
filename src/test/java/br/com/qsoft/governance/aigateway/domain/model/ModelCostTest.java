@@ -1,13 +1,16 @@
 package br.com.qsoft.governance.aigateway.domain.model;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import br.com.qsoft.governance.aigateway.domain.exception.ModelPriceRequiredException;
 import br.com.qsoft.governance.sharedkernel.id.TenantId;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
-/** Cálculo do custo estimado (SPI-72 / ADR-13). */
+/** Cálculo do custo estimado (SPI-72 / ADR-13 / S4-D12). */
 class ModelCostTest {
 
     private Model model(BigDecimal inputPrice, BigDecimal outputPrice) {
@@ -24,8 +27,12 @@ class ModelCostTest {
     }
 
     @Test
-    void shouldComputeZeroWhenModelHasNoPrice() {
-        assertThat(model(null, null).estimatedCost(500, 500)).isEqualByComparingTo("0.000000");
+    void shouldRejectCostWhenLegacyModelHasNoPrice() {
+        Model model = Model.restore(UUID.randomUUID(), TenantId.random(), UUID.randomUUID(),
+            "legacy", null, ModelStatus.AVAILABLE, null, null, Instant.now(), Instant.now());
+
+        assertThatThrownBy(() -> model.estimatedCost(500, 500))
+            .isInstanceOf(ModelPriceRequiredException.class);
     }
 
     @Test

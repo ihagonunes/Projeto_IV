@@ -41,6 +41,8 @@ class OpenAiCompatibleProviderClientTest {
 
     @BeforeEach
     void setUp() throws IOException {
+        authorization.set(null);
+        requestBody.set(null);
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.createContext("/chat/completions", exchange -> {
             authorization.set(exchange.getRequestHeaders().getFirst("Authorization"));
@@ -156,6 +158,56 @@ class OpenAiCompatibleProviderClientTest {
                 List.of(CompletionMessage.user("oi")), List.of())))
                 .isInstanceOfSatisfying(ProviderFailureException.class,
                     ex -> assertThat(ex.errorCode()).isEqualTo("HTTP_429"));
+        } finally {
+            other.stop(0);
+        }
+    }
+
+    @Test
+    void semCredentialRefNaoEnviaAuthorization() {
+        OpenAiCompatibleProviderClient client = new OpenAiCompatibleProviderClient(
+            reference -> {
+                throw new AssertionError("resolver não deveria ser chamado");
+            }, new ObjectMapper());
+
+        ProviderResponse response = client.call(new ProviderCall(
+            ProviderKind.OPENAI_COMPATIBLE, baseUrl, null, 5000, "gpt-x",
+            List.of(CompletionMessage.user("oi")), List.of()));
+
+        assertThat(response.content()).isEqualTo("resposta");
+        assertThat(authorization.get()).isNull();
+    }
+
+    @Test
+    void credencialAusenteViraCredentialMissing() {
+        OpenAiCompatibleProviderClient client =
+            new OpenAiCompatibleProviderClient(new EnvCredentialResolver(), new ObjectMapper());
+
+        assertThatThrownBy(() -> client.call(new ProviderCall(
+            ProviderKind.OPENAI_COMPATIBLE, baseUrl, "QSOFT_NAO_EXISTE_TESTE", 5000, "gpt-x",
+            List.of(CompletionMessage.user("oi")), List.of())))
+            .isInstanceOfSatisfying(ProviderFailureException.class,
+                ex -> assertThat(ex.errorCode()).isEqualTo("CREDENTIAL_MISSING"));
+    }
+
+    @Test
+    void erro500ViraProviderFailure() throws IOException {
+        HttpServer other = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        other.createContext("/chat/completions", exchange -> {
+            exchange.sendResponseHeaders(500, -1);
+            exchange.close();
+        });
+        other.start();
+        try {
+            String url = "http://127.0.0.1:" + other.getAddress().getPort();
+            OpenAiCompatibleProviderClient client =
+                new OpenAiCompatibleProviderClient(reference -> SECRET, new ObjectMapper());
+
+            assertThatThrownBy(() -> client.call(new ProviderCall(
+                ProviderKind.OPENAI_COMPATIBLE, url, "OPENAI_KEY", 5000, "gpt-x",
+                List.of(CompletionMessage.user("oi")), List.of())))
+                .isInstanceOfSatisfying(ProviderFailureException.class,
+                    ex -> assertThat(ex.errorCode()).isEqualTo("HTTP_500"));
         } finally {
             other.stop(0);
         }

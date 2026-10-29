@@ -9,6 +9,7 @@ import br.com.qsoft.governance.aigateway.application.CreateModel;
 import br.com.qsoft.governance.aigateway.application.CreateModelCommand;
 import br.com.qsoft.governance.aigateway.application.CreateProvider;
 import br.com.qsoft.governance.aigateway.application.CreateProviderCommand;
+import br.com.qsoft.governance.aigateway.application.port.ModelRepository;
 import br.com.qsoft.governance.aigateway.domain.model.Model;
 import br.com.qsoft.governance.aigateway.domain.model.ModelStatus;
 import br.com.qsoft.governance.aigateway.domain.provider.ProviderKind;
@@ -20,6 +21,7 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -82,6 +84,9 @@ class ChatFlowIT {
     ChangeModelStatus changeModelStatus;
 
     @Autowired
+    ModelRepository modelRepository;
+
+    @Autowired
     JdbcTemplate jdbcTemplate;
 
     private RestClient client;
@@ -94,6 +99,7 @@ class ChatFlowIT {
     private String otherAdminEmail;
     private String otherCollabEmail;
     private UUID providerId;
+    private UUID departmentId;
     private Model echoModel;
     private Model errorModel;
 
@@ -107,7 +113,7 @@ class ChatFlowIT {
         other = testTenants.ensureTenant(slug + "x", "Chat Other", "Admin",
             otherAdminEmail, PASSWORD);
 
-        UUID departmentId = createDepartment();
+        departmentId = createDepartment();
 
         managerEmail = "manager@" + slug + ".com";
         executiveEmail = "executive@" + slug + ".com";
@@ -377,6 +383,60 @@ class ChatFlowIT {
         assertThat(errorEntry.get("available")).isEqualTo(false);
         assertThat(errorEntry.get("unavailableReason")).isEqualTo("MODEL_UNAVAILABLE");
         assertThat(models.toString()).doesNotContain("fora da política");
+    }
+
+    @Test
+    void pr01_modeloSemPrecoNaoFicaAvailableEZeroExplicitoEhAceito() {
+        String name = "sem-preco " + UUID.randomUUID();
+        Map<String, Object> withoutPrice = Map.of(
+            "providerId", providerId.toString(),
+            "name", name,
+            "externalName", "stub-echo");
+
+        assertThat(postStatus(adminEmail, "/api/v1/ai-gateway/models", withoutPrice))
+            .isEqualTo(400);
+        assertThat(postErrorBody(adminEmail, "/api/v1/ai-gateway/models", withoutPrice))
+            .contains("MODEL_PRICE_REQUIRED");
+
+        Map<String, Object> withZero = Map.of(
+            "providerId", providerId.toString(),
+            "name", name + " zero",
+            "externalName", "stub-echo",
+            "inputPricePer1k", 0,
+            "outputPricePer1k", 0);
+        assertThat(postStatus(adminEmail, "/api/v1/ai-gateway/models", withZero))
+            .isEqualTo(201);
+    }
+
+    @Test
+    void pr02_modeloLegadoSemPrecoProduzInconclusivoSemUsageRecord() {
+        UUID legacyId = UUID.randomUUID();
+        modelRepository.save(Model.restore(legacyId, tenant.id(), providerId,
+            "legacy " + legacyId, "stub-echo", ModelStatus.AVAILABLE, null, null,
+            Instant.now(), Instant.now()));
+
+        assertThat(putStatus(adminEmail,
+            "/api/v1/ai-gateway/departments/" + departmentId + "/model-policy",
+            Map.of("allowedModelIds", List.of(legacyId.toString()),
+                "defaultModelId", legacyId.toString())))
+            .isEqualTo(204);
+
+        Map<String, Object> created = post(managerEmail, "/api/v1/conversas",
+            Map.of("mensagem", "a b"));
+        Map<?, ?> receipt = (Map<?, ?>) created.get("recibo");
+        String requestId = (String) receipt.get("requestId");
+
+        assertThat(receipt.get("statusCusto")).isEqualTo("INCONCLUSIVE");
+        assertThat(receipt.get("custoEstimado")).isNull();
+        assertThat(jdbcTemplate.queryForObject(
+            "SELECT count(*) FROM observability_usage_records WHERE request_id = ?",
+            Integer.class, UUID.fromString(requestId))).isZero();
+
+        Map<String, Object> attempt = jdbcTemplate.queryForMap(
+            "SELECT cost_status, error_code FROM aigateway_request_attempts WHERE request_id = ?",
+            UUID.fromString(requestId));
+        assertThat(attempt.get("cost_status")).isEqualTo("INCONCLUSIVE");
+        assertThat(attempt.get("error_code")).isEqualTo("PRICE_MISSING");
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

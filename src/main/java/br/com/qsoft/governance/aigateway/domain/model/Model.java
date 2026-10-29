@@ -1,5 +1,6 @@
 package br.com.qsoft.governance.aigateway.domain.model;
 
+import br.com.qsoft.governance.aigateway.domain.exception.ModelPriceRequiredException;
 import br.com.qsoft.governance.sharedkernel.id.TenantId;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -50,10 +51,14 @@ public final class Model {
     public static Model create(UUID id, TenantId tenantId, UUID providerId, String name,
                                String externalName, BigDecimal inputPricePer1k,
                                BigDecimal outputPricePer1k) {
+        BigDecimal input = requirePrice(inputPricePer1k);
+        BigDecimal output = requirePrice(outputPricePer1k);
+        if (input == null || output == null) {
+            throw new ModelPriceRequiredException();
+        }
         Instant now = Instant.now();
         return new Model(id, tenantId, providerId, requireName(name), externalName,
-            ModelStatus.AVAILABLE, requirePrice(inputPricePer1k), requirePrice(outputPricePer1k),
-            now, now);
+            ModelStatus.AVAILABLE, input, output, now, now);
     }
 
     public static Model restore(UUID id, TenantId tenantId, UUID providerId, String name,
@@ -120,6 +125,9 @@ public final class Model {
     }
 
     public Model makeAvailable() {
+        if (inputPricePer1k == null || outputPricePer1k == null) {
+            throw new ModelPriceRequiredException();
+        }
         if (status != ModelStatus.AVAILABLE) {
             this.status = ModelStatus.AVAILABLE;
             touch();
@@ -138,22 +146,23 @@ public final class Model {
     /**
      * Custo estimado (ADR-13/SPI-72):
      * {@code (inputTokens/1000 * inputPrice) + (outputTokens/1000 * outputPrice)}.
-     * Preço nulo conta como zero (modelo sem preço definido).
+     * Preço nulo é rejeitado; zero explícito é um preço válido (S4-D12).
      */
     public BigDecimal estimatedCost(long inputTokens, long outputTokens) {
         return estimateCost(inputPricePer1k, outputPricePer1k, inputTokens, outputTokens);
     }
 
-    /** Cálculo do custo com preços fotografados (ADR-38); preço nulo conta como zero. */
+    /** Cálculo do custo com preços fotografados (ADR-38); exige os dois preços. */
     public static BigDecimal estimateCost(BigDecimal inputPricePer1k, BigDecimal outputPricePer1k,
                                           long inputTokens, long outputTokens) {
         if (inputTokens < 0 || outputTokens < 0) {
             throw new IllegalArgumentException("tokens não podem ser negativos.");
         }
-        BigDecimal input = inputPricePer1k == null ? BigDecimal.ZERO : inputPricePer1k;
-        BigDecimal output = outputPricePer1k == null ? BigDecimal.ZERO : outputPricePer1k;
-        return input.multiply(BigDecimal.valueOf(inputTokens))
-            .add(output.multiply(BigDecimal.valueOf(outputTokens)))
+        if (inputPricePer1k == null || outputPricePer1k == null) {
+            throw new ModelPriceRequiredException();
+        }
+        return inputPricePer1k.multiply(BigDecimal.valueOf(inputTokens))
+            .add(outputPricePer1k.multiply(BigDecimal.valueOf(outputTokens)))
             .divide(THOUSAND, COST_SCALE, RoundingMode.HALF_UP);
     }
 

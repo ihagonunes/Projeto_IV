@@ -60,10 +60,21 @@ public record RequestAttempt(
     public RequestAttempt succeeded(Long inputTokens, Long outputTokens, CostStatus costStatus,
                                     BigDecimal estimatedCost, long latencyMs,
                                     DeliveryStatus deliveryStatus) {
+        return succeeded(inputTokens, outputTokens, costStatus, estimatedCost, latencyMs,
+            deliveryStatus, null);
+    }
+
+    /**
+     * Sucesso com um código de diagnóstico, por exemplo {@code PRICE_MISSING}
+     * quando o uso é conhecido mas o modelo não tem preço (S4-D12).
+     */
+    public RequestAttempt succeeded(Long inputTokens, Long outputTokens, CostStatus costStatus,
+                                    BigDecimal estimatedCost, long latencyMs,
+                                    DeliveryStatus deliveryStatus, String errorCode) {
         return new RequestAttempt(requestId, tenantId, userId, departmentId, purpose, modelId,
             providerId, authorizationStatus, denialReason, ExecutionStatus.SUCCEEDED, deliveryStatus,
             inputTokens, outputTokens, costStatus, estimatedCost, unitPriceInput, unitPriceOutput,
-            latencyMs, null, deliveryAttempts, nextDeliveryAt, createdAt, Instant.now());
+            latencyMs, errorCode, deliveryAttempts, nextDeliveryAt, createdAt, Instant.now());
     }
 
     /** Falha técnica (timeout/erro). {@code costStatus} KNOWN só com cobrança declarada zero. */

@@ -43,13 +43,20 @@ public class OpenAiCompatibleProviderClient implements ProviderClient {
 
     @Override
     public ProviderResponse call(ProviderCall call) {
-        String secret = credentialResolver.resolve(call.credentialRef());
+        // credentialRef nulo/em branco = provider local sem chave (ex.: Ollama).
+        String secret = null;
+        if (call.credentialRef() != null && !call.credentialRef().isBlank()) {
+            secret = credentialResolver.resolve(call.credentialRef());
+        }
         RestClient client = restClient(call.baseUrl(), call.timeoutMs());
         try {
-            Map<?, ?> response = client.post()
+            RestClient.RequestBodySpec request = client.post()
                 .uri("/chat/completions")
-                .header("Authorization", "Bearer " + secret)
-                .contentType(MediaType.APPLICATION_JSON)
+                .contentType(MediaType.APPLICATION_JSON);
+            if (secret != null) {
+                request = request.header("Authorization", "Bearer " + secret);
+            }
+            Map<?, ?> response = request
                 .body(requestBody(call))
                 .retrieve()
                 .body(Map.class);

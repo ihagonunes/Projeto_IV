@@ -56,8 +56,16 @@ public class AttemptRecorder {
     public void recordSuccess(UUID requestId, Long inputTokens, Long outputTokens,
                               CostStatus costStatus, BigDecimal estimatedCost, long latencyMs,
                               DeliveryStatus deliveryStatus) {
+        recordSuccess(requestId, inputTokens, outputTokens, costStatus, estimatedCost, latencyMs,
+            deliveryStatus, null);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void recordSuccess(UUID requestId, Long inputTokens, Long outputTokens,
+                              CostStatus costStatus, BigDecimal estimatedCost, long latencyMs,
+                              DeliveryStatus deliveryStatus, String errorCode) {
         repository.save(require(requestId).succeeded(inputTokens, outputTokens, costStatus,
-            estimatedCost, latencyMs, deliveryStatus));
+            estimatedCost, latencyMs, deliveryStatus, errorCode));
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
