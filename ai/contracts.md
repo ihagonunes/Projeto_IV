@@ -25,7 +25,7 @@ Contratos são Java APIs internas entre módulos. Não equivalem automaticamente
 | chat | `ListConversations` (status/q), `UpdateConversation`, `DeleteConversation`, commands/queries de Conversation/Message |
 | agentpolicies | `KnowledgeAccessService`, `AskPolicyAgent`, KnowledgeDocument commands/queries |
 | observability | `UsageActivityQuery` (dias ativos por usuário, dia UTC e `tenant_id` explícito), `UsageMetricsQueryPort`, `CostMetricsQueryPort`, `BudgetStatusQueryPort` (implementado por `QueryBudgetStatus`) |
-| engagement | `LicenseQueryPort`, `TrainingQueryPort`, `EngagementMetricsQueryPort`, `AICreditsQueryPort` |
+| engagement | `EngagementFactsPort` (OPERACIONAL/HISTORICO), `QueryAdoption`, cálculos puros de adoção/treinamento/Credits |
 | governancescore | `GovernanceScoreQueryPort`, Breakdown, Department scores, History |
 
 `AlertQueryPort` foi substituído pelo status de orçamento calculado na leitura (sem tabela nova, sem evento e sem bloqueio — A105).
@@ -45,6 +45,14 @@ Contratos são Java APIs internas entre módulos. Não equivalem automaticamente
   sem ASSISTANT/requestId → 409 `TURN_IN_PROGRESS_OR_FAILED`.
 - `AttemptReceiptQuery.receipts(tenant, owner, requestIds)` — lote de até 100 ids, sempre com
   `tenant_id` e `user_id = owner`; retorna `ReceiptInfo` de `aigateway.api`.
+
+### Engajamento (ADR-40)
+
+- `GET /api/v1/engajamento/adocao?fonte=OPERACIONAL|HISTORICO&ate=YYYY-MM-DD&departmentId=`
+  exige `USAGE:READ` com `BY_TARGET`; aplica `visibilityFor(USAGE:READ)` sobre os elegíveis IAM.
+  `fonte` ausente = `OPERACIONAL`; `fonte` inválida ou `ate` futuro → 400; `departmentId` fora do
+  recorte → 403. O denominador é sempre elegíveis; a resposta traz `sourceKind`, janela de 30 dias,
+  `porDepartamento` pela lotação IAM e `cobertura`.
 - Erros do chat: `{ "message": "...", "code": "..." }`, com códigos estáveis
   (`CONVERSATION_NOT_FOUND`, `CONVERSATION_ARCHIVED`, `MODEL_NOT_ALLOWED`, `NO_MODEL_CONFIGURED`,
   `PROVIDER_FAILURE`, `PROVIDER_TIMEOUT`, `ATTEMPT_NOT_RECORDED`, `INVALID_REQUEST`).
