@@ -114,6 +114,8 @@ class EngagementAdoptionIT {
         operationalUsage(managerA, "2026-07-15T10:00:00Z");
         operationalUsage(collabA, "2026-07-15T10:00:00Z");
         operationalUsage(collabB, "2026-07-15T10:00:00Z");
+        operationalTraining(managerA, "COMPLETED");
+        operationalTraining(collabA, "ENROLLED");
 
         link(executive, "E-EXEC");
         link(managerA, "E-MANAGER-A");
@@ -183,6 +185,37 @@ class EngagementAdoptionIT {
     }
 
     @Test
+    void en08_listaNominalRespeitaUserRead() {
+        Map<String, Object> collab = get(collabAEmail,
+            "/api/v1/engajamento/treinamentos/cruzamento?ate=" + ATE);
+        assertThat(collab.get("listaNominal")).isEqualTo(false);
+        Map<?, ?> collabQuadrants = (Map<?, ?>) collab.get("quadrantes");
+        assertThat(collabQuadrants.values()).allSatisfy(value ->
+            assertThat((List<?>) ((Map<?, ?>) value).get("usuarios")).isEmpty());
+
+        Map<String, Object> manager = get(managerAEmail,
+            "/api/v1/engajamento/treinamentos/cruzamento?ate=" + ATE);
+        assertThat(manager.get("listaNominal")).isEqualTo(true);
+        User managerUser = userRepository.findByTenantIdAndEmail(tenant.id(), managerAEmail)
+            .orElseThrow();
+        User collabUser = userRepository.findByTenantIdAndEmail(tenant.id(), collabAEmail)
+            .orElseThrow();
+        User collabBUser = userRepository.findByTenantIdAndEmail(tenant.id(), collabBEmail)
+            .orElseThrow();
+
+        Map<?, ?> trainedActive = quadrant(manager, "TREINADO_ATIVO");
+        assertThat(trainedActive.get("total")).isEqualTo(1);
+        assertThat(trainedActive.get("truncado")).isEqualTo(false);
+        assertThat(trainedActive.get("usuarios").toString())
+            .contains(managerUser.id().value().toString())
+            .doesNotContain(collabBUser.id().value().toString());
+
+        Map<?, ?> notTrainedActive = quadrant(manager, "NAO_TREINADO_ATIVO");
+        assertThat(notTrainedActive.get("usuarios").toString())
+            .contains(collabUser.id().value().toString());
+    }
+
+    @Test
     void en11_fontesNuncaSeMisturam() {
         Map<String, Object> operational = get(executiveEmail,
             "/api/v1/engajamento/adocao?ate=" + ATE + "&fonte=OPERACIONAL");
@@ -229,6 +262,21 @@ class EngagementAdoptionIT {
             VALUES (?, ?, ?)
             ON CONFLICT (tenant_id, user_id) DO NOTHING
             """, tenant.id().value(), user.id().value(), employeeId);
+    }
+
+    private void operationalTraining(User user, String status) {
+        LocalDate completedAt = "COMPLETED".equals(status)
+            ? LocalDate.of(2026, 7, 10) : null;
+        jdbcTemplate.update("""
+            INSERT INTO engagement_training_records
+                (id, tenant_id, user_id, course_name, status, completed_at, created_at)
+            VALUES (?, ?, ?, 'Governança', ?, ?, now())
+            """, UUID.randomUUID(), tenant.id().value(), user.id().value(), status,
+            completedAt == null ? null : java.sql.Date.valueOf(completedAt));
+    }
+
+    private Map<?, ?> quadrant(Map<String, Object> response, String name) {
+        return (Map<?, ?>) ((Map<?, ?>) response.get("quadrantes")).get(name);
     }
 
     private void operationalUsage(User user, String instant) {

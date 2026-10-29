@@ -53,6 +53,10 @@ Contratos são Java APIs internas entre módulos. Não equivalem automaticamente
   `fonte` ausente = `OPERACIONAL`; `fonte` inválida ou `ate` futuro → 400; `departmentId` fora do
   recorte → 403. O denominador é sempre elegíveis; a resposta traz `sourceKind`, janela de 30 dias,
   `porDepartamento` pela lotação IAM e `cobertura`.
+- `GET /api/v1/engajamento/treinamentos/cruzamento?fonte=&ate=&departmentId=` — mesmos
+  filtros/escopo; devolve os quatro quadrantes. A lista nominal (`userId`, `nome`,
+  `departmentId`) só inclui usuários cobertos por `USER:READ` do ator; sem essa permissão,
+  `usuarios=[]` e `listaNominal=false`. Limite de 200 por quadrante com `truncado`.
 - Erros do chat: `{ "message": "...", "code": "..." }`, com códigos estáveis
   (`CONVERSATION_NOT_FOUND`, `CONVERSATION_ARCHIVED`, `MODEL_NOT_ALLOWED`, `NO_MODEL_CONFIGURED`,
   `PROVIDER_FAILURE`, `PROVIDER_TIMEOUT`, `ATTEMPT_NOT_RECORDED`, `INVALID_REQUEST`).

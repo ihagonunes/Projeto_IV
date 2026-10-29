@@ -568,7 +568,7 @@ class ChatFlowIT {
         jdbcTemplate.update("""
             INSERT INTO chat_messages
                 (id, tenant_id, conversation_id, role, content, client_message_id, created_at)
-            VALUES (?, ?, ?, 'USER', ?, ?, now())
+            VALUES (?, ?, ?, 'USER', ?, ?, now() + interval '1 day')
             """, UUID.randomUUID(), tenant.id().value(), UUID.fromString(conversationId),
             "stalled", stalledClientId);
         assertThat(postErrorBody(managerEmail,
