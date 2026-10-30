@@ -273,6 +273,34 @@ class ChatFlowIT {
     }
 
     @Test
+    void en12_usuarioComCreditsZeroConversaNormalmente() {
+        Map<String, Object> credits = get(collabEmail, "/api/v1/engajamento/creditos");
+        List<?> items = (List<?>) credits.get("itens");
+        assertThat(items).hasSize(1);
+        assertThat(new BigDecimal(((Map<?, ?>) items.get(0)).get("score").toString()))
+            .isEqualByComparingTo("0.00");
+
+        assertThat(postStatus(collabEmail, "/api/v1/conversas",
+            Map.of("mensagem", "sem créditos, mas com acesso"))).isEqualTo(201);
+    }
+
+    @Test
+    void en12_apagarDadosDeEngagementNaoMudaChatNemModelo() {
+        int modelStatus = status(managerEmail, "/api/v1/ai-gateway/models/permitido");
+        jdbcTemplate.update("DELETE FROM engagement_credit_snapshots WHERE tenant_id = ?",
+            tenant.id().value());
+        jdbcTemplate.update("DELETE FROM engagement_training_records WHERE tenant_id = ?",
+            tenant.id().value());
+        jdbcTemplate.update("DELETE FROM engagement_ai_licenses WHERE tenant_id = ?",
+            tenant.id().value());
+
+        assertThat(status(managerEmail, "/api/v1/ai-gateway/models/permitido"))
+            .isEqualTo(modelStatus);
+        assertThat(postStatus(managerEmail, "/api/v1/conversas",
+            Map.of("mensagem", "chat continua após limpar engagement"))).isEqualTo(201);
+    }
+
+    @Test
     void mensagemVaziaRetorna400() {
         assertThat(postStatus(managerEmail, "/api/v1/conversas",
             Map.of("mensagem", ""))).isEqualTo(400);

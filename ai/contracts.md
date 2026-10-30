@@ -57,6 +57,10 @@ Contratos são Java APIs internas entre módulos. Não equivalem automaticamente
   filtros/escopo; devolve os quatro quadrantes. A lista nominal (`userId`, `nome`,
   `departmentId`) só inclui usuários cobertos por `USER:READ` do ator; sem essa permissão,
   `usuarios=[]` e `listaNominal=false`. Limite de 200 por quadrante com `truncado`.
+- `GET /api/v1/engajamento/creditos?fonte=&mes=AAAA-MM&departmentId=` — mês fechado lê ou
+  calcula e persiste o snapshot imutável (`credits-v1`, `FECHADO`); mês corrente calcula sem
+  persistir (`PROVISORIO`); mês futuro → 400. `SelfOnly` só a própria linha;
+  `Departments`/`TenantWide` ordenam por score desc e `userId` asc.
 - Erros do chat: `{ "message": "...", "code": "..." }`, com códigos estáveis
   (`CONVERSATION_NOT_FOUND`, `CONVERSATION_ARCHIVED`, `MODEL_NOT_ALLOWED`, `NO_MODEL_CONFIGURED`,
   `PROVIDER_FAILURE`, `PROVIDER_TIMEOUT`, `ATTEMPT_NOT_RECORDED`, `INVALID_REQUEST`).
