@@ -13,19 +13,39 @@ Contratos são Java APIs internas entre módulos. Não equivalem automaticamente
   Não concede administração do catálogo nem amplia o escopo de consumo.
 - Rótulos dos modelos nas métricas são resolvidos na apresentação; não existe
   dependência síncrona de `observability` para `aigateway`.
+- `GET /api/v1/observability/orcamentos/projecao?departmentId=&mes=AAAA-MM&janelaDias=`
+  exige `USAGE:READ` com `BY_TARGET` e checagem `isAllowed(DepartmentTarget)`. `departmentId`
+  é obrigatório; `mes` padrão é o corrente UTC; `janelaDias` padrão 14 (aceita 7–60). Mês futuro,
+  mês inválido ou janela fora do intervalo → 400; departamento de outro tenant → 404.
+  A resposta `projection-v1` traz gasto até hoje, média diária, projeção, dia de esgotamento
+  e recomendação; `tentativasInconclusivasNaJanela` é sempre nulo no `observability`.
+
+## HTTP — catálogo (SPI-87)
+
+- `GET /api/v1/ai-gateway/models` devolve o catálogo administrativo do tenant, incluindo
+  `inputPricePer1k` e `outputPricePer1k`; exige `AI_TOOL:MANAGE`.
+- `PUT /api/v1/ai-gateway/models/{id}` edita `name`, `externalName` e os dois preços.
+  Preço negativo → 400; nome duplicado no tenant → 409; não altera status nem provider.
+  Modelo `AVAILABLE` continua exigindo os dois preços; custos passados não mudam.
+- `GET /api/v1/ai-gateway/departments/{id}/model-policy` devolve
+  `{ departmentId, defaultModelId, allowedModelIds[] }`; sem política, lista vazia e padrão
+  nulo. Departamento de outro tenant → 404. `PUT` da mesma rota mantém o invariante ADR-08
+  (padrão ∈ permitidos).
+- `credentialRef` em `GET /api/v1/ai-gateway/providers` é somente o nome da variável;
+  o segredo nunca é devolvido.
 
 ## Módulos
 
 | Módulo | Contratos públicos principais |
 |---|---|
-| iam | `IdentityQuery` (`getUserContext`/`eligibleUsers`; `UserContext` inclui `name`), `HistoricalIdentityQuery` (`employeeId`/`employeeIds`), `AuthorizationQuery` (`isAllowed`/`visibilityFor`), `@RequiresPermission`/`Targeting` em `iam.api.rbac` (ADR-34/ADR-36/ADR-37/ADR-40) |
-| department | `OrganizationQuery`, `DepartmentBudgetQuery` (`budgetFor`/`budgetsFor` + `BudgetLimitInfo`), `DepartmentModelPolicyQuery` |
+| iam | `IdentityQuery` (`getUserContext`/`eligibleUsers`; `UserContext` inclui `name`), `HistoricalIdentityQuery` (`employeeId`/`employeeIds`), `TenantQuery` (`findBySlug`), `AuthorizationQuery` (`isAllowed`/`visibilityFor`), `@RequiresPermission`/`Targeting` em `iam.api.rbac` (ADR-34/ADR-36/ADR-37/ADR-40) |
+| department | `OrganizationQuery`, `DepartmentBudgetQuery` (`budgetFor`/`budgetsFor` + `BudgetLimitInfo`), `DepartmentModelPolicyQuery` (`findByDepartmentId` + `ModelPolicyInfo`) |
 | project | `ProjectQueryPort` |
-| aigateway | `AICompletionService`, `ModelResolutionQuery` (`resolve`/`allowedModels`), `AttemptReceiptQuery` (recibo por tenant + dono), `AIToolCatalogQuery`, catálogo administrativo |
-| chat | `ListConversations` (status/q), `UpdateConversation`, `DeleteConversation`, commands/queries de Conversation/Message |
+| aigateway | `AICompletionService`, `ModelResolutionQuery` (`resolve`/`allowedModels`), `AttemptReceiptQuery` (recibo por tenant + dono), `AIToolCatalogQuery` (`findModel`/`allModelsExist`), catálogo administrativo HTTP |
+| chat | HTTP `/api/v1/conversas` (lista/busca, mensagens, PATCH, DELETE, `GET /modelos`); casos de uso internos `ChatExchange`, `SendMessage`, `ListConversations`, `UpdateConversation`, `DeleteConversation` |
 | agentpolicies | `KnowledgeAccessService`, `AskPolicyAgent`, KnowledgeDocument commands/queries |
-| observability | `UsageActivityQuery` (dias ativos por usuário, dia UTC e `tenant_id` explícito), `UsageMetricsQueryPort`, `CostMetricsQueryPort`, `BudgetStatusQueryPort` (implementado por `QueryBudgetStatus`) |
-| engagement | `EngagementFactsPort` (OPERACIONAL/HISTORICO), `QueryAdoption`, cálculos puros de adoção/treinamento/Credits |
+| observability | `UsageActivityQuery` (dias ativos por usuário, dia UTC e `tenant_id` explícito); HTTP `GET /observability/orcamentos/projecao` (`projection-v1`, interno `ProjectDepartmentBudget`); `UsageMetricsQueryPort`, `CostMetricsQueryPort`, `BudgetStatusQueryPort` (implementado por `QueryBudgetStatus`) |
+| engagement | Sem superfície `api.*` consumida por outro módulo na Sprint 4; HTTP `/api/v1/engajamento/*`; internos `EngagementFactsPort` (OPERACIONAL/HISTORICO), `QueryAdoption`, `QueryTrainingCross`, `QueryCredits`, cálculos puros de adoção/treinamento/Credits |
 | governancescore | `GovernanceScoreQueryPort`, Breakdown, Department scores, History |
 
 `AlertQueryPort` foi substituído pelo status de orçamento calculado na leitura (sem tabela nova, sem evento e sem bloqueio — A105).

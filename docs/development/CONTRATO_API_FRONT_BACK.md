@@ -1,7 +1,7 @@
 # Contrato de API — Frontend × Backend
 
-> **Estado atual: 2026-10-20** (Sprint 3, A1–A10 e ondas B/C/D/E/F aplicadas).
-> As §1, §2 e §2.7 descrevem o contrato **vigente**. A partir da §3, o conteúdo é o **registro
+> **Estado atual: 01/11/2026** (Sprint 4, H3: emendas e rotas novas consolidadas).
+> As §1, §2 e §2.8 descrevem o contrato **vigente**. A partir da §3, o conteúdo é o **registro
 > histórico** da reconciliação de 27/09 (Opção A).
 >
 > Referências: `ai/tasks/sprint-03/SPEC-01-autorizacao.md` §6–§7 (autorização) e
@@ -92,7 +92,25 @@ O tenant vem sempre do JWT.
 | GET | `/api/v1/observability/metrics/usage` | `from`, `to`, `departmentId`, `modelId`, `userId`, `granularity` | `USAGE:READ` (BT) |
 | GET | `/api/v1/observability/metrics/costs` | `from`, `to`, `departmentId`, `modelId`, `userId`, `groupBy=DEPARTMENT\|MODEL\|USER` | `USAGE:READ` (BT) |
 | GET | `/api/v1/observability/orcamentos` | `mes=AAAA-MM` | `USAGE:READ` (BT; SelfOnly → 403) |
+| GET | `/api/v1/observability/orcamentos/projecao` | `departmentId`, `mes`, `janelaDias` (7–60) | `USAGE:READ` (BT; `isAllowed(DepartmentTarget)`; outro tenant → 404) |
 | GET | `/api/v1/ai-gateway/tentativas` | `de`, `ate`, `status`, `deliveryStatus`, `costStatus`, `userId`, `departmentId`, `page`, `size` | `USAGE:READ` (BT) |
+
+A projeção é `projection-v1`: mês corrente calcula até hoje; mês passado devolve o realizado
+do mês inteiro com `diasRestantes = 0`; sem orçamento → `SEM_ORCAMENTO`, sem exceção.
+
+### 2.4.1 Engajamento (`engagement`)
+
+| Método | Caminho | Filtros | Autorização |
+|---|---|---|---|
+| GET | `/api/v1/engajamento/adocao` | `fonte=OPERACIONAL\|HISTORICO`, `ate=AAAA-MM-DD`, `departmentId` | `USAGE:READ` (BT; `departmentId` fora do recorte → 403) |
+| GET | `/api/v1/engajamento/treinamentos/cruzamento` | mesmos filtros | `USAGE:READ` (BT); lista nominal só com `USER:READ` |
+| GET | `/api/v1/engajamento/creditos` | `fonte`, `mes=AAAA-MM`, `departmentId` | `USAGE:READ` (BT); `SelfOnly` só a própria linha |
+
+- `fonte` ausente = `OPERACIONAL`; fontes nunca são somadas. `fonte` inválida, `ate` futuro,
+  `mes` futuro ou parâmetro inválido → 400.
+- Adoção usa a janela de 30 dias e o denominador de elegíveis IAM; treinamento devolve os quatro
+  quadrantes e trunca em 200 por quadrante; Credits usa `credits-v1`, com snapshot imutável em
+  mês fechado e `PROVISORIO` no mês corrente.
 
 ### 2.5 Infra
 
@@ -159,6 +177,21 @@ o proxy `app.use("/api", …)` (`app.js:76`) é registrado antes das rotas dos m
 Respostas: 201 criada; 409 concessão ativa idêntica; 403 ator = alvo.
 
 `GET /api/v1/papeis`: `[{ "key": "LEADER", "escopo": "DEPARTMENT", "posto": 2, "concedivel": true }]`.
+
+### 2.8 Rotas novas da Sprint 4
+
+- **Chat:** `GET /api/v1/conversas/modelos`; `PATCH /api/v1/conversas/{id}`;
+  `DELETE /api/v1/conversas/{id}`; `clientMessageId` em `POST /conversas` e
+  `POST /conversas/{id}/mensagens` (idempotência).
+- **Engajamento:** `GET /api/v1/engajamento/adocao`,
+  `GET /api/v1/engajamento/treinamentos/cruzamento` e
+  `GET /api/v1/engajamento/creditos`.
+- **Projeção:** `GET /api/v1/observability/orcamentos/projecao`.
+- **Catálogo:** `GET /api/v1/ai-gateway/departments/{id}/model-policy` e
+  `PUT /api/v1/ai-gateway/models/{id}`; `GET /api/v1/ai-gateway/models` passou a
+  incluir os preços.
+- **Dashboard:** o painel de engajamento (E6) consome as rotas de engajamento já
+  existentes; não criou endpoint novo.
 
 ---
 

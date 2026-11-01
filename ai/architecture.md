@@ -51,8 +51,13 @@ Outro módulo pode acessar somente `<module>.api.*`.
 | chat | Conversation, Message |
 | agentpolicies | KnowledgeDocument/Version, Agent, AgentExecution, KnowledgeAccess |
 | observability | UsageRecord, custo, BudgetStatus, Alert |
-| engagement | AILicense, TrainingRecord, adoção, AI Credits |
+| engagement | AILicense, TrainingRecord, snapshots mensais de AI Credits (V023), adoção e cruzamento treinamento × uso |
 | governancescore | score, breakdown, snapshot/histórico |
+
+O `engagement` é dono de `engagement_ai_licenses`, `engagement_training_records` e
+`engagement_credit_snapshots` (V023). Ele consome elegíveis de `iam.api`, dias ativos
+de `observability.api` e catálogo de `aigateway.api`; não lê tabelas desses módulos.
+O histórico é lido pelo adapter nativo do próprio módulo com `company_id` explícito.
 
 ## Allowlist síncrona
 

@@ -9,13 +9,31 @@ BUGFIX-DB-001 e FEAT-DASH-001 são identificações locais, não issues Jira rem
 
 | Verificação | Resultado |
 |---|---|
-| scripts/check --changed e scripts/check | 817 testes unitários/ArchUnit passaram, sem falhas, erros ou skips |
-| Frontend Node e ferramentas locais | 54 testes passaram |
+| scripts/check --changed e scripts/check | 847 testes unitários/ArchUnit passaram, sem falhas, erros ou skips |
+| Frontend Node e ferramentas locais | 67 testes passaram (30/10/2026) |
 | Setup automático da equipe | LocalSetupIT passou com PostgreSQL descartável e JAR real: instalação vazia, restauração de dump, importação e reexecução |
 | Integração completa após V021 | 170 casos executados; 14 falharam por fixtures que ainda usavam administrador como leitor analítico |
 | Reexecução das fixtures corrigidas | 23 testes de AIGatewayAttemptsIT, DepartmentBudgetIT e UsageLoggingIT passaram; os outros 147 já haviam passado na execução completa |
 | Integração anterior à V021 | 170 casos passaram na etapa de importação de identidades |
 | CI remoto | Não executado/verificado |
+
+## Sprint 4 (01/11/2026)
+
+| Verificação | Resultado |
+|---|---|
+| `scripts/check --changed` e `scripts/check` | 880 testes unitários/ArchUnit passaram, sem falhas, erros ou skips |
+| Frontend Node | 88 testes passaram |
+| `scripts/check-integration` | Não executado: Docker/Testcontainers indisponível no host; `BudgetProjectionIT` e `CatalogAdminIT` falharam antes dos testes com “Could not find a valid Docker environment” |
+| H1 | Linha de base verde e `compose.yaml` com `JWT_SECRET` obrigatório |
+| E1–E6 | Contratos, engagement base, adoção, treinamento, AI Credits e painel do dashboard implementados; E6 pendente de validação manual |
+| B1 | Projeção determinística `projection-v1` implementada; IT pendente de execução |
+| P2 | Catálogo administrativo corrigido para `/api/v1/ai-gateway/*`; PR06/PR07 pendentes de execução em Docker |
+| C3 | Não iniciada; depende de autorização explícita da responsável |
+| H2 | Adiada; a V024 não foi usada |
+| S4-D1 | Provider real da demo ainda pendente de decisão do responsável |
+
+Nenhuma permissão foi relaxada para obter os resultados acima. A suíte de integração
+não foi considerada verde nesta sprint por indisponibilidade do ambiente Docker.
 
 A execução completa e a repetição das três classes são evidências complementares;
 não houve uma nova execução integral única verde depois da atualização das fixtures.
@@ -109,17 +127,24 @@ Os registros de execução não substituem validação visual de todos os fluxos
 ## Pendências importantes
 
 1. Rodar novamente a suíte integral com as fixtures finais e verificar CI remoto
-   quando houver publicação; acompanhar o tempo de HistoricalLoaderIT.
+   quando houver publicação; acompanhar o tempo de HistoricalLoaderIT. A Sprint 4
+   não conseguiu executar a integração por ausência de Docker no host.
 2. Validar visualmente orçamentos: troca de mês, modal, cancelar/salvar, histórico,
    limiares, zero/ausente, concorrência e acessibilidade da lista de alertas.
 3. Conferir filtros combinados, período vazio/invertido e custo parcial pelos
    perfis reais. Para futuras cargas, validar manifesto e vínculos explícitos.
 4. Integrar faturamento separado por moeda e definir vínculo entre centros de
    custo e departamentos antes de usar orçamento histórico na operação.
-5. Integrar adoção, capacitação, créditos, governança e retorno conforme fontes,
-   ADRs e fórmulas aprovadas. Sem fonte, manter indisponível; não deduzir salários,
-   produtividade, qualidade ou economia realizada somente dos tokens.
+5. Adoção, cruzamento treinamento × uso e AI Credits (`credits-v1`) estão
+   implementados; ainda faltam metas, ranking/visão de equipe da Sprint 5, ROI e
+   custo de treinamento. Validar o painel E6 por perfil e a projeção B1 (`projection-v1`)
+   manualmente. Sem fonte, manter indisponível; não deduzir salários, produtividade,
+   qualidade ou economia realizada somente dos tokens.
 6. Substituir as identificações provisórias pelas chaves Jira reais quando criadas.
+7. C3 (UI do chat, SPI-141) aguarda autorização explícita da responsável; H2
+   (`DROP user_permission`, V024) continua adiada.
+8. Escolher o provider real da demo (S4-D1) e cadastrar seus modelos com
+   `externalName` e preço explícito; a P2 não cadastra os 28 modelos em massa.
 
 O documento preexistente DASHBOARD_INDICADORES_E_CALCULOS.md mantém fórmulas e
 lacunas dos demais indicadores. ADRs, contratos e documentação canônica em ai/

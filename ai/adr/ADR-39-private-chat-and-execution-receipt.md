@@ -47,3 +47,17 @@ ACCEPTED (2026-10-18).
   `ai/tasks/sprint-03/INDEX.md`).
 - Exclusão e arquivamento ficam fora do MVP da Sprint 3.
 - A UI (SPI-136) consome exatamente esses contratos.
+
+## Emenda (Sprint 4)
+
+O ciclo de vida e o recibo durável foram detalhados no ADR-42:
+
+- a conversa passa a ter `ACTIVE`, `ARCHIVED` e `DELETED` (exclusão lógica com
+  `deleted_at`); `DELETED` nunca aparece nas listagens;
+- `PATCH /api/v1/conversas/{id}` altera título e status; `DELETE` faz a exclusão
+  lógica; `GET /api/v1/conversas/modelos` expõe a política do departamento;
+- `client_message_id` (8–64, `[A-Za-z0-9_-]`) torna o turno idempotente; a
+  repetição concluída devolve o mesmo turno e não duplica mensagem, tentativa ou
+  recibo;
+- o recibo continua sendo metadados ligados à tentativa e ao `UsageRecord`, sem
+  conteúdo de mensagem em log, evento ou analytics.
