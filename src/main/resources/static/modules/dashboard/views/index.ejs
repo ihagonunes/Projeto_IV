@@ -47,6 +47,29 @@
             </details>
             <button id="budget-notification-retry" type="button" class="btn btn-outline-secondary btn-sm" hidden>Tentar novamente</button>
         </section>
+        <section id="budget-projection-panel" class="demo-panel p-3 mb-4" aria-labelledby="budget-projection-title" hidden>
+            <div class="engagement-header">
+                <div>
+                    <h2 id="budget-projection-title" class="h5">Projeção do mês</h2>
+                    <p class="demo-muted small mb-0">Média móvel do custo conhecido; cálculo determinístico, sem chamada a LLM.</p>
+                </div>
+                <div class="engagement-source">
+                    <label for="budget-projection-department">Departamento</label>
+                    <select id="budget-projection-department" class="form-select custom-input" disabled></select>
+                </div>
+            </div>
+            <p id="budget-projection-message" role="status" aria-live="polite"></p>
+            <div id="budget-projection-content" hidden>
+                <div class="demo-kpis">
+                    <article class="demo-kpi"><span>Gasto até hoje</span><strong id="budget-projection-spent">—</strong></article>
+                    <article class="demo-kpi"><span>Projetado para o mês</span><strong id="budget-projection-projected">—</strong></article>
+                    <article class="demo-kpi"><span>Dia de esgotamento</span><strong id="budget-projection-exhaustion">—</strong></article>
+                    <article class="demo-kpi"><span>Recomendação</span><strong id="budget-projection-recommendation">—</strong><small id="budget-projection-status" class="demo-muted"></small></article>
+                </div>
+                <p id="budget-projection-detail" class="demo-muted small mb-0"></p>
+            </div>
+            <button id="budget-projection-retry" type="button" class="btn btn-outline-secondary btn-sm" hidden>Tentar novamente</button>
+        </section>
         <% } %>
         <section class="demo-panel p-3 mb-4" aria-labelledby="historical-title">
             <h2 id="historical-title" class="h5"><%= profile === 'colaborador' ? 'Meu consumo de IA' : 'Histórico de consumo' %></h2>
@@ -225,5 +248,6 @@
 <% } %>
 <% if (profile !== 'colaborador') { %>
 <script src="/public/js/pages/dashboard-budget-alerts.js?v=cookie-session-20261022"></script>
+<script src="/public/js/pages/dashboard-budget-projection.js?v=spi-131-20261101"></script>
 <% } %>
 <script src="/public/js/pages/dashboard-historical.js?v=legacy-identity-20261022"></script>

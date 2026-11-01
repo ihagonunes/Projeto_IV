@@ -118,6 +118,24 @@ Leituras analíticas respeitam `USAGE:READ` e escopo. Edição requer
 - Ausência de orçamento difere de zero; zero com consumo não recebe percentual
   fictício. Valores, situação e autorização vêm do backend.
 
+## Projeção do mês
+
+GET `/api/v1/observability/orcamentos/projecao?departmentId=&mes=AAAA-MM&janelaDias=`
+(ADR-41, `projection-v1`). Exige `USAGE:READ` com checagem
+`isAllowed(DepartmentTarget)`; `departmentId` é obrigatório, `mes` é o corrente UTC por
+padrão e `janelaDias` aceita 7 a 60 (padrão 14). Mês futuro/inválido ou janela fora do
+intervalo retorna 400; departamento de outro tenant retorna 404.
+
+- `gastoAteHoje` soma o custo conhecido do departamento no mês, incluindo hoje.
+- A média diária usa a janela `[hoje − janelaDias + 1, hoje]`, inclusive atravessando
+  o mês anterior; dias sem uso contam como zero.
+- `projetado = gastoAteHoje + média diária × dias restantes`; o dia de esgotamento é o
+  primeiro dia em que o gasto projetado alcança o orçamento, ou nulo se não ocorrer.
+- Mês passado devolve o realizado do mês inteiro, com `diasRestantes = 0`.
+- Sem orçamento a recomendação é `SEM_ORCAMENTO`, sem exceção e sem percentual.
+- O card do dashboard mostra gasto, projetado, dia de esgotamento e recomendação em
+  texto; cor não é a única pista. O cálculo não chama LLM.
+
 ## Identidade visual
 
 Página `/tenant/identidade-visual`, com retorno ao onboarding. GET/PUT
