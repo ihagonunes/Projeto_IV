@@ -67,13 +67,12 @@
             </div>
             <button id="historical-retry" class="btn btn-outline-secondary btn-sm" hidden>Tentar novamente</button>
         </section>
-        <% if (profile !== 'colaborador') { %>
         <section class="demo-panel p-3 mb-4" aria-label="Métricas de uso filtradas">
-            <h2 class="h5">Uso e custo no período</h2>
+            <h2 class="h5"><%= profile === 'colaborador' ? 'Meu uso operacional' : 'Uso e custo no período' %></h2>
             <p id="metrics-message" role="status" aria-live="polite">Carregando métricas…</p>
             <div class="demo-kpis">
                 <article class="demo-kpi"><span>Requisições</span><strong id="metrics-requests">—</strong></article>
-                <article class="demo-kpi"><span>Usuários ativos</span><strong id="metrics-active">—</strong></article>
+                <article class="demo-kpi"<%= profile === 'colaborador' ? ' hidden' : '' %>><span>Usuários ativos</span><strong id="metrics-active">—</strong></article>
                 <article class="demo-kpi"><span>Tokens de entrada / saída</span><strong id="metrics-tokens">—</strong></article>
                 <article class="demo-kpi"><span>Custo estimado</span><strong id="metrics-cost">—</strong></article>
             </div>
@@ -150,8 +149,8 @@
 <script src="/public/js/core/api-client.js?v=cookie-session-20261022"></script>
 <script src="/public/js/core/auth.js?v=cookie-session-20261022"></script>
 <script src="/public/js/core/session-actions.js?v=cookie-session-20261022"></script>
+<script src="/public/js/pages/dashboard-metrics.js?v=legacy-identity-20261030"></script>
 <% if (profile !== 'colaborador') { %>
-<script src="/public/js/pages/dashboard-metrics.js?v=legacy-identity-20261022"></script>
 <script src="/public/js/pages/dashboard-budget-alerts.js?v=cookie-session-20261022"></script>
 <% } %>
 <script src="/public/js/pages/dashboard-historical.js?v=legacy-identity-20261022"></script>

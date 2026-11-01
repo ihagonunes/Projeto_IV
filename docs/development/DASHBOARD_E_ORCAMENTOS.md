@@ -64,8 +64,8 @@ No operacional, datas `YYYY-MM-DD` representam dias UTC completos; timestamps
 ISO continuam aceitos. Sem datas, padrão de 30 dias até agora. Intervalo invertido
 retorna 400. A sidebar operacional inicia hoje menos 30 dias até hoje.
 
-O colaborador exibe consumo histórico pessoal, sem orçamento ou KPIs operacionais
-vazios. Primeiro carregamento usa o último dia da cobertura pessoal e 30 dias
+O colaborador exibe consumo histórico pessoal e, desde 30/10/2026, também o uso
+operacional pessoal em `Meu uso operacional`, sem orçamento ou KPIs de terceiros. Primeiro carregamento usa o último dia da cobertura pessoal e 30 dias
 anteriores, preenchendo a sidebar. Sem vínculo autorizado retorna 403, sem ampliar
 para o tenant. `userId`, `employeeId` ou `tenantId` enviados pelo cliente não
 mudam o titular do endpoint pessoal.
