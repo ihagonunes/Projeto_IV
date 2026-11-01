@@ -124,6 +124,28 @@ public final class Model {
         return touch();
     }
 
+    /**
+     * Atualiza nome, nome externo e preços em uma única operação (SPI-87).
+     * Não altera status nem provider. Modelo AVAILABLE continua exigindo os dois
+     * preços (S4-D12); preço nulo em DISABLED é permitido.
+     */
+    public Model updateDetails(String newName, String newExternalName,
+                               BigDecimal newInputPrice, BigDecimal newOutputPrice) {
+        String resolvedName = requireName(newName);
+        String resolvedExternalName = normalizeExternalName(newExternalName);
+        BigDecimal resolvedInput = requirePrice(newInputPrice);
+        BigDecimal resolvedOutput = requirePrice(newOutputPrice);
+        if (status == ModelStatus.AVAILABLE
+            && (resolvedInput == null || resolvedOutput == null)) {
+            throw new ModelPriceRequiredException();
+        }
+        this.name = resolvedName;
+        this.externalName = resolvedExternalName;
+        this.inputPricePer1k = resolvedInput;
+        this.outputPricePer1k = resolvedOutput;
+        return touch();
+    }
+
     public Model makeAvailable() {
         if (inputPricePer1k == null || outputPricePer1k == null) {
             throw new ModelPriceRequiredException();

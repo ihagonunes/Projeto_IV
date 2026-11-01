@@ -1,8 +1,11 @@
 package br.com.qsoft.governance.aigateway.infrastructure.web;
 
 import br.com.qsoft.governance.aigateway.application.ConfigureDepartmentPolicy;
+import br.com.qsoft.governance.aigateway.application.ReadDepartmentModelPolicy;
 import br.com.qsoft.governance.aigateway.application.ResolveModelForUser;
 import br.com.qsoft.governance.aigateway.application.ResolvedModel;
+import br.com.qsoft.governance.aigateway.domain.exception.DepartmentNotFoundException;
+import br.com.qsoft.governance.department.api.model.ModelPolicyInfo;
 import br.com.qsoft.governance.sharedkernel.id.TenantId;
 import br.com.qsoft.governance.sharedkernel.id.UserId;
 import br.com.qsoft.governance.sharedkernel.tenant.TenantContext;
@@ -17,6 +20,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.eq;
 
 import static org.mockito.Mockito.doNothing;
@@ -31,6 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class AIGatewayModelPolicyControllerTest {
 
     private ConfigureDepartmentPolicy configureDepartmentPolicy;
+    private ReadDepartmentModelPolicy readDepartmentModelPolicy;
     private ResolveModelForUser resolveModelForUser;
     private MockMvc mockMvc;
 
@@ -40,10 +45,11 @@ class AIGatewayModelPolicyControllerTest {
     @BeforeEach
     void setUp() {
         configureDepartmentPolicy = mock(ConfigureDepartmentPolicy.class);
+        readDepartmentModelPolicy = mock(ReadDepartmentModelPolicy.class);
         resolveModelForUser = mock(ResolveModelForUser.class);
 
         AIGatewayModelPolicyController controller = new AIGatewayModelPolicyController(
-            configureDepartmentPolicy, resolveModelForUser);
+            configureDepartmentPolicy, readDepartmentModelPolicy, resolveModelForUser);
 
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
             .setControllerAdvice(new AIGatewayApiExceptionHandler())
@@ -55,6 +61,45 @@ class AIGatewayModelPolicyControllerTest {
     @AfterEach
     void tearDown() {
         TenantContextHolder.clear();
+    }
+
+    @Test
+    void deve_ler_policy_vazia_quando_departamento_nao_tem_politica() throws Exception {
+        UUID departmentId = UUID.randomUUID();
+        when(readDepartmentModelPolicy.read(tenantId, departmentId))
+            .thenReturn(new ModelPolicyInfo(departmentId, Set.of(), null));
+
+        mockMvc.perform(get("/api/v1/ai-gateway/departments/" + departmentId + "/model-policy"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.departmentId").value(departmentId.toString()))
+            .andExpect(jsonPath("$.defaultModelId").value(nullValue()))
+            .andExpect(jsonPath("$.allowedModelIds").isEmpty());
+
+        verify(readDepartmentModelPolicy).read(tenantId, departmentId);
+    }
+
+    @Test
+    void deve_ler_policy_configurada() throws Exception {
+        UUID departmentId = UUID.randomUUID();
+        UUID modelId = UUID.randomUUID();
+        when(readDepartmentModelPolicy.read(tenantId, departmentId))
+            .thenReturn(new ModelPolicyInfo(departmentId, Set.of(modelId), modelId));
+
+        mockMvc.perform(get("/api/v1/ai-gateway/departments/" + departmentId + "/model-policy"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.departmentId").value(departmentId.toString()))
+            .andExpect(jsonPath("$.defaultModelId").value(modelId.toString()))
+            .andExpect(jsonPath("$.allowedModelIds[0]").value(modelId.toString()));
+    }
+
+    @Test
+    void deve_retornar_404_para_departamento_de_outro_tenant() throws Exception {
+        UUID departmentId = UUID.randomUUID();
+        when(readDepartmentModelPolicy.read(tenantId, departmentId))
+            .thenThrow(new DepartmentNotFoundException(departmentId));
+
+        mockMvc.perform(get("/api/v1/ai-gateway/departments/" + departmentId + "/model-policy"))
+            .andExpect(status().isNotFound());
     }
 
     @Test

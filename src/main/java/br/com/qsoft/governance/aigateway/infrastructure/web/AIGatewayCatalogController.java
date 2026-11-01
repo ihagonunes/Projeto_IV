@@ -8,6 +8,8 @@ import br.com.qsoft.governance.aigateway.application.CreateProvider;
 import br.com.qsoft.governance.aigateway.application.CreateProviderCommand;
 import br.com.qsoft.governance.aigateway.application.ListModels;
 import br.com.qsoft.governance.aigateway.application.ListProviders;
+import br.com.qsoft.governance.aigateway.application.UpdateModel;
+import br.com.qsoft.governance.aigateway.application.UpdateModelCommand;
 import br.com.qsoft.governance.iam.api.rbac.RequiresPermission;
 import br.com.qsoft.governance.iam.api.rbac.Targeting;
 import br.com.qsoft.governance.sharedkernel.rbac.Action;
@@ -23,6 +25,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -50,17 +53,20 @@ public class AIGatewayCatalogController {
     private final CreateModel createModel;
     private final ListModels listModels;
     private final ChangeModelStatus changeModelStatus;
+    private final UpdateModel updateModel;
 
     public AIGatewayCatalogController(CreateProvider createProvider,
                                       ListProviders listProviders,
                                       CreateModel createModel,
                                       ListModels listModels,
-                                      ChangeModelStatus changeModelStatus) {
+                                      ChangeModelStatus changeModelStatus,
+                                      UpdateModel updateModel) {
         this.createProvider = createProvider;
         this.listProviders = listProviders;
         this.createModel = createModel;
         this.listModels = listModels;
         this.changeModelStatus = changeModelStatus;
+        this.updateModel = updateModel;
     }
 
     @GetMapping("/providers")
@@ -110,5 +116,17 @@ public class AIGatewayCatalogController {
         TenantContext context = TenantContextHolder.require();
         return ResponseEntity.ok(ModelResponse.from(changeModelStatus.change(
             new ChangeModelStatusCommand(context.tenantId(), id, request.status()))));
+    }
+
+    /** Edita nome, nome externo e preços; status e provider permanecem intactos (SPI-87). */
+    @PutMapping("/models/{id}")
+    @RequiresPermission(resource = Resource.AI_TOOL, action = Action.MANAGE)
+    public ResponseEntity<ModelResponse> updateModel(@PathVariable UUID id,
+                                                     @Valid @RequestBody ModelUpdateRequest request) {
+        TenantContext context = TenantContextHolder.require();
+        return ResponseEntity.ok(ModelResponse.from(updateModel.update(
+            new UpdateModelCommand(context.tenantId(), id, request.name(),
+                request.externalName(), request.inputPricePer1k(),
+                request.outputPricePer1k()))));
     }
 }

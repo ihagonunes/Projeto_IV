@@ -1,6 +1,7 @@
 package br.com.qsoft.governance.aigateway.infrastructure.web;
 
 import br.com.qsoft.governance.aigateway.application.ConfigureDepartmentPolicy;
+import br.com.qsoft.governance.aigateway.application.ReadDepartmentModelPolicy;
 import br.com.qsoft.governance.aigateway.application.ResolveModelForUser;
 import br.com.qsoft.governance.iam.api.rbac.RequiresPermission;
 import br.com.qsoft.governance.sharedkernel.rbac.Action;
@@ -27,12 +28,24 @@ import org.springframework.web.bind.annotation.RestController;
 public class AIGatewayModelPolicyController {
 
     private final ConfigureDepartmentPolicy configureDepartmentPolicy;
+    private final ReadDepartmentModelPolicy readDepartmentModelPolicy;
     private final ResolveModelForUser resolveModelForUser;
 
     public AIGatewayModelPolicyController(ConfigureDepartmentPolicy configureDepartmentPolicy,
+                                          ReadDepartmentModelPolicy readDepartmentModelPolicy,
                                           ResolveModelForUser resolveModelForUser) {
         this.configureDepartmentPolicy = configureDepartmentPolicy;
+        this.readDepartmentModelPolicy = readDepartmentModelPolicy;
         this.resolveModelForUser = resolveModelForUser;
+    }
+
+    /** Lê a política do departamento; sem política devolve o formato vazio (SPI-87). */
+    @GetMapping("/departments/{id}/model-policy")
+    @RequiresPermission(resource = Resource.AI_TOOL, action = Action.MANAGE)
+    public ResponseEntity<DepartmentModelPolicyResponse> policy(@PathVariable UUID id) {
+        TenantContext context = TenantContextHolder.require();
+        return ResponseEntity.ok(DepartmentModelPolicyResponse.from(
+            readDepartmentModelPolicy.read(context.tenantId(), id)));
     }
 
     /** Configura a ModelPolicy do departamento. Requer AI_TOOL:MANAGE (SPI-82). */

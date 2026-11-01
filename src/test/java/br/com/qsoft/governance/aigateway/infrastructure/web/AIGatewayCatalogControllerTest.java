@@ -8,6 +8,8 @@ import br.com.qsoft.governance.aigateway.application.CreateProvider;
 import br.com.qsoft.governance.aigateway.application.CreateProviderCommand;
 import br.com.qsoft.governance.aigateway.application.ListModels;
 import br.com.qsoft.governance.aigateway.application.ListProviders;
+import br.com.qsoft.governance.aigateway.application.UpdateModel;
+import br.com.qsoft.governance.aigateway.application.UpdateModelCommand;
 import br.com.qsoft.governance.aigateway.domain.model.Model;
 import br.com.qsoft.governance.aigateway.domain.model.ModelStatus;
 import br.com.qsoft.governance.aigateway.domain.provider.Provider;
@@ -16,6 +18,7 @@ import br.com.qsoft.governance.sharedkernel.id.TenantId;
 import br.com.qsoft.governance.sharedkernel.tenant.TenantContext;
 import br.com.qsoft.governance.sharedkernel.tenant.TenantContextHolder;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
@@ -34,6 +37,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -44,6 +48,7 @@ class AIGatewayCatalogControllerTest {
     private CreateModel createModel;
     private ListModels listModels;
     private ChangeModelStatus changeModelStatus;
+    private UpdateModel updateModel;
     private MockMvc mockMvc;
 
     private final TenantId tenantId = TenantId.random();
@@ -55,9 +60,10 @@ class AIGatewayCatalogControllerTest {
         createModel = mock(CreateModel.class);
         listModels = mock(ListModels.class);
         changeModelStatus = mock(ChangeModelStatus.class);
+        updateModel = mock(UpdateModel.class);
 
         AIGatewayCatalogController controller = new AIGatewayCatalogController(
-            createProvider, listProviders, createModel, listModels, changeModelStatus);
+            createProvider, listProviders, createModel, listModels, changeModelStatus, updateModel);
 
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
             .setControllerAdvice(new AIGatewayApiExceptionHandler())
@@ -262,6 +268,77 @@ class AIGatewayCatalogControllerTest {
     }
 
     @Test
+    void deve_editar_nome_externo_e_precos_sem_alterar_status_ou_provider() throws Exception {
+        UUID modelId = UUID.randomUUID();
+        UUID providerId = UUID.randomUUID();
+        Model updated = Model.restore(modelId, tenantId, providerId, "gpt-4o-editado",
+            "gpt-4o-2024", ModelStatus.AVAILABLE, new BigDecimal("0.010"),
+            new BigDecimal("0.020"), Instant.now(), Instant.now());
+        when(updateModel.update(any(UpdateModelCommand.class))).thenReturn(updated);
+
+        String payload = """
+            {
+              "name": "gpt-4o-editado",
+              "externalName": "gpt-4o-2024",
+              "inputPricePer1k": 0.010,
+              "outputPricePer1k": 0.020
+            }
+            """;
+
+        mockMvc.perform(put("/api/v1/ai-gateway/models/" + modelId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(payload))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(modelId.toString()))
+            .andExpect(jsonPath("$.providerId").value(providerId.toString()))
+            .andExpect(jsonPath("$.name").value("gpt-4o-editado"))
+            .andExpect(jsonPath("$.externalName").value("gpt-4o-2024"))
+            .andExpect(jsonPath("$.status").value("AVAILABLE"))
+            .andExpect(jsonPath("$.inputPricePer1k").value(0.010))
+            .andExpect(jsonPath("$.outputPricePer1k").value(0.020));
+
+        verify(updateModel).update(any(UpdateModelCommand.class));
+    }
+
+    @Test
+    void deve_retornar_bad_request_ao_editar_model_com_preco_negativo() throws Exception {
+        UUID modelId = UUID.randomUUID();
+        String payload = """
+            {
+              "name": "gpt-4o",
+              "inputPricePer1k": -0.01,
+              "outputPricePer1k": 0.020
+            }
+            """;
+
+        mockMvc.perform(put("/api/v1/ai-gateway/models/" + modelId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(payload))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void deve_retornar_conflict_ao_editar_model_com_nome_duplicado() throws Exception {
+        UUID modelId = UUID.randomUUID();
+        when(updateModel.update(any(UpdateModelCommand.class)))
+            .thenThrow(new br.com.qsoft.governance.aigateway.domain.exception
+                .ModelNameAlreadyExistsException("duplicado"));
+
+        String payload = """
+            {
+              "name": "duplicado",
+              "inputPricePer1k": 0.010,
+              "outputPricePer1k": 0.020
+            }
+            """;
+
+        mockMvc.perform(put("/api/v1/ai-gateway/models/" + modelId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(payload))
+            .andExpect(status().isConflict());
+    }
+
+    @Test
     void deve_retornar_unauthorized_quando_contexto_de_tenant_nao_estiver_definido() throws Exception {
         TenantContextHolder.clear();
 
@@ -295,6 +372,8 @@ class AIGatewayCatalogControllerTest {
         assertThat(response.providerId()).isEqualTo(providerId);
         assertThat(response.name()).isEqualTo("gpt-4o");
         assertThat(response.status()).isEqualTo("AVAILABLE");
+        assertThat(response.inputPricePer1k()).isEqualByComparingTo("0.005");
+        assertThat(response.outputPricePer1k()).isEqualByComparingTo("0.015");
         assertThat(response.createdAt()).isEqualTo(model.createdAt());
     }
 

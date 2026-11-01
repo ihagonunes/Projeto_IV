@@ -68,8 +68,21 @@ O tenant vem sempre do JWT.
 | GET / POST | `/api/v1/ai-gateway/providers` | `AI_TOOL:MANAGE` |
 | GET / POST | `/api/v1/ai-gateway/models` | `AI_TOOL:MANAGE` |
 | PATCH | `/api/v1/ai-gateway/models/{id}/status` | `AI_TOOL:MANAGE` |
-| PUT | `/api/v1/ai-gateway/departments/{id}/model-policy` | `AI_TOOL:MANAGE` |
+| PUT | `/api/v1/ai-gateway/models/{id}` | `AI_TOOL:MANAGE` |
+| GET / PUT | `/api/v1/ai-gateway/departments/{id}/model-policy` | `AI_TOOL:MANAGE` |
 | GET | `/api/v1/ai-gateway/models/permitido?requestedModelId=` | autenticado (usa a lotação do usuário) |
+
+- `GET /models` inclui `inputPricePer1k` e `outputPricePer1k`; a tela administrativa
+  usa esses campos e o nome do provider (`GET /providers`) para listar o catálogo.
+- `PUT /models/{id}` edita `name`, `externalName` e preços; não altera status nem
+  provider. Preço negativo → 400; nome duplicado no tenant → 409. Modelo `AVAILABLE`
+  continua exigindo os dois preços (S4-D12); custos passados não mudam.
+- `GET /departments/{id}/model-policy` devolve `{ departmentId, defaultModelId,
+  allowedModelIds[] }`; sem política, lista vazia e padrão nulo. Departamento de outro
+  tenant → 404. O `PUT` mantém o invariante ADR-08 (padrão ∈ permitidos).
+- A tela `/onboarding/ia` usa esses endpoints, exige `AI_TOOL:MANAGE`, nunca pede nem
+  exibe segredo (`credentialRef` é apenas o nome da variável) e não usa fallback de
+  `localStorage` nem sucesso simulado.
 
 ### 2.4 Uso e dashboard (`observability`)
 
