@@ -81,6 +81,75 @@
             <h3 class="h6 mt-3">Custo por modelo</h3>
             <div class="table-responsive"><table class="table demo-table"><thead><tr><th>Modelo</th><th>Requisições</th><th>Tokens entrada / saída</th><th>Custo estimado</th></tr></thead><tbody id="metrics-costs"></tbody></table></div>
         </section>
+        <% if (['colaborador', 'lider', 'gestor', 'executivo'].includes(profile)) { %>
+        <section id="engagement-panel" class="demo-panel p-3 mb-4" data-scope="<%= profile === 'colaborador' ? 'self' : 'authorized' %>" aria-labelledby="engagement-title">
+            <div class="engagement-header">
+                <div>
+                    <h2 id="engagement-title" class="h5"><%= profile === 'colaborador' ? 'Meus AI Credits' : 'Engajamento da área' %></h2>
+                    <p class="demo-muted small mb-0">Adoção, treinamento e AI Credits em fontes separadas; os valores nunca são somados entre operacional e histórico.</p>
+                </div>
+                <div class="engagement-source">
+                    <label for="engagement-source">Fonte</label>
+                    <select id="engagement-source" class="form-select custom-input" disabled>
+                        <option value="OPERACIONAL">Operacional</option>
+                        <option value="HISTORICO">Histórico</option>
+                    </select>
+                </div>
+            </div>
+            <p id="engagement-message" role="status" aria-live="polite">Carregando engajamento…</p>
+            <div id="engagement-content" hidden>
+                <% if (profile !== 'colaborador') { %>
+                <section id="engagement-adoption" aria-labelledby="engagement-adoption-title">
+                    <h3 id="engagement-adoption-title" class="h6 mt-3">Adoção (30 dias)</h3>
+                    <p id="engagement-adoption-source" class="demo-muted small"></p>
+                    <div class="demo-kpis">
+                        <article class="demo-kpi"><span>Taxa de adoção</span><strong id="engagement-adoption-rate">—</strong><small id="engagement-adoption-status" class="demo-muted"></small></article>
+                        <article class="demo-kpi"><span>Ativos / elegíveis</span><strong id="engagement-adoption-active">—</strong></article>
+                        <article class="demo-kpi"><span>Licenças ociosas</span><strong id="engagement-adoption-idle">—</strong></article>
+                        <article class="demo-kpi"><span>Data de corte</span><strong id="engagement-adoption-date">—</strong></article>
+                    </div>
+                    <p id="engagement-adoption-note" class="demo-muted small" role="status"></p>
+                    <div class="engagement-donut-row">
+                        <div id="engagement-donut" class="engagement-donut" role="img" aria-label="Adoção sem dados"><span id="engagement-donut-label">Sem dado</span></div>
+                        <p id="engagement-coverage" class="demo-muted small mb-0"></p>
+                    </div>
+                    <h4 class="h6 mt-3">Adoção por departamento</h4>
+                    <div class="table-responsive"><table class="table demo-table"><caption class="visually-hidden">Adoção por departamento</caption><thead><tr><th scope="col">Departamento</th><th scope="col">Elegíveis</th><th scope="col">Ativos</th><th scope="col">Taxa</th></tr></thead><tbody id="engagement-departments"></tbody></table></div>
+                </section>
+                <section id="engagement-training" aria-labelledby="engagement-training-title">
+                    <h3 id="engagement-training-title" class="h6 mt-4">Treinamento × uso (4 quadrantes)</h3>
+                    <p id="engagement-training-source" class="demo-muted small"></p>
+                    <div id="engagement-quadrants" class="engagement-quadrants"></div>
+                    <p id="engagement-training-note" class="demo-muted small" role="status"></p>
+                    <div id="engagement-nominal" hidden></div>
+                    <p id="engagement-training-coverage" class="demo-muted small mb-0"></p>
+                </section>
+                <% } %>
+                <section id="engagement-credits" aria-labelledby="engagement-credits-title">
+                    <h3 id="engagement-credits-title" class="h6 mt-4"><%= profile === 'colaborador' ? 'Meus AI Credits' : 'AI Credits da equipe' %></h3>
+                    <p id="engagement-credits-source" class="demo-muted small"></p>
+                    <div id="engagement-credits-personal" hidden>
+                        <div class="demo-kpis">
+                            <article class="demo-kpi"><span>Score</span><strong id="engagement-credits-score">—</strong><small id="engagement-credits-status" class="demo-muted"></small></article>
+                            <article class="demo-kpi"><span>Uso</span><strong id="engagement-credits-usage">—</strong></article>
+                            <article class="demo-kpi"><span>Treinamento</span><strong id="engagement-credits-training">—</strong></article>
+                            <article class="demo-kpi"><span>Licença</span><strong id="engagement-credits-license">—</strong></article>
+                        </div>
+                    </div>
+                    <div id="engagement-credits-team" hidden>
+                        <div class="demo-kpis">
+                            <article class="demo-kpi"><span>Participantes</span><strong id="engagement-credits-total">—</strong></article>
+                            <article class="demo-kpi"><span>Score médio</span><strong id="engagement-credits-average">—</strong></article>
+                            <article class="demo-kpi"><span>Componentes médios</span><strong id="engagement-credits-components" class="engagement-components">—</strong></article>
+                        </div>
+                        <h4 class="h6 mt-3">Distribuição por faixa de score (sem ranking)</h4>
+                        <div id="engagement-credits-buckets" class="engagement-buckets"></div>
+                    </div>
+                    <p id="engagement-credits-note" class="demo-muted small" role="status"></p>
+                    <p id="engagement-credits-coverage" class="demo-muted small mb-0"></p>
+                </section>
+            </div>
+        </section>
         <% } %>
         <section class="demo-kpis" aria-label="Indicadores">
             <% for (const label of panel.kpis) { %>
@@ -150,6 +219,10 @@
 <script src="/public/js/core/auth.js?v=cookie-session-20261022"></script>
 <script src="/public/js/core/session-actions.js?v=cookie-session-20261022"></script>
 <script src="/public/js/pages/dashboard-metrics.js?v=legacy-identity-20261030"></script>
+<% if (['colaborador', 'lider', 'gestor', 'executivo'].includes(profile)) { %>
+<script src="/public/js/pages/dashboard-engagement-core.js?v=spi-144-20261101"></script>
+<script src="/public/js/pages/dashboard-engagement.js?v=spi-144-20261101"></script>
+<% } %>
 <% if (profile !== 'colaborador') { %>
 <script src="/public/js/pages/dashboard-budget-alerts.js?v=cookie-session-20261022"></script>
 <% } %>

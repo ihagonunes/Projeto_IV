@@ -25,8 +25,17 @@ test("render dos cinco layouts com ações de sessão e filtros aguardando auten
             assert.ok(!/href="\/dashboard(?:s)?\//.test(html));
             assert.match(html, /<body[^>]*>[\s\S]*<main/);
             assert.ok(!html.includes('chart.umd'));
-            assert.equal(html.includes('/js/pages/dashboard-metrics.js'), profile !== 'colaborador');
+            assert.ok(html.includes('/js/pages/dashboard-metrics.js'));
             assert.ok(!html.includes('dashboard-data'));
+            assert.equal(html.includes('id="engagement-panel"'), profile !== 'administrador');
+            if (profile === 'colaborador') {
+                assert.match(html, /Meus AI Credits/);
+                assert.ok(!html.includes('Adoção (30 dias)'));
+            } else if (profile !== 'administrador') {
+                assert.match(html, /Adoção \(30 dias\)/);
+                assert.match(html, /Treinamento × uso/);
+                assert.match(html, /AI Credits da equipe/);
+            }
             if (profile === 'gestor' || profile === 'executivo') {
                 assert.match(html, /Benefício líquido projetado/);
                 assert.match(html, /Ganho potencial estimado/);
@@ -43,9 +52,11 @@ test("render dos cinco layouts com ações de sessão e filtros aguardando auten
             }
             assert.ok(!html.includes('LucroRealizado'));
             const controls = html.match(/<(?:button|select)\b[^>]*>/g) || [];
-            assert.ok(controls.every(control => control.includes('disabled') || control.includes('id="dashboardLogout"') || control.includes('id="budget-notification-retry"') || /id="historical-(?:department|model|apply|retry)"/.test(control)));
+            assert.ok(controls.every(control => control.includes('disabled') || control.includes('id="dashboardLogout"') || control.includes('id="budget-notification-retry"') || control.includes('id="budget-projection-retry"') || /id="historical-(?:department|model|apply|retry)"/.test(control)));
             if (profile === 'colaborador') {
                 assert.match(html, /data-scope="self"/);
+                assert.match(html, /Meu uso operacional/);
+                assert.match(html, /id="metrics-requests"/);
                 assert.ok(html.includes('dashboard-historical.js'));
                 assert.ok(!html.includes('dashboard-budget-alerts.js'));
                 assert.ok(html.includes('id="historical-content"'));
@@ -54,6 +65,8 @@ test("render dos cinco layouts com ações de sessão e filtros aguardando auten
                 assert.match(html, /dashboard-historical.js/);
                 assert.match(html, /id="historical-content" hidden/);
                 assert.match(html, /id="budget-notification"[^>]*hidden/);
+                assert.match(html, /id="budget-projection-panel"[^>]*hidden/);
+                assert.match(html, /Projeção do mês/);
                 assert.ok(html.indexOf('id="budget-notification"') < html.indexOf('id="metrics-requests"'));
             }
             assert.ok(!html.includes('id="historical-filters"'));
