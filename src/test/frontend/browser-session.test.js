@@ -22,6 +22,7 @@ async function fixture(run, access = {}) {
     const session = createBrowserSession(api), app = express();
     app.use(cookieParser()); app.use(session.router);
     app.get("/dashboard", session.requireSession, (req, res) => res.json({ profile: res.locals.dashboardProfile }));
+    app.get("/admin/convites", session.requireSession, session.requirePermission("INVITE:MANAGE"), (req, res) => res.sendStatus(200));
     const server = app.listen(0, "127.0.0.1");
     await new Promise(resolve => server.once("listening", resolve));
     const url = `http://127.0.0.1:${server.address().port}`;
@@ -73,6 +74,24 @@ test("administrador não abre nenhum perfil de dashboard por URL direta", async 
     assert.equal(continued, false);
     session.requireDashboard({}, { locals: { dashboardProfile: 'executivo' } }, () => continued = true);
     assert.equal(continued, true);
+});
+
+test("shells administrativos exigem sessão e permissão específica", async () => {
+    await fixture(async ({ url }) => {
+        const response = await fetch(url + "/admin/convites", {
+            headers: { cookie: "qsoft_access=signed-fixture-token" }, redirect: "manual"
+        });
+        assert.equal(response.status, 200);
+    }, { permissoes: ["INVITE:MANAGE"], concessoes: [{ papel: "MANAGER" }] });
+
+    await fixture(async ({ url }) => {
+        let response = await fetch(url + "/admin/convites", {
+            headers: { cookie: "qsoft_access=signed-fixture-token" }, redirect: "manual"
+        });
+        assert.equal(response.status, 302); assert.equal(response.headers.get("location"), "/onboarding");
+        response = await fetch(url + "/admin/convites", { redirect: "manual" });
+        assert.equal(response.status, 302); assert.equal(response.headers.get("location"), "/login");
+    }, { permissoes: [], concessoes: [{ papel: "COLLABORATOR" }] });
 });
 
 test("cadastro e branding são páginas administrativas", () => {

@@ -37,6 +37,7 @@ function createBrowserSession(api) {
                 const profiles = [["TENANT_ADMIN", "administrador"], ["EXECUTIVE", "executivo"],
                     ["MANAGER", "gestor"], ["LEADER", "lider"], ["COLLABORATOR", "colaborador"]];
                 const roles = new Set((access.concessoes || []).map(grant => grant.papel));
+                res.locals.permissions = new Set(access.permissoes || []);
                 res.locals.dashboardProfile = profiles.find(([role]) => roles.has(role))?.[1] || "colaborador";
                 return next();
             }
@@ -87,6 +88,12 @@ function createBrowserSession(api) {
         if (res.locals.dashboardProfile !== "administrador") return res.redirect("/onboarding");
         return next();
     }
-    return { router, protect, clear, requireSession, requireDashboard, requireAdministration, headersFor, cookieName: COOKIE };
+    function requirePermission(permission) {
+        return (req, res, next) => {
+            if (res.locals.permissions && res.locals.permissions.has(permission)) return next();
+            return res.redirect("/onboarding");
+        };
+    }
+    return { router, protect, clear, requireSession, requireDashboard, requireAdministration, requirePermission, headersFor, cookieName: COOKIE };
 }
 module.exports = { createBrowserSession };
