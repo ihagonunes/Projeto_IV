@@ -158,7 +158,7 @@
             const label = node("div"); label.append(node("strong", model.name), node("small", model.description), node("small", model.provider)); b.append(node("span", "✧"), label, node("span", model.badge)); return b;
         });
         dialog("Escolha seu modelo", [node("p", preview ? "Opções fictícias. Experimente alternar o modelo para o próximo envio." : "O modelo é definido pelas permissões do seu departamento."), ...options,
-            node("p", preview ? "A troca mantém a conversa e usa o novo modelo nas próximas respostas. A seleção não é persistida ao recarregar." : "A lista de alternativas permitidas ainda não está disponível. Por enquanto, os envios usam o padrão do departamento.", "chat-dialog-note")]);
+            node("p", preview ? "A troca mantém a conversa e usa o novo modelo nas próximas respostas. A seleção não é persistida ao recarregar." : "A lista vem da política do seu departamento. A seleção vale para o próximo envio e não é persistida ao recarregar.", "chat-dialog-note")]);
     }
     function usageDialog() {
         const quota = service.quota;

@@ -49,8 +49,19 @@
             list: page => api.get(`/conversas?page=${page}&size=20`),
             messages: id => api.get(`/conversas/${encodeURIComponent(id)}/mensagens`),
             async models() {
-                const model = await api.get("/ai-gateway/models/permitido");
-                return [{ id: null, name: model.modelName, provider: model.providerName, description: "Padrão do seu departamento", badge: "Padrão" }];
+                const data = await api.get("/conversas/modelos");
+                const allowed = (data.models || []).filter(model => model.available);
+                const mapped = allowed.map(model => ({
+                    id: model.id,
+                    name: model.name,
+                    provider: model.providerName || "Provider",
+                    description: model.id === data.defaultModelId
+                        ? "Padrão do seu departamento" : "Permitido pelo seu departamento",
+                    badge: model.id === data.defaultModelId ? "Padrão" : "Alternativo",
+                    isDefault: model.id === data.defaultModelId
+                }));
+                return mapped.sort((a, b) => Number(b.isDefault) - Number(a.isDefault))
+                    .map(({ isDefault, ...model }) => model);
             },
             async send(id, content, modelId, signal) {
                 if (!validateMessage(content)) return Promise.reject(Object.assign(new Error("Mensagem inválida"), { status: 400 }));

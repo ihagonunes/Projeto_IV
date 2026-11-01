@@ -27,9 +27,16 @@ test("chat: histórico filtra acentos, status e ordena sem alterar origem", () =
 });
 test("chat conectado: envio usa somente contrato existente, cookie, CSRF e AbortSignal", async () => {
     const calls = []; const signal = new AbortController().signal;
-    const service = C.createLiveService({ async get(path) { calls.push(path); return { modelName: "Modelo real", providerName: "Provider real" }; } },
+    const service = C.createLiveService({ async get(path) { calls.push(path); return { defaultModelId: "model-2", models: [
+        { id: "model-1", name: "Modelo real", providerName: "Provider real", available: true },
+        { id: "model-2", name: "Modelo padrão", providerName: "Provider real", available: true },
+        { id: "model-3", name: "Indisponível", providerName: "Provider real", available: false }
+    ] }; } },
         async (url, options) => { calls.push({ url, options }); return { ok: true, async json() { return { conversa: { id: "real" } }; } }; });
-    await service.models(); assert.equal(calls[0], "/ai-gateway/models/permitido");
+    const models = await service.models();
+    assert.equal(calls[0], "/conversas/modelos");
+    assert.deepEqual(models.map(model => model.id), ["model-2", "model-1"]);
+    assert.equal(models[0].badge, "Padrão");
     await service.send(null, "Olá", null, signal);
     assert.equal(calls[1].url, "/api/v1/conversas");
     assert.equal(calls[1].options.credentials, "same-origin"); assert.equal(calls[1].options.signal, signal);
