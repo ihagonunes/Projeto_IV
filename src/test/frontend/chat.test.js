@@ -4,6 +4,7 @@ const assert = require("node:assert/strict");
 const C = require("../../main/resources/static/public/js/pages/chat-core");
 const express = require("express");
 const path = require("node:path");
+const fs = require("node:fs");
 
 test("chat: valida branco e limite sem confundir caracteres com tokens", () => {
     for (const value of [null, "", "  ", "a".repeat(8001)]) assert.equal(C.validateMessage(value), false);
@@ -41,10 +42,14 @@ test("chat conectado: envio usa somente contrato existente, cookie, CSRF e Abort
     assert.equal(calls[1].url, "/api/v1/conversas");
     assert.equal(calls[1].options.credentials, "same-origin"); assert.equal(calls[1].options.signal, signal);
     assert.equal(calls[1].options.headers["X-Qsoft-Request"], "1");
-    assert.deepEqual(JSON.parse(calls[1].options.body), { mensagem: "Olá", requestedModelId: null });
+    const firstBody = JSON.parse(calls[1].options.body);
+    assert.equal(firstBody.mensagem, "Olá");
+    assert.equal(firstBody.requestedModelId, null);
+    assert.match(firstBody.clientMessageId, /^[A-Za-z0-9_-]{8,64}$/);
     assert.equal(calls[1].options.headers.Authorization, undefined);
     await service.send("abc", "Outra", "uuid", signal);
     assert.equal(calls[2].url, "/api/v1/conversas/abc/mensagens");
+    assert.match(JSON.parse(calls[2].options.body).clientMessageId, /^[A-Za-z0-9_-]{8,64}$/);
     await assert.rejects(service.send(null, " ", null, signal), error => error.status === 400);
     assert.equal(calls.length, 3);
 });
@@ -59,6 +64,56 @@ test("chat conectado: interrupção durante leitura da resposta mantém estado d
         async json() { throw new DOMException("Aborted", "AbortError"); } }));
     await assert.rejects(service.send(null, "Olá", null), error => error.name === "AbortError"
         && C.errorMessage(error).includes("servidor pode continuar"));
+});
+test("chat conectado: histórico, gestão e consumo usam os contratos reais", async () => {
+    const calls = [];
+    const api = {
+        async get(url) {
+            calls.push({ method: "GET", url });
+            if (url.includes("observability")) return { series: [{ requests: 3 }], activeUsers: 1 };
+            return { content: [], page: 0, totalPages: 1 };
+        },
+        async patch(url, body) {
+            calls.push({ method: "PATCH", url, body });
+            return { id: "c1", titulo: body.titulo || "Título", status: body.status || "ACTIVE" };
+        },
+        async delete(url) { calls.push({ method: "DELETE", url }); return ""; }
+    };
+    const service = C.createLiveService(api, async () => ({ ok: true, json: async () => ({}) }));
+
+    await service.list(0, "ARCHIVED", "a%b");
+    assert.match(calls[0].url, /^\/conversas\?/);
+    assert.match(calls[0].url, /status=ARCHIVED/);
+    assert.match(calls[0].url, /q=a%25b/);
+
+    const renamed = await service.rename("c1", "Novo título");
+    assert.equal(calls[1].method, "PATCH");
+    assert.equal(calls[1].url, "/conversas/c1");
+    assert.deepEqual(calls[1].body, { titulo: "Novo título" });
+    assert.equal(renamed.titulo, "Novo título");
+
+    await service.archive("c1", true);
+    assert.deepEqual(calls[2].body, { status: "ARCHIVED" });
+    await service.remove("c1");
+    assert.equal(calls[3].method, "DELETE");
+    assert.equal(calls[3].url, "/conversas/c1");
+
+    const usage = await service.usage();
+    assert.equal(calls[4].url, "/observability/metrics/me/usage");
+    assert.equal(usage.activeUsers, 1);
+});
+
+test("chat conectado: recibos duráveis e clientMessageId seguro", () => {
+    const messages = [
+        { id: "m1", role: "ASSISTANT", requestId: "r1", recibo: { requestId: "r1", modelo: "Modelo" } },
+        { id: "m2", role: "ASSISTANT", requestId: "r2", recibo: null }
+    ];
+    const receipts = C.collectReceipts(messages);
+    assert.equal(receipts.size, 1);
+    assert.equal(receipts.get("r1").modelo, "Modelo");
+    assert.match(C.clientMessageId(), /^[A-Za-z0-9_-]{8,64}$/);
+    assert.match(C.errorMessage({ status: 409, data: { code: "CONVERSATION_ARCHIVED" } }), /arquivada/);
+    assert.match(C.errorMessage({ status: 409, data: { code: "TURN_IN_PROGRESS_OR_FAILED" } }), /processamento/);
 });
 test("chat prévia: modelo por turno, recibo, regeneração e histórico sem duplicar pergunta", async () => {
     const service = C.createPreviewService();
@@ -102,4 +157,14 @@ test("chat: página conectada exige sessão; prévia renderiza sem API ou script
     const preview = await fetch(`${url}/chat/previa`); const html = await preview.text();
     assert.equal(preview.status, 200); assert.match(html, /data-preview="true"/); assert.match(html, /chat-core\.js/);
     assert.doesNotMatch(html, /core\/api-client\.js/); assert.equal(sessionChecks, 1);
+});
+
+test("chat: renderiza��o n�o usa innerHTML e a busca � limitada a 100", () => {
+    const base = path.resolve(__dirname, "../../main/resources/static");
+    for (const file of ["public/js/pages/chat.js", "public/js/pages/chat-core.js", "modules/chat/views/index.ejs"]) {
+        const source = fs.readFileSync(path.join(base, file), "utf8");
+        assert.ok(!source.includes("innerHTML"), `${file} n�o pode usar innerHTML`);
+    }
+    const view = fs.readFileSync(path.join(base, "modules/chat/views/index.ejs"), "utf8");
+    assert.match(view, /id="chat-search"[^>]*maxlength="100"/);
 });

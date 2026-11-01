@@ -38,13 +38,16 @@ Este documento não modifica ADRs nem aceita novas decisões.
 
 ### Limites deliberados da integração atual
 
-O modo conectado usa os quatro endpoints existentes e a resolução do modelo padrão.
-Funcionalidades sem API mostram uma explicação e não fingem salvar alterações.
-Os recibos dos envios desta página ficam em memória; ao reabrir mensagens antigas,
-a UI mostra que os detalhes não estão disponíveis quando não recebeu o recibo.
-A busca conectada filtra apenas as conversas já carregadas, indicado no rótulo/estado vazio.
-O consumo conectado soma somente tokens conhecidos dos envios concluídos nesta página.
-Não oferece cota, moeda, saldo ou ocupação da janela inventados.
+O modo conectado usa os endpoints de ciclo de vida, busca, modelos, recibos e consumo
+pessoal implementados na Sprint 4. Renomear, arquivar, restaurar e excluir só confirmam
+sucesso após a resposta da API; em falha, a lista é reconciliada com o servidor.
+Os recibos dos envios são recuperados de `GET /conversas/{id}/mensagens` ao reabrir a
+conversa, sem duplicar tokens/custo em `chat_messages`. A busca e o status são
+resolvidos no servidor (`GET /conversas?status=&q=`), não apenas sobre as conversas
+carregadas. O consumo pessoal informativo usa
+`GET /api/v1/observability/metrics/me/usage`.
+Não há cota fictícia, moeda, saldo ou ocupação da janela inventados no modo conectado.
+Regeneração de resposta e anexos continuam fora do contrato e mostram explicação.
 O botão de parar aborta a espera HTTP; não afirma cancelar processamento/cobrança no servidor.
 
 ## 3. Contratos existentes preservados
@@ -52,10 +55,13 @@ O botão de parar aborta a espera HTTP; não afirma cancelar processamento/cobra
 | Operação | Contrato consumido |
 |---|---|
 | Criar e enviar | POST `/api/v1/conversas` |
-| Listar histórico | GET `/api/v1/conversas?page=0&size=20` |
-| Abrir mensagens | GET `/api/v1/conversas/{id}/mensagens` |
+| Listar histórico | GET `/api/v1/conversas?status=&q=&page=&size=` |
+| Abrir mensagens | GET `/api/v1/conversas/{id}/mensagens?page=&size=` |
 | Enviar na conversa | POST `/api/v1/conversas/{id}/mensagens` |
-| Resolver padrão | GET `/api/v1/ai-gateway/models/permitido` |
+| Renomear/arquivar/restaurar | PATCH `/api/v1/conversas/{id}` |
+| Excluir | DELETE `/api/v1/conversas/{id}` |
+| Modelos permitidos | GET `/api/v1/conversas/modelos` |
+| Consumo pessoal | GET `/api/v1/observability/metrics/me/usage` |
 
 Envio: `{ "mensagem": "...", "requestedModelId": null }`.
 Resposta: `{ "conversa": {...}, "mensagens": [...], "recibo": {...} }`.

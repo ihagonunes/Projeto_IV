@@ -6,9 +6,11 @@
     const app = $("chat-app");
     const preview = app.dataset.preview === "true";
     const service = preview ? C.createPreviewService() : C.createLiveService(window.API);
-    const state = { conversations: [], messages: [], models: [], receipts: new Map(), selected: null, modelId: null,
+    const state = { conversations: [], messages: [], models: [], receipts: new Map(), selected: null, selectedConversation: null, modelId: null,
         archived: false, page: 0, totalPages: 0, pending: false, loading: false, controller: null, generation: 0, files: [], usage: { input: 0, output: 0 } };
     let toastTimer;
+    let searchTimer;
+    let historyVersion = 0;
     function node(tag, text, className) { const el = document.createElement(tag); if (text != null) el.textContent = text; if (className) el.className = className; return el; }
     function button(text, handler, className = "chat-action-button") { const el = node("button", text, className); el.type = "button"; el.addEventListener("click", handler); return el; }
     function toast(text) { $("chat-toast").textContent = text; $("chat-toast").hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { $("chat-toast").hidden = true; }, 5000); }
@@ -16,7 +18,10 @@
     function dialog(title, children) { $("chat-dialog-title").textContent = title; $("chat-dialog-body").replaceChildren(...children); if (!$("chat-dialog").open) $("chat-dialog").showModal(); }
     function closeDialog() { $("chat-dialog").close(); }
     function unavailable(feature) { dialog(feature, [node("p", "Esta função está prevista para o chat e aguarda integração com o serviço. Nenhuma alteração foi salva."), node("p", "Você pode experimentar o fluxo completo com dados fictícios na prévia interativa."), (() => { const a = node("a", "Abrir prévia interativa", "chat-action-button"); a.href = "/chat/previa"; return a; })()]); }
-    function current() { return state.conversations.find(c => c.id === state.selected); }
+    function current() {
+        return state.conversations.find(c => c.id === state.selected)
+            || (state.selectedConversation?.id === state.selected ? state.selectedConversation : undefined);
+    }
     function resize() { $("chat-input").style.height = "auto"; $("chat-input").style.height = `${Math.min($("chat-input").scrollHeight, 180)}px`; }
     function composer() {
         const input = $("chat-input");
@@ -38,10 +43,13 @@
     }
     function history() {
         const container = $("chat-history"); container.replaceChildren();
-        const items = C.filterConversations(state.conversations, $("chat-search").value, state.archived);
+        const query = $("chat-search").value.trim();
+        const items = preview
+            ? C.filterConversations(state.conversations, query, state.archived)
+            : state.conversations;
         $("chat-active").classList.toggle("is-active", !state.archived); $("chat-active").setAttribute("aria-pressed", String(!state.archived));
         $("chat-archived").classList.toggle("is-active", state.archived); $("chat-archived").setAttribute("aria-pressed", String(state.archived));
-        if (!items.length) container.append(node("p", $("chat-search").value ? "Nenhuma conversa encontrada entre as carregadas." : state.archived ? "Nenhuma conversa arquivada." : "Suas ideias começam aqui. Crie sua primeira conversa.", "chat-history-empty"));
+        if (!items.length) container.append(node("p", query ? "Nenhuma conversa encontrada." : state.archived ? "Nenhuma conversa arquivada." : "Suas ideias começam aqui. Crie sua primeira conversa.", "chat-history-empty"));
         let previousGroup;
         for (const c of items) {
             const date = new Date(c.updatedAt);
@@ -95,46 +103,114 @@
     function bottom() { requestAnimationFrame(() => { $("chat-scroll").scrollTop = $("chat-scroll").scrollHeight; }); }
     function closeSidebar() { app.classList.remove("is-mobile-open"); $("chat-overlay").hidden = true; if (matchMedia("(max-width: 720px)").matches) $("chat-toggle").setAttribute("aria-expanded", "false"); }
     async function loadHistory(append = false) {
-        const result = await service.list(append ? state.page + 1 : 0);
+        const version = ++historyVersion;
+        const result = await service.list(
+            append ? state.page + 1 : 0,
+            state.archived ? "ARCHIVED" : "ACTIVE",
+            $("chat-search").value.trim()
+        );
+        if (version !== historyVersion) return;
         state.conversations = append ? C.mergeById(state.conversations, result.content) : result.content;
         state.page = result.page; state.totalPages = result.totalPages; history();
     }
     async function openConversation(c) {
         if (state.pending || state.loading) return;
         const generation = ++state.generation;
-        state.selected = c.id; state.messages = []; state.loading = true; status(""); history(); thread(); closeSidebar();
-        try { const messages = await service.messages(c.id); if (generation !== state.generation) return; state.messages = messages; }
+        state.selected = c.id; state.selectedConversation = c; state.messages = []; state.loading = true; status(""); history(); thread(); closeSidebar();
+        try {
+            const messages = await service.messages(c.id);
+            if (generation !== state.generation) return;
+            state.messages = messages;
+            for (const [requestId, receipt] of C.collectReceipts(messages)) {
+                state.receipts.set(requestId, receipt);
+            }
+        }
         catch (error) { status(C.errorMessage(error)); }
         finally { if (generation === state.generation) { state.loading = false; if (c.status === "ARCHIVED") status("Esta conversa está arquivada. Restaure-a para continuar."); thread(); history(); bottom(); } }
     }
-    function newConversation() {
+    async function newConversation() {
         if (state.pending || state.loading) return;
-        state.generation++; state.selected = null; state.messages = []; state.files = []; state.archived = false;
-        $("chat-input").value = ""; status(""); renderFiles(); history(); thread(); closeSidebar(); $("chat-input").focus();
+        state.generation++; state.selected = null; state.selectedConversation = null; state.messages = []; state.files = []; state.archived = false;
+        $("chat-input").value = ""; status(""); renderFiles(); thread(); closeSidebar(); $("chat-input").focus();
+        if (!preview) {
+            try { await loadHistory(); } catch { status("Não foi possível atualizar a lista de conversas. Recarregue a página."); }
+        } else history();
     }
     function conversationActions(c) {
-        const pendingNote = !preview ? node("p", "Renomear, arquivar e excluir aguardam integração. Nenhuma alteração será salva.") : node("p", "Estas alterações afetam apenas os dados fictícios desta prévia.");
-        dialog("Opções da conversa", [node("p", c.titulo), pendingNote,
+        const note = preview
+            ? node("p", "Estas alterações afetam apenas os dados fictícios desta prévia.")
+            : node("p", "As alterações são confirmadas pelo servidor. Falhas mantêm a lista reconciliada com a API.");
+        dialog("Opções da conversa", [node("p", c.titulo), note,
             button("Renomear conversa", () => renameDialog(c)),
             button(c.status === "ARCHIVED" ? "Restaurar conversa" : "Arquivar conversa", async () => {
-                if (!preview) return unavailable("Arquivar ou restaurar conversa");
-                await service.archive(c.id, c.status !== "ARCHIVED"); closeDialog(); await loadHistory();
-                if (state.selected === c.id) { state.archived = c.status !== "ARCHIVED"; composer(); status(state.archived ? "Esta conversa está arquivada. Restaure-a para continuar." : ""); history(); }
-                toast(c.status === "ARCHIVED" ? "Conversa restaurada na prévia." : "Conversa arquivada na prévia.");
+                const nextArchived = c.status !== "ARCHIVED";
+                try {
+                    await service.archive(c.id, nextArchived);
+                    closeDialog();
+                    if (state.selectedConversation?.id === c.id) {
+                        state.selectedConversation.status = nextArchived ? "ARCHIVED" : "ACTIVE";
+                    }
+                    if (state.selected === c.id) state.archived = nextArchived;
+                    try { await loadHistory(); } catch { status("Alteração salva; não foi possível atualizar a lista. Recarregue a página."); }
+                    if (state.selected === c.id) status(nextArchived ? "Esta conversa está arquivada. Restaure-a para continuar." : "");
+                    toast(nextArchived ? "Conversa arquivada." : "Conversa restaurada.");
+                } catch (error) {
+                    closeDialog();
+                    status(C.errorMessage(error));
+                    try { await loadHistory(); } catch { /* O erro da ação permanece visível. */ }
+                }
             }),
             button("Excluir conversa", () => deleteDialog(c), "chat-action-button is-danger")]);
     }
     function renameDialog(c) {
-        if (!preview) return unavailable("Renomear conversa");
         const label = node("label", "Título da conversa"); label.htmlFor = "chat-rename-input";
         const input = node("input", null, "chat-dialog-input"); input.id = "chat-rename-input"; input.maxLength = 200; input.value = c.titulo;
-        const actions = node("div", null, "chat-dialog-actions"); actions.append(button("Cancelar", closeDialog), button("Salvar título", async () => { if (!input.value.trim()) { input.setCustomValidity("Informe um título."); input.reportValidity(); return; } await service.rename(c.id, input.value); closeDialog(); await loadHistory(); toast("Título atualizado na prévia."); }, "chat-action-button is-primary"));
+        const save = button("Salvar título", async () => {
+            if (!input.value.trim()) { input.setCustomValidity("Informe um título."); input.reportValidity(); return; }
+            save.disabled = true;
+            try {
+                const updated = await service.rename(c.id, input.value);
+                closeDialog();
+                if (state.selectedConversation?.id === c.id) {
+                    state.selectedConversation.titulo = updated?.titulo || input.value.trim();
+                }
+                try { await loadHistory(); } catch { status("Título salvo; não foi possível atualizar a lista. Recarregue a página."); }
+                toast("Título atualizado.");
+            } catch (error) {
+                closeDialog();
+                status(C.errorMessage(error));
+                try { await loadHistory(); } catch { /* O erro da ação permanece visível. */ }
+            } finally {
+                save.disabled = false;
+            }
+        }, "chat-action-button is-primary");
+        const actions = node("div", null, "chat-dialog-actions"); actions.append(button("Cancelar", closeDialog), save);
         input.addEventListener("input", () => input.setCustomValidity("")); dialog("Renomear conversa", [label, input, actions]); input.focus();
     }
     function deleteDialog(c) {
-        if (!preview) return unavailable("Excluir conversa");
-        const actions = node("div", null, "chat-dialog-actions"); actions.append(button("Cancelar", closeDialog), button("Excluir conversa", async () => { await service.remove(c.id); closeDialog(); if (state.selected === c.id) newConversation(); await loadHistory(); toast("Conversa excluída da prévia."); }, "chat-action-button is-danger"));
-        dialog("Excluir esta conversa?", [node("p", `A conversa “${c.titulo}” será removida dos dados fictícios. Esta ação não pode ser desfeita nesta sessão.`), actions]);
+        const actions = node("div", null, "chat-dialog-actions");
+        const confirm = button("Excluir conversa", async () => {
+            confirm.disabled = true;
+            try {
+                const wasSelected = state.selected === c.id;
+                await service.remove(c.id);
+                closeDialog();
+                if (wasSelected) await newConversation();
+                else try { await loadHistory(); } catch { status("Conversa excluída; não foi possível atualizar a lista. Recarregue a página."); }
+                toast("Conversa excluída.");
+            } catch (error) {
+                closeDialog();
+                status(C.errorMessage(error));
+                try { await loadHistory(); } catch { /* O erro da ação permanece visível. */ }
+            } finally {
+                confirm.disabled = false;
+            }
+        }, "chat-action-button is-danger");
+        actions.append(button("Cancelar", closeDialog), confirm);
+        const description = preview
+            ? `A conversa “${c.titulo}” será removida dos dados fictícios. Esta ação não pode ser desfeita nesta sessão.`
+            : `A conversa “${c.titulo}” será removida das suas listas. O conteúdo permanece retido no servidor conforme a política de retenção.`;
+        dialog("Excluir esta conversa?", [node("p", description), actions]);
     }
     function details(rows) { const dl = node("dl"); rows.forEach(([label, value]) => { const row = node("div"); row.append(node("dt", label), node("dd", value)); dl.append(row); }); return dl; }
     function regenerateDialog(message) {
@@ -160,21 +236,44 @@
         dialog("Escolha seu modelo", [node("p", preview ? "Opções fictícias. Experimente alternar o modelo para o próximo envio." : "O modelo é definido pelas permissões do seu departamento."), ...options,
             node("p", preview ? "A troca mantém a conversa e usa o novo modelo nas próximas respostas. A seleção não é persistida ao recarregar." : "A lista vem da política do seu departamento. A seleção vale para o próximo envio e não é persistida ao recarregar.", "chat-dialog-note")]);
     }
-    function usageDialog() {
+    async function usageDialog() {
+        if (!preview) {
+            dialog("Seu consumo de IA", [node("p", "Carregando consumo pessoal…")]);
+            try {
+                const usage = await service.usage();
+                const requests = (usage.series || []).reduce((sum, point) => sum + Number(point.requests || 0), 0);
+                const grid = node("div", null, "chat-dialog-grid");
+                for (const [label, value] of [["Requisições registradas", C.tokenLabel(requests)], ["Usuários ativos no recorte", C.tokenLabel(usage.activeUsers)]]) {
+                    const item = node("div", null, "chat-dialog-stat"); item.append(node("span", label), node("strong", value)); grid.append(item);
+                }
+                dialog("Seu consumo de IA", [
+                    node("p", "Consumo pessoal informativo, restrito ao usuário autenticado."),
+                    grid,
+                    node("p", "O contrato /metrics/me/usage informa requisições e série; tokens oficiais e cota não estão disponíveis. Nenhum saldo é estimado pelo navegador."),
+                    node("p", "Contexto: o serviço envia no máximo as últimas 20 mensagens. Não há cálculo de ocupação da janela do modelo.", "chat-dialog-note")
+                ]);
+            } catch (error) {
+                dialog("Seu consumo de IA", [
+                    node("p", error.status === 403
+                        ? "Seu perfil não tem USAGE:READ para consultar o consumo pessoal."
+                        : "Não foi possível carregar o consumo pessoal."),
+                    node("p", "Nenhuma cota fictícia é exibida no modo conectado.")
+                ]);
+            }
+            return;
+        }
         const quota = service.quota;
         const grid = node("div", null, "chat-dialog-grid");
-        for (const [label, value] of [["Tokens de entrada", preview ? quota.input : state.usage.input], ["Tokens de saída", preview ? quota.output : state.usage.output]]) {
+        for (const [label, value] of [["Tokens de entrada", quota.input], ["Tokens de saída", quota.output]]) {
             const item = node("div", null, "chat-dialog-stat"); item.append(node("span", label), node("strong", C.tokenLabel(value))); grid.append(item);
         }
-        const children = [node("p", preview ? "Consumo fictício do mês · cenário de demonstração" : "Consumo conhecido dos envios concluídos nesta página. Não representa o total da conta e não inclui uso indisponível."), grid];
-        if (preview) {
-            const meter = node("div", null, "chat-meter"); meter.setAttribute("role", "meter"); meter.setAttribute("aria-label", "Cota fictícia utilizada"); meter.setAttribute("aria-valuemin", "0"); meter.setAttribute("aria-valuemax", String(quota.limit)); meter.setAttribute("aria-valuenow", String(Math.min(quota.used, quota.limit))); const bar = node("span"); bar.style.width = `${Math.min(100, quota.used / quota.limit * 100)}%`; meter.append(bar);
-            children.push(meter, node("p", `${C.tokenLabel(quota.used)} de ${C.tokenLabel(quota.limit)} tokens fictícios · ${Math.round(quota.used / quota.limit * 100)}%`));
-            const scenario = node("label", "Próximo envio", "chat-scenario"); const select = node("select"); select.setAttribute("aria-label", "Cenário do próximo envio");
-            for (const [value, label] of [["success", "Resposta concluída"], ["403", "Sem permissão · 403"], ["409", "Modelo indisponível · 409"], ["502", "Falha do provider · 502"], ["503", "Registro indisponível · 503"], ["504", "Tempo excedido · 504"]]) { const option = node("option", label); option.value = value; select.append(option); }
-            select.value = service.scenario; select.addEventListener("change", () => { service.scenario = select.value; }); scenario.append(select); children.push(scenario);
-            children.push(button("Simular cota atingida", () => { quota.input += Math.max(0, quota.limit - quota.used); quota.used = quota.input + quota.output; warning(); closeDialog(); toast("Cenário de cota atingida ativado na prévia."); }));
-        } else children.push(node("p", "Cota, saldo, janela de contexto e alertas antecipados aguardam um contrato do backend. Nenhum saldo é estimado pelo navegador."));
+        const children = [node("p", "Consumo fictício do mês · cenário de demonstração"), grid];
+        const meter = node("div", null, "chat-meter"); meter.setAttribute("role", "meter"); meter.setAttribute("aria-label", "Cota fictícia utilizada"); meter.setAttribute("aria-valuemin", "0"); meter.setAttribute("aria-valuemax", String(quota.limit)); meter.setAttribute("aria-valuenow", String(Math.min(quota.used, quota.limit))); const bar = node("span"); bar.style.width = `${Math.min(100, quota.used / quota.limit * 100)}%`; meter.append(bar);
+        children.push(meter, node("p", `${C.tokenLabel(quota.used)} de ${C.tokenLabel(quota.limit)} tokens fictícios · ${Math.round(quota.used / quota.limit * 100)}%`));
+        const scenario = node("label", "Próximo envio", "chat-scenario"); const select = node("select"); select.setAttribute("aria-label", "Cenário do próximo envio");
+        for (const [value, label] of [["success", "Resposta concluída"], ["403", "Sem permissão · 403"], ["409", "Modelo indisponível · 409"], ["502", "Falha do provider · 502"], ["503", "Registro indisponível · 503"], ["504", "Tempo excedido · 504"]]) { const option = node("option", label); option.value = value; select.append(option); }
+        select.value = service.scenario; select.addEventListener("change", () => { service.scenario = select.value; }); scenario.append(select); children.push(scenario);
+        children.push(button("Simular cota atingida", () => { quota.input += Math.max(0, quota.limit - quota.used); quota.used = quota.input + quota.output; warning(); closeDialog(); toast("Cenário de cota atingida ativado na prévia."); }));
         children.push(node("p", "Contexto: o serviço envia no máximo as últimas 20 mensagens. Não há cálculo de ocupação da janela do modelo.", "chat-dialog-note"));
         dialog("Seu consumo de IA", children);
     }
@@ -190,21 +289,33 @@
         event.preventDefault(); const content = $("chat-input").value;
         if (state.pending || state.loading || !C.validateMessage(content) || current()?.status === "ARCHIVED") return;
         const selected = state.selected; const before = state.messages.slice();
+        const messageId = C.clientMessageId();
         state.pending = true; state.controller = new AbortController();
         const optimisticId = `local-${Date.now()}`;
         state.messages.push({ id: optimisticId, role: "USER", content });
         $("chat-input").value = ""; status(""); history(); thread(); bottom();
         try {
-            const turn = await service.send(selected, content, state.modelId, state.controller.signal);
-            state.selected = turn.conversa.id; state.messages = C.mergeById(before, turn.mensagens);
-            state.receipts.set(turn.recibo.requestId, turn.recibo);
-            state.usage.input += turn.recibo.tokensEntrada ?? 0; state.usage.output += turn.recibo.tokensSaida ?? 0;
+            const turn = await service.send(selected, content, state.modelId, state.controller.signal, messageId);
+            state.selected = turn.conversa.id; state.selectedConversation = turn.conversa; state.messages = C.mergeById(before, turn.mensagens);
+            if (turn.recibo) {
+                state.receipts.set(turn.recibo.requestId, turn.recibo);
+                state.usage.input += turn.recibo.tokensEntrada ?? 0; state.usage.output += turn.recibo.tokensSaida ?? 0;
+            }
             state.files = []; renderFiles();
             state.conversations = C.mergeById(state.conversations, [turn.conversa]);
             try { await loadHistory(); } catch { status("Resposta recebida. Não foi possível atualizar a lista de conversas. Recarregue o histórico mais tarde."); }
         } catch (error) {
+            const code = error.code || error.data?.code;
             status(C.errorMessage(error));
             $("chat-input").value = content;
+            if (code === "CONVERSATION_ARCHIVED") {
+                const conversation = current();
+                if (conversation) conversation.status = "ARCHIVED";
+                if (state.selectedConversation?.id === state.selected) {
+                    state.selectedConversation.status = "ARCHIVED";
+                }
+                state.archived = true;
+            }
             if (selected) {
                 try { state.messages = await service.messages(selected); }
                 catch { state.messages = before; status(`${C.errorMessage(error)} Não foi possível reconciliar o histórico.`); }
@@ -220,16 +331,29 @@
     $("chat-input").addEventListener("input", composer);
     $("chat-input").addEventListener("keydown", event => { if (event.key === "Enter" && !event.shiftKey && !event.isComposing && !matchMedia("(max-width: 720px)").matches) { event.preventDefault(); $("chat-form").requestSubmit(); } });
     $("chat-new").addEventListener("click", newConversation);
-    $("chat-search").addEventListener("input", history);
-    $("chat-active").addEventListener("click", () => { state.archived = false; history(); });
-    $("chat-archived").addEventListener("click", () => { state.archived = true; history(); });
+    $("chat-search").addEventListener("input", () => {
+        clearTimeout(searchTimer);
+        if (preview) { history(); return; }
+        searchTimer = setTimeout(async () => {
+            try { await loadHistory(); status(""); }
+            catch (error) { status(C.errorMessage(error)); }
+        }, 250);
+    });
+    $("chat-active").addEventListener("click", async () => {
+        state.archived = false;
+        try { await loadHistory(); status(""); } catch (error) { status(C.errorMessage(error)); }
+    });
+    $("chat-archived").addEventListener("click", async () => {
+        state.archived = true;
+        try { await loadHistory(); status(""); } catch (error) { status(C.errorMessage(error)); }
+    });
     $("chat-more").addEventListener("click", async () => { $("chat-more").disabled = true; try { await loadHistory(true); } catch { status("Não foi possível carregar mais conversas."); } finally { $("chat-more").disabled = false; } });
     $("chat-model").addEventListener("click", modelDialog);
     $("chat-usage").addEventListener("click", usageDialog);
     $("chat-attach").addEventListener("click", attachmentDialog);
     $("chat-stop").addEventListener("click", () => { state.controller?.abort(); });
     $("chat-context").addEventListener("click", () => dialog("O que a IA consegue lembrar?", [node("p", "O histórico completo fica disponível para você, mas cada envio leva apenas as últimas 20 mensagens, incluindo a pergunta atual. Mensagens mais antigas podem não influenciar a resposta."), node("p", "Ao trocar de modelo, esse mesmo recorte de contexto é usado. Não há resumo automático nem medidor de tokens da janela de contexto.")]));
-    $("chat-help").addEventListener("click", () => dialog("Seu espaço de trabalho com IA", [node("p", "Converse, explore ideias e acompanhe os detalhes de cada resposta. O acesso às conversas é privado por usuário, e os modelos seguem as políticas do departamento."), node("p", preview ? "Você está em uma prévia: todos os dados são fictícios e desaparecem ao recarregar. Nenhuma requisição de chat é enviada." : "Recursos que aguardam integração estão identificados ao abrir suas ações. Confira informações importantes antes de usá-las.")]));
+    $("chat-help").addEventListener("click", () => dialog("Seu espaço de trabalho com IA", [node("p", "Converse, explore ideias e acompanhe os detalhes de cada resposta. O acesso às conversas é privado por usuário, e os modelos seguem as políticas do departamento."), node("p", preview ? "Você está em uma prévia: todos os dados são fictícios e desaparecem ao recarregar. Nenhuma requisição de chat é enviada." : "Regeneração de resposta e anexos continuam sem contrato no backend. O histórico, a busca, o seletor e os recibos usam a API real.")]));
     $("chat-dialog-close").addEventListener("click", closeDialog);
     $("chat-dialog").addEventListener("click", event => { if (event.target === $("chat-dialog")) { const r = $("chat-dialog").getBoundingClientRect(); if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) closeDialog(); } });
     $("chat-toggle").addEventListener("click", () => {
