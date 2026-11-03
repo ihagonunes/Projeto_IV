@@ -4,6 +4,7 @@ import br.com.qsoft.governance.iam.application.port.UserRepository;
 import br.com.qsoft.governance.iam.application.port.UserSearchFilter;
 import br.com.qsoft.governance.iam.application.port.UserSearchRepository;
 import br.com.qsoft.governance.iam.domain.user.User;
+import br.com.qsoft.governance.iam.domain.user.UserStatus;
 import br.com.qsoft.governance.sharedkernel.id.TenantId;
 import br.com.qsoft.governance.sharedkernel.id.UserId;
 import br.com.qsoft.governance.sharedkernel.query.PageResult;
@@ -95,6 +96,17 @@ public class UserRepositoryAdapter implements UserRepository, UserSearchReposito
     public boolean existsByTenantIdAndEmail(TenantId tenantId, String email) {
         applyTenantFilter();
         return jpaRepository.existsByTenantIdAndEmail(tenantId.value(), email);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<User> findActiveByTenantId(TenantId tenantId) {
+        applyTenantFilter();
+        return jpaRepository
+            .findByTenantIdAndStatusOrderByNameAscIdAsc(tenantId.value(), UserStatus.ACTIVE)
+            .stream()
+            .map(mapper::toDomain)
+            .toList();
     }
 
     @Override

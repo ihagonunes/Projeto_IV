@@ -17,13 +17,15 @@ public final class Conversation {
     private final UUID id;
     private final TenantId tenantId;
     private final UserId ownerUserId;
-    private final String title;
+    private String title;
     private ConversationStatus status;
     private final Instant createdAt;
     private Instant updatedAt;
+    private Instant deletedAt;
 
     private Conversation(UUID id, TenantId tenantId, UserId ownerUserId, String title,
-                         ConversationStatus status, Instant createdAt, Instant updatedAt) {
+                         ConversationStatus status, Instant createdAt, Instant updatedAt,
+                         Instant deletedAt) {
         this.id = Objects.requireNonNull(id, "id");
         this.tenantId = Objects.requireNonNull(tenantId, "tenantId");
         this.ownerUserId = Objects.requireNonNull(ownerUserId, "ownerUserId");
@@ -31,19 +33,31 @@ public final class Conversation {
         this.status = Objects.requireNonNull(status, "status");
         this.createdAt = Objects.requireNonNull(createdAt, "createdAt");
         this.updatedAt = Objects.requireNonNull(updatedAt, "updatedAt");
+        if ((status == ConversationStatus.DELETED) != (deletedAt != null)) {
+            throw new IllegalArgumentException(
+                "deletedAt é obrigatório se e somente se a conversa estiver DELETED.");
+        }
+        this.deletedAt = deletedAt;
     }
 
     public static Conversation start(UUID id, TenantId tenantId, UserId ownerUserId,
                                      String firstMessage) {
         Instant now = Instant.now();
         return new Conversation(id, tenantId, ownerUserId, titleFrom(firstMessage),
-            ConversationStatus.ACTIVE, now, now);
+            ConversationStatus.ACTIVE, now, now, null);
     }
 
     public static Conversation restore(UUID id, TenantId tenantId, UserId ownerUserId,
                                        String title, ConversationStatus status,
                                        Instant createdAt, Instant updatedAt) {
-        return new Conversation(id, tenantId, ownerUserId, title, status, createdAt, updatedAt);
+        return restore(id, tenantId, ownerUserId, title, status, createdAt, updatedAt, null);
+    }
+
+    public static Conversation restore(UUID id, TenantId tenantId, UserId ownerUserId,
+                                       String title, ConversationStatus status,
+                                       Instant createdAt, Instant updatedAt, Instant deletedAt) {
+        return new Conversation(id, tenantId, ownerUserId, title, status, createdAt, updatedAt,
+            deletedAt);
     }
 
     public UUID id() {
@@ -74,18 +88,60 @@ public final class Conversation {
         return updatedAt;
     }
 
+    public Instant deletedAt() {
+        return deletedAt;
+    }
+
     public boolean isOwnedBy(UserId userId) {
         return ownerUserId.equals(userId);
     }
 
+    public boolean isArchived() {
+        return status == ConversationStatus.ARCHIVED;
+    }
+
+    public boolean isDeleted() {
+        return status == ConversationStatus.DELETED;
+    }
+
+    /** Renomeia; título em branco ou acima de 200 é rejeitado. */
+    public Conversation rename(String newTitle) {
+        ensureNotDeleted();
+        this.title = requireTitle(newTitle);
+        return touch();
+    }
+
+    /** Arquiva uma conversa ativa; idempotente para ARCHIVED. */
     public Conversation archive() {
+        ensureNotDeleted();
         this.status = ConversationStatus.ARCHIVED;
+        return touch();
+    }
+
+    /** Restaura uma conversa arquivada; idempotente para ACTIVE. */
+    public Conversation restore() {
+        ensureNotDeleted();
+        this.status = ConversationStatus.ACTIVE;
+        return touch();
+    }
+
+    /** Exclusão lógica irreversível pela API. */
+    public Conversation delete() {
+        ensureNotDeleted();
+        this.status = ConversationStatus.DELETED;
+        this.deletedAt = Instant.now();
         return touch();
     }
 
     public Conversation touch() {
         this.updatedAt = Instant.now();
         return this;
+    }
+
+    private void ensureNotDeleted() {
+        if (isDeleted()) {
+            throw new ConversationNotFoundException();
+        }
     }
 
     private static String titleFrom(String firstMessage) {

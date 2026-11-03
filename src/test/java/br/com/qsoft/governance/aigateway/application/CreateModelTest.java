@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import br.com.qsoft.governance.aigateway.application.port.ModelRepository;
 import br.com.qsoft.governance.aigateway.application.port.ProviderRepository;
 import br.com.qsoft.governance.aigateway.domain.exception.ModelNameAlreadyExistsException;
+import br.com.qsoft.governance.aigateway.domain.exception.ModelPriceRequiredException;
 import br.com.qsoft.governance.aigateway.domain.exception.ProviderNotFoundException;
 import br.com.qsoft.governance.aigateway.domain.model.Model;
 import br.com.qsoft.governance.aigateway.domain.model.ModelStatus;
@@ -136,20 +137,20 @@ class CreateModelTest {
         activeProvider(providerId);
 
         Model result = useCase.create(new CreateModelCommand(tenantId, providerId,
-            "  claude-3  ", null, null, null));
+            "  claude-3  ", null, new BigDecimal("0.01"), new BigDecimal("0.03")));
 
         assertThat(result.name()).isEqualTo("claude-3");
     }
 
     @Test
-    void deve_criarModel_quando_precosNulos() {
+    void deve_rejeitarCriacao_quando_precosNulos() {
         activeProvider(providerId);
 
-        Model result = useCase.create(new CreateModelCommand(tenantId, providerId,
-            "llama3", null, null, null));
+        assertThatThrownBy(() -> useCase.create(new CreateModelCommand(tenantId, providerId,
+            "llama3", null, null, null)))
+            .isInstanceOf(ModelPriceRequiredException.class);
 
-        assertThat(result.inputPricePer1k()).isNull();
-        assertThat(result.outputPricePer1k()).isNull();
+        assertThat(savedModels).isEmpty();
     }
 
     @Test

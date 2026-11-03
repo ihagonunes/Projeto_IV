@@ -8,6 +8,7 @@ import br.com.qsoft.governance.aigateway.domain.exception.DepartmentNotFoundExce
 import br.com.qsoft.governance.aigateway.domain.exception.ModelNameAlreadyExistsException;
 import br.com.qsoft.governance.aigateway.api.exception.ModelNotAllowedException;
 import br.com.qsoft.governance.aigateway.domain.exception.ModelNotFoundException;
+import br.com.qsoft.governance.aigateway.domain.exception.ModelPriceRequiredException;
 import br.com.qsoft.governance.aigateway.api.exception.ModelUnavailableException;
 import br.com.qsoft.governance.aigateway.api.exception.NoModelConfiguredException;
 import br.com.qsoft.governance.aigateway.api.exception.ProviderInactiveException;
@@ -42,6 +43,13 @@ public class AIGatewayApiExceptionHandler {
     @ExceptionHandler(ModelNotAllowedException.class)
     public ResponseEntity<Map<String, String>> handleNotAllowed(ModelNotAllowedException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", ex.getMessage()));
+    }
+
+    @ExceptionHandler(ModelPriceRequiredException.class)
+    public ResponseEntity<Map<String, String>> handlePriceRequired(ModelPriceRequiredException ex) {
+        return ResponseEntity.badRequest().body(Map.of(
+            "message", ex.getMessage(),
+            "code", "MODEL_PRICE_REQUIRED"));
     }
 
     /** RF047: filtro/tentativa fora do escopo de visibilidade. */

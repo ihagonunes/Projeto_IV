@@ -43,6 +43,18 @@ ACCEPTED (2026-10-18). O provider concreto da demo (decisão 11) ainda será inf
 7. **Custo.** Erro explícito do provider fica com custo `INCONCLUSIVE`, a menos que o adaptador
    declare "sem cobrança". `UsageRecord` registra só consumo conhecido (emenda ao ADR-13).
 
+## Emenda (Sprint 4) — preço obrigatório
+
+- Criar ou ativar um modelo como `AVAILABLE` exige `inputPricePer1k` e `outputPricePer1k`
+  **não nulos**; zero explícito é um preço válido. Sem preço → 400 `MODEL_PRICE_REQUIRED`.
+- `Model.estimateCost` rejeita preço nulo. Em `CompleteAIRequest`, uso conhecido com preço
+  ausente vira `cost_status = INCONCLUSIVE`, sem custo e sem `UsageRecord`, com
+  `error_code = PRICE_MISSING`.
+- Modelos `AVAILABLE` legados sem preço continuam no banco (sem migration de dados); o runtime
+  os trata como inconclusivos até que sejam editados ou reativados.
+- `credentialRef` nulo/em branco não envia `Authorization` (Ollama); referência preenchida com
+  variável ausente → `CREDENTIAL_MISSING` (502).
+
 ## Alternativas consideradas
 
 - Spring AI: dependência nova e acoplamento a um framework; a API HTTP compatível com OpenAI basta.

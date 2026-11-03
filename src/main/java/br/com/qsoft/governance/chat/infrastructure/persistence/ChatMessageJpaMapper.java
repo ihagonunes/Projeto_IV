@@ -14,6 +14,7 @@ public final class ChatMessageJpaMapper {
         entity.setRole(message.role());
         entity.setContent(message.content());
         entity.setRequestId(message.requestId());
+        entity.setClientMessageId(message.clientMessageId());
         entity.setCreatedAt(message.createdAt());
         return entity;
     }
@@ -26,6 +27,7 @@ public final class ChatMessageJpaMapper {
             entity.getRole(),
             entity.getContent(),
             entity.getRequestId(),
+            entity.getClientMessageId(),
             entity.getCreatedAt()
         );
     }

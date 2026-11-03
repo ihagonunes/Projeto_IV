@@ -51,6 +51,32 @@ class ChatDomainTest {
 
         assertThat(archived.status()).isEqualTo(ConversationStatus.ARCHIVED);
         assertThat(archived.updatedAt()).isAfterOrEqualTo(now);
+
+        assertThat(archived.restore().status()).isEqualTo(ConversationStatus.ACTIVE);
+    }
+
+    @Test
+    void conversaExcluidaNaoVoltaNemAceitaNovasOperacoes() {
+        Conversation deleted = Conversation.start(UUID.randomUUID(), tenantId, owner, "t").delete();
+
+        assertThat(deleted.status()).isEqualTo(ConversationStatus.DELETED);
+        assertThat(deleted.deletedAt()).isNotNull();
+        assertThatThrownBy(deleted::restore).isInstanceOf(ConversationNotFoundException.class);
+        assertThatThrownBy(() -> deleted.rename("novo"))
+            .isInstanceOf(ConversationNotFoundException.class);
+        assertThatThrownBy(deleted::archive).isInstanceOf(ConversationNotFoundException.class);
+        assertThatThrownBy(deleted::delete).isInstanceOf(ConversationNotFoundException.class);
+    }
+
+    @Test
+    void renomearValidaTitulo() {
+        Conversation conversation = Conversation.start(UUID.randomUUID(), tenantId, owner, "t");
+
+        assertThat(conversation.rename("Novo título").title()).isEqualTo("Novo título");
+        assertThatThrownBy(() -> conversation.rename("   "))
+            .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> conversation.rename("x".repeat(201)))
+            .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -72,6 +98,20 @@ class ChatDomainTest {
             .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> ChatMessage.user(UUID.randomUUID(), tenantId, conversationId,
             "z".repeat(8001)))
+            .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void clientMessageIdAceitaFormatoE8a64Caracteres() {
+        ChatMessage message = ChatMessage.user(UUID.randomUUID(), tenantId, conversationId,
+            "x", "client_123");
+
+        assertThat(message.clientMessageId()).isEqualTo("client_123");
+        assertThatThrownBy(() -> ChatMessage.user(UUID.randomUUID(), tenantId, conversationId,
+            "x", "curto"))
+            .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> ChatMessage.user(UUID.randomUUID(), tenantId, conversationId,
+            "x", "inválido!"))
             .isInstanceOf(IllegalArgumentException.class);
     }
 

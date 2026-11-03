@@ -3,4 +3,4 @@ set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 echo "==> Integration tests com PostgreSQL real/Testcontainers"
-mvn -B verify -Pintegration
+mvn -B clean verify -Pintegration

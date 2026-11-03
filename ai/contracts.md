@@ -13,22 +13,77 @@ Contratos são Java APIs internas entre módulos. Não equivalem automaticamente
   Não concede administração do catálogo nem amplia o escopo de consumo.
 - Rótulos dos modelos nas métricas são resolvidos na apresentação; não existe
   dependência síncrona de `observability` para `aigateway`.
+- `GET /api/v1/observability/orcamentos/projecao?departmentId=&mes=AAAA-MM&janelaDias=`
+  exige `USAGE:READ` com `BY_TARGET` e checagem `isAllowed(DepartmentTarget)`. `departmentId`
+  é obrigatório; `mes` padrão é o corrente UTC; `janelaDias` padrão 14 (aceita 7–60). Mês futuro,
+  mês inválido ou janela fora do intervalo → 400; departamento de outro tenant → 404.
+  A resposta `projection-v1` traz gasto até hoje, média diária, projeção, dia de esgotamento
+  e recomendação; `tentativasInconclusivasNaJanela` é sempre nulo no `observability`.
+
+## HTTP — catálogo (SPI-87)
+
+- `GET /api/v1/ai-gateway/models` devolve o catálogo administrativo do tenant, incluindo
+  `inputPricePer1k` e `outputPricePer1k`; exige `AI_TOOL:MANAGE`.
+- `PUT /api/v1/ai-gateway/models/{id}` edita `name`, `externalName` e os dois preços.
+  Preço negativo → 400; nome duplicado no tenant → 409; não altera status nem provider.
+  Modelo `AVAILABLE` continua exigindo os dois preços; custos passados não mudam.
+- `GET /api/v1/ai-gateway/departments/{id}/model-policy` devolve
+  `{ departmentId, defaultModelId, allowedModelIds[] }`; sem política, lista vazia e padrão
+  nulo. Departamento de outro tenant → 404. `PUT` da mesma rota mantém o invariante ADR-08
+  (padrão ∈ permitidos).
+- `credentialRef` em `GET /api/v1/ai-gateway/providers` é somente o nome da variável;
+  o segredo nunca é devolvido.
 
 ## Módulos
 
 | Módulo | Contratos públicos principais |
 |---|---|
-| iam | `IdentityQuery`, `AuthorizationQuery` (`isAllowed`/`visibilityFor`), `@RequiresPermission`/`Targeting` em `iam.api.rbac` (ADR-34/ADR-36/ADR-37) |
-| department | `OrganizationQuery`, `DepartmentBudgetQuery` (`budgetFor`/`budgetsFor` + `BudgetLimitInfo`), `DepartmentModelPolicyQuery` |
+| iam | `IdentityQuery` (`getUserContext`/`eligibleUsers`; `UserContext` inclui `name`), `HistoricalIdentityQuery` (`employeeId`/`employeeIds`), `TenantQuery` (`findBySlug`), `AuthorizationQuery` (`isAllowed`/`visibilityFor`), `@RequiresPermission`/`Targeting` em `iam.api.rbac` (ADR-34/ADR-36/ADR-37/ADR-40) |
+| department | `OrganizationQuery`, `DepartmentBudgetQuery` (`budgetFor`/`budgetsFor` + `BudgetLimitInfo`), `DepartmentModelPolicyQuery` (`findByDepartmentId` + `ModelPolicyInfo`) |
 | project | `ProjectQueryPort` |
-| aigateway | `AICompletionService`, `ModelResolutionQuery`, `AIToolCatalogQuery`, catálogo administrativo |
-| chat | commands/queries de Conversation/Message |
+| aigateway | `AICompletionService`, `ModelResolutionQuery` (`resolve`/`allowedModels`), `AttemptReceiptQuery` (recibo por tenant + dono), `AIToolCatalogQuery` (`findModel`/`allModelsExist`), catálogo administrativo HTTP |
+| chat | HTTP `/api/v1/conversas` (lista/busca, mensagens, PATCH, DELETE, `GET /modelos`); casos de uso internos `ChatExchange`, `SendMessage`, `ListConversations`, `UpdateConversation`, `DeleteConversation` |
 | agentpolicies | `KnowledgeAccessService`, `AskPolicyAgent`, KnowledgeDocument commands/queries |
-| observability | `UsageMetricsQueryPort`, `CostMetricsQueryPort`, `BudgetStatusQueryPort` (implementado por `QueryBudgetStatus`) |
-| engagement | `LicenseQueryPort`, `TrainingQueryPort`, `EngagementMetricsQueryPort`, `AICreditsQueryPort` |
+| observability | `UsageActivityQuery` (dias ativos por usuário, dia UTC e `tenant_id` explícito); HTTP `GET /observability/orcamentos/projecao` (`projection-v1`, interno `ProjectDepartmentBudget`); `UsageMetricsQueryPort`, `CostMetricsQueryPort`, `BudgetStatusQueryPort` (implementado por `QueryBudgetStatus`) |
+| engagement | Sem superfície `api.*` consumida por outro módulo na Sprint 4; HTTP `/api/v1/engajamento/*`; internos `EngagementFactsPort` (OPERACIONAL/HISTORICO), `QueryAdoption`, `QueryTrainingCross`, `QueryCredits`, cálculos puros de adoção/treinamento/Credits |
 | governancescore | `GovernanceScoreQueryPort`, Breakdown, Department scores, History |
 
 `AlertQueryPort` foi substituído pelo status de orçamento calculado na leitura (sem tabela nova, sem evento e sem bloqueio — A105).
+
+### Chat (ADR-42)
+
+- `GET /api/v1/conversas?status=ACTIVE|ARCHIVED&q=&page=&size=` — só conversas do ator,
+  `q` literal (ILIKE escapado), ordem `updated_at DESC, id DESC`; `DELETED` nunca aparece.
+- `GET /api/v1/conversas/{id}/mensagens?page=&size=` — ordem ascendente, padrão 50, máximo 200;
+  cada ASSISTANT traz `recibo` via `AttemptReceiptQuery`.
+- `PATCH /api/v1/conversas/{id}` — `titulo` e/ou `status` (`ACTIVE`/`ARCHIVED`); excluída → 404.
+- `DELETE /api/v1/conversas/{id}` — exclusão lógica (`DELETED` + `deleted_at`), 204.
+- `GET /api/v1/conversas/modelos` — `ModelResolutionQuery.allowedModels` (política do departamento,
+  `available`/`unavailableReason`).
+- `POST /api/v1/conversas` e `POST /api/v1/conversas/{id}/mensagens` aceitam
+  `clientMessageId` (8–64, `[A-Za-z0-9_-]`): repetição concluída → 200 com o mesmo turno;
+  sem ASSISTANT/requestId → 409 `TURN_IN_PROGRESS_OR_FAILED`.
+- `AttemptReceiptQuery.receipts(tenant, owner, requestIds)` — lote de até 100 ids, sempre com
+  `tenant_id` e `user_id = owner`; retorna `ReceiptInfo` de `aigateway.api`.
+
+### Engajamento (ADR-40)
+
+- `GET /api/v1/engajamento/adocao?fonte=OPERACIONAL|HISTORICO&ate=YYYY-MM-DD&departmentId=`
+  exige `USAGE:READ` com `BY_TARGET`; aplica `visibilityFor(USAGE:READ)` sobre os elegíveis IAM.
+  `fonte` ausente = `OPERACIONAL`; `fonte` inválida ou `ate` futuro → 400; `departmentId` fora do
+  recorte → 403. O denominador é sempre elegíveis; a resposta traz `sourceKind`, janela de 30 dias,
+  `porDepartamento` pela lotação IAM e `cobertura`.
+- `GET /api/v1/engajamento/treinamentos/cruzamento?fonte=&ate=&departmentId=` — mesmos
+  filtros/escopo; devolve os quatro quadrantes. A lista nominal (`userId`, `nome`,
+  `departmentId`) só inclui usuários cobertos por `USER:READ` do ator; sem essa permissão,
+  `usuarios=[]` e `listaNominal=false`. Limite de 200 por quadrante com `truncado`.
+- `GET /api/v1/engajamento/creditos?fonte=&mes=AAAA-MM&departmentId=` — mês fechado lê ou
+  calcula e persiste o snapshot imutável (`credits-v1`, `FECHADO`); mês corrente calcula sem
+  persistir (`PROVISORIO`); mês futuro → 400. `SelfOnly` só a própria linha;
+  `Departments`/`TenantWide` ordenam por score desc e `userId` asc.
+- Erros do chat: `{ "message": "...", "code": "..." }`, com códigos estáveis
+  (`CONVERSATION_NOT_FOUND`, `CONVERSATION_ARCHIVED`, `MODEL_NOT_ALLOWED`, `NO_MODEL_CONFIGURED`,
+  `PROVIDER_FAILURE`, `PROVIDER_TIMEOUT`, `ATTEMPT_NOT_RECORDED`, `INVALID_REQUEST`).
 
 ## Autorização (ADR-34/ADR-36/ADR-37)
 

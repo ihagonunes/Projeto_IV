@@ -33,6 +33,18 @@ exceto para a suíte de integração.
 | Testcontainers 2.0.5 (`testcontainers-postgresql` + `testcontainers-junit-jupiter`) | integração com PostgreSQL real |
 | JaCoCo 0.8.15 | cobertura de código (relatório em target/site/jacoco) |
 
+## Frontend (npm)
+
+O BFF/EJS usa somente as dependências já declaradas em `package.json`: Express,
+EJS, `express-ejs-layouts`, `express-async-error-wrapper`, `cookie-parser`,
+`compression`, `dotenv`, `axios`, `lru-cache` e `multer`. Não há bundler, framework
+SPA, biblioteca de componentes ou cliente HTTP adicional no browser: o front usa
+`fetch` e o `ApiClient` existente.
+
+Os testes do front usam o executor nativo `node --test` e `fetch` do Node; não há
+dependência npm de teste. Na Sprint 4 não entrou nenhuma dependência Maven nem npm
+nova. O servidor HTTP de teste dos providers usa `com.sun.net.httpserver` do JDK;
+a projeção de orçamento e o engajamento são cálculo puro no backend.
 
 ## Não adicionar agora
 

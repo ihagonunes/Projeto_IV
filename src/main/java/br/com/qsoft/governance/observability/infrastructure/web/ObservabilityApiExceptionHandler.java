@@ -1,5 +1,6 @@
 package br.com.qsoft.governance.observability.infrastructure.web;
 
+import br.com.qsoft.governance.observability.application.ProjectionDepartmentNotFoundException;
 import br.com.qsoft.governance.observability.application.UsageVisibilityDeniedException;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
@@ -27,5 +28,11 @@ public class ObservabilityApiExceptionHandler {
     @ExceptionHandler(UsageVisibilityDeniedException.class)
     public ResponseEntity<Map<String, String>> handleVisibilityDenied(UsageVisibilityDeniedException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", ex.getMessage()));
+    }
+
+    @ExceptionHandler(ProjectionDepartmentNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleProjectionDepartmentNotFound(
+            ProjectionDepartmentNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", ex.getMessage()));
     }
 }

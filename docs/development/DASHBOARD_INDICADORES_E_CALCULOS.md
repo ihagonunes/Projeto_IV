@@ -6,6 +6,12 @@ Etapa de apresentação: SPI-92 / POPROJ-53. Este documento especifica os cálcu
 futuros e suas lacunas. Nesta entrega foram alterados os espaços dos dashboards;
 não foram implementados cálculos Java, migrations, solver ou consultas novas.
 
+> **Atualização Sprint 4 (01/11/2026):** adoção de 30 dias, cruzamento treinamento × uso
+> e AI Credits (`credits-v1`) foram implementados no módulo `engagement` (V023), com
+> endpoints em `/api/v1/engajamento/*`. A projeção de orçamento (`projection-v1`) foi
+> implementada no `observability`. O restante deste documento continua sendo proposta
+> ou pendência.
+
 Inventário verificado nas migrations V002, V009 a V014, no domínio UsageRecord,
 no cálculo Model.estimatedCost e no HistoricalUsageAdapter do repositório.
 Não houve consulta às linhas do banco em execução: schema declarado não prova
@@ -93,8 +99,8 @@ No histórico, normalizar datas/status e deduplicar chaves da fonte antes de agr
 | Custo faturado | SUM(ai_billing.total_cost) por currency/mês | Não somar ao custo estimado do mesmo consumo; conciliar diferenças |
 | Custo médio por requisição | C/N | Mesma moeda, universo e cobertura; N=0: N/A |
 | Ativos no período | COUNT DISTINCT user_id com uso | API atual; histórico employee_id com request_count>0 |
-| Adoção 30 dias | 100*ativos elegíveis nos 30 dias/elegíveis no corte | ADR-18. Diferente de ativos no filtro arbitrário. IAM ou employees.active validado |
-| Inativos de uso | elegíveis-ativos; taxa=100*inativos/elegíveis | Não confundir com conta INACTIVE; sem denominador: N/A |
+| Adoção 30 dias | 100*ativos elegíveis nos 30 dias/elegíveis no corte | ADR-18/ADR-40. Implementado no `engagement` (Sprint 4). Diferente de ativos no filtro arbitrário; elegíveis IAM |
+| Inativos de uso | elegíveis-ativos; taxa=100*inativos/elegíveis | Não confundir com conta INACTIVE; sem denominador: N/A. Implementado no `engagement` (Sprint 4) |
 | Média anônima de tokens | tokens do grupo comparável/número de elegíveis do grupo | Proposta: inclui elegíveis sem uso. Exige política k/grupo e anonimização |
 | Gastos próprios/equipe/área/empresa | C em cada escopo | Próprio já pode estar no agregado da equipe: não somar novamente |
 | Comparativo temporal | delta=A-B; variação%=100*(A-B)/B | Se B=0, percentual N/A; manter delta e períodos equivalentes |
@@ -110,11 +116,15 @@ No histórico, normalizar datas/status e deduplicar chaves da fonte antes de agr
 | Infraestrutura | CPU%=100*tempoCPU/capacidadeCPU; memória%=100*bytesUsados/limiteBytes | Proposta; janela/unidade explícitas e telemetria ainda inexistente; tokens não medem CPU/RAM |
 | Agentes da área | execuções, sucesso, latência, custo por agent_id | Falta execução operacional vinculada ao uso; application não é agent_id |
 
-Lacuna importante: Model.estimatedCost trata preço ausente como zero. Um zero
-gravado não comprova gratuidade. Falta costStatus e snapshot de preço/moeda para
-distinguir FREE de UNKNOWN. Não contar todo estimated_cost não nulo como válido.
-UsageRecord.created_at usa Instant.now() no consumo do evento: é data de registro,
+Lacuna resolvida na Sprint 4: preço ausente não vira mais zero. Um modelo sem preço
+produz `costStatus=INCONCLUSIVE` (ADR-38/S4-D12), sem custo e sem `UsageRecord`;
+zero explícito continua sendo preço válido. O preço usado é fotografado na tentativa.
+`UsageRecord.created_at` usa `Instant.now()` no consumo do evento: é data de registro,
 não necessariamente data exata de execução. Futuro contrato deve separar horários.
+
+A projeção determinística de orçamento (`projection-v1`) foi implementada no
+`observability` (Sprint 4): média móvel do custo conhecido, projeção até o fim do mês
+e dia de esgotamento, sem LLM. Ver `DASHBOARD_E_ORCAMENTOS.md`.
 
 Orçamento histórico: mapear cost_center a departamento/empresa via employees e
 uso. Validar cardinalidade e vigência para não multiplicar orçamento por funcionário
@@ -229,13 +239,12 @@ AI Credits permanece engajamento [0,100], nunca saldo financeiro (ADR-19).
 Com U,T,L normalizados em [0,100]: Credits=0.50*U+0.30*T+0.20*L.
 Licença NOT_APPLICABLE: Credits=(0.50*U+0.30*T)/0.80. Falta de dado não é N/A.
 
-Pendentes: saturação exata U, normalização T/L, metas e janela de Credits.
-Exemplos paramétricos PROPOSTOS, não regras aprovadas:
-U=100*min(uso/metaUso,1);
-T=100*min(conclusoesElegiveis/metaTraining,1);
-L=100*licencasAtivasUtilizadas/licencasAtivasAplicaveis.
-Sem metas/populações não calcular. Dados: uso Observability; fatos de licença/
-training Engagement (hoje só histórico); elegíveis IAM. Não substituir por lucro.
+**Implementado na Sprint 4 (`credits-v1`, ADR-40):** U=100*min(dias ativos no mês/10,1);
+T=100*min(conclusões até o fim do mês,1); L=100*licenças utilizadas/licenças aplicáveis,
+com `NOT_APPLICABLE` normalizado por 0,8. Score=0,5U+0,3T+0,2L, 2 casas HALF_UP.
+Mês fechado usa snapshot imutável; mês corrente é `PROVISORIO`. Metas, ranking e a
+visão de equipe continuam pendentes (Sprint 5). Dados: uso Observability; fatos de
+licença/treinamento Engagement (V023); elegíveis IAM. Não substituir por lucro.
 
 Ranking proposto=1+quantidade de elegíveis com Credits estritamente maior.
 Mesma população, período, versão/cobertura; empates compartilham posição. IDs
@@ -280,6 +289,11 @@ de atribuição validado. Sem isso, mostrar evolução pós-treinamento, não ca
 Gargalos: baixa conclusão/inatividade apenas com metas e janelas aprovadas. Não
 inventar alerta de baixa produtividade com base em salário ou baixo uso.
 
+**Implementado na Sprint 4:** o cruzamento treinamento × uso em quatro quadrantes
+(treinado/não treinado × ativo/inativo na mesma janela de 30 dias), com contagens e
+lista nominal apenas sob `USER:READ`. Taxa de conclusão formal, ROI e custo de
+treinamento continuam pendentes de metas/fonte de custo.
+
 ### Uso homologado e limites de Shadow AI
 
 AdocaoHomologada%=100*elegíveis com uso homologado/totalElegíveis, na janela definida.
@@ -311,6 +325,10 @@ medição real. Falhas exigem universo completo de tentativas.
 
 Nada abaixo foi criado nesta entrega. Cada tabela pressupõe id UUID, tenant_id
 obrigatório, created_at, índices começando por tenant_id e validações de valores.
+
+> **Sprint 4:** a V023 criou `engagement_ai_licenses`, `engagement_training_records` e
+> `engagement_credit_snapshots`. As demais tabelas/propostas abaixo continuam pendentes;
+> `department_budget_periods`, preços versionados e custos de treinamento não foram criados.
 Vigência/versão/moeda onde indicado. Referências entre módulos somente IDs,
 sem FK/JPA cross-module. API pública do proprietário, nunca repository alheio.
 Tipos/constraints finais e migrations dependem da task específica; não criar

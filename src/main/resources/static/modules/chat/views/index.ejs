@@ -6,7 +6,7 @@
     <aside class="chat-sidebar" id="chat-sidebar" aria-label="Conversas">
         <a class="chat-brand" href="/onboarding"><img src="/public/img/atlas-name.png" alt="ATLAS"><span>SEU WORKSPACE DE IA</span></a>
         <button class="chat-new" id="chat-new"><i class="bi bi-plus-lg" aria-hidden="true"></i> Novo chat <span>↗</span></button>
-        <label class="chat-search"><i class="bi bi-search" aria-hidden="true"></i><input id="chat-search" type="search" placeholder="Buscar conversas" aria-label="Buscar conversas carregadas"></label>
+        <label class="chat-search"><i class="bi bi-search" aria-hidden="true"></i><input id="chat-search" type="search" maxlength="100" placeholder="Buscar conversas" aria-label="Buscar conversas"></label>
         <div class="chat-history-tabs" role="group" aria-label="Filtrar histórico"><button id="chat-active" class="is-active" aria-pressed="true">Recentes</button><button id="chat-archived" aria-pressed="false">Arquivadas</button></div>
         <div class="chat-history" id="chat-history" aria-label="Histórico de conversas"></div>
         <button class="chat-text-button" id="chat-more" hidden>Carregar mais conversas</button>
@@ -57,5 +57,5 @@
 <dialog id="chat-dialog" class="chat-dialog" aria-labelledby="chat-dialog-title"><div class="chat-dialog-heading"><h2 id="chat-dialog-title"></h2><button id="chat-dialog-close" class="chat-icon" aria-label="Fechar janela">×</button></div><div id="chat-dialog-body"></div></dialog>
 <div id="chat-toast" class="chat-toast" role="status" aria-live="polite" hidden></div>
 <% if (!preview) { %><script src="/public/js/core/api-client.js"></script><% } %>
-<script src="/public/js/pages/chat-core.js?v=20261023-4"></script>
-<script src="/public/js/pages/chat.js?v=20261023-3"></script>
+<script src="/public/js/pages/chat-core.js?v=spi-141-20261101"></script>
+<script src="/public/js/pages/chat.js?v=spi-141-20261101"></script>

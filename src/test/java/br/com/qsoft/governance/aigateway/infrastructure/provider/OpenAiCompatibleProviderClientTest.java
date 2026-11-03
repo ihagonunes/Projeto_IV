@@ -38,12 +38,20 @@ class OpenAiCompatibleProviderClientTest {
     private String baseUrl;
     private final AtomicReference<String> authorization = new AtomicReference<>();
     private final AtomicReference<String> requestBody = new AtomicReference<>();
+    private final AtomicReference<String> openCodeSession = new AtomicReference<>();
+    private final AtomicReference<String> userAgent = new AtomicReference<>();
 
     @BeforeEach
     void setUp() throws IOException {
+        authorization.set(null);
+        requestBody.set(null);
+        openCodeSession.set(null);
+        userAgent.set(null);
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.createContext("/chat/completions", exchange -> {
             authorization.set(exchange.getRequestHeaders().getFirst("Authorization"));
+            openCodeSession.set(exchange.getRequestHeaders().getFirst("x-opencode-session"));
+            userAgent.set(exchange.getRequestHeaders().getFirst("User-Agent"));
             requestBody.set(new String(exchange.getRequestBody().readAllBytes(),
                 StandardCharsets.UTF_8));
             byte[] response = """
@@ -89,6 +97,7 @@ class OpenAiCompatibleProviderClientTest {
                     "{\"type\":\"object\",\"properties\":{}}"))));
 
             assertThat(authorization.get()).isEqualTo("Bearer " + SECRET);
+            assertThat(openCodeSession.get()).isNull();
             assertThat(requestBody.get())
                 .contains("\"model\":\"gpt-x\"")
                 .contains("\"role\":\"user\"")
@@ -107,6 +116,43 @@ class OpenAiCompatibleProviderClientTest {
                 .noneMatch(event -> event.getFormattedMessage().contains(SECRET));
         } finally {
             root.detachAppender(appender);
+        }
+    }
+
+    @Test
+    void enviaSessaoEUserAgentParaOpenCodeEPreservaCaminhoDaBaseUrl() throws IOException {
+        AtomicReference<String> path = new AtomicReference<>();
+        AtomicReference<String> session = new AtomicReference<>();
+        AtomicReference<String> agent = new AtomicReference<>();
+        HttpServer other = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        other.createContext("/", exchange -> {
+            path.set(exchange.getRequestURI().getPath());
+            session.set(exchange.getRequestHeaders().getFirst("x-opencode-session"));
+            agent.set(exchange.getRequestHeaders().getFirst("User-Agent"));
+            byte[] response = """
+                {"choices":[{"message":{"content":"ok"}}]}
+                """.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, response.length);
+            exchange.getResponseBody().write(response);
+            exchange.close();
+        });
+        other.start();
+        try {
+            String url = "http://127.0.0.1:" + other.getAddress().getPort() + "/opencode.ai";
+            OpenAiCompatibleProviderClient client =
+                new OpenAiCompatibleProviderClient(reference -> SECRET, new ObjectMapper());
+
+            ProviderResponse response = client.call(new ProviderCall(
+                ProviderKind.OPENAI_COMPATIBLE, url, "OPENAI_KEY", 5000, "gpt-x",
+                List.of(CompletionMessage.user("oi")), List.of()));
+
+            assertThat(response.content()).isEqualTo("ok");
+            assertThat(path.get()).isEqualTo("/opencode.ai/chat/completions");
+            assertThat(session.get()).isNotBlank();
+            assertThat(agent.get()).isEqualTo("atlas-qsoft-governance/1.0");
+        } finally {
+            other.stop(0);
         }
     }
 
@@ -156,6 +202,56 @@ class OpenAiCompatibleProviderClientTest {
                 List.of(CompletionMessage.user("oi")), List.of())))
                 .isInstanceOfSatisfying(ProviderFailureException.class,
                     ex -> assertThat(ex.errorCode()).isEqualTo("HTTP_429"));
+        } finally {
+            other.stop(0);
+        }
+    }
+
+    @Test
+    void semCredentialRefNaoEnviaAuthorization() {
+        OpenAiCompatibleProviderClient client = new OpenAiCompatibleProviderClient(
+            reference -> {
+                throw new AssertionError("resolver não deveria ser chamado");
+            }, new ObjectMapper());
+
+        ProviderResponse response = client.call(new ProviderCall(
+            ProviderKind.OPENAI_COMPATIBLE, baseUrl, null, 5000, "gpt-x",
+            List.of(CompletionMessage.user("oi")), List.of()));
+
+        assertThat(response.content()).isEqualTo("resposta");
+        assertThat(authorization.get()).isNull();
+    }
+
+    @Test
+    void credencialAusenteViraCredentialMissing() {
+        OpenAiCompatibleProviderClient client =
+            new OpenAiCompatibleProviderClient(new EnvCredentialResolver(), new ObjectMapper());
+
+        assertThatThrownBy(() -> client.call(new ProviderCall(
+            ProviderKind.OPENAI_COMPATIBLE, baseUrl, "QSOFT_NAO_EXISTE_TESTE", 5000, "gpt-x",
+            List.of(CompletionMessage.user("oi")), List.of())))
+            .isInstanceOfSatisfying(ProviderFailureException.class,
+                ex -> assertThat(ex.errorCode()).isEqualTo("CREDENTIAL_MISSING"));
+    }
+
+    @Test
+    void erro500ViraProviderFailure() throws IOException {
+        HttpServer other = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        other.createContext("/chat/completions", exchange -> {
+            exchange.sendResponseHeaders(500, -1);
+            exchange.close();
+        });
+        other.start();
+        try {
+            String url = "http://127.0.0.1:" + other.getAddress().getPort();
+            OpenAiCompatibleProviderClient client =
+                new OpenAiCompatibleProviderClient(reference -> SECRET, new ObjectMapper());
+
+            assertThatThrownBy(() -> client.call(new ProviderCall(
+                ProviderKind.OPENAI_COMPATIBLE, url, "OPENAI_KEY", 5000, "gpt-x",
+                List.of(CompletionMessage.user("oi")), List.of())))
+                .isInstanceOfSatisfying(ProviderFailureException.class,
+                    ex -> assertThat(ex.errorCode()).isEqualTo("HTTP_500"));
         } finally {
             other.stop(0);
         }

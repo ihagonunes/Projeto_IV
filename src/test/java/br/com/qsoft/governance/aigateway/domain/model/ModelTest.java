@@ -3,6 +3,7 @@ package br.com.qsoft.governance.aigateway.domain.model;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import br.com.qsoft.governance.aigateway.domain.exception.ModelPriceRequiredException;
 import br.com.qsoft.governance.sharedkernel.id.TenantId;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -71,7 +72,8 @@ class ModelTest {
     @Test
     void deve_aceitarNomeComExatamente150Caracteres() {
         String nome = "M".repeat(150);
-        Model m = Model.create(UUID.randomUUID(), tenantId, providerId, nome, null, null, null);
+        Model m = Model.create(UUID.randomUUID(), tenantId, providerId, nome, null,
+            new BigDecimal("0.01"), new BigDecimal("0.03"));
         assertThat(m.name()).hasSize(150);
     }
 
@@ -98,8 +100,16 @@ class ModelTest {
     }
 
     @Test
-    void deve_aceitarPrecoNulo_quando_modelSemPreco() {
-        Model m = Model.create(UUID.randomUUID(), tenantId, providerId, "local-llm", null, null, null);
+    void deve_rejeitarCriacaoSemPreco() {
+        assertThatThrownBy(() -> Model.create(UUID.randomUUID(), tenantId, providerId,
+            "local-llm", null, null, null))
+            .isInstanceOf(ModelPriceRequiredException.class);
+    }
+
+    @Test
+    void deve_aceitarModeloLegadoSemPrecoViaRestore() {
+        Model m = Model.restore(UUID.randomUUID(), tenantId, providerId, "local-llm", null,
+            ModelStatus.AVAILABLE, null, null, Instant.now(), Instant.now());
 
         assertThat(m.inputPricePer1k()).isNull();
         assertThat(m.outputPricePer1k()).isNull();
@@ -124,32 +134,30 @@ class ModelTest {
     // -------------------------------------------------------------------------
 
     @Test
-    void deve_calcularCustoZero_quando_ambosPrecosSaoNulos() {
-        // restore() não passa por requirePrice, portanto aceita null
+    void deve_rejeitarCusto_quando_ambosPrecosSaoNulos() {
         Model m = Model.restore(UUID.randomUUID(), tenantId, providerId, "local", null,
             ModelStatus.AVAILABLE, null, null, Instant.now(), Instant.now());
 
-        assertThat(m.estimatedCost(1000, 2000)).isEqualByComparingTo("0.000000");
+        assertThatThrownBy(() -> m.estimatedCost(1000, 2000))
+            .isInstanceOf(ModelPriceRequiredException.class);
     }
 
     @Test
-    void deve_calcularCusto_quando_apenasInputPrecoNulo() {
-        // inputPrice = null, outputPrice = 0.03 → apenas output contribui
+    void deve_rejeitarCusto_quando_apenasInputPrecoNulo() {
         Model m = Model.restore(UUID.randomUUID(), tenantId, providerId, "m", null,
             ModelStatus.AVAILABLE, null, new BigDecimal("0.030000"), Instant.now(), Instant.now());
 
-        // (1000/1000 * 0) + (2000/1000 * 0.03) = 0.06
-        assertThat(m.estimatedCost(1000, 2000)).isEqualByComparingTo("0.060000");
+        assertThatThrownBy(() -> m.estimatedCost(1000, 2000))
+            .isInstanceOf(ModelPriceRequiredException.class);
     }
 
     @Test
-    void deve_calcularCusto_quando_apenasOutputPrecoNulo() {
-        // inputPrice = 0.01, outputPrice = null → apenas input contribui
+    void deve_rejeitarCusto_quando_apenasOutputPrecoNulo() {
         Model m = Model.restore(UUID.randomUUID(), tenantId, providerId, "m", null,
             ModelStatus.AVAILABLE, new BigDecimal("0.010000"), null, Instant.now(), Instant.now());
 
-        // (1000/1000 * 0.01) + (2000/1000 * 0) = 0.01
-        assertThat(m.estimatedCost(1000, 2000)).isEqualByComparingTo("0.010000");
+        assertThatThrownBy(() -> m.estimatedCost(1000, 2000))
+            .isInstanceOf(ModelPriceRequiredException.class);
     }
 
     @Test
@@ -168,6 +176,16 @@ class ModelTest {
     // -------------------------------------------------------------------------
     // makeAvailable / disable — idempotência
     // -------------------------------------------------------------------------
+
+    @Test
+    void deve_rejeitarAtivacaoDeModeloSemPreco() {
+        Model m = Model.restore(UUID.randomUUID(), tenantId, providerId, "legacy", null,
+            ModelStatus.DISABLED, null, null, Instant.now(), Instant.now());
+
+        assertThatThrownBy(m::makeAvailable)
+            .isInstanceOf(ModelPriceRequiredException.class);
+        assertThat(m.status()).isEqualTo(ModelStatus.DISABLED);
+    }
 
     @Test
     void deve_desabilitar_quando_estaDisponivel() {

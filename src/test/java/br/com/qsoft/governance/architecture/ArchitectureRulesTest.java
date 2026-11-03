@@ -121,6 +121,19 @@ class ArchitectureRulesTest {
     }
 
     @Test
+    void aiAndIamMustNotDependOnEngagement() {
+        JavaClasses classes = classes();
+
+        noClasses().that().resideInAnyPackage(
+                ROOT + ".aigateway..",
+                ROOT + ".chat..",
+                ROOT + ".agentpolicies..",
+                ROOT + ".iam..")
+            .should().dependOnClassesThat().resideInAPackage(ROOT + ".engagement..")
+            .check(classes);
+    }
+
+    @Test
     void firstLevelPackagesMustBeFreeOfCycles() {
         slices()
             .matching(ROOT + ".(*)..")

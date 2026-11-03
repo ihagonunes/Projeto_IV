@@ -180,6 +180,27 @@ class CompleteAIRequestTest {
     }
 
     @Test
+    void precoAusenteComUsoConhecidoProduzInconclusivoSemEvento() {
+        resolved = new ResolvedModel(modelId, "gpt-4o", "stub-echo", providerId, "OpenAI",
+            ProviderKind.STUB, null, null, 30000, departmentId, null, null);
+
+        CompletionResult result = service.complete(command("CHAT", "a b"));
+
+        assertThat(result.inputTokens()).isEqualTo(2L);
+        assertThat(result.outputTokens()).isEqualTo(2L);
+        assertThat(result.costStatus()).isEqualTo("INCONCLUSIVE");
+        assertThat(result.estimatedCost()).isNull();
+
+        RequestAttempt attempt = attempts.get(result.requestId());
+        assertThat(attempt.executionStatus()).isEqualTo(ExecutionStatus.SUCCEEDED);
+        assertThat(attempt.costStatus()).isEqualTo(CostStatus.INCONCLUSIVE);
+        assertThat(attempt.estimatedCost()).isNull();
+        assertThat(attempt.deliveryStatus()).isEqualTo(DeliveryStatus.NOT_APPLICABLE);
+        assertThat(attempt.errorCode()).isEqualTo("PRICE_MISSING");
+        assertThat(published).isEmpty();
+    }
+
+    @Test
     void tr08_zeroTokensConhecidosSaoDistintosDeUsoDesconhecido() {
         CompletionResult result = service.complete(command("CHAT", ""));
 

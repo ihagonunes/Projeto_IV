@@ -90,11 +90,9 @@ cp .env.example .env      # ajuste DB_* e JWT_SECRET
 docker compose up --build
 ```
 
-> ⚠️ **Limitação conhecida:** o serviço `backend` do `compose.yaml` não repassa `JWT_SECRET`, e a
-> aplicação exige ≥ 32 caracteres para subir. Até o `compose.yaml` ser ajustado
-> (`AUDITORIA_DOCUMENTACAO.md`, item 2), o backend do compose provavelmente falha no boot
-> (inferido, não executado). Alternativas: `docker compose up postgres` + backend local (Modo A),
-> ou o container avulso abaixo.
+> O serviço `backend` repassa `JWT_SECRET` (obrigatório, mínimo de 32 caracteres) e, opcionalmente,
+> `APP_BOOTSTRAP_DEMO_DATA` e `APP_BOOTSTRAP_DEMO_PASSWORD`. Sem `JWT_SECRET`, o
+> `docker compose` falha antes de subir o backend.
 
 #### Backend em container avulso
 
@@ -108,6 +106,31 @@ docker run --rm -p 8080:8080 \
 ```
 
 > Os **testes de integração não usam esse container**: eles sobem um **PostgreSQL 18.6 via Testcontainers** em `mvn verify -Pintegration`.
+
+### Provider real (OPENAI_COMPATIBLE)
+
+O provider real é opcional e usa apenas configuração; não há SDK nem dependência nova.
+
+1. Defina a chave no ambiente do **backend** (nunca no repositório). O nome da variável é a
+   `credentialRef` cadastrada no provider:
+
+   ```bash
+   # exemplo; não comite este valor
+   export QSOFT_LLM_API_KEY=<chave-do-fornecedor>
+   ```
+
+   Para Ollama local, cadastre o provider com `credentialRef` nulo: nenhum header
+   `Authorization` é enviado.
+
+2. Cadastre o provider (`POST /api/v1/ai-gateway/providers`) com `kind=OPENAI_COMPATIBLE`,
+   `baseUrl` do fornecedor e `credentialRef=QSOFT_LLM_API_KEY`.
+3. Cadastre o modelo (`POST /api/v1/ai-gateway/models`) com `externalName` do fornecedor e os
+   dois preços por 1.000 tokens. Modelos `AVAILABLE` exigem preço; zero explícito é aceito.
+4. Configure a política do departamento (`PUT /api/v1/ai-gateway/departments/{id}/model-policy`)
+   e use o chat.
+
+A chave existe apenas no ambiente do backend; ela não é devolvida em DTO, log ou banco. Variável
+ausente → `CREDENTIAL_MISSING` (502).
 
 ---
 

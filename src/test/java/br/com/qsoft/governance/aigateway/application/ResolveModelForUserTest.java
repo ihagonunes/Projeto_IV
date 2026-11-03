@@ -17,6 +17,7 @@ import br.com.qsoft.governance.iam.api.model.UserContext;
 import br.com.qsoft.governance.iam.api.query.IdentityQuery;
 import br.com.qsoft.governance.sharedkernel.id.TenantId;
 import br.com.qsoft.governance.sharedkernel.id.UserId;
+import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -114,7 +115,7 @@ class ResolveModelForUserTest {
 
     private Model model(Provider provider, boolean available) {
         Model model = Model.create(UUID.randomUUID(), tenantId, provider.id(), "gpt-4", null,
-            null, null);
+            new BigDecimal("0.01"), new BigDecimal("0.03"));
         if (!available) {
             model.disable();
         }

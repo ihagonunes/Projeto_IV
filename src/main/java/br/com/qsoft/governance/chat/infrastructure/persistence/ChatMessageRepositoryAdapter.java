@@ -4,9 +4,11 @@ import br.com.qsoft.governance.chat.application.port.ChatMessageRepository;
 import br.com.qsoft.governance.chat.domain.ChatMessage;
 import br.com.qsoft.governance.sharedkernel.id.TenantId;
 import br.com.qsoft.governance.sharedkernel.id.UserId;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,5 +47,39 @@ public class ChatMessageRepositoryAdapter implements ChatMessageRepository {
         return jpaRepository.findByOwner(tenantId.value(), conversationId, owner.value()).stream()
             .map(mapper::toDomain)
             .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ChatMessage> findPage(TenantId tenantId, UUID conversationId, UserId owner,
+                                      int page, int size) {
+        return jpaRepository.findPageByOwner(tenantId.value(), conversationId, owner.value(),
+                size, page * size).stream()
+            .map(mapper::toDomain)
+            .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<ChatMessage> findUserByClientMessageId(TenantId tenantId, UUID conversationId,
+                                                           UserId owner, String clientMessageId) {
+        return jpaRepository.findUserByClientMessageId(tenantId.value(), conversationId,
+            owner.value(), clientMessageId).map(mapper::toDomain);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<ChatMessage> findUserByOwnerAndClientMessageId(TenantId tenantId, UserId owner,
+                                                                   String clientMessageId) {
+        return jpaRepository.findUserByOwnerAndClientMessageId(tenantId.value(), owner.value(),
+            clientMessageId).map(mapper::toDomain);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<ChatMessage> findAssistantAfter(TenantId tenantId, UUID conversationId,
+                                                    UserId owner, Instant after) {
+        return jpaRepository.findAssistantAfter(tenantId.value(), conversationId, owner.value(),
+            after).map(mapper::toDomain);
     }
 }

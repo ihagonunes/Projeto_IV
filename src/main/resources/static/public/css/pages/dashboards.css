@@ -60,3 +60,27 @@
     .demo-main > * { grid-column: 1 / -1; }
     .demo-main > .demo-filters { grid-column: 2; }
 }
+
+/* SPI-144: painel de engajamento (adoção, treinamento e AI Credits). */
+.engagement-header { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 12px; }
+.engagement-source { min-width: 180px; max-width: 220px; }
+.engagement-source label { display: block; margin-bottom: 7px; color: #b6c2d7; font-size: 11px; }
+.engagement-donut-row { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin: 12px 0; }
+.engagement-donut { width: 150px; height: 150px; border-radius: 50%; background: #25314a; position: relative; display: grid; place-items: center; flex: 0 0 auto; }
+.engagement-donut::after { content: ""; position: absolute; inset: 27px; border-radius: 50%; background: var(--bg-color-card); }
+.engagement-donut span { position: relative; z-index: 1; text-align: center; font-size: 12px; padding: 0 22px; line-height: 1.4; }
+.engagement-quadrants { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 12px; }
+.engagement-quadrant { border: 1px solid #25314a; border-left: 3px solid #f0c22f; border-radius: 8px; padding: 12px 14px; }
+.engagement-quadrant h4 { font-size: 11px; color: #b7c3d8; margin: 0 0 8px; }
+.engagement-quadrant strong { font-size: 24px; font-weight: 600; }
+.engagement-buckets { display: grid; gap: 8px; }
+.engagement-bucket { display: grid; grid-template-columns: minmax(190px, 1fr) minmax(120px, 2fr); align-items: center; gap: 12px; font-size: 11px; }
+.engagement-bucket meter { width: 100%; }
+#engagement-nominal section { border-top: 1px solid #25314a; padding-top: 10px; margin-top: 12px; }
+#engagement-nominal h4 { font-size: 12px; margin: 0 0 6px; }
+#engagement-nominal ul { margin: 0; padding-left: 18px; font-size: 11px; }
+@media (max-width: 575px) {
+    .engagement-bucket { grid-template-columns: 1fr; gap: 4px; }
+    .engagement-source { max-width: none; width: 100%; }
+}
+.engagement-components { font-size: 14px !important; line-height: 1.5; }

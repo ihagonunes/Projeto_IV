@@ -1,87 +1,81 @@
 <%- contentFor("espaco-head") %>
-    <link href="/public/css/components/onboarding-card.css" rel="stylesheet">
-    <link href="/public/css/components/data-grid.css" rel="stylesheet">
-    <link href="/public/css/pages/onboarding.css" rel="stylesheet">
+<link href="/public/css/components/onboarding-card.css" rel="stylesheet">
+<link href="/public/css/components/data-grid.css" rel="stylesheet">
+<link href="/public/css/pages/onboarding.css" rel="stylesheet">
+<%- contentFor("body") %>
 
-    <style>
-        /* Ajuste de CSS para o dropdown de permissão não sobrepor a seta no texto */
-        .form-select.custom-input.form-select-sm,
-        .permission-select {
-            min-width: 115px !important;
-            padding-right: 2.25rem !important;
-            background-position: right 0.75rem center !important;
-        }
-    </style>
+<div class="atlas-onboarding-wrapper step-bg-ia">
+    <%- include("../../../views/partials/wizard-stepper", { activeStep: 4 }) %>
 
-    <div class="atlas-onboarding-wrapper step-bg-ia">
+    <main class="atlas-content">
+        <div class="atlas-page-header">
+            <h1 class="atlas-page-title">Catálogo de IA</h1>
+            <p class="atlas-page-subtitle">Provedores, modelos e política por departamento. O segredo nunca é exibido nem solicitado.</p>
+        </div>
 
-        <%- include("../../../views/partials/wizard-stepper", { activeStep: 4 }) %>
+        <p id="iaMessage" class="atlas-form-message" role="status" aria-live="polite"></p>
 
-            <main class="atlas-content">
+        <section id="iaRestricted" class="atlas-card" hidden>
+            <p class="atlas-section-title">Acesso restrito</p>
+            <p>Seu perfil não possui <code>AI_TOOL:MANAGE</code> para administrar o catálogo de IA.</p>
+            <a href="/onboarding" class="btn btn-outline-secondary btn-pill">Voltar ao onboarding</a>
+        </section>
 
-                <div class="atlas-page-header">
-                    <h1 class="atlas-page-title">Configuração de IA</h1>
-                    <p class="atlas-page-subtitle">Configure o provedor de inteligência artificial e os modelos
-                        disponíveis.</p>
+        <div id="iaContent" hidden>
+            <section class="atlas-card mb-4" aria-labelledby="providersTitle">
+                <p class="atlas-section-title" id="providersTitle">Provedores</p>
+                <p class="text-muted small">O campo “credencial” é apenas o nome da variável de ambiente. O valor do segredo não é lido nem exibido.</p>
+                <div class="data-grid-container">
+                    <table class="data-grid">
+                        <thead>
+                            <tr><th>Provedor</th><th>Tipo</th><th>Base URL</th><th>Credencial</th><th>Status</th></tr>
+                        </thead>
+                        <tbody id="provedoresTableBody"></tbody>
+                    </table>
                 </div>
+            </section>
 
-                <div class="atlas-card">
-                    <form id="iaForm" action="/onboarding/revisao" method="GET" novalidate>
-
-                        <!-- Credencial BYOK -->
-                        <p class="atlas-section-title">Credencial do Provedor (BYOK)</p>
-                        <div class="row g-3 align-items-end mb-6">
-                            <div class="col-md-4">
-                                <label for="provedorIa" class="form-label-custom">Provedor de IA</label>
-                                <select class="form-select custom-input" id="provedorIa">
-                                    <option value="" disabled selected>Carregando provedores...</option>
-                                </select>
-                            </div>
-                            <div class="col-md-7">
-                                <label for="apiKey" class="form-label-custom">Chave de API</label>
-                                <input type="password" class="form-control custom-input" id="apiKey"
-                                    placeholder="sk-...">
-                            </div>
-                            <div class="col-md-8">
-                                <label for="nomeCredencial" class="form-label-custom">Nome interno da credencial</label>
-                                <input type="text" class="form-control custom-input" id="nomeCredencial"
-                                    placeholder="Ex: Credencial Produção">
-                            </div>
-                            <div class="col-md-4">
-                                <button type="button" class="btn btn-orange btn-pill w-100 fw-bold">testar
-                                    conexão</button>
-                            </div>
-                        </div>
-
-                        <!-- Catálogo de Modelos -->
-                        <p class="atlas-section-title">Catálogo de Modelos</p>
-                        <div class="data-grid-container mb-4">
-                            <table class="data-grid">
-                                <thead>
-                                    <tr>
-                                        <th>Modelo</th>
-                                        <th>Status</th>
-                                        <th>Permissões</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="modelosTableBody">
-                                    <tr>
-                                        <td colspan="3" class="text-center text-muted py-3">Carregando catálogo de
-                                            modelos...</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <div class="atlas-form-footer">
-                            <a href="/onboarding/usuarios/hub" class="btn btn-outline-secondary btn-pill">← voltar</a>
-                            <button type="submit" class="btn btn-orange btn-pill fw-bold px-4">próximo →</button>
-                        </div>
-                    </form>
+            <section class="atlas-card mb-4" aria-labelledby="modelsTitle">
+                <p class="atlas-section-title" id="modelsTitle">Modelos</p>
+                <div class="data-grid-container">
+                    <table class="data-grid">
+                        <thead>
+                            <tr><th>Modelo</th><th>Provider</th><th>Departamentos autorizados</th><th>Status</th><th>Nome externo</th><th>Preço entrada /1k</th><th>Preço saída /1k</th><th>Ações</th></tr>
+                        </thead>
+                        <tbody id="modelosTableBody"></tbody>
+                    </table>
                 </div>
+                <p id="modelsMessage" class="text-muted small" role="status" aria-live="polite"></p>
+            </section>
 
-            </main>
-    </div>
+            <section class="atlas-card mb-4" aria-labelledby="policyTitle">
+                <p class="atlas-section-title" id="policyTitle">Política por departamento</p>
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-5">
+                        <label for="policyDepartment" class="form-label-custom">Departamento</label>
+                        <select id="policyDepartment" class="form-select custom-input"></select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="policyDefault" class="form-label-custom">Modelo padrão</label>
+                        <select id="policyDefault" class="form-select custom-input" disabled></select>
+                    </div>
+                    <div class="col-md-3">
+                        <button id="policySave" type="button" class="btn btn-orange btn-pill w-100" disabled>Salvar política</button>
+                    </div>
+                </div>
+                <fieldset id="policyModels" class="mt-3">
+                    <legend class="form-label-custom">Modelos permitidos</legend>
+                </fieldset>
+                <p id="policyMessage" class="text-muted small" role="status" aria-live="polite"></p>
+            </section>
 
-    <script src="/public/js/core/api-client.js?v=cookie-session-20261022"></script>
-    <script src="/public/js/pages/onboarding/step-ia.js"></script>
+            <div class="atlas-form-footer">
+                <a href="/onboarding/usuarios/hub" class="btn btn-outline-secondary btn-pill">← voltar</a>
+                <a href="/onboarding/revisao" class="btn btn-orange btn-pill fw-bold px-4">próximo →</a>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="/public/js/core/api-client.js?v=cookie-session-20261022"></script>
+<script src="/public/js/pages/onboarding/step-ia.js?v=spi-87-20261101"></script>

@@ -19,3 +19,13 @@ Budget dentro de Observability; cópia local de orçamento nos dois módulos.
 ## Consequências
 
 Separa meta de realizado e evita duas fontes de verdade. Cálculo analítico depende de integração síncrona clara.
+
+## Emenda (Sprint 4)
+
+A projeção de orçamento é um caso de uso determinístico do `observability`
+(`ProjectDepartmentBudget`, `projection-v1`), conforme o ADR-41. O orçamento
+continua vindo de `department.api.DepartmentBudgetQuery`; a soma do custo
+conhecido usa os `UsageRecord` do próprio `observability`, com `tenant_id`
+explícito. O cálculo não usa LLM, não altera o orçamento e não cria tabela nova.
+`GET /api/v1/observability/orcamentos/projecao` expõe o resultado com
+`USAGE:READ` e checagem fina por `DepartmentTarget`.

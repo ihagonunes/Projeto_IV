@@ -24,6 +24,17 @@
         item.textContent = label;
         parent.appendChild(item);
     }
+    async function loadDepartments() {
+        if (personal || !department) return;
+        try {
+            const result = await client.get("/v1/departamentos");
+            const list = Array.isArray(result) ? result : (result?.content || []);
+            for (const item of list) option(department, item.id, item.name);
+            department.disabled = false;
+        } catch (error) {
+            // Sem DEPARTMENT:READ ou indisponível: mantém o filtro desabilitado.
+        }
+    }
     function clear() {
         for (const id of ["requests", "active", "tokens", "cost"]) byId(id).textContent = "—";
         byId("series").replaceChildren();
@@ -128,6 +139,7 @@
             canSearchUsers = !personal && access.permissoes.includes("USAGE:READ") && access.permissoes.includes("USER:READ")
                 && access.concessoes.some(grant => ["MANAGER", "EXECUTIVE"].includes(grant.papel));
             byId("user-field").hidden = !canSearchUsers;
+            await loadDepartments();
             const catalog = await client.get("/v1/ai-gateway/models/dashboard");
             for (const item of catalog) {
                 models.set(item.id, item.name);

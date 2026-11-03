@@ -23,8 +23,25 @@
     };
     function validateMessage(value) { return typeof value === "string" && value.trim().length > 0 && value.length <= MAX_LENGTH; }
     function errorMessage(error) {
-        return error?.name === "AbortError" ? "Espera interrompida. A execução no servidor pode continuar; confira o histórico antes de reenviar."
-            : errorMessages[error?.status] || "Não foi possível confirmar o envio. Confira sua conexão e o histórico antes de reenviar.";
+        const code = error?.code || error?.data?.code;
+        if (error?.name === "AbortError") return "Espera interrompida. A execução no servidor pode continuar; confira o histórico antes de reenviar.";
+        if (code === "CONVERSATION_ARCHIVED") return "Esta conversa está arquivada. Restaure-a para continuar.";
+        if (code === "CONVERSATION_NOT_FOUND") return "Esta conversa não está mais disponível para sua conta.";
+        if (code === "TURN_IN_PROGRESS_OR_FAILED") return "O envio anterior ainda está em processamento ou falhou. Confira o histórico antes de reenviar.";
+        return errorMessages[error?.status] || "Não foi possível confirmar a ação. Confira sua conexão e o histórico antes de tentar novamente.";
+    }
+    function clientMessageId() {
+        if (globalThis.crypto && typeof globalThis.crypto.randomUUID === "function") {
+            return globalThis.crypto.randomUUID();
+        }
+        return `c-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+    }
+    function collectReceipts(messages) {
+        const receipts = new Map();
+        for (const message of messages || []) {
+            if (message?.recibo?.requestId) receipts.set(message.recibo.requestId, message.recibo);
+        }
+        return receipts;
     }
     function costLabel(receipt) {
         return receipt && receipt.statusCusto === "KNOWN" && receipt.custoEstimado != null
@@ -46,19 +63,43 @@
     function createLiveService(api, transport = globalThis.fetch) {
         return {
             preview: false,
-            list: page => api.get(`/conversas?page=${page}&size=20`),
-            messages: id => api.get(`/conversas/${encodeURIComponent(id)}/mensagens`),
-            async models() {
-                const model = await api.get("/ai-gateway/models/permitido");
-                return [{ id: null, name: model.modelName, provider: model.providerName, description: "Padrão do seu departamento", badge: "Padrão" }];
+            list(page, status = "ACTIVE", query = "") {
+                const params = new URLSearchParams({
+                    status: status === "ARCHIVED" ? "ARCHIVED" : "ACTIVE",
+                    page: String(page),
+                    size: "20"
+                });
+                const term = String(query || "").trim().slice(0, 100);
+                if (term) params.set("q", term);
+                return api.get(`/conversas?${params.toString()}`);
             },
-            async send(id, content, modelId, signal) {
+            messages: id => api.get(`/conversas/${encodeURIComponent(id)}/mensagens?page=0&size=200`),
+            async models() {
+                const data = await api.get("/conversas/modelos");
+                const allowed = (data.models || []).filter(model => model.available);
+                const mapped = allowed.map(model => ({
+                    id: model.id,
+                    name: model.name,
+                    provider: model.providerName || "Provider",
+                    description: model.id === data.defaultModelId
+                        ? "Padrão do seu departamento" : "Permitido pelo seu departamento",
+                    badge: model.id === data.defaultModelId ? "Padrão" : "Alternativo",
+                    isDefault: model.id === data.defaultModelId
+                }));
+                return mapped.sort((a, b) => Number(b.isDefault) - Number(a.isDefault))
+                    .map(({ isDefault, ...model }) => model);
+            },
+            async send(id, content, modelId, signal, messageId) {
                 if (!validateMessage(content)) return Promise.reject(Object.assign(new Error("Mensagem inválida"), { status: 400 }));
                 const path = id ? `/conversas/${encodeURIComponent(id)}/mensagens` : "/conversas";
                 const response = await transport(`/api/v1${path}`, {
                     method: "POST", credentials: "same-origin", signal,
                     headers: { "Content-Type": "application/json", "Accept": "application/json", "X-Qsoft-Request": "1" },
-                    body: JSON.stringify({ mensagem: content, requestedModelId: modelId })
+                    body: JSON.stringify({
+                        mensagem: content,
+                        requestedModelId: modelId,
+                        clientMessageId: messageId || clientMessageId()
+                    })
                 });
                 let data;
                 try { data = await response.json(); }
@@ -66,9 +107,21 @@
                     if (error.name === "AbortError") throw error;
                     throw Object.assign(new Error("Resposta inválida do serviço"), { status: response.status });
                 }
-                if (!response.ok) throw Object.assign(new Error("Falha no envio"), { status: response.status });
+                if (!response.ok) {
+                    const error = Object.assign(new Error("Falha no envio"), {
+                        status: response.status, data
+                    });
+                    if (data && data.code) error.code = data.code;
+                    throw error;
+                }
                 return data;
-            }
+            },
+            rename: (id, title) => api.patch(`/conversas/${encodeURIComponent(id)}`, { titulo: title }),
+            archive: (id, archived) => api.patch(`/conversas/${encodeURIComponent(id)}`, {
+                status: archived ? "ARCHIVED" : "ACTIVE"
+            }),
+            remove: id => api.delete(`/conversas/${encodeURIComponent(id)}`),
+            usage: () => api.get("/observability/metrics/me/usage")
         };
     }
     // Fixtures somente em memória: nenhuma conversa/arquivo vai a storage ou à rede.
@@ -112,8 +165,8 @@
                 service.quota.used += 460; service.quota.input += 120; service.quota.output += 340;
                 return structuredClone(assistant);
             },
-            async rename(conversationId, title) { const c = conversations.find(item => item.id === conversationId); c.titulo = title.trim(); },
-            async archive(conversationId, archived) { conversations.find(item => item.id === conversationId).status = archived ? "ARCHIVED" : "ACTIVE"; },
+            async rename(conversationId, title) { const c = conversations.find(item => item.id === conversationId); c.titulo = title.trim(); return structuredClone(c); },
+            async archive(conversationId, archived) { const c = conversations.find(item => item.id === conversationId); c.status = archived ? "ARCHIVED" : "ACTIVE"; return structuredClone(c); },
             async remove(conversationId) { const old = messages.get(conversationId) || []; old.forEach(m => receipts.delete(m.requestId)); messages.delete(conversationId); conversations = conversations.filter(item => item.id !== conversationId); },
             async send(conversationId, content, modelId, signal) {
                 if (!validateMessage(content)) throw Object.assign(new Error("Mensagem inválida"), { status: 400 });
@@ -139,5 +192,5 @@
         function makeReceipt(requestId, model) { return { requestId, modelo: model.name, provider: model.provider, tokensEntrada: 120, tokensSaida: 340, custoEstimado: 0.000920, statusCusto: "KNOWN", latenciaMs: 812 }; }
         service.reset(); return service;
     }
-    return { MAX_LENGTH, validateMessage, errorMessage, costLabel, tokenLabel, mergeById, filterConversations, createLiveService, createPreviewService };
+    return { MAX_LENGTH, validateMessage, errorMessage, clientMessageId, collectReceipts, costLabel, tokenLabel, mergeById, filterConversations, createLiveService, createPreviewService };
 });

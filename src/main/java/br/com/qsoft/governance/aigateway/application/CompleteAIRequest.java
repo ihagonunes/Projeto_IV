@@ -18,6 +18,7 @@ import br.com.qsoft.governance.aigateway.domain.attempt.CostStatus;
 import br.com.qsoft.governance.aigateway.domain.attempt.DeliveryStatus;
 import br.com.qsoft.governance.aigateway.domain.attempt.RequestPurpose;
 import br.com.qsoft.governance.aigateway.domain.exception.ModelNotFoundException;
+import br.com.qsoft.governance.aigateway.domain.exception.ModelPriceRequiredException;
 import br.com.qsoft.governance.aigateway.domain.exception.ProviderNotFoundException;
 import br.com.qsoft.governance.iam.api.model.UserContext;
 import br.com.qsoft.governance.iam.api.query.IdentityQuery;
@@ -103,7 +104,8 @@ public class CompleteAIRequest implements AICompletionService {
         Usage usage = usageOf(response, resolved);
         try {
             attemptRecorder.recordSuccess(requestId, usage.inputTokens(), usage.outputTokens(),
-                usage.costStatus(), usage.estimatedCost(), latencyMs, usage.deliveryStatus());
+                usage.costStatus(), usage.estimatedCost(), latencyMs, usage.deliveryStatus(),
+                usage.errorCode());
         } catch (RuntimeException ex) {
             throw new AIAttemptNotRecordedException();
         }
@@ -141,11 +143,18 @@ public class CompleteAIRequest implements AICompletionService {
 
     private static Usage usageOf(ProviderClient.ProviderResponse response, ResolvedModel resolved) {
         if (response.usage() instanceof ProviderClient.Usage.Known known) {
-            BigDecimal estimatedCost = resolved.estimatedCost(known.inputTokens(), known.outputTokens());
-            return new Usage(known.inputTokens(), known.outputTokens(), CostStatus.KNOWN,
-                estimatedCost, DeliveryStatus.PENDING);
+            try {
+                BigDecimal estimatedCost = resolved.estimatedCost(
+                    known.inputTokens(), known.outputTokens());
+                return new Usage(known.inputTokens(), known.outputTokens(), CostStatus.KNOWN,
+                    estimatedCost, DeliveryStatus.PENDING, null);
+            } catch (ModelPriceRequiredException ex) {
+                return new Usage(known.inputTokens(), known.outputTokens(),
+                    CostStatus.INCONCLUSIVE, null, DeliveryStatus.NOT_APPLICABLE, "PRICE_MISSING");
+            }
         }
-        return new Usage(null, null, CostStatus.INCONCLUSIVE, null, DeliveryStatus.NOT_APPLICABLE);
+        return new Usage(null, null, CostStatus.INCONCLUSIVE, null,
+            DeliveryStatus.NOT_APPLICABLE, null);
     }
 
     private UUID departmentIdOf(TenantId tenantId, UserId userId) {
@@ -199,6 +208,6 @@ public class CompleteAIRequest implements AICompletionService {
     }
 
     private record Usage(Long inputTokens, Long outputTokens, CostStatus costStatus,
-                         BigDecimal estimatedCost, DeliveryStatus deliveryStatus) {
+                         BigDecimal estimatedCost, DeliveryStatus deliveryStatus, String errorCode) {
     }
 }

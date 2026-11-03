@@ -38,13 +38,16 @@ Este documento não modifica ADRs nem aceita novas decisões.
 
 ### Limites deliberados da integração atual
 
-O modo conectado usa os quatro endpoints existentes e a resolução do modelo padrão.
-Funcionalidades sem API mostram uma explicação e não fingem salvar alterações.
-Os recibos dos envios desta página ficam em memória; ao reabrir mensagens antigas,
-a UI mostra que os detalhes não estão disponíveis quando não recebeu o recibo.
-A busca conectada filtra apenas as conversas já carregadas, indicado no rótulo/estado vazio.
-O consumo conectado soma somente tokens conhecidos dos envios concluídos nesta página.
-Não oferece cota, moeda, saldo ou ocupação da janela inventados.
+O modo conectado usa os endpoints de ciclo de vida, busca, modelos, recibos e consumo
+pessoal implementados na Sprint 4. Renomear, arquivar, restaurar e excluir só confirmam
+sucesso após a resposta da API; em falha, a lista é reconciliada com o servidor.
+Os recibos dos envios são recuperados de `GET /conversas/{id}/mensagens` ao reabrir a
+conversa, sem duplicar tokens/custo em `chat_messages`. A busca e o status são
+resolvidos no servidor (`GET /conversas?status=&q=`), não apenas sobre as conversas
+carregadas. O consumo pessoal informativo usa
+`GET /api/v1/observability/metrics/me/usage`.
+Não há cota fictícia, moeda, saldo ou ocupação da janela inventados no modo conectado.
+Regeneração de resposta e anexos continuam fora do contrato e mostram explicação.
 O botão de parar aborta a espera HTTP; não afirma cancelar processamento/cobrança no servidor.
 
 ## 3. Contratos existentes preservados
@@ -52,10 +55,13 @@ O botão de parar aborta a espera HTTP; não afirma cancelar processamento/cobra
 | Operação | Contrato consumido |
 |---|---|
 | Criar e enviar | POST `/api/v1/conversas` |
-| Listar histórico | GET `/api/v1/conversas?page=0&size=20` |
-| Abrir mensagens | GET `/api/v1/conversas/{id}/mensagens` |
+| Listar histórico | GET `/api/v1/conversas?status=&q=&page=&size=` |
+| Abrir mensagens | GET `/api/v1/conversas/{id}/mensagens?page=&size=` |
 | Enviar na conversa | POST `/api/v1/conversas/{id}/mensagens` |
-| Resolver padrão | GET `/api/v1/ai-gateway/models/permitido` |
+| Renomear/arquivar/restaurar | PATCH `/api/v1/conversas/{id}` |
+| Excluir | DELETE `/api/v1/conversas/{id}` |
+| Modelos permitidos | GET `/api/v1/conversas/modelos` |
+| Consumo pessoal | GET `/api/v1/observability/metrics/me/usage` |
 
 Envio: `{ "mensagem": "...", "requestedModelId": null }`.
 Resposta: `{ "conversa": {...}, "mensagens": [...], "recibo": {...} }`.
@@ -67,6 +73,11 @@ O frontend não recebe nem armazena JWT e não envia tenant/owner no payload.
 
 Os caminhos e DTOs abaixo são propostas para discussão. Não são APIs implementadas.
 Devem ser associados às issues apropriadas e respeitar ADR-16, ADR-36, ADR-38 e ADR-39.
+
+> **Status (Sprint 4, 28/10/2026):** §4.1, §4.2, §4.5 e a idempotência de §4.6 foram
+> implementados no backend (ADR-42). Os contratos finais estão em `ai/contracts.md` §Chat.
+> Os itens abaixo ficam como registro da proposta original; o que não foi entregue está
+> marcado em cada seção.
 
 ### 4.1 Modelos disponíveis para o usuário — prioridade alta
 
@@ -98,6 +109,11 @@ Proposta: GET `/api/v1/conversas/modelos`, retornando:
   persistida e como reagir quando ela deixar de ser permitida.
 - Modelos da prévia são nomes fictícios, não um compromisso de catálogo comercial.
 
+**Implementado (Sprint 4):** `GET /api/v1/conversas/modelos` usa
+`ModelResolutionQuery.allowedModels` e devolve `defaultModelId` + `models[]` com
+`id`, `name`, `providerName`, `available` e `unavailableReason`. `description` não foi
+implementado. O envio continua revalidando a política.
+
 ### 4.2 Recibo durável e modelo por resposta — prioridade alta
 
 Necessidade: exibir detalhes ao reabrir o chat, incluindo modelo efetivamente usado.
@@ -109,6 +125,12 @@ Preservar os campos atuais e acrescentar moeda explícita quando houver definiç
 latenciaMs e currency. Definir identidade estável do modelo para nomes alterados/removidos.
 Usage desconhecido deve permanecer nulo. Custo sem preço não deve aparentar gratuidade;
 revisar cálculo com preços nulos e parsing de usage parcial que atualmente usa zero.
+
+**Implementado (Sprint 4):** `GET /api/v1/conversas/{id}/mensagens?page=&size=`
+(padrão 50, máximo 200) devolve cada ASSISTANT com `recibo` vindo de
+`AttemptReceiptQuery.receipts` (lote por tenant + dono, até 100 requestIds). Recibo
+ausente → `recibo: null`. O custo sem preço agora é `INCONCLUSIVE` (não zero). `currency`
+não foi implementado; `modelName`/`providerName` usam o catálogo atual.
 
 ### 4.3 Consumo, cota e alertas — prioridade alta
 
@@ -159,6 +181,11 @@ por hierarquia. Definir arquivamento/restauração, se impede envio e estados de
 A prévia impede enviar em arquivadas; essa regra ainda precisa de validação de produto.
 Exclusão/arquivamento ampliam o MVP da ADR-39 e exigem revisão formal antes de implementação.
 
+**Implementado (Sprint 4):** `PATCH /api/v1/conversas/{id}` (título/status),
+`DELETE` lógico (204) e `GET /api/v1/conversas?status=&q=&page=&size=`. Arquivada não
+aceita envio (409 `CONVERSATION_ARCHIVED`); excluída some de todas as leituras (404).
+Owner + tenant em todas as operações; `TENANT_ADMIN` continua sem CHAT.
+
 ### 4.6 Recuperação de falhas, idempotência e estado da execução — prioridade alta
 
 - Aceitar clientMessageId/idempotency key para não duplicar USER nem cobrança em retry.
@@ -173,6 +200,15 @@ Exclusão/arquivamento ampliam o MVP da ADR-39 e exigem revisão formal antes de
   contabilizada e falhar depois na persistência. Definir política e erro recuperável.
 - Tratar falha de persistência da resposta após sucesso do provider sem executar novamente
   a mesma inferência por simples retry do cliente.
+
+**Implementado (Sprint 4, parcial):** os dois POSTs aceitam `clientMessageId`
+(8–64, `[A-Za-z0-9_-]`). Repetição com turno concluído devolve 200 com o mesmo turno e
+recibo, sem nova tentativa; turno sem ASSISTANT/requestId devolve 409
+`TURN_IN_PROGRESS_OR_FAILED` com `messageId` e `requestId` (quando houver). A corrida
+em conversa existente é resolvida pelo índice único; no primeiro turno, a checagem é
+por `(owner, clientMessageId)` sem índice novo, com a limitação de corrida registrada.
+Consulta por `requestId`/`clientMessageId` para reconciliação dedicada, estado
+`cancelado`, moeda e política para ASSISTANT > 8.000 continuam pendentes.
 
 ### 4.7 Regenerar resposta — prioridade média
 

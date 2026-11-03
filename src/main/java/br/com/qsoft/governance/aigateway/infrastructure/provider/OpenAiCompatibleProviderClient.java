@@ -14,6 +14,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
@@ -43,13 +44,27 @@ public class OpenAiCompatibleProviderClient implements ProviderClient {
 
     @Override
     public ProviderResponse call(ProviderCall call) {
-        String secret = credentialResolver.resolve(call.credentialRef());
+        // credentialRef nulo/em branco = provider local sem chave (ex.: Ollama).
+        String secret = null;
+        if (call.credentialRef() != null && !call.credentialRef().isBlank()) {
+            secret = credentialResolver.resolve(call.credentialRef());
+        }
         RestClient client = restClient(call.baseUrl(), call.timeoutMs());
         try {
-            Map<?, ?> response = client.post()
+            RestClient.RequestBodySpec request = client.post()
                 .uri("/chat/completions")
-                .header("Authorization", "Bearer " + secret)
-                .contentType(MediaType.APPLICATION_JSON)
+                .contentType(MediaType.APPLICATION_JSON);
+            if (secret != null) {
+                request = request.header("Authorization", "Bearer " + secret);
+            }
+            if (isOpenCode(call.baseUrl())) {
+                // OpenCode Go exige um identificador de sessão e um User-Agent
+                // próprio. O identificador é por requisição; uma evolução pode
+                // reutilizá-lo por conversa quando o contrato expuser esse dado.
+                request = request.header("User-Agent", "atlas-qsoft-governance/1.0")
+                    .header("x-opencode-session", UUID.randomUUID().toString());
+            }
+            Map<?, ?> response = request
                 .body(requestBody(call))
                 .retrieve()
                 .body(Map.class);
@@ -75,6 +90,10 @@ public class OpenAiCompatibleProviderClient implements ProviderClient {
         JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(httpClient);
         factory.setReadTimeout(Duration.ofMillis(timeoutMs));
         return RestClient.builder().baseUrl(baseUrl).requestFactory(factory).build();
+    }
+
+    private static boolean isOpenCode(String baseUrl) {
+        return baseUrl != null && baseUrl.contains("opencode.ai");
     }
 
     private Map<String, Object> requestBody(ProviderCall call) {

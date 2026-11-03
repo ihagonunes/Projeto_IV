@@ -19,3 +19,18 @@ Crédito consumível; ranking punitivo; bloqueio por saldo; motor de regras conf
 ## Consequências
 
 Métrica permanece simples e explicável. Alterações futuras na fórmula exigem decisão/versionamento explícito.
+
+## Emenda (Sprint 4)
+
+Os parâmetros do ADR-40, versão `credits-v1`, foram implementados no módulo
+`engagement`:
+
+- U = 100 × min(dias ativos no mês / 10, 1);
+- T = 100 × min(conclusões de treinamento até o fim do mês, 1);
+- L = 100 × licenças utilizadas / licenças aplicáveis; sem licença aplicável,
+  `NOT_APPLICABLE` e a fórmula normaliza por 0,8: `(0,5U + 0,3T) / 0,8`;
+- score = 0,5U + 0,3T + 0,2L, com 2 casas e HALF_UP;
+- mês fechado usa snapshot imutável em `engagement_credit_snapshots`; mês
+  corrente é `PROVISORIO` e não persiste;
+- AI Credits continua não bloqueante: nenhum módulo de chat ou gateway depende
+  de `engagement` para autorizar ou executar uma completion.

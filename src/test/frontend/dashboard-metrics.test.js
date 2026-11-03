@@ -20,6 +20,7 @@ async function dashboard(role = "COLLABORATOR", respond, personal = false) {
         calls.push(url);
         if (url.includes("permissoes")) return { permissoes: ["USAGE:READ", "USER:READ"], concessoes: [{ papel: role }] };
         if (url.includes("models/dashboard")) return [{ id: "model-1", name: "<Modelo>" }];
+        if (url === "/v1/departamentos") return [{ id: "dep-1", name: "Engenharia" }];
         if (url.includes("/usuarios?")) return { content: [{ id: "user-1", name: "Pessoa", email: "p@example.test" }] };
         if (respond) return respond(url);
         return url.includes("/usage?") ? usage : costs;
@@ -28,7 +29,7 @@ async function dashboard(role = "COLLABORATOR", respond, personal = false) {
         document: { getElementById: get, createElement: element }, URLSearchParams, Date,
         setTimeout: callback => { Promise.resolve().then(callback); return 1; }, clearTimeout() {} });
     await tick();
-    return { get: id => get(`metrics-${id}`), calls, client };
+    return { get: id => get(`metrics-${id}`), raw: get, calls, client };
 }
 
 test("default de 30 dias e agregados usam o mesmo recorte e contrato da API", async () => {
@@ -48,9 +49,23 @@ test("default de 30 dias e agregados usam o mesmo recorte e contrato da API", as
     assert.equal(costs.searchParams.get("groupBy"), "MODEL");
 });
 
+test("filtro operacional carrega departamentos autorizados e envia o ID nas duas consultas", async () => {
+    const page = await dashboard("MANAGER");
+    const department = page.raw("dashboard-area");
+    assert.equal(department.disabled, false);
+    assert.deepEqual(department.children.map(item => [item.value, item.textContent]), [["dep-1", "Engenharia"]]);
+    department.value = "dep-1";
+    await department.events.change();
+    const [usage, costs] = page.calls.slice(-2).map(url => new URL(url, "http://test"));
+    assert.equal(usage.searchParams.get("departmentId"), "dep-1");
+    assert.equal(costs.searchParams.get("departmentId"), "dep-1");
+});
+
 test("dashboard pessoal usa endpoints me e oculta filtro de terceiros mesmo para admin", async () => {
     const page = await dashboard("EXECUTIVE", null, true);
     assert.equal(page.get("user-field").hidden, true);
+    assert.equal(page.raw("dashboard-area").disabled, true);
+    assert.ok(!page.calls.includes("/v1/departamentos"));
     assert.equal(page.calls.filter(url => url.includes("/metrics/me/")).length, 2);
     assert.ok(!page.calls.some(url => url.includes("userId=")));
 });

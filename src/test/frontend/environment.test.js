@@ -26,3 +26,8 @@ test("arquivo explícito ausente impede iniciar com configuração residual", ()
     assert.notEqual(result.status, 0);
     assert.match(result.stderr, /Não foi possível carregar/);
 });
+
+test("compose exige JWT_SECRET sem valor padrão inseguro", () => {
+    const compose = fs.readFileSync(path.resolve(__dirname, "../../../compose.yaml"), "utf8");
+    assert.match(compose, /JWT_SECRET:\s*"\$\{JWT_SECRET:\?/);
+});
