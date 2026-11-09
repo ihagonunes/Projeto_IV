@@ -13,7 +13,7 @@ class SystemRoleTest {
         assertThat(SystemRole.COLLABORATOR.permissions()).hasSize(5);
         assertThat(SystemRole.LEADER.permissions()).hasSize(7);
         assertThat(SystemRole.MANAGER.permissions()).hasSize(13);
-        assertThat(SystemRole.EXECUTIVE.permissions()).hasSize(14);
+        assertThat(SystemRole.EXECUTIVE.permissions()).hasSize(15);
         assertThat(SystemRole.TENANT_ADMIN.permissions()).hasSize(18);
     }
 
