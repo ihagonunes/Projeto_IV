@@ -92,6 +92,16 @@ public class QueryCredits {
         EngagementFacts facts = source.load(command.tenantId(), endOfMonth);
         selected.retainAll(facts.eligible());
 
+        UUID ownDepartment = contexts.stream()
+            .filter(context -> context.userId().equals(command.actor()))
+            .filter(context -> "COLLABORATOR".equals(context.hierarchyLevel()))
+            .findFirst().map(UserContext::departmentId).orElse(null);
+        Set<UserId> peers = new LinkedHashSet<>();
+        if (selected.contains(command.actor()) && ownDepartment != null) {
+            contexts.stream().filter(context -> ownDepartment.equals(context.departmentId()))
+                .map(UserContext::userId).filter(facts.eligible()::contains).forEach(peers::add);
+        }
+
         boolean closed = month.isBefore(current);
         Map<UserId, CreditsItem> items;
         if (closed) {
@@ -110,7 +120,9 @@ public class QueryCredits {
                 }
             }
         } else {
-            items = CreditsCalculator.calculate(subset(facts, selected), month).stream()
+            Set<UserId> calculationScope = new LinkedHashSet<>(selected);
+            calculationScope.addAll(peers);
+            items = CreditsCalculator.calculate(subset(facts, calculationScope), month).stream()
                 .collect(Collectors.toMap(CreditsItem::userId, item -> item,
                     (left, right) -> left, LinkedHashMap::new));
         }
@@ -130,7 +142,15 @@ public class QueryCredits {
 
         return new CreditsReport(command.source(), month,
             closed ? "FECHADO" : "PROVISORIO", CreditsCalculator.CALCULATION_VERSION,
-            views, facts.coverage());
+            views, facts.coverage(), rank(command.actor(), peers, resolved));
+    }
+
+    private static Integer rank(UserId actor, Set<UserId> peers, Map<UserId, CreditsItem> items) {
+        CreditsItem own = items.get(actor);
+        if (!peers.contains(actor) || own == null || own.score() == null) return null;
+        return 1 + (int) peers.stream().map(items::get).filter(Objects::nonNull)
+            .filter(peer -> peer.score() != null && peer.dataStatus() == own.dataStatus())
+            .filter(peer -> peer.score().compareTo(own.score()) > 0).count();
     }
 
     private static CreditsReport.Item view(UserId userId, CreditsItem item,

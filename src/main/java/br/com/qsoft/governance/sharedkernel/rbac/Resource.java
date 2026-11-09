@@ -15,6 +15,7 @@ public enum Resource {
     PERMISSION,
     INVITE,
     DEPARTMENT,
+    DEPARTMENT_BUDGET,
     PROJECT,
     MODEL,
     AI_TOOL,

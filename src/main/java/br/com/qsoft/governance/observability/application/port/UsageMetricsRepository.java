@@ -76,7 +76,11 @@ public interface UsageMetricsRepository {
     }
 
     /** Ponto da série temporal. */
-    record UsageSeriesPoint(String period, long requests) {
+    record UsageSeriesPoint(String period, long requests, long inputTokens, long outputTokens,
+                            java.math.BigDecimal estimatedCost) {
+        public UsageSeriesPoint(String period, long requests) {
+            this(period, requests, 0, 0, null);
+        }
     }
 
     /** Consumo/financeiro por departamento. */

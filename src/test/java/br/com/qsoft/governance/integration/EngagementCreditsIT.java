@@ -169,6 +169,9 @@ class EngagementCreditsIT {
             "/api/v1/engajamento/creditos?mes=" + MONTH);
         List<?> collabItems = (List<?>) collab.get("itens");
         assertThat(collabItems).hasSize(1);
+        assertThat(collab.get("posicaoPessoal")).isEqualTo(2);
+        assertThat(get(collabBEmail, "/api/v1/engajamento/creditos?mes=" + MONTH)
+            .get("posicaoPessoal")).isEqualTo(1);
         User collabUser = userRepository.findByTenantIdAndEmail(tenant.id(), collabAEmail)
             .orElseThrow();
         assertThat(((Map<?, ?>) collabItems.get(0)).get("userId"))

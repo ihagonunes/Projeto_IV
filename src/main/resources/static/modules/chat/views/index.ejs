@@ -1,5 +1,5 @@
 <%- contentFor("espaco-head") %>
-<link rel="stylesheet" href="/public/css/pages/chat.css?v=20261023-7">
+<link rel="stylesheet" href="/public/css/pages/chat.css?v=spi-136-token-column">
 <%- contentFor("body") %>
 <a class="chat-skip" href="#chat-input">Pular para a mensagem</a>
 <div id="chat-app" class="chat-shell" data-preview="<%= preview %>">
@@ -46,16 +46,23 @@
                 <label for="chat-input" class="chat-visually-hidden">Sua mensagem</label>
                 <textarea id="chat-input" rows="1" maxlength="8000" placeholder="Pergunte, explore ou comece uma ideia…"></textarea>
                 <div class="chat-composer-toolbar">
-                    <div class="chat-composer-tools"><button type="button" class="chat-icon" id="chat-attach" aria-label="Anexar arquivo"><i class="bi bi-plus-lg" aria-hidden="true"></i></button><span class="chat-tool-divider"></span><button type="button" id="chat-model" class="chat-model-button" aria-haspopup="dialog"><span class="chat-model-spark">✧</span><span id="chat-model-name">Padrão do departamento</span><i class="bi bi-chevron-down" aria-hidden="true"></i></button></div>
+                    <div class="chat-composer-tools"><button type="button" class="chat-icon" id="chat-attach" aria-label="Anexar arquivo"><i class="bi bi-plus-lg" aria-hidden="true"></i></button><span class="chat-tool-divider"></span><button type="button" id="chat-model" class="chat-model-button" aria-haspopup="dialog"><span class="chat-model-spark">✧</span><span id="chat-model-name">Padrão do departamento</span><i class="bi bi-chevron-down" aria-hidden="true"></i></button><button type="button" id="chat-agent" class="chat-model-button" aria-haspopup="dialog"><span>Agente</span><i class="bi bi-chevron-down" aria-hidden="true"></i></button></div>
                     <div class="chat-send-tools"><span id="chat-count">0 / 8.000</span><button id="chat-send" type="submit" class="chat-send" aria-label="Enviar mensagem" disabled>↑</button><button id="chat-stop" type="button" class="chat-send" aria-label="Parar espera pela resposta" hidden>■</button></div>
                 </div>
             </form>
             <div class="chat-composer-footer"><span><i class="bi bi-lock" aria-hidden="true"></i> Privado por padrão</span><span>A IA pode cometer erros. Confira informações importantes.</span><button id="chat-context" class="chat-text-button">Contexto: últimas 20 mensagens</button></div>
         </div>
     </main>
+    <aside class="chat-token-tank" aria-label="Consumo de tokens">
+        <div class="chat-token-track" id="chat-token-tank" aria-hidden="true"><span></span></div>
+        <div class="chat-token-caption">
+            <span aria-hidden="true">Tokens</span>
+            <output id="chat-token-total" aria-label="Total de tokens">—</output>
+        </div>
+    </aside>
 </div>
 <dialog id="chat-dialog" class="chat-dialog" aria-labelledby="chat-dialog-title"><div class="chat-dialog-heading"><h2 id="chat-dialog-title"></h2><button id="chat-dialog-close" class="chat-icon" aria-label="Fechar janela">×</button></div><div id="chat-dialog-body"></div></dialog>
 <div id="chat-toast" class="chat-toast" role="status" aria-live="polite" hidden></div>
 <% if (!preview) { %><script src="/public/js/core/api-client.js"></script><% } %>
 <script src="/public/js/pages/chat-core.js?v=spi-141-20261101"></script>
-<script src="/public/js/pages/chat.js?v=spi-141-20261101"></script>
+<script src="/public/js/pages/chat.js?v=spi-136-token-consumption"></script>

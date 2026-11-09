@@ -31,21 +31,37 @@ test("render dos cinco layouts com ações de sessão e filtros aguardando auten
             if (profile === 'colaborador') {
                 assert.match(html, /Meus AI Credits/);
                 assert.ok(!html.includes('Adoção (30 dias)'));
+                assert.ok(!html.includes('Funcionários ativos no período'));
+                assert.ok(!html.includes('id="historical-active"'));
+                assert.ok(!html.includes('id="historical-series"'));
+                assert.ok(!html.includes('id="metrics-series"'));
+                assert.match(html, /Meu consumo ao longo do tempo/);
             } else if (profile !== 'administrador') {
+                assert.ok(html.includes('id="historical-active"'));
+                assert.ok(html.includes('id="historical-series"'));
+                assert.ok(html.includes('id="metrics-series"'));
                 assert.match(html, /Adoção \(30 dias\)/);
                 assert.match(html, /Treinamento × uso/);
                 assert.match(html, /AI Credits da equipe/);
             }
             if (profile === 'gestor' || profile === 'executivo') {
-                assert.match(html, /Benefício líquido projetado/);
-                assert.match(html, /Ganho potencial estimado/);
-                assert.match(html, /Cobertura das estimativas/);
+                assert.doesNotMatch(html, /Governance Score|Benefício líquido projetado|Ganho potencial estimado|Cobertura das estimativas/);
+                assert.match(html, profile === 'gestor' ? /Evolução dos gastos do departamento/ : /Adoção nos últimos 30 dias/);
             }
             if (profile === 'colaborador') {
-                assert.match(html, /Meu retorno estimado/);
+                assert.doesNotMatch(html, /Meu retorno estimado/);
+                assert.match(html, /Meu custo registrado/);
+                assert.match(html, /Minhas conversas no Chat/);
+                assert.doesNotMatch(html, /Ir para o Agente de Políticas/);
                 assert.ok(!html.includes('Benefício líquido projetado'));
             }
-            if (profile === 'lider') assert.match(html, /Retorno estimado da equipe/);
+            if (profile === 'lider') {
+                assert.doesNotMatch(html, /Retorno estimado da equipe|Ranking de engajamento da equipe/);
+                assert.match(html, /AI Credits da equipe/);
+                assert.match(html, /data-dashboard-chart-source="OPERACIONAL" hidden/);
+                assert.match(html, /Últimos 7 dias × 7 dias anteriores/);
+                assert.match(html, /Treinados sem uso recente/);
+            }
             if (profile === 'administrador') {
                 assert.match(html, /Requisições com custo válido/);
                 assert.ok(!html.includes('Benefício líquido projetado'));

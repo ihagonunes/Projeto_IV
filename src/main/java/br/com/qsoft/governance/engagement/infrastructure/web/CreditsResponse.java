@@ -12,7 +12,8 @@ public record CreditsResponse(
     String status,
     String calculationVersion,
     List<CreditsItemResponse> itens,
-    CoverageResponse cobertura
+    CoverageResponse cobertura,
+    Integer posicaoPessoal
 ) {
 
     public static CreditsResponse from(CreditsReport report) {
@@ -22,7 +23,7 @@ public record CreditsResponse(
             report.status(),
             report.calculationVersion(),
             report.items().stream().map(CreditsItemResponse::from).toList(),
-            CoverageResponse.from(report.coverage()));
+            CoverageResponse.from(report.coverage()), report.personalRank());
     }
 
     public record CreditsItemResponse(

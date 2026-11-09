@@ -8,7 +8,7 @@
  *   GET  /v1/usuarios/me/permissoes                -> só experiência de uso
  *
  * O tenant e a autorização vêm do JWT no backend. Esconder a edição aqui não
- * substitui o RBAC: o backend exige DEPARTMENT:MANAGE (ADR-34).
+ * substitui o RBAC: o backend exige DEPARTMENT_BUDGET:MANAGE (ADR-34).
  */
 document.addEventListener("DOMContentLoaded", async () => {
     const client = window.ApiClient;
@@ -101,7 +101,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         try {
             const acesso = await client.get("/v1/usuarios/me/permissoes");
             podeEditar = Array.isArray(acesso?.permissoes)
-                && acesso.permissoes.includes("DEPARTMENT:MANAGE");
+                && acesso.permissoes.includes("DEPARTMENT_BUDGET:MANAGE");
         } catch (err) {
             podeEditar = false;
         }

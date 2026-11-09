@@ -12,8 +12,8 @@
     const number = value => Number(value).toLocaleString("pt-BR");
     const money = value => value == null ? "Indisponível" : Number(value).toLocaleString("pt-BR", { style: "currency", currency: "USD", minimumFractionDigits: 4 });
     function clear() {
-        for (const id of ["requests", "active", "tokens", "cost"]) el(id).textContent = "—";
-        el("series").replaceChildren(); el("costs").replaceChildren();
+        for (const id of ["requests", "active", "tokens", "cost"]) { if (el(id)) el(id).textContent = "—"; }
+        el("series")?.replaceChildren(); el("costs").replaceChildren();
     }
     function options(parent, values) {
         for (const value of values) {
@@ -25,20 +25,22 @@
     async function load() {
         const current = ++version;
         clear(); el("retry").hidden = true;
-        if ((!personal || initialized) && (!form.checkValidity() || from.value > to.value)) {
-            el("message").textContent = "Informe um período válido."; return;
+        window.AtlasDashboard?.publish("HISTORICO", { error: "Carregando ou validando o recorte histórico…" });
+        if (initialized && (!form.checkValidity() || from.value > to.value)) {
+            el("message").textContent = "Informe um período válido."; window.AtlasDashboard?.publish("HISTORICO", { error: el("message").textContent }); return;
         }
         if ((model.value && !model.value.startsWith("historical:"))
                 || (department && department.value && !department.value.startsWith("historical:"))) {
             el("message").textContent = "O filtro selecionado não possui vínculo com as identidades do histórico.";
+            window.AtlasDashboard?.publish("HISTORICO", { error: el("message").textContent });
             return;
         }
         const params = new URLSearchParams();
-        if (!personal || initialized) { params.set("from", from.value); params.set("to", to.value); }
+        if (initialized) { params.set("from", from.value); params.set("to", to.value); }
         if (department && department.value) params.set("departmentId", department.value.slice("historical:".length));
         if (model.value) params.set("modelId", model.value.slice("historical:".length));
         if (!personal && user.value) {
-            if (!user.dataset || !user.dataset.userId) { el("message").textContent = "Selecione um usuário da lista de sugestões."; return; }
+            if (!user.dataset || !user.dataset.userId) { el("message").textContent = "Selecione um usuário da lista de sugestões."; window.AtlasDashboard?.publish("HISTORICO", { error: el("message").textContent }); return; }
             params.set("userId", user.dataset.userId);
         }
         el("message").textContent = "Carregando histórico…";
@@ -46,13 +48,15 @@
             const data = await window.ApiClient.get(`/v1/observability/metrics/historical${personal ? "/me" : ""}?${params}`);
             if (current !== version) return;
             if (!initialized) {
-                if (personal) { from.value = data.from; to.value = data.to; }
+                from.value = data.from; to.value = data.to;
                 options(model, data.models);
                 model.disabled = false;
                 if (department) { options(department, data.departments); department.disabled = false; }
                 document.getElementById("metrics-apply").disabled = false;
                 initialized = true;
+                if (window.AtlasDashboard) queueMicrotask(() => form.dispatchEvent(new Event("submit", { cancelable: true })));
             }
+            window.AtlasDashboard?.publish("HISTORICO", { data, params: params.toString(), from: data.from, to: data.to });
             el("content").hidden = false;
             el("coverage").textContent = data.coverage.from ? `Cobertura da fonte: ${data.coverage.from} a ${data.coverage.to}. Período selecionado: ${from.value} a ${to.value}.` : "Nenhum histórico importado para esta empresa.";
             const total = key => data.costs.reduce((sum, row) => sum + Number(row[key] || 0), 0);
@@ -60,11 +64,12 @@
             const unpriced = total("unpricedRecords");
             el("message").textContent = unpriced ? `${number(unpriced)} registros sem preço ou tokens completos. Custo parcial.` : requests ? "" : "Sem dados históricos no período e filtros selecionados.";
             el("requests").textContent = number(requests);
-            el("active").textContent = number(data.activeUsers);
+            if (el("active")) el("active").textContent = number(data.activeUsers);
             el("tokens").textContent = `${number(total("inputTokens"))} / ${number(total("outputTokens"))}`;
             el("cost").textContent = money(data.costs.some(row => row.estimatedCostUsd != null) ? total("estimatedCostUsd") : null);
             const max = Math.max(1, ...data.series.map(row => Number(row.requests)));
-            for (const row of data.series) {
+            if (window.renderDailyRequests) window.renderDailyRequests(el("series"), data.series);
+            for (const row of !window.renderDailyRequests && el("series") ? data.series : []) {
                 const line = document.createElement("div"), meter = document.createElement("meter");
                 line.textContent = `${row.period}: ${number(row.requests)} `;
                 meter.min = 0; meter.max = max; meter.value = Number(row.requests);
@@ -81,6 +86,7 @@
         } catch (error) {
             if (current !== version) return;
             clear();
+            window.AtlasDashboard?.publish("HISTORICO", { error: error.status === 403 ? "Sem vínculo ou permissão para consultar este histórico." : "Não foi possível carregar o histórico. Tente novamente." });
             if (error.status === 403) {
                 el("content").hidden = true;
                 el("message").textContent = personal ? "Sua conta não possui um vínculo histórico autorizado." : "Sem permissão para consultar este recorte histórico.";

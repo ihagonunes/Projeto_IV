@@ -6,10 +6,14 @@
     if (!panel || !window.Auth.isAuthenticated()) return;
     const message = get("message"), details = get("details"), list = get("items"), retry = get("retry");
     const states = { OK: "OK", ALERTA: "Alerta", EXCEDIDO: "Excedido", SEM_ORCAMENTO: "Sem orçamento" };
+    const amount = value => value == null ? "Sem dado" : Number(value).toLocaleString("pt-BR", {
+        minimumFractionDigits: 2, maximumFractionDigits: 2
+    });
     let version = 0;
 
     async function load() {
         const current = ++version;
+        window.AtlasDashboard?.publish("budgets-status", "Carregando orçamento do mês operacional…");
         const month = new Date().toISOString().slice(0, 7);
         panel.hidden = true;
         panel.className = "demo-panel p-3 mb-4";
@@ -22,11 +26,30 @@
             const response = await window.ApiClient.get(`/v1/observability/orcamentos?mes=${month}`);
             if (current !== version) return;
             const items = response.itens || [];
+            window.AtlasDashboard?.publish("budgets", response);
             if (!items.length) return;
+            const demo = window.AtlasBudgetDemo;
+            if (demo && items.every(demo.applies)) {
+                panel.hidden = false;
+                details.hidden = false;
+                details.open = true;
+                get("title").textContent = "Orçamento do mês · simulação";
+                message.textContent = "Cenário de demonstração. O mês atual está sem orçamento e sem gasto registrado.";
+                get("summary").textContent = "Detalhes do cenário";
+                get("count").textContent = "Demo";
+                get("count").className = "badge text-bg-secondary";
+                get("icon").hidden = true;
+                const row = document.createElement("li");
+                row.textContent = "Orçamento " + demo.money(demo.budget) + " · consumido " + demo.money(demo.spent)
+                    + " · disponível " + demo.money(demo.budget - demo.spent);
+                list.appendChild(row);
+                return;
+            }
             const alerts = items.filter(item => ["ALERTA", "EXCEDIDO"].includes(item.status));
             const exceeded = alerts.some(item => item.status === "EXCEDIDO");
             panel.hidden = false;
             details.hidden = false;
+            details.open = true;
             get("title").textContent = `Orçamento do mês — ${month}`;
             message.textContent = alerts.length ? "Atenção ao consumo do orçamento mensal." : "Nenhum departamento em alerta.";
             get("summary").textContent = alerts.length
@@ -58,12 +81,22 @@
                     text.textContent = `${item.departmentName}: ${status}.`;
                 }
                 row.appendChild(text);
+                const values = document.createElement("div");
+                values.className = "demo-muted small";
+                const balance = item.orcamento == null || item.custoReal == null
+                    ? null : Number(item.orcamento) - Number(item.custoReal);
+                values.textContent = `Orçamento ${amount(item.orcamento)} · Consumo ${amount(item.custoReal)} · Saldo ${amount(balance)}`;
+                row.appendChild(values);
                 list.appendChild(row);
             }
         } catch (error) {
             if (current !== version) return;
             // SELF e usuários sem permissão não recebem nomes, valores ou alertas gerenciais.
-            if (error.status === 401 || error.status === 403) return;
+            if (error.status === 401 || error.status === 403) {
+                window.AtlasDashboard?.publish("budgets-status", "Sem permissão para consultar orçamentos.");
+                return;
+            }
+            window.AtlasDashboard?.publish("budgets-status", "Não foi possível consultar orçamentos. Tente novamente.");
             panel.hidden = false;
             message.textContent = "Não foi possível consultar os alertas de orçamento. Tente novamente.";
             retry.hidden = false;

@@ -33,7 +33,10 @@ public interface HistoricalDashboardQuery {
             this(tenantId, from, to, departmentId, modelId, Scope.tenant(), null);
         }
     }
-    record Daily(String period, long requests) { }
+    record Daily(String period, long requests, long inputTokens, long outputTokens,
+                 BigDecimal estimatedCostUsd, long unpricedRecords) {
+        public Daily(String period, long requests) { this(period, requests, 0, 0, null, 0); }
+    }
     record ModelCost(String modelId, String name, long requests, long inputTokens,
                      long outputTokens, BigDecimal estimatedCostUsd, long unpricedRecords) { }
     record Dashboard(String sourceKind, String currency, LocalDate from, LocalDate to,

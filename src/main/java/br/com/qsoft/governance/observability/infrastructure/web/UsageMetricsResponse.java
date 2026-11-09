@@ -13,7 +13,8 @@ public record UsageMetricsResponse(
     List<SeriesPoint> series
 ) {
 
-    public record SeriesPoint(String period, long requests) {
+    public record SeriesPoint(String period, long requests, long inputTokens, long outputTokens,
+                              java.math.BigDecimal estimatedCost) {
     }
 
     public static UsageMetricsResponse from(UsageMetricsSeries metrics) {
@@ -23,7 +24,8 @@ public record UsageMetricsResponse(
             metrics.to(),
             metrics.activeUsers(),
             metrics.series().stream()
-                .map(point -> new SeriesPoint(point.period(), point.requests()))
+                .map(point -> new SeriesPoint(point.period(), point.requests(), point.inputTokens(),
+                    point.outputTokens(), point.estimatedCost()))
                 .toList()
         );
     }

@@ -133,9 +133,8 @@ class BudgetProjectionIT {
 
     @Test
     void retornaContratoEIsolaCustoPorDepartamentoETenant() {
-        String admin = loginAdminA();
         String month = currentMonth();
-        putBudget(admin, departmentA, month, "0.00", 80);
+        putBudget(login(executiveEmail), departmentA, month, "0.00", 80);
         insertUsage(tenantA.id(), departmentA, Instant.now(), "10.00");
         insertUsage(tenantA.id(), departmentA, Instant.now(), "5.50");
         insertUsage(tenantA.id(), departmentB, Instant.now(), "99.00");
@@ -162,9 +161,8 @@ class BudgetProjectionIT {
 
     @Test
     void mesPassadoDevolveRealizadoComZeroDiasRestantes() {
-        String admin = loginAdminA();
         YearMonth previous = YearMonth.now(ZoneOffset.UTC).minusMonths(1);
-        putBudget(admin, departmentA, previous.toString(), "1000.00", 80);
+        putBudget(login(executiveEmail), departmentA, previous.toString(), "1000.00", 80);
         insertUsage(tenantA.id(), departmentA,
             previous.atDay(10).atTime(12, 0).toInstant(ZoneOffset.UTC), "100.00");
 
@@ -187,10 +185,6 @@ class BudgetProjectionIT {
 
     private static String currentMonth() {
         return YearMonth.now(ZoneOffset.UTC).toString();
-    }
-
-    private String loginAdminA() {
-        return login(adminA.email());
     }
 
     private String login(String email) {

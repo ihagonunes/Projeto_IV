@@ -42,16 +42,16 @@ public class DepartmentBudgetController {
         this.authorizationQuery = authorizationQuery;
     }
 
-    /** Upsert do orçamento do mês. Requer DEPARTMENT:MANAGE sobre o departamento. */
+    /** Upsert do orçamento do mês. Requer DEPARTMENT_BUDGET:MANAGE sobre o departamento. */
     @PutMapping("/{id}/orcamentos/{mes}")
-    @RequiresPermission(resource = Resource.DEPARTMENT, action = Action.MANAGE,
+    @RequiresPermission(resource = Resource.DEPARTMENT_BUDGET, action = Action.MANAGE,
         targeting = Targeting.BY_TARGET)
     public ResponseEntity<MonthlyBudgetResponse> put(@PathVariable UUID id,
                                                      @PathVariable String mes,
                                                      @RequestBody MonthlyBudgetRequest request) {
         TenantContext context = TenantContextHolder.require();
         boolean allowed = authorizationQuery.isAllowed(context.tenantId(), context.userId(),
-            Resource.DEPARTMENT, Action.MANAGE, new AccessTarget.DepartmentTarget(id));
+            Resource.DEPARTMENT_BUDGET, Action.MANAGE, new AccessTarget.DepartmentTarget(id));
         if (!allowed) {
             throw new DepartmentAccessDeniedException();
         }

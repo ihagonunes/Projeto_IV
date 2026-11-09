@@ -17,7 +17,7 @@
     from.value = localDate(start);
     to.value = localDate(today);
     const number = value => Number(value || 0).toLocaleString("pt-BR");
-    const money = value => Number(value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 4 });
+    const money = value => value == null ? "Sem dado" : Number(value).toLocaleString("pt-BR", { maximumFractionDigits: 4 }) + " (moeda não informada)";
     function option(parent, value, label) {
         const item = document.createElement("option");
         item.value = value;
@@ -37,7 +37,7 @@
     }
     function clear() {
         for (const id of ["requests", "active", "tokens", "cost"]) byId(id).textContent = "—";
-        byId("series").replaceChildren();
+        byId("series")?.replaceChildren();
         byId("costs").replaceChildren();
     }
     function render(usage, costs) {
@@ -54,13 +54,16 @@
         byId("tokens").textContent = `${number(total("tokensEntrada"))} / ${number(total("tokensSaida"))}`;
         byId("cost").textContent = money(total("custoEstimado"));
         const max = Math.max(1, ...usage.series.map(row => Number(row.requests)));
-        for (const row of usage.series) {
+        const series = byId("series");
+        const useChart = window.renderDailyRequests && series?.classList?.contains("dashboard-daily-series");
+        if (useChart) window.renderDailyRequests(series, usage.series);
+        for (const row of !useChart && series ? usage.series : []) {
             const line = document.createElement("div"), meter = document.createElement("meter");
             line.textContent = `${row.period}: ${number(row.requests)} `;
             meter.min = 0; meter.max = max; meter.value = Number(row.requests);
             meter.setAttribute("aria-label", `${row.period}: ${number(row.requests)} requisições`);
             line.appendChild(meter);
-            byId("series").appendChild(line);
+            series.appendChild(line);
         }
         for (const row of costs) {
             const tr = document.createElement("tr");
@@ -72,17 +75,21 @@
     }
     async function load() {
         const version = ++requestVersion;
+        window.AtlasDashboard?.publish("OPERACIONAL", { error: "Carregando ou validando o recorte operacional…" });
         clear();
         if (!form.checkValidity() || from.value > to.value) {
             message.textContent = "Informe um período válido: a data inicial não pode ser posterior à final.";
+            window.AtlasDashboard?.publish("OPERACIONAL", { error: message.textContent });
             return;
         }
         if (canSearchUsers && user.value && !users.has(user.value)) {
             message.textContent = "Selecione um usuário da lista de sugestões.";
+            window.AtlasDashboard?.publish("OPERACIONAL", { error: message.textContent });
             return;
         }
         if (model.value.startsWith("historical:") || (department && department.value.startsWith("historical:"))) {
             message.textContent = "Este recorte histórico não possui vínculo com os dados operacionais.";
+            window.AtlasDashboard?.publish("OPERACIONAL", { error: message.textContent });
             return;
         }
         const params = new URLSearchParams({ from: from.value, to: to.value });
@@ -95,11 +102,15 @@
                 client.get(`/v1/observability/metrics/${personal ? "me/" : ""}usage?${params}`),
                 client.get(`/v1/observability/metrics/${personal ? "me/" : ""}costs?${params}&groupBy=MODEL`)
             ]);
-            if (version === requestVersion) render(usage, costs);
+            if (version === requestVersion) {
+                render(usage, costs);
+                window.AtlasDashboard?.publish("OPERACIONAL", { data: { usage, costs }, names: models, params: params.toString(), from: from.value, to: to.value });
+            }
         } catch (error) {
             if (version !== requestVersion) return;
             clear();
             message.textContent = error.status === 403 ? "Sem permissão para consultar este recorte." : "Não foi possível carregar as métricas. Tente novamente.";
+            window.AtlasDashboard?.publish("OPERACIONAL", { error: message.textContent });
         }
     }
     user.addEventListener("input", () => {

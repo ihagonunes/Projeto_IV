@@ -1,5 +1,23 @@
 # Contratos públicos
 
+## Dashboard — SPI-93 (03/11/2026)
+
+O dashboard pessoal usa `GET /api/v1/observability/metrics/me/peer-consumption` com
+`month` (YYYY-MM) e `source` (HISTORICO ou OPERACIONAL). A resposta contém apenas
+`averageTokens`, nulo se não houver 10 colegas elegíveis do próprio departamento
+com uso no mês fechado. O ator e o tenant vêm da sessão. A API de Credits devolve
+`posicaoPessoal` para o colaborador no próprio departamento, com empates e sem
+incluir dados individuais de colegas no recorte pessoal.
+
+Extensão aditiva dos read models existentes, sem novos endpoints ou mudança de RBAC:
+`UsageMetricsResponse.series[]` inclui `inputTokens`, `outputTokens` e `estimatedCost`;
+`HistoricalDashboardQuery.Daily` inclui `inputTokens`, `outputTokens`,
+`estimatedCostUsd` e `unpricedRecords`. Agregações temporais usam os mesmos filtros
+resolvidos de tenant/escopo e período dos totais. Preço histórico ausente retorna
+custo nulo/parcial, nunca zero fabricado. Moeda histórica é USD; a resposta de custo
+operacional ainda não declara moeda e a apresentação não deve assumir BRL.
+Ver checklist em `docs/development/DASHBOARDS_CHECKLIST.md`.
+
 Contratos são Java APIs internas entre módulos. Não equivalem automaticamente a HTTP.
 
 ## HTTP — filtros de métricas (POPROJ-53)

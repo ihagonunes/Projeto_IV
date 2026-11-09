@@ -152,6 +152,8 @@ app.use("/", require("./routes/tenant.routes"));
 app.use(["/convites", "/admin/convites"], browserSession.requireSession, browserSession.requirePermission("INVITE:MANAGE"));
 app.use("/admin/usuarios", browserSession.requireSession, browserSession.requirePermission("USER:MANAGE"));
 app.use("/onboarding/ia", browserSession.requireSession, browserSession.requirePermission("AI_TOOL:MANAGE"));
+app.get("/onboarding/departamentos/orcamentos", browserSession.requireSession,
+    browserSession.requirePermission("DEPARTMENT_BUDGET:MANAGE"), require("./routes/departamentos.routes"));
 app.use(["/onboarding/admin", "/onboarding/departamentos", "/onboarding/usuarios", "/onboarding/revisao"],
     browserSession.requireSession, browserSession.requirePermission("TENANT:MANAGE"));
 app.use("/", require("./routes/admin.routes"));

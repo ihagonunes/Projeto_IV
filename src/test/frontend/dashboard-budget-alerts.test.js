@@ -32,9 +32,14 @@ test("alerta está no mês UTC corrente, exibe badge e descrição expansível d
 });
 
 test("gestor recebe apenas as áreas que vieram da API, sem inferir escopo pelo perfil da URL", async () => {
-    const p = await page(() => ({ itens: [item("Minha área", "ALERTA", 80)] }));
+    const p = await page(() => ({ itens: [{
+        ...item("Minha área", "ALERTA", 80), orcamento: 100, custoReal: 80
+    }] }));
     assert.equal(p.get("items").children.length, 1);
+    assert.equal(p.get("details").open, true);
     assert.match(p.get("items").children[0].children[1].textContent, /Minha área/);
+    assert.equal(p.get("items").children[0].children[2].textContent,
+        "Orçamento 100,00 · Consumo 80,00 · Saldo 20,00");
     assert.equal(p.get("count").textContent, "1 alerta");
     assert.match(p.panel.className, /border-warning/);
 });

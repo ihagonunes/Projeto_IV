@@ -288,7 +288,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 : '<span class="text-muted small">—</span>';
             const tr = document.createElement("tr");
             tr.innerHTML = `
-                <td class="fw-medium text-dark">${escapar(convite.email)}</td>
+                <td class="fw-medium invite-email">${escapar(convite.email)}</td>
                 <td>${escapar(departamentos[convite.departmentId] || "—")}</td>
                 <td>${escapar(convite.hierarchyLevel || "—")}</td>
                 <td>${formatarData(convite.createdAt)}</td>

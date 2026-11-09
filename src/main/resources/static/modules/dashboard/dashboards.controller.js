@@ -1,5 +1,6 @@
 "use strict";
 const layouts = require("./dashboards.layouts");
+const { reason } = require("../../public/js/pages/dashboard-panels-core");
 // SPI-92: composição visual, sem regras de negócio, dados ou autorização.
 function render(req, res) {
     const profile = req.params.profile || res.locals.dashboardProfile || "colaborador";
@@ -7,7 +8,10 @@ function render(req, res) {
     return res.render("dashboard/views/index", {
         titulo: layouts[profile].title,
         bodyClass: "auth-bg dashboard-demo dashboard-layout",
-        profile, panel: layouts[profile]
+        profile, panel: layouts[profile], indicatorReason: reason,
+        canManageBudget: profile === "executivo" && res.locals.permissions?.has("DEPARTMENT_BUDGET:MANAGE"),
+        demoReturn: profile === "colaborador" && process.env.NODE_ENV !== "production"
+            && process.env.QSOFT_DASHBOARD_DEMO === "true"
     });
 }
 module.exports = { render };

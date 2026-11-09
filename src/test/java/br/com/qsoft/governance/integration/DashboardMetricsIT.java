@@ -197,6 +197,14 @@ class DashboardMetricsIT {
         long requests = rows.stream().map(row -> (Map<?, ?>) row)
             .mapToLong(row -> ((Number) row.get("requests")).longValue()).sum();
         assertThat(requests).isEqualTo(1);
+        // SPI-93: os novos campos temporais devem manter o mesmo recorte pessoal,
+        // mesmo quando o cliente injeta IDs de colega e de outro tenant.
+        assertThat(rows).singleElement().satisfies(value -> {
+            var row = (Map<?, ?>) value;
+            assertThat(((Number) row.get("inputTokens")).longValue()).isEqualTo(1000);
+            assertThat(((Number) row.get("outputTokens")).longValue()).isEqualTo(500);
+            assertThat(row.get("estimatedCost")).isNotNull();
+        });
         var costs = client.get().uri(uri + "costs" + injectedFilter)
             .header("Authorization", "Bearer " + login(EXEC_EMAIL))
             .retrieve().body(new ParameterizedTypeReference<List<Map<String, Object>>>() { });

@@ -95,6 +95,7 @@ public enum SystemRole {
     private static Set<Permission> executivePermissions() {
         Set<Permission> permissions = new HashSet<>(managerPermissions());
         permissions.add(p(Resource.TENANT, Action.READ));
+        permissions.add(p(Resource.DEPARTMENT_BUDGET, Action.MANAGE));
         return Set.copyOf(permissions);
     }
 

@@ -17,7 +17,7 @@ async function page(edit = true, items, put = async () => ({})) {
     let ready;
     const client = { async get(url) {
         calls.push(url);
-        if (url.includes("permissoes")) return { permissoes: edit ? ["DEPARTMENT:MANAGE"] : [] };
+        if (url.includes("permissoes")) return { permissoes: edit ? ["DEPARTMENT_BUDGET:MANAGE"] : [] };
         if (url.includes("observability")) return { itens: items || [row(79.99, "OK"), row(80, "ALERTA"), row(99.99, "ALERTA"), row(120, "EXCEDIDO"), row(null, "SEM_ORCAMENTO", null)] };
         return [];
     }, async put(url, body) { calls.push({ url, body }); return put(url, body); } };
