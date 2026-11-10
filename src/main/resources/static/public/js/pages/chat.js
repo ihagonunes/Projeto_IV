@@ -33,7 +33,34 @@
         $("chat-model").disabled = state.pending; $("chat-attach").disabled = state.pending;
         warning(); resize();
     }
+    const tokenTankReference = 100000;
+    function usageTokens(series, field) {
+        if (!series.every(point => Number.isFinite(point[field]))) return null;
+        return series.reduce((sum, point) => sum + point[field], 0);
+    }
+    function renderTokenTank(total, reference, period) {
+        const tank = $("chat-token-tank"), label = $("chat-token-total");
+        if (!tank || !label) return;
+        tank.style.setProperty("--token-level", `${Math.min(100, 100 * (total ?? 0) / reference)}%`);
+        label.textContent = total == null ? "—" : C.tokenLabel(total);
+        label.title = total == null ? "Consumo indisponível"
+            : `${period} · escala visual de ${C.tokenLabel(reference)} tokens`;
+        label.setAttribute("aria-label", `${label.textContent} tokens · ${label.title}`);
+    }
+    async function refreshTokenTank() {
+        if (preview || !$("chat-token-tank")) return;
+        try {
+            const usage = await service.usage();
+            const input = usageTokens(usage.series, "inputTokens");
+            const output = usageTokens(usage.series, "outputTokens");
+            renderTokenTank(input == null || output == null ? null : input + output,
+                tokenTankReference, "Uso pessoal no período padrão");
+        } catch {
+            renderTokenTank(null, tokenTankReference);
+        }
+    }
     function warning() {
+        if (preview) renderTokenTank(service.quota.used, service.quota.limit, "Prévia");
         let message = "";
         if ($("chat-input").value.length >= 7200) message = "Sua mensagem está próxima do limite de 8.000 caracteres. Esse limite não representa uma cota de tokens.";
         else if (preview && service.quota.used >= service.quota.limit) message = "Prévia: cota de tokens atingida. O bloqueio de envio ainda precisa ser definido no backend.";
@@ -242,14 +269,23 @@
             try {
                 const usage = await service.usage();
                 const requests = (usage.series || []).reduce((sum, point) => sum + Number(point.requests || 0), 0);
+                const input = usageTokens(usage.series, "inputTokens");
+                const output = usageTokens(usage.series, "outputTokens");
                 const grid = node("div", null, "chat-dialog-grid");
-                for (const [label, value] of [["Requisições registradas", C.tokenLabel(requests)], ["Usuários ativos no recorte", C.tokenLabel(usage.activeUsers)]]) {
-                    const item = node("div", null, "chat-dialog-stat"); item.append(node("span", label), node("strong", value)); grid.append(item);
+                for (const [label, value] of [
+                    ["Requisições registradas", requests],
+                    ["Tokens de entrada", input],
+                    ["Tokens de saída", output],
+                    ["Total de tokens", input == null || output == null ? null : input + output]
+                ]) {
+                    const item = node("div", null, "chat-dialog-stat");
+                    item.append(node("span", label), node("strong", value == null ? "Indisponível" : C.tokenLabel(value)));
+                    grid.append(item);
                 }
                 dialog("Seu consumo de IA", [
                     node("p", "Consumo pessoal informativo, restrito ao usuário autenticado."),
                     grid,
-                    node("p", "O contrato /metrics/me/usage informa requisições e série; tokens oficiais e cota não estão disponíveis. Nenhum saldo é estimado pelo navegador."),
+                    node("p", `O tanque usa os mesmos tokens do período. Cheio, ele representa ${C.tokenLabel(tokenTankReference)} tokens na escala visual. O envio segue as regras do Chat.`),
                     node("p", "Contexto: o serviço envia no máximo as últimas 20 mensagens. Não há cálculo de ocupação da janela do modelo.", "chat-dialog-note")
                 ]);
             } catch (error) {
@@ -296,6 +332,7 @@
         $("chat-input").value = ""; status(""); history(); thread(); bottom();
         try {
             const turn = await service.send(selected, content, state.modelId, state.controller.signal, messageId);
+            void refreshTokenTank();
             state.selected = turn.conversa.id; state.selectedConversation = turn.conversa; state.messages = C.mergeById(before, turn.mensagens);
             if (turn.recibo) {
                 state.receipts.set(turn.recibo.requestId, turn.recibo);
@@ -349,6 +386,27 @@
     });
     $("chat-more").addEventListener("click", async () => { $("chat-more").disabled = true; try { await loadHistory(true); } catch { status("Não foi possível carregar mais conversas."); } finally { $("chat-more").disabled = false; } });
     $("chat-model").addEventListener("click", modelDialog);
+    $("chat-agent")?.addEventListener("click", () => {
+        const examples = [
+            ["Agente de Políticas", "Ajuda a localizar e entender as políticas internas."],
+            ["Agente de Dados", "Ajuda a interpretar tabelas e resumir indicadores."],
+            ["Agente de Escrita", "Ajuda a revisar textos e organizar rascunhos."]
+        ];
+        const plaza = node("div", null, "chat-agent-plaza");
+        const detail = node("p", "Passe o mouse sobre um nome ou selecione-o para ver a habilidade.", "chat-agent-detail");
+        detail.setAttribute("aria-live", "polite");
+        for (const [name, skill] of examples) {
+            const reveal = () => { detail.textContent = `${name} · ${skill}`; };
+            const marker = button(name, reveal, "chat-agent-marker");
+            marker.addEventListener("pointerenter", reveal);
+            marker.addEventListener("focus", reveal);
+            plaza.append(marker);
+        }
+        dialog("Praça dos agentes", [
+            node("p", "Prévia com agentes de exemplo. O envio pelo Chat continua usando o modelo selecionado.", "chat-dialog-note"),
+            plaza, detail
+        ]);
+    });
     $("chat-usage").addEventListener("click", usageDialog);
     $("chat-attach").addEventListener("click", attachmentDialog);
     $("chat-stop").addEventListener("click", () => { state.controller?.abort(); });
@@ -366,6 +424,7 @@
     $("chat-scroll").addEventListener("scroll", () => { const s = $("chat-scroll"); $("chat-scroll-bottom").hidden = s.scrollHeight - s.scrollTop - s.clientHeight < 150; });
     $("chat-scroll-bottom").addEventListener("click", bottom);
     async function initialize() {
+        void refreshTokenTank();
         if (matchMedia("(max-width: 720px)").matches) $("chat-toggle").setAttribute("aria-expanded", "false");
         const results = await Promise.allSettled([loadHistory(), service.models()]);
         if (results[0].status === "rejected") {

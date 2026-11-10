@@ -76,7 +76,7 @@ status:
 
 | Rota | Permissão | Targeting | Regra |
 |---|---|---|---|
-| `PUT /api/v1/departamentos/{id}/orcamentos/{mes}` (`mes` = `AAAA-MM`) | DEPARTMENT:MANAGE | TO | upsert de `amount` e `alertThresholdPct`; `updated_by` = ator; depto de outro tenant → 404; `mes` inválido → 400 |
+| `PUT /api/v1/departamentos/{id}/orcamentos/{mes}` (`mes` = `AAAA-MM`) | DEPARTMENT_BUDGET:MANAGE | BT | upsert de `amount` e `alertThresholdPct`; `updated_by` = ator; depto de outro tenant → 404; `mes` inválido → 400 |
 | `GET /api/v1/departamentos/{id}/orcamentos?de=AAAA-MM&ate=AAAA-MM` | DEPARTMENT:READ | BT | histórico (SPI-125); `isAllowed(DepartmentTarget(id))`; máximo 24 meses |
 | `GET /api/v1/observability/orcamentos?mes=AAAA-MM` | USAGE:READ | BT | `visibilityFor(USAGE:READ)`: TenantWide → todos os deptos; Departments → só os ids; SelfOnly → 403 |
 
@@ -96,7 +96,7 @@ Resposta do status:
   - mostra o histórico.
 - **SPI-124**: card no dashboard com o status por departamento (cores OK, ALERTA, EXCEDIDO) e
   "Sem orçamento" quando não houver.
-- O front esconde a edição para quem não tem `DEPARTMENT:MANAGE` (via `/me/permissoes`). O backend
+- O front esconde a edição para quem não tem `DEPARTMENT_BUDGET:MANAGE` (via `/me/permissoes`). O backend
   continua decidindo.
 
 ## 6. Testes (SPI-126)

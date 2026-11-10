@@ -105,7 +105,7 @@ na data. Não somar moedas ou fontes distintas. Não consultar conversas ou sal�
 Tela `/onboarding/departamentos/orcamentos`; consulta GET
 `/api/v1/observability/orcamentos?mes=AAAA-MM`, padrão mês UTC corrente.
 Leituras analíticas respeitam `USAGE:READ` e escopo. Edição requer
-`DEPARTMENT:MANAGE` e tenant autorizado: PUT
+`DEPARTMENT_BUDGET:MANAGE`, concedida ao executivo no próprio tenant: PUT
 `/api/v1/departamentos/{id}/orcamentos/{mes}`, com `amount` e `alertThresholdPct`.
 
 - Matriz mostra orçamento, consumo, percentual, situação e histórico de 12 meses.

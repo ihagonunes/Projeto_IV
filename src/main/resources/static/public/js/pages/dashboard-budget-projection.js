@@ -15,16 +15,16 @@
         JA_EXCEDIDO: "Orçamento já excedido",
         SEM_ORCAMENTO: "Sem orçamento"
     };
-    let version = 0, projectionVersion = 0;
+    let version = 0, projectionVersion = 0, budgets = [];
     const text = (id, value) => {
         const element = document.getElementById(id);
         if (element) element.textContent = value;
     };
     const money = value => value == null ? "Sem dado"
         : Number(value).toLocaleString("pt-BR", {
-            style: "currency", currency: "BRL", minimumFractionDigits: 2,
+            minimumFractionDigits: 2,
             maximumFractionDigits: 2
-        });
+        }) + " (moeda não informada)";
     const number = value => value == null ? "Sem dado"
         : Number(value).toLocaleString("pt-BR", { maximumFractionDigits: 2 });
     const month = () => new Date().toISOString().slice(0, 7);
@@ -43,6 +43,7 @@
         return alert ? alert.departmentId : items[0].departmentId;
     }
     function render(data) {
+        text("budget-projection-title", "Projeção do mês");
         text("budget-projection-spent", money(data.gastoAteHoje));
         text("budget-projection-projected", money(data.projetado));
         text("budget-projection-exhaustion", data.diaEsgotamento
@@ -72,7 +73,20 @@
             const data = await client.get(`/v1/observability/orcamentos/projecao?`
                 + `departmentId=${encodeURIComponent(departmentId)}&mes=${month()}`);
             if (current !== projectionVersion) return;
-            render(data);
+            const demo = window.AtlasBudgetDemo;
+            if (demo?.applies(budgets.find(item => item.departmentId === departmentId))
+                    && data.gastoAteHoje != null && Number(data.gastoAteHoje) === 0 && data.orcamento == null) {
+                text("budget-projection-title", "Projeção do mês · simulação");
+                text("budget-projection-spent", demo.money(demo.spent));
+                text("budget-projection-projected", demo.money(demo.projected));
+                text("budget-projection-exhaustion", "Dia 28 do cenário");
+                text("budget-projection-recommendation", "Esgota no mês");
+                text("budget-projection-status", number(100 * demo.projected / demo.budget) + "% do orçamento simulado");
+                text("budget-projection-detail", "Cenário de 30 dias: média diária de " + demo.money(demo.daily)
+                    + " e " + demo.remainingDays + " dias restantes. Orçamento simulado de " + demo.money(demo.budget) + ".");
+            } else {
+                render(data);
+            }
             content.hidden = false;
             message.textContent = "";
         } catch (error) {
@@ -97,6 +111,7 @@
                 `/v1/observability/orcamentos?mes=${month()}`);
             if (current !== version) return;
             const items = (response && response.itens) || [];
+            budgets = items;
             if (!items.length) {
                 panel.hidden = true;
                 return;

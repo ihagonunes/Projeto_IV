@@ -29,3 +29,11 @@ conhecido usa os `UsageRecord` do próprio `observability`, com `tenant_id`
 explícito. O cálculo não usa LLM, não altera o orçamento e não cria tabela nova.
 `GET /api/v1/observability/orcamentos/projecao` expõe o resultado com
 `USAGE:READ` e checagem fina por `DepartmentTarget`.
+
+## Emenda SPI-121 — edição mensal pelo executivo
+
+A edição do orçamento de um departamento por mês exige a permissão
+`DEPARTMENT_BUDGET:MANAGE`, atribuída ao papel `EXECUTIVE` no escopo do
+próprio tenant. As consultas analíticas continuam sujeitas às permissões
+de leitura de cada perfil. A edição do orçamento mensal é separada da
+gestão de cadastro de departamentos.

@@ -61,7 +61,7 @@
     .demo-main > .demo-filters { grid-column: 2; }
 }
 
-/* SPI-144: painel de engajamento (ado��o, treinamento e AI Credits). */
+/* SPI-144: painel de engajamento (ado��o, treinamento e AI Credits). */
 .engagement-header { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 12px; }
 .engagement-source { min-width: 180px; max-width: 220px; }
 .engagement-source label { display: block; margin-bottom: 7px; color: #b6c2d7; font-size: 11px; }
@@ -73,6 +73,55 @@
 .engagement-quadrant { border: 1px solid #25314a; border-left: 3px solid #f0c22f; border-radius: 8px; padding: 12px 14px; }
 .engagement-quadrant h4 { font-size: 11px; color: #b7c3d8; margin: 0 0 8px; }
 .engagement-quadrant strong { font-size: 24px; font-weight: 600; }
+
+.engagement-quadrants--leader {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+}
+.engagement-quadrants--leader .engagement-quadrant { background: #151f35; }
+.engagement-quadrants--leader .engagement-quadrant h4 { font-size: .875rem; }
+.engagement-quadrants--leader summary { color: #f0c22f; cursor: pointer; margin-top: .5rem; }
+.engagement-quadrants--leader ul {
+    margin: .5rem 0 0;
+    padding-inline-start: 1.2rem;
+    max-height: 12rem;
+    overflow: auto;
+    overflow-wrap: anywhere;
+}
+
+.dashboard-daily-plot {
+    display: flex;
+    gap: .5rem;
+    overflow-x: auto;
+    list-style: none;
+    margin: 0 0 1rem;
+    padding: .75rem;
+    border: 1px solid #25314a;
+    border-radius: .75rem;
+    background: #151f35;
+}
+.dashboard-daily-plot li {
+    flex: 1 0 5.25rem;
+    display: grid;
+    grid-template-rows: 7rem auto;
+    min-width: 0;
+    text-align: center;
+    outline-offset: 2px;
+}
+.dashboard-daily-bar {
+    align-self: end;
+    justify-self: center;
+    width: min(60%, 2.5rem);
+    height: var(--bar-height);
+    border-radius: .35rem .35rem 0 0;
+    background: linear-gradient(#ffe38b, #d9a817);
+}
+.dashboard-daily-label {
+    padding-top: .4rem;
+    border-top: 1px solid #394866;
+    color: #d6e0ef;
+    font-size: .7rem;
+    white-space: nowrap;
+}
 .engagement-buckets { display: grid; gap: 8px; }
 .engagement-bucket { display: grid; grid-template-columns: minmax(190px, 1fr) minmax(120px, 2fr); align-items: center; gap: 12px; font-size: 11px; }
 .engagement-bucket meter { width: 100%; }
@@ -84,3 +133,15 @@
     .engagement-source { max-width: none; width: 100%; }
 }
 .engagement-components { font-size: 14px !important; line-height: 1.5; }
+
+/* SPI-93: gráficos com valores textuais e medidores acessíveis. */
+.dashboard-connected-chart { max-height: 380px; overflow: auto; padding: 4px; }
+.dashboard-series-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(90px, auto); gap: 6px 12px; padding: 8px 0; border-bottom: 1px solid #25314a; font-size: 12px; }
+.dashboard-series-row span, .dashboard-series-row strong { overflow-wrap: anywhere; }
+.dashboard-series-row meter { grid-column: 1 / -1; width: 100%; height: 16px; accent-color: #f4d03f; }
+.dashboard-history-pagination { display: flex; gap: 12px; padding: 16px 0; }
+#dashboard-source { max-width: 360px; margin: 8px 0; }
+.dashboard-budget-values { font-size: 12px; overflow-wrap: anywhere; }
+
+/* SPI-93: resumo pessoal com três indicadores, sem contagem de funcionários. */
+.dashboard-personal-kpis { grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); }

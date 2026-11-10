@@ -12,6 +12,7 @@
     const department = document.getElementById("dashboard-area");
     const to = document.getElementById("metrics-to");
     const personal = panel.dataset && panel.dataset.scope === "self";
+    const executive = document.getElementById("dashboard-main")?.dataset?.profile === "executivo";
     let version = 0;
     const text = (id, value) => {
         const element = document.getElementById(id);
@@ -33,7 +34,7 @@
         }
         return "";
     }
-    function renderAdoption(report) {
+    function renderAdoption(report, departments) {
         const data = core.mapAdoption(report);
         if (!data) {
             show("engagement-adoption", false);
@@ -64,9 +65,16 @@
         const body = document.getElementById("engagement-departments");
         if (!body) return;
         body.replaceChildren();
-        for (const item of data.departments) {
+        const names = new Map(departments.map(item => [item.id, item.name]));
+        const rows = new Map(data.departments.map(item => [item.id, item]));
+        for (const { id } of departments) {
+            if (!rows.has(id)) rows.set(id, {
+                id, eligibleLabel: core.MISSING, activeLabel: core.MISSING, rateLabel: core.MISSING
+            });
+        }
+        for (const item of rows.values()) {
             const row = document.createElement("tr");
-            for (const value of [departmentName(item.id), item.eligibleLabel, item.activeLabel, item.rateLabel]) {
+            for (const value of [names.get(item.id) || departmentName(item.id), item.eligibleLabel, item.activeLabel, item.rateLabel]) {
                 const cell = document.createElement("td");
                 cell.textContent = value;
                 row.appendChild(cell);
@@ -87,14 +95,16 @@
         text("engagement-training-coverage", data.coverageLabel);
         const container = document.getElementById("engagement-quadrants");
         const nominal = document.getElementById("engagement-nominal");
+        const compact = container?.classList?.contains("engagement-quadrants--leader");
         if (container) container.replaceChildren();
         if (nominal) {
             nominal.replaceChildren();
-            nominal.hidden = !data.nominal;
+            nominal.hidden = compact || !data.nominal;
         }
         for (const quadrant of data.quadrants) {
+            let card;
             if (container) {
-                const card = document.createElement("article");
+                card = document.createElement("article");
                 card.className = "engagement-quadrant";
                 card.dataset.quadrant = quadrant.key;
                 const title = document.createElement("h4");
@@ -104,10 +114,10 @@
                 card.append(title, value);
                 container.appendChild(card);
             }
-            if (nominal && data.nominal) {
-                const block = document.createElement("section");
-                const title = document.createElement("h4");
-                title.textContent = quadrant.label;
+            if (nominal && data.nominal && (!compact || quadrant.users.length)) {
+                const block = document.createElement(compact ? "details" : "section");
+                const title = document.createElement(compact ? "summary" : "h4");
+                title.textContent = compact ? "Ver funcionários" : quadrant.label;
                 block.appendChild(title);
                 if (quadrant.users.length) {
                     const list = document.createElement("ul");
@@ -122,7 +132,7 @@
                     empty.textContent = "Nenhum usuário neste quadrante.";
                     block.appendChild(empty);
                 }
-                nominal.appendChild(block);
+                (compact ? card : nominal).appendChild(block);
             }
         }
     }
@@ -173,6 +183,7 @@
     async function load() {
         if (!window.Auth || !window.Auth.requireAuth()) return;
         const current = ++version;
+        window.AtlasDashboard?.publish("engagement-start");
         const fonte = source && source.value ? source.value : "OPERACIONAL";
         const ate = to && to.value ? to.value : null;
         const departmentId = department && department.value
@@ -187,25 +198,31 @@
                 })}`);
                 if (current !== version) return;
                 renderCredits(credits);
+                window.AtlasDashboard?.publish("engagement", { credits });
             } else {
                 const query = core.engagementQuery({ fonte, ate, departmentId });
-                const [adoption, training, credits] = await Promise.all([
+                const [adoption, training, credits, catalog] = await Promise.all([
                     client.get(`/v1/engajamento/adocao?${query}`),
                     client.get(`/v1/engajamento/treinamentos/cruzamento?${query}`),
                     client.get(`/v1/engajamento/creditos?${core.creditsQuery({
                         fonte, mes: core.monthFromDate(ate), departmentId
-                    })}`)
+                    })}`),
+                    executive ? client.get("/v1/departamentos").catch(() => []) : []
                 ]);
                 if (current !== version) return;
-                renderAdoption(adoption);
+                const departments = Array.isArray(catalog) ? catalog : catalog?.content || [];
+                renderAdoption(adoption, departments.filter(item => !departmentId || item.id === departmentId));
                 renderTraining(training);
+                window.AtlasDashboard?.publish("engagement", { adoption, training });
                 renderCredits(credits);
+                window.AtlasDashboard?.publish("engagement", { credits });
             }
             if (content) content.hidden = false;
             if (message) message.textContent = note;
         } catch (error) {
             if (current !== version) return;
             if (content) content.hidden = true;
+            window.AtlasDashboard?.publish("engagement-error", error.status === 403 ? "Sem permissão para este recorte de engajamento." : "Não foi possível carregar o engajamento.");
             if (message) {
                 message.textContent = error.status === 403
                     ? "Sem permissão para consultar o engajamento neste recorte. O recorte não é ampliado automaticamente."

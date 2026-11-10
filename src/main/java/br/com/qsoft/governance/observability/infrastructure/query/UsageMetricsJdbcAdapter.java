@@ -41,7 +41,8 @@ public class UsageMetricsJdbcAdapter implements UsageMetricsRepository {
         StringBuilder sql = new StringBuilder(
             "SELECT to_char(date_trunc('" + truncUnit(filter.granularity())
                 + "', created_at), '" + truncFormat(filter.granularity())
-                + "') AS period, COUNT(*) AS requests "
+                + "') AS period, COUNT(*) AS requests, COALESCE(SUM(input_tokens),0) AS input_tokens, "
+                + "COALESCE(SUM(output_tokens),0) AS output_tokens, SUM(estimated_cost) AS estimated_cost "
                 + "FROM observability_usage_records WHERE tenant_id = ?");
         params.add(filter.tenantId().value());
 
@@ -49,7 +50,9 @@ public class UsageMetricsJdbcAdapter implements UsageMetricsRepository {
         sql.append(" GROUP BY 1 ORDER BY 1");
 
         return jdbcTemplate.query(sql.toString(), (rs, rowNum) ->
-            new UsageSeriesPoint(rs.getString("period"), rs.getLong("requests")), params.toArray());
+            new UsageSeriesPoint(rs.getString("period"), rs.getLong("requests"),
+                rs.getLong("input_tokens"), rs.getLong("output_tokens"),
+                rs.getBigDecimal("estimated_cost")), params.toArray());
     }
 
     @Override

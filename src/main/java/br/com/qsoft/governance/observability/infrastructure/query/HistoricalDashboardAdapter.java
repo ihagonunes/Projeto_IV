@@ -98,9 +98,26 @@ public class HistoricalDashboardAdapter implements HistoricalDashboardQuery {
     @Override
     public List<Daily> series(Filter filter) {
         var w = where(filter);
-        return jdbc.query("SELECT LEFT(u.\"timestamp\", 10) AS period_day, COALESCE(SUM(u.request_count),0) requests"
-            + " FROM historical.ai_usage_logs u" + w.sql() + " GROUP BY period_day ORDER BY period_day",
-            (rs, n) -> new Daily(rs.getString("period_day"), rs.getLong("requests")), w.params());
+        return jdbc.query("""
+            SELECT LEFT(u."timestamp", 10) AS period_day, COALESCE(SUM(u.request_count),0) requests,
+                COALESCE(SUM(u.input_tokens),0) input_tokens,
+                COALESCE(SUM(u.output_tokens),0) output_tokens,
+                SUM(CASE WHEN m.input_price_usd_per_1k_tokens >= 0
+                         AND m.output_price_usd_per_1k_tokens >= 0
+                         AND u.input_tokens IS NOT NULL AND u.output_tokens IS NOT NULL
+                    THEN (u.input_tokens::numeric * m.input_price_usd_per_1k_tokens::numeric
+                         + u.output_tokens::numeric * m.output_price_usd_per_1k_tokens::numeric) / 1000
+                    END) estimated_cost,
+                COUNT(*) FILTER (WHERE m.input_price_usd_per_1k_tokens IS NULL
+                    OR m.output_price_usd_per_1k_tokens IS NULL
+                    OR m.input_price_usd_per_1k_tokens < 0 OR m.output_price_usd_per_1k_tokens < 0
+                    OR u.input_tokens IS NULL OR u.output_tokens IS NULL) unpriced
+            FROM historical.ai_usage_logs u
+            LEFT JOIN historical.ai_models m ON m.model_id = u.model_id
+            """ + w.sql() + " GROUP BY period_day ORDER BY period_day",
+            (rs, n) -> new Daily(rs.getString("period_day"), rs.getLong("requests"),
+                rs.getLong("input_tokens"), rs.getLong("output_tokens"),
+                rs.getBigDecimal("estimated_cost"), rs.getLong("unpriced")), w.params());
     }
 
     @Override

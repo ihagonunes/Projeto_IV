@@ -153,3 +153,49 @@ test("cliente remove JWT legado, autentica por cookie e não monta Bearer a part
     assert.equal(calls[0].config.headers.Authorization, undefined);
     assert.equal(calls[0].config.headers["X-Qsoft-Request"], "1");
 });
+
+test("demo troca sessão apenas após revalidar a conta salva, sem devolver JWT", async () => {
+    const previous = process.env.QSOFT_DASHBOARD_DEMO;
+    process.env.QSOFT_DASHBOARD_DEMO = "true";
+    const payload = Buffer.from(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 86400 })).toString("base64url");
+    const token = "header." + payload + ".signature";
+    let role = "COLLABORATOR";
+    const api = {
+        post: async () => ({ data: { token } }),
+        get: async (_path, { headers }) => {
+            assert.equal(headers.Authorization, "Bearer " + token);
+            return { data: { concessoes: [{ papel: role }] } };
+        }
+    };
+    const app = express();
+    app.use(cookieParser(), createBrowserSession(api).router);
+    const server = app.listen(0, "127.0.0.1");
+    await new Promise(resolve => server.once("listening", resolve));
+    const base = "http://127.0.0.1:" + server.address().port + "/api/v1/auth/";
+    try {
+        const headers = { "Content-Type": "application/json", "X-Qsoft-Request": "1" };
+        const login = await fetch(base + "login", { method: "POST", headers, body: "{}" });
+        const saved = login.headers.getSetCookie().find(cookie => cookie.startsWith("qsoft_demo_colaborador="));
+        assert.match(saved, /Path=\/api\/v1\/auth\/profiles.*HttpOnly.*SameSite=Strict/);
+        assert.deepEqual(await login.json(), { authenticated: true });
+        const cookie = saved.split(";")[0];
+        const list = await fetch(base + "profiles", { headers: { cookie } });
+        assert.deepEqual(await list.json(), { profiles: [{ profile: "colaborador", active: false }] });
+        const change = requestHeaders => fetch(base + "profiles", {
+            method: "POST", headers: { ...requestHeaders, cookie },
+            body: JSON.stringify({ profile: "colaborador" })
+        });
+        assert.equal((await change({ "Content-Type": "application/json" })).status, 403);
+        const selected = await change(headers);
+        assert.deepEqual(await selected.json(), { destination: "/dashboard" });
+        assert.match(selected.headers.get("set-cookie"), /^qsoft_access=/);
+        role = "MANAGER";
+        const revoked = await change(headers);
+        assert.equal(revoked.status, 409);
+        assert.doesNotMatch(revoked.headers.get("set-cookie"), /qsoft_access=/);
+    } finally {
+        if (previous === undefined) delete process.env.QSOFT_DASHBOARD_DEMO;
+        else process.env.QSOFT_DASHBOARD_DEMO = previous;
+        await new Promise(resolve => server.close(resolve));
+    }
+});

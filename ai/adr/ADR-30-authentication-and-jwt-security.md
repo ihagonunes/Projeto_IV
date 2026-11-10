@@ -49,3 +49,16 @@ configurar BFF_PUBLIC_ORIGIN com a origem externa exata e HTTPS em produção.
 Logout expira o cookie no BFF; não introduz revogação global de JWT nem refresh.
 Alternativa de token opaco persistido no banco (exemplo CadastroPessoas) foi
 considerada; preservou-se o emissor/validador JWT e os contratos existentes.
+
+## Emenda — troca de contas na demonstração local (05/11/2026)
+
+Na demo local, o BFF aceita guardar uma conta autenticada por hierarquia em
+cookies HttpOnly e SameSite=Strict, restritos à rota de troca. O seletor funciona
+com QSOFT_DASHBOARD_DEMO=true em loopback e fora de produção. O Spring revalida
+o token e o papel antes de cada troca. A listagem retorna somente a hierarquia
+e o indicador de conta ativa. Nenhuma senha ou token vai ao storage do navegador.
+
+O ambiente local pode configurar APP_SECURITY_JWT_TTL_MINUTES=10080 com
+SERVER_ADDRESS=127.0.0.1. A validade do cookie respeita a expiração assinada
+e o máximo de sete dias. Sair encerra a sessão e remove todas as contas salvas.
+A duração padrão continua 30 minutos fora da configuração local da demo.

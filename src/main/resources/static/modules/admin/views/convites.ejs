@@ -1,14 +1,15 @@
 <%- contentFor("espaco-head") %>
 <link href="/public/css/components/auth-card.css" rel="stylesheet">
 <link href="/public/css/components/data-grid.css" rel="stylesheet">
-<link href="/public/css/pages/admin-convites.css" rel="stylesheet">
+<link href="/public/css/pages/admin-convites.css?v=atlas-palette" rel="stylesheet">
+<%- contentFor("body") %>
 
 <div class="container py-5">
 
     <!-- Cabeçalho Administrativo e Toggle de Perfil para Testes -->
     <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
         <div>
-            <h1 class="h3 fw-bold text-dark mb-1">Gestão de Convites de Usuários</h1>
+            <h1 class="h3 fw-bold invite-title mb-1">Gestão de Convites de Usuários</h1>
             <p class="text-muted mb-0 small">Emissão de novos convites e acompanhamento do estado das solicitações.</p>
         </div>
         <div class="d-flex align-items-center gap-3">
@@ -54,7 +55,7 @@
         <div class="col-lg-5">
             <div id="conviteFormCard" class="admin-card p-4">
                 <div class="d-flex align-items-center justify-content-between mb-3">
-                    <h2 class="h5 fw-bold text-dark mb-0">Novo Convite</h2>
+                    <h2 class="h5 fw-bold invite-title mb-0">Novo Convite</h2>
                     <span class="badge bg-light text-secondary border">Passo 1</span>
                 </div>
                 <p class="text-muted small mb-4">Informe o e-mail, departamento e atribua o papel adequado ao modelo de permissões do sistema.</p>
@@ -110,7 +111,7 @@
             <div class="admin-card p-4">
                 <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
                     <div>
-                        <h2 class="h5 fw-bold text-dark mb-0">Convites Emitidos</h2>
+                        <h2 class="h5 fw-bold invite-title mb-0">Convites Emitidos</h2>
                         <span class="text-muted small">Lista de solicitações registradas e seus respectivos status.</span>
                     </div>
                     <span id="totalConvitesBadge" class="badge bg-secondary rounded-pill fs-6 px-3">0 convites</span>
@@ -174,4 +175,4 @@
 
 <!-- Scripts da Página -->
 <script src="/public/js/core/api-client.js?v=cookie-session-20261022"></script>
-<script src="/public/js/pages/admin-convites.js"></script>
+<script src="/public/js/pages/admin-convites.js?v=atlas-palette"></script>

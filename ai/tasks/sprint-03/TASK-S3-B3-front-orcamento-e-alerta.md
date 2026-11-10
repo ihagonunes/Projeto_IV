@@ -12,7 +12,7 @@
   - [ ] tabela de deptos com o orçamento e o limiar;
   - [ ] edição inline;
   - [ ] histórico de 12 meses.
-- [ ] A edição só aparece para quem tem `DEPARTMENT:MANAGE` (via `/me/permissoes`).
+- [ ] A edição só aparece para quem tem `DEPARTMENT_BUDGET:MANAGE` (via `/me/permissoes`).
 - [ ] Card "Orçamento do mês" no dashboard, com status por depto:
   - [ ] OK, ALERTA e EXCEDIDO com cor e texto (acessível; não depender só da cor);
   - [ ] "Sem orçamento" quando não houver valor (nunca 0).

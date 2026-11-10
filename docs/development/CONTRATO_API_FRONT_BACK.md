@@ -58,7 +58,7 @@ O tenant vem sempre do JWT.
 |---|---|---|---|
 | GET / POST | `/api/v1/departamentos` | POST: `{ name, description?, monthlyBudget? }` | `DEPARTMENT:READ` / `DEPARTMENT:MANAGE` |
 | GET / PUT / DELETE | `/api/v1/departamentos/{id}` | DELETE é lógico (inativa) | `DEPARTMENT:READ` (BT) / `DEPARTMENT:MANAGE` |
-| PUT | `/api/v1/departamentos/{id}/orcamentos/{mes}` | `{ amount, alertThresholdPct? }` (`mes=AAAA-MM`) | `DEPARTMENT:MANAGE` (BT) |
+| PUT | `/api/v1/departamentos/{id}/orcamentos/{mes}` | `{ amount, alertThresholdPct? }` (`mes=AAAA-MM`) | `DEPARTMENT_BUDGET:MANAGE` (BT) |
 | GET | `/api/v1/departamentos/{id}/orcamentos` | `de=AAAA-MM&ate=AAAA-MM` (≤ 24 meses) | `DEPARTMENT:READ` (BT) |
 
 ### 2.3 Catálogo de IA e roteamento (`aigateway`)

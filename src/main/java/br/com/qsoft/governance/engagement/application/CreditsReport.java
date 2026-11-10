@@ -15,7 +15,8 @@ public record CreditsReport(
     String status,
     String calculationVersion,
     List<Item> items,
-    Coverage coverage
+    Coverage coverage,
+    Integer personalRank
 ) {
 
     public record Item(

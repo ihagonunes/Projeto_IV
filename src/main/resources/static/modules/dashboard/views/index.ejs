@@ -1,5 +1,7 @@
 <%- contentFor("espaco-head") %>
-<link rel="stylesheet" href="/public/css/pages/dashboards.css">
+<link rel="stylesheet" href="/public/css/pages/dashboards.css?v=spi92-leader">
+<% const teamDashboard = ['lider', 'gestor'].includes(profile); %>
+<% const compactDashboard = teamDashboard || profile === 'executivo'; %>
 <link rel="stylesheet" href="/public/css/pages/dashboard.css?v=20261019-session-actions">
 <%- contentFor("body") %>
 
@@ -26,7 +28,7 @@
             <button type="button" id="dashboardLogout" class="btn btn-outline-secondary btn-sm w-100 d-flex align-items-center justify-content-center gap-2"><i class="bi bi-box-arrow-right" aria-hidden="true"></i><span>Sair</span></button>
         </div>
     </aside>
-    <main id="dashboard-main" class="demo-main dashboard-main">
+    <main id="dashboard-main" data-profile="<%= profile %>" data-demo-return="<%= demoReturn %>" class="demo-main dashboard-main">
         <header class="demo-header">
             <div>
                 <p class="demo-eyebrow">WORKSPACE / <%= panel.scope.toLocaleUpperCase('pt-BR') %></p>
@@ -34,6 +36,22 @@
                 <p class="demo-muted"><%= panel.description %></p>
             </div>
         </header>
+        <section class="demo-panel p-3 mb-3" aria-label="Fonte dos indicadores">
+<label for="dashboard-source">Fonte dos cards e gráficos de consumo</label>
+<select id="dashboard-source" class="form-select custom-input" disabled><option value="HISTORICO">Histórico importado</option><option value="OPERACIONAL">Operacional</option></select>
+<p id="dashboard-source-status" role="status" aria-live="polite">Carregando fonte…</p>
+<p class="demo-muted small mb-0">Engajamento usa fonte própria e departamento autorizado: adoção nos 30 dias até a data final e Credits no mês dessa data. Não filtra por modelo ou usuário. Orçamentos e projeções usam o mês operacional indicado em cada bloco.</p>
+</section><section class="demo-kpis" aria-label="Indicadores">
+            <% for (const label of panel.kpis) { %>
+            <article class="demo-panel demo-kpi" data-dashboard-kpi="<%= label %>"><span><%= label %></span><strong>Sem dado</strong><p><%= indicatorReason(label) %></p></article>
+            <% } %>
+        </section>
+        <% if (panel.actions) { %>
+        <section class="dashboard-actions mb-3" aria-label="Ações">
+            <% for (const action of panel.actions) { const href = action === 'Ir para o Chat' || action === 'Gerenciar / excluir meu histórico' ? '/chat' : null; %>
+<% if (href) { %><a class="btn btn-outline-secondary" href="<%= href %>"><%= action %></a><% } else { %><button type="button" class="btn btn-outline-secondary" disabled title="Ação ainda não integrada neste painel"><%= action %></button><% } %><% } %>
+        </section>
+        <% } %>
         <% if (profile !== 'colaborador') { %>
         <section id="budget-notification" class="demo-panel p-3 mb-4" aria-labelledby="budget-notification-title" hidden>
             <h2 id="budget-notification-title" class="h5">Orçamento do mês</h2>
@@ -77,14 +95,18 @@
             <p id="historical-message" role="status" aria-live="polite">Carregando histórico…</p>
             <div id="historical-content" hidden>
                 <p id="historical-coverage" class="demo-muted"></p>
-                <div class="demo-kpis">
+                <div class="demo-kpis<%= profile === 'colaborador' ? ' dashboard-personal-kpis' : '' %>">
                     <article class="demo-kpi"><span>Requisições históricas</span><strong id="historical-requests">—</strong></article>
+                    <% if (profile !== 'colaborador') { %>
                     <article class="demo-kpi"><span>Funcionários ativos no período</span><strong id="historical-active">—</strong></article>
+                    <% } %>
                     <article class="demo-kpi"><span>Tokens entrada / saída</span><strong id="historical-tokens">—</strong></article>
                     <article class="demo-kpi"><span>Custo histórico estimado (USD)</span><strong id="historical-cost">—</strong></article>
                 </div>
+                <% if (profile !== 'colaborador') { %>
                 <h3 class="h6 mt-3">Requisições por dia</h3>
-                <div id="historical-series"></div>
+                <div id="historical-series"<% if (compactDashboard) { %> class="dashboard-daily-series"<% } %>></div>
+                <% } %>
                 <h3 class="h6 mt-3">Consumo por modelo</h3>
                 <div class="table-responsive"><table class="table demo-table"><thead><tr><th>Modelo</th><th>Requisições</th><th>Tokens entrada / saída</th><th>Custo estimado (USD)</th></tr></thead><tbody id="historical-costs"></tbody></table></div>
             </div>
@@ -92,6 +114,9 @@
         </section>
         <section class="demo-panel p-3 mb-4" aria-label="Métricas de uso filtradas">
             <h2 class="h5"><%= profile === 'colaborador' ? 'Meu uso operacional' : 'Uso e custo no período' %></h2>
+            <% if (teamDashboard) { %>
+            <p class="demo-muted small">Dados operacionais dos departamentos aos quais seu perfil tem acesso. Os totais seguem o período e os demais filtros selecionados.</p>
+            <% } %>
             <p id="metrics-message" role="status" aria-live="polite">Carregando métricas…</p>
             <div class="demo-kpis">
                 <article class="demo-kpi"><span>Requisições</span><strong id="metrics-requests">—</strong></article>
@@ -99,8 +124,10 @@
                 <article class="demo-kpi"><span>Tokens de entrada / saída</span><strong id="metrics-tokens">—</strong></article>
                 <article class="demo-kpi"><span>Custo estimado</span><strong id="metrics-cost">—</strong></article>
             </div>
+            <% if (profile !== 'colaborador') { %>
             <h3 class="h6">Requisições ao longo do tempo</h3>
-            <div id="metrics-series" aria-label="Série temporal de requisições"></div>
+            <div id="metrics-series"<% if (teamDashboard) { %> class="dashboard-daily-series"<% } %> aria-label="Série temporal de requisições"></div>
+            <% } %>
             <h3 class="h6 mt-3">Custo por modelo</h3>
             <div class="table-responsive"><table class="table demo-table"><thead><tr><th>Modelo</th><th>Requisições</th><th>Tokens entrada / saída</th><th>Custo estimado</th></tr></thead><tbody id="metrics-costs"></tbody></table></div>
         </section>
@@ -115,7 +142,7 @@
                     <label for="engagement-source">Fonte</label>
                     <select id="engagement-source" class="form-select custom-input" disabled>
                         <option value="OPERACIONAL">Operacional</option>
-                        <option value="HISTORICO">Histórico</option>
+                        <option value="HISTORICO" selected>Histórico</option>
                     </select>
                 </div>
             </div>
@@ -142,7 +169,7 @@
                 <section id="engagement-training" aria-labelledby="engagement-training-title">
                     <h3 id="engagement-training-title" class="h6 mt-4">Treinamento × uso (4 quadrantes)</h3>
                     <p id="engagement-training-source" class="demo-muted small"></p>
-                    <div id="engagement-quadrants" class="engagement-quadrants"></div>
+                    <div id="engagement-quadrants" class="engagement-quadrants<%= compactDashboard ? ' engagement-quadrants--leader' : '' %>"></div>
                     <p id="engagement-training-note" class="demo-muted small" role="status"></p>
                     <div id="engagement-nominal" hidden></div>
                     <p id="engagement-training-coverage" class="demo-muted small mb-0"></p>
@@ -174,47 +201,43 @@
             </div>
         </section>
         <% } %>
-        <section class="demo-kpis" aria-label="Indicadores">
-            <% for (const label of panel.kpis) { %>
-            <article class="demo-panel demo-kpi"><span><%= label %></span><strong aria-label="Indicador ainda não conectado">—</strong><p>Aguardando integração</p></article>
-            <% } %>
-        </section>
-        <% if (panel.actions) { %>
-        <section class="dashboard-actions mb-3" aria-label="Ações">
-            <% for (const action of panel.actions) { %><button type="button" class="btn btn-outline-secondary" disabled><%= action %></button><% } %>
-        </section>
-        <% } %>
-        <% if (panel.management) { const section = panel.management; %>
-        <section class="demo-panel demo-chart-panel mb-3" aria-label="<%= section.title %>">
+        <% if (panel.management && (profile !== 'executivo' || canManageBudget)) { const section = panel.management; %>
+        <section class="demo-panel demo-chart-panel mb-3" data-dashboard-management="<%= section.title %>" aria-label="<%= section.title %>">
             <div class="demo-section-title"><div><h2><%= section.title %></h2><p><%= section.description %></p></div></div>
             <% if (section.fields) { %>
             <div class="row g-3 mb-3"><% for (const field of section.fields) { %><div class="col-12 col-md-4"><div class="dashboard-budget"><span><%= field %></span><strong>—</strong></div></div><% } %></div>
             <% } %>
-            <div class="dashboard-actions"><% for (const action of section.actions) { %><button type="button" class="btn btn-outline-secondary btn-sm" disabled><%= action %></button><% } %></div>
-            <p class="demo-muted small mb-0 mt-3">Ações disponíveis após a integração.</p>
+            <div class="dashboard-actions"><% for (const action of section.actions) { %>
+                <% if (action === 'Ajustar orçamento' && canManageBudget) { %>
+                <a href="/onboarding/departamentos/orcamentos" class="btn btn-outline-secondary btn-sm"><%= action %></a>
+                <% } else { %>
+                <button type="button" class="btn btn-outline-secondary btn-sm" disabled><%= action %></button>
+                <% } %>
+            <% } %></div>
+            <p class="demo-muted small mb-0 mt-3"><%= canManageBudget ? "A edição abre a tela de orçamento mensal." : (section.fields ? "O executivo define o orçamento mensal." : "A exportação ainda está indisponível.") %></p>
         </section>
         <% } %>
         <div class="demo-charts">
-            <% for (const [title, description] of panel.charts) { %>
-            <section class="demo-panel demo-chart-panel">
+            <% for (const [title, description, source] of panel.charts) { %>
+            <section class="demo-panel demo-chart-panel"<% if (source) { %> data-dashboard-chart-source="<%= source %>" hidden<% } %>>
                 <div class="demo-section-title"><div><h2><%= title %></h2><p><%= description %></p></div></div>
-                <div class="dashboard-chart-slot"><i class="bi bi-bar-chart" aria-hidden="true"></i><span>Área reservada para o gráfico</span><small>Aguardando integração dos indicadores</small></div>
+                <div data-dashboard-chart="<%= title %>" class="dashboard-chart-slot"><p><%= indicatorReason(title) %></p></div>
             </section>
             <% } %>
         </div>
-        <% for (const section of (panel.analytics || [])) { %>
+        <% for (const section of (panel.analytics || []).filter(section => !section.demoOnly || demoReturn)) { %>
         <section class="dashboard-analytics mb-4" aria-label="<%= section.title %>">
             <div class="demo-section-title"><div><h2><%= section.title %></h2><p class="dashboard-method-note"><%= section.description %></p></div></div>
             <div class="demo-kpis">
                 <% for (const label of section.kpis) { %>
-                <article class="demo-panel demo-kpi"><span><%= label %></span><strong aria-label="Indicador ainda não conectado">—</strong><p>Aguardando integração</p></article>
+                <article class="demo-panel demo-kpi" data-dashboard-kpi="<%= label %>"><span><%= label %></span><strong>Sem dado</strong><p><%= indicatorReason(label) %></p></article>
                 <% } %>
             </div>
             <div class="demo-charts">
                 <% for (const [title, description] of section.charts) { %>
                 <section class="demo-panel demo-chart-panel">
                     <div class="demo-section-title"><div><h3 class="dashboard-chart-title"><%= title %></h3><p><%= description %></p></div></div>
-                    <div class="dashboard-chart-slot"><i class="bi bi-bar-chart" aria-hidden="true"></i><span>Área reservada para o gráfico</span><small>Aguardando integração dos indicadores</small></div>
+                    <div data-dashboard-chart="<%= title %>" class="dashboard-chart-slot"><p><%= indicatorReason(title) %></p></div>
                 </section>
                 <% } %>
             </div>
@@ -222,16 +245,16 @@
         <% } %>
         <% if (panel.highlights) { %>
         <div class="row g-3 mb-3"><% for (const title of panel.highlights) { %>
-            <div class="col-12 col-lg-6"><section class="demo-panel demo-chart-panel h-100"><div class="demo-section-title"><div><h2><%= title %></h2></div></div><div class="dashboard-highlight-slot">Área reservada para destaques e alertas.</div></section></div>
+            <div class="col-12 col-lg-6"><section class="demo-panel demo-chart-panel h-100"><div class="demo-section-title"><div><h2><%= title %></h2></div></div><div class="dashboard-highlight-slot" data-dashboard-highlight="<%= title %>">Carregando cruzamento de treinamento e uso…</div></section></div>
         <% } %></div>
         <% } %>
         <% for (const [title, description, columns] of panel.tables) { %>
-        <section class="demo-panel demo-records mb-3">
+        <section class="demo-panel demo-records mb-3" data-dashboard-table="<%= title %>">
             <div class="demo-section-title"><div><h2><%= title %></h2><p><%= description %></p></div></div>
             <div class="table-responsive"><table class="table demo-table">
-                <caption class="visually-hidden"><%= title %> — estrutura sem dados</caption>
+                <caption class="visually-hidden"><%= title %> — registros autorizados</caption>
                 <thead><tr><% for (const column of columns) { %><th scope="col"><%= column %></th><% } %></tr></thead>
-                <tbody><tr><td colspan="<%= columns.length %>" class="text-center py-5 demo-muted">Área reservada para os registros após a integração.</td></tr></tbody>
+                <tbody><tr><td colspan="<%= columns.length %>" class="text-center py-5 demo-muted"><%= indicatorReason(title) %></td></tr></tbody>
             </table></div>
         </section>
         <% } %>
@@ -241,13 +264,21 @@
 <script src="/public/js/core/api-client.js?v=cookie-session-20261022"></script>
 <script src="/public/js/core/auth.js?v=cookie-session-20261022"></script>
 <script src="/public/js/core/session-actions.js?v=cookie-session-20261022"></script>
-<script src="/public/js/pages/dashboard-metrics.js?v=legacy-identity-20261030"></script>
+<script src="/public/js/pages/dashboard-panels-core.js?v=spi93-20261105"></script>
+<script src="/public/js/pages/dashboard-engagement-core.js?v=spi93-20261105"></script>
+<script src="/public/js/pages/dashboard-panels.js?v=spi93-management"></script>
+<% if (compactDashboard) { %>
+<script src="/public/js/pages/dashboard-daily-requests.js"></script>
+<% } %>
+<script src="/public/js/pages/dashboard-metrics.js?v=spi92-daily-series"></script>
 <% if (['colaborador', 'lider', 'gestor', 'executivo'].includes(profile)) { %>
-<script src="/public/js/pages/dashboard-engagement-core.js?v=spi-144-20261101"></script>
-<script src="/public/js/pages/dashboard-engagement.js?v=spi-144-20261101"></script>
+<script src="/public/js/pages/dashboard-engagement.js?v=spi144-departments"></script>
 <% } %>
 <% if (profile !== 'colaborador') { %>
-<script src="/public/js/pages/dashboard-budget-alerts.js?v=cookie-session-20261022"></script>
-<script src="/public/js/pages/dashboard-budget-projection.js?v=spi-131-20261101"></script>
+<% if ((teamDashboard || profile === 'executivo') && typeof demoProfilesEnabled !== 'undefined' && demoProfilesEnabled) { %>
+<script src="/public/js/pages/dashboard-budget-demo.js?v=1"></script>
 <% } %>
-<script src="/public/js/pages/dashboard-historical.js?v=legacy-identity-20261022"></script>
+<script src="/public/js/pages/dashboard-budget-alerts.js?v=spi124-budget-values"></script>
+<script src="/public/js/pages/dashboard-budget-projection.js?v=spi93-budget-demo"></script>
+<% } %>
+<script src="/public/js/pages/dashboard-historical.js?v=spi92-leader"></script>

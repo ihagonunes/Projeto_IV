@@ -163,6 +163,23 @@
     animation: fadeIn 0.3s ease-in-out;
 }
 
+#alertArea .alert,
+#inviteLinkPanel.alert {
+    --bs-alert-bg: var(--bg-color-card, #10182d);
+    --bs-alert-color: #dbeafe;
+    --bs-alert-border-color: #42618e;
+    --bs-alert-link-color: #dbeafe;
+}
+
+#alertArea .btn-close { filter: invert(1); }
+
+h1.invite-title,
+.admin-card h2.invite-title {
+    color: var(--color-primary, #f0c22f);
+}
+
+td.invite-email { color: #fff; }
+
 @keyframes fadeIn {
     from {
         opacity: 0;

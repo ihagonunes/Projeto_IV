@@ -81,7 +81,7 @@ requisição seguinte.
 | POST `/api/v1/usuarios` | — | — | **removido** (404/405); criação só por convite |
 | GET/POST `/api/v1/departamentos` | DEPARTMENT:READ / MANAGE | READ=BT, MANAGE=TO | lista filtrada por `visibilityFor(DEPARTMENT:READ)` |
 | GET/PUT/DELETE `/api/v1/departamentos/{id}` | DEPARTMENT:READ / MANAGE | READ=BT, MANAGE=TO | `isAllowed(DepartmentTarget(id))` na leitura |
-| PUT `/api/v1/departamentos/{id}/orcamentos/{mes}` | DEPARTMENT:MANAGE | BT | `isAllowed(DepartmentTarget(id))`; outro tenant → 404 |
+| PUT `/api/v1/departamentos/{id}/orcamentos/{mes}` | DEPARTMENT_BUDGET:MANAGE | BT | `isAllowed(DepartmentTarget(id))`; outro tenant → 404 |
 | GET `/api/v1/departamentos/{id}/orcamentos` | DEPARTMENT:READ | BT | `isAllowed(DepartmentTarget(id))`; intervalo ≤ 24 meses |
 | `/api/v1/ai-gateway/providers`, `/models`, `/models/{id}/status`, `/departments/{id}/model-policy` | AI_TOOL:MANAGE | TO | — |
 | GET `/api/v1/ai-gateway/models/permitido` | autenticado | — | usa a lotação/ModelPolicy do ator |

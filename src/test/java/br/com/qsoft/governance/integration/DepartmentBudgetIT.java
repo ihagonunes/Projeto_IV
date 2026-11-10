@@ -83,6 +83,8 @@ class DepartmentBudgetIT {
     private String managerEmail;
     private String collaboratorEmail;
     private String executiveEmail;
+    private String executiveBEmail;
+    private User executiveA;
 
     @BeforeEach
     void setUp() {
@@ -97,8 +99,12 @@ class DepartmentBudgetIT {
         tenantB = testTenants.ensureTenant(slug + "b", "Budget B", "Admin", adminBEmail, PASSWORD);
         adminA = testTenants.admin(tenantA, adminAEmail);
         executiveEmail = "exec@" + slug + ".com";
-        testTenants.ensureMember(tenantA, adminA.id(), executiveEmail, "Executive", PASSWORD,
+        executiveA = testTenants.ensureMember(tenantA, adminA.id(), executiveEmail, "Executive", PASSWORD,
             HierarchyLevel.EXECUTIVE, null, "EXECUTIVE");
+
+        executiveBEmail = "exec@" + slug + "b.com";
+        testTenants.ensureMember(tenantB, testTenants.admin(tenantB, adminBEmail).id(), executiveBEmail,
+            "Executive B", PASSWORD, HierarchyLevel.EXECUTIVE, null, "EXECUTIVE");
 
         String tokenA = login(adminAEmail);
         departmentA = createDepartment(tokenA, "Marketing " + suffix(), null);
@@ -115,13 +121,13 @@ class DepartmentBudgetIT {
 
     @Test
     void upsertEHistoricoDoOrcamento() {
-        String token = login(adminAEmail);
+        String token = login(executiveEmail);
 
         Map<String, Object> september = putBudget(token, departmentA, "2026-09", "900.00", 80);
         assertThat(september.get("mes")).isEqualTo("2026-09");
         assertThat(september.get("valor")).isNotNull();
         assertThat(september.get("limiarAlerta")).isEqualTo(80);
-        assertThat(september.get("atualizadoPor")).isEqualTo(adminA.id().value().toString());
+        assertThat(september.get("atualizadoPor")).isEqualTo(executiveA.id().value().toString());
 
         putBudget(token, departmentA, "2026-10", "1000.00", 80);
         Map<String, Object> updated = putBudget(token, departmentA, "2026-10", "1200.50", 90);
@@ -139,7 +145,7 @@ class DepartmentBudgetIT {
 
     @Test
     void departamentoDeOutroTenantOuInexistenteRetorna404() {
-        String token = login(adminAEmail);
+        String token = login(executiveEmail);
         UUID missing = UUID.randomUUID();
 
         assertThat(putBudgetStatus(token, departmentOtherTenant, "2026-10", "1000.00"))
@@ -154,8 +160,8 @@ class DepartmentBudgetIT {
     @Test
     void managerVeApenasODepartamentoDaConcessao() {
         String admin = login(adminAEmail);
-        putBudget(admin, departmentA, "2026-10", "1000.00", 80);
-        putBudget(admin, departmentB, "2026-10", "2000.00", 80);
+        putBudget(login(executiveEmail), departmentA, "2026-10", "1000.00", 80);
+        putBudget(login(executiveEmail), departmentB, "2026-10", "2000.00", 80);
 
         String manager = login(managerEmail);
         assertThat(history(manager, departmentA, "2026-10", "2026-10")).hasSize(1);
@@ -167,6 +173,7 @@ class DepartmentBudgetIT {
             .containsExactly(departmentA.toString());
 
         assertThat(budgetStatus(admin, "2026-10")).isEqualTo(403);
+        assertThat(putBudgetStatus(admin, departmentA, "2026-10", "1500.00")).isEqualTo(403);
         List<Map<String, Object>> executiveItems = budgetItems(login(executiveEmail), "2026-10");
         assertThat(executiveItems).extracting(item -> item.get("departmentId"))
             .contains(departmentA.toString(), departmentB.toString());
@@ -183,7 +190,7 @@ class DepartmentBudgetIT {
 
     @Test
     void mesInvalidoRetorna400() {
-        String token = login(adminAEmail);
+        String token = login(executiveEmail);
 
         assertThat(putBudgetStatus(token, departmentA, "2026-13", "1000.00")).isEqualTo(400);
         assertThat(historyStatus(token, departmentA, "2026-13", "2026-10")).isEqualTo(400);
@@ -192,7 +199,7 @@ class DepartmentBudgetIT {
 
     @Test
     void intervaloMaiorQue24MesesRetorna400() {
-        String token = login(adminAEmail);
+        String token = login(executiveEmail);
 
         assertThat(historyStatus(token, departmentA, "2024-01", "2026-01")).isEqualTo(400);
         assertThat(historyStatus(token, departmentA, "2024-01", "2025-12")).isEqualTo(200);
@@ -200,10 +207,9 @@ class DepartmentBudgetIT {
 
     @Test
     void custoDoMesNaoVazaParaOMesSeguinte() {
-        String admin = login(adminAEmail);
-        putBudget(admin, departmentA, "2026-10", "1000.00", 80);
-        putBudget(admin, departmentA, "2026-11", "1000.00", 80);
-        putBudget(login(adminBEmail), departmentOtherTenant, "2026-10", "1000.00", 80);
+        putBudget(login(executiveEmail), departmentA, "2026-10", "1000.00", 80);
+        putBudget(login(executiveEmail), departmentA, "2026-11", "1000.00", 80);
+        putBudget(login(executiveBEmail), departmentOtherTenant, "2026-10", "1000.00", 80);
 
         // Limites UTC: [2026-10-01T00:00Z, 2026-11-01T00:00Z).
         insertUsage(tenantA.id(), departmentA, "2026-09-30T23:59:59Z", "500.00");

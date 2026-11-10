@@ -29,8 +29,8 @@ test("histórico segue datas e filtros da sidebar e exibe USD sem interpretar HT
     assert.match(p.get("cost").textContent, /US\$/);
     assert.equal(p.get("costs").children[0].children[0].textContent, "<Modelo>");
     const initial = new URL(p.calls[0], "http://test");
-    assert.equal(initial.searchParams.get("from"), "2026-07-01");
-    assert.equal(initial.searchParams.get("to"), "2026-07-31");
+    assert.equal(initial.searchParams.has("from"), false);
+    assert.equal(initial.searchParams.has("to"), false);
     p.get("model").value = "historical:M1"; p.get("department").value = "historical:D1";
     p.get("filters").events.submit({ preventDefault() {} }); await tick();
     const url = new URL(p.calls.at(-1), "http://test");
