@@ -68,3 +68,4 @@ Thumbs.db
 ### Front-end ###
 node_modules/
 
+/docs/marketing
