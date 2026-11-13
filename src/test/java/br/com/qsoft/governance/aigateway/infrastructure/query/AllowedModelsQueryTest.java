@@ -4,11 +4,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import br.com.qsoft.governance.aigateway.api.model.AllowedModel;
 import br.com.qsoft.governance.aigateway.api.model.AllowedModels;
 import br.com.qsoft.governance.aigateway.application.ResolveModelForUser;
+import br.com.qsoft.governance.aigateway.application.ResolvedModel;
+import br.com.qsoft.governance.aigateway.api.exception.ModelUnavailableException;
+import br.com.qsoft.governance.aigateway.api.model.ResolvedModelInfo;
 import br.com.qsoft.governance.aigateway.application.port.ModelRepository;
 import br.com.qsoft.governance.aigateway.application.port.ProviderRepository;
 import br.com.qsoft.governance.aigateway.domain.model.Model;
@@ -39,6 +43,48 @@ class AllowedModelsQueryTest {
     private final ModelResolutionQueryAdapter adapter = new ModelResolutionQueryAdapter(
         resolveModelForUser, identityQuery, modelPolicyQuery, modelRepository,
         providerRepository);
+
+    @Test
+    void rejectsIdentityFromAnotherTenantBeforeAccessingPolicy() {
+        TenantId tenant = TenantId.random();
+        UserId user = UserId.random();
+        when(identityQuery.getUserContext(user)).thenReturn(Optional.of(
+            new UserContext(user, TenantId.random(), "COLLABORATOR", UUID.randomUUID(), "ACTIVE", "Ana")));
+
+        assertThat(adapter.allowedModels(tenant, user)).isEqualTo(AllowedModels.empty());
+        verifyNoInteractions(modelPolicyQuery, modelRepository, providerRepository);
+    }
+
+    @Test
+    void returnsEmptyWithoutDepartmentPolicy() {
+        TenantId tenant = TenantId.random();
+        UserId user = UserId.random();
+        UUID department = UUID.randomUUID();
+        when(identityQuery.getUserContext(user)).thenReturn(Optional.of(
+            new UserContext(user, tenant, "COLLABORATOR", department, "ACTIVE", "Ana")));
+
+        assertThat(adapter.allowedModels(tenant, user)).isEqualTo(AllowedModels.empty());
+        verifyNoInteractions(modelRepository, providerRepository);
+    }
+
+    @Test
+    void mapsResolvedModelAndHidesRoutingFailure() {
+        TenantId tenant = TenantId.random();
+        UserId user = UserId.random();
+        UUID model = UUID.randomUUID();
+        UUID provider = UUID.randomUUID();
+        ResolvedModel resolved = mock(ResolvedModel.class);
+        when(resolved.modelId()).thenReturn(model);
+        when(resolved.modelName()).thenReturn("Modelo");
+        when(resolved.providerId()).thenReturn(provider);
+        when(resolved.providerName()).thenReturn("Provider");
+        when(resolveModelForUser.resolve(tenant, user, model)).thenReturn(resolved);
+        when(resolveModelForUser.resolve(tenant, user, null)).thenThrow(new ModelUnavailableException());
+
+        assertThat(adapter.resolve(tenant, user, model))
+            .contains(new ResolvedModelInfo(model, "Modelo", provider, "Provider"));
+        assertThat(adapter.resolve(tenant, user, null)).isEmpty();
+    }
 
     @Test
     void returnsEmptyWhenUserHasNoDepartment() {
@@ -72,14 +118,16 @@ class AllowedModelsQueryTest {
             null, BigDecimal.ONE, BigDecimal.ONE).disable();
         Model providerInactive = Model.create(UUID.randomUUID(), tenantId, inactiveProviderId,
             "Model C", null, BigDecimal.ONE, BigDecimal.ONE);
+        Model providerMissing = Model.create(UUID.randomUUID(), tenantId, UUID.randomUUID(),
+            "Model D", null, BigDecimal.ONE, BigDecimal.ONE);
 
-        Set<UUID> allowedIds = Set.of(available.id(), disabled.id(), providerInactive.id());
+        Set<UUID> allowedIds = Set.of(available.id(), disabled.id(), providerInactive.id(), providerMissing.id());
         when(identityQuery.getUserContext(userId)).thenReturn(Optional.of(
             new UserContext(userId, tenantId, "COLLABORATOR", departmentId, "ACTIVE", "Ana")));
         when(modelPolicyQuery.findByDepartmentId(tenantId, departmentId)).thenReturn(
             Optional.of(new ModelPolicyInfo(departmentId, allowedIds, available.id())));
         when(modelRepository.findByTenantIdAndIdIn(eq(tenantId), any())).thenReturn(
-            List.of(available, disabled, providerInactive));
+            List.of(providerMissing, providerInactive, disabled, available));
         when(providerRepository.findByTenantId(tenantId)).thenReturn(
             List.of(activeProvider, inactiveProvider));
 
@@ -87,7 +135,9 @@ class AllowedModelsQueryTest {
 
         assertThat(result.defaultModelId()).isEqualTo(available.id());
         assertThat(result.models()).extracting(AllowedModel::id)
-            .containsExactlyInAnyOrder(available.id(), disabled.id(), providerInactive.id());
+            .containsExactly(available.id(), disabled.id(), providerInactive.id(), providerMissing.id());
+        assertThat(result.models().getLast()).isEqualTo(
+            new AllowedModel(providerMissing.id(), "Model D", null, false, "PROVIDER_INACTIVE"));
         assertThat(result.models())
             .filteredOn(model -> model.id().equals(available.id()))
             .singleElement()

@@ -23,6 +23,31 @@ class ProviderTest {
             null, null, null);
     }
 
+    @Test
+    void normalizesBlankOptionalConfigurationForStub() {
+        Provider provider = Provider.create(UUID.randomUUID(), tenantId, " Stub ", ProviderKind.STUB,
+            "  ", "  ", 120000);
+        assertThat(provider.baseUrl()).isNull();
+        assertThat(provider.credentialRef()).isNull();
+        assertThat(provider.timeoutMs()).isEqualTo(120000);
+    }
+
+    @Test
+    void validatesRequiredOpenAiUrlCredentialReferenceAndTimeoutBounds() {
+        for (String url : java.util.Arrays.asList(null, " ")) {
+            assertThatThrownBy(() -> Provider.create(UUID.randomUUID(), tenantId, "OpenAI",
+                ProviderKind.OPENAI_COMPATIBLE, url, null, 1000))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("baseUrl");
+        }
+        assertThatThrownBy(() -> Provider.create(UUID.randomUUID(), tenantId, "Stub", ProviderKind.STUB,
+            null, "token inválido", 1000))
+            .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("credentialRef");
+        for (int timeout : new int[]{999, 120001}) {
+            assertThatThrownBy(() -> Provider.create(UUID.randomUUID(), tenantId, "Stub", ProviderKind.STUB,
+                null, null, timeout)).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("timeoutMs");
+        }
+    }
+
     // -------------------------------------------------------------------------
     // create — validação de nome
     // -------------------------------------------------------------------------

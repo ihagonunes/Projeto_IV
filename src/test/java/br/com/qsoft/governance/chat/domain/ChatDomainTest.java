@@ -40,6 +40,8 @@ class ChatDomainTest {
     void mensagemVaziaNaoCriaConversa() {
         assertThatThrownBy(() -> Conversation.start(UUID.randomUUID(), tenantId, owner, "   "))
             .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> Conversation.start(UUID.randomUUID(), tenantId, owner, null))
+            .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -75,6 +77,8 @@ class ChatDomainTest {
         assertThat(conversation.rename("Novo título").title()).isEqualTo("Novo título");
         assertThatThrownBy(() -> conversation.rename("   "))
             .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> conversation.rename(null))
+            .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> conversation.rename("x".repeat(201)))
             .isInstanceOf(IllegalArgumentException.class);
     }
@@ -107,12 +111,26 @@ class ChatDomainTest {
             "x", "client_123");
 
         assertThat(message.clientMessageId()).isEqualTo("client_123");
+        assertThat(ChatMessage.user(UUID.randomUUID(), tenantId, conversationId, "x", "  ").clientMessageId())
+            .isNull();
         assertThatThrownBy(() -> ChatMessage.user(UUID.randomUUID(), tenantId, conversationId,
             "x", "curto"))
             .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> ChatMessage.user(UUID.randomUUID(), tenantId, conversationId,
             "x", "inválido!"))
             .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void restauracaoExigeDataDeExclusaoApenasParaConversaExcluida() {
+        Instant now = Instant.EPOCH;
+
+        assertThatThrownBy(() -> Conversation.restore(conversationId, tenantId, owner, "Título",
+            ConversationStatus.DELETED, now, now, null))
+            .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("deletedAt");
+        assertThatThrownBy(() -> Conversation.restore(conversationId, tenantId, owner, "Título",
+            ConversationStatus.ACTIVE, now, now, now))
+            .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("deletedAt");
     }
 
     @Test

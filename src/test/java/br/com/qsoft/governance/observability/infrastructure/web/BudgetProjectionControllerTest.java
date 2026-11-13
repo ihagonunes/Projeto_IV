@@ -75,6 +75,24 @@ class BudgetProjectionControllerTest {
     }
 
     @Test
+    void defaultsMissingMonthAndLegacyCalculationVersion() throws Exception {
+        allow();
+        when(projectDepartmentBudget.query(eq(tenantId), eq(departmentId), any(YearMonth.class), eq(14),
+            eq(new VisibilityScope.TenantWide()))).thenAnswer(invocation -> {
+                YearMonth month = invocation.getArgument(2);
+                return new BudgetProjection(month, month.atDay(1), 14, BigDecimal.TEN, false, 80,
+                    BigDecimal.ZERO, BigDecimal.ZERO, 30, BigDecimal.ZERO, BigDecimal.ZERO, null,
+                    BudgetRecommendation.DENTRO_DO_ORCAMENTO, null);
+            });
+        YearMonth before = YearMonth.now(java.time.ZoneOffset.UTC);
+        mockMvc.perform(get("/api/v1/observability/orcamentos/projecao").param("departmentId", departmentId.toString()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.calculationVersion").value(BudgetProjection.CALCULATION_VERSION))
+            .andExpect(jsonPath("$.mes").value(org.hamcrest.Matchers.isOneOf(
+                before.toString(), YearMonth.now(java.time.ZoneOffset.UTC).toString())));
+    }
+
+    @Test
     void devolveContratoDaProjecao() throws Exception {
         allow();
         when(projectDepartmentBudget.query(tenantId, departmentId, YearMonth.of(2026, 10), 14,

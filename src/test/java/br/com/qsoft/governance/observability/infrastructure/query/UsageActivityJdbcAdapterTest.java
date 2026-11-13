@@ -29,6 +29,8 @@ class UsageActivityJdbcAdapterTest {
 
     @Test
     void returnsEmptyWithoutQueryingWhenThereAreNoUsers() {
+        assertThat(adapter.activeDays(TenantId.random(), null,
+            LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 31))).isEmpty();
         assertThat(adapter.activeDays(TenantId.random(), Set.of(),
             LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 31))).isEmpty();
         assertThat(jdbc.sqls).isEmpty();

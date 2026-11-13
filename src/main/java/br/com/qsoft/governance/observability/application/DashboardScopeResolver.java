@@ -90,13 +90,12 @@ public class DashboardScopeResolver {
         if (visibility instanceof VisibilityScope.TenantWide) {
             return true;
         }
-        if (visibility instanceof VisibilityScope.Departments departments) {
-            if (departments.self().value().equals(requestedUserId)) {
-                return true;
-            }
-            UUID departmentId = target.get().departmentId();
-            return departmentId != null && departments.ids().contains(departmentId);
+        // A consulta já rejeitou None. O único escopo restante é Departments.
+        var departments = (VisibilityScope.Departments) visibility;
+        if (departments.self().value().equals(requestedUserId)) {
+            return true;
         }
-        return false;
+        UUID departmentId = target.get().departmentId();
+        return departmentId != null && departments.ids().contains(departmentId);
     }
 }

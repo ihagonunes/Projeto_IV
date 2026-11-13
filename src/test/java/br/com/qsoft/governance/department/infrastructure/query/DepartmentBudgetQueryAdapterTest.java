@@ -38,6 +38,18 @@ class DepartmentBudgetQueryAdapterTest {
     }
 
     @Test
+    void legacyLookupReturnsOnlyTheDefaultBudgetWithinTenant() {
+        Department configured = department("Marketing", BigDecimal.TEN);
+        Department missingBudget = department("Engenharia", null);
+        when(departments.findByTenantIdAndId(tenantId, configured.id())).thenReturn(Optional.of(configured));
+        when(departments.findByTenantIdAndId(tenantId, missingBudget.id())).thenReturn(Optional.of(missingBudget));
+
+        assertThat(adapter.monthlyBudgetOf(tenantId, configured.id())).contains(BigDecimal.TEN);
+        assertThat(adapter.monthlyBudgetOf(tenantId, missingBudget.id())).isEmpty();
+        assertThat(adapter.monthlyBudgetOf(TenantId.random(), configured.id())).isEmpty();
+    }
+
+    @Test
     void linhaDoMesVenceOPadrao() {
         Department marketing = department("Marketing", new BigDecimal("1000.00"));
         when(departments.findByTenantIdAndId(tenantId, marketing.id()))

@@ -42,6 +42,17 @@ class UpdateModelTest {
     }
 
     @Test
+    void rejectsNullCommandAndMissingName() {
+        assertThatThrownBy(() -> useCase.update(null)).isInstanceOf(IllegalArgumentException.class);
+        when(repository.findByTenantIdAndId(TENANT, MODEL_ID))
+            .thenReturn(Optional.of(model(ModelStatus.AVAILABLE, BigDecimal.ONE, BigDecimal.ONE)));
+        assertThatThrownBy(() -> useCase.update(command(null, null, BigDecimal.ONE, BigDecimal.ONE)))
+            .hasMessageContaining("name");
+        assertThatThrownBy(() -> useCase.update(command("  ", null, BigDecimal.ONE, BigDecimal.ONE)))
+            .hasMessageContaining("name");
+    }
+
+    @Test
     void editaNomeExternoEPrecosMantendoStatusEProvider() {
         Model original = model(ModelStatus.AVAILABLE, new BigDecimal("0.005"),
             new BigDecimal("0.015"));

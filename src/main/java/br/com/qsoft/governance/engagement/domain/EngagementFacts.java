@@ -2,6 +2,7 @@ package br.com.qsoft.governance.engagement.domain;
 
 import br.com.qsoft.governance.sharedkernel.id.UserId;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -33,5 +34,21 @@ public record EngagementFacts(
                            Map<UserId, List<LicenseFact>> licenses,
                            Map<UserId, List<TrainingFact>> trainings, Coverage coverage) {
         this(eligible, activeDays, licenses, trainings, coverage, true, true);
+    }
+
+    public EngagementFacts restrictTo(Set<UserId> users) {
+        return new EngagementFacts(users, retainUsers(activeDays, users), retainUsers(licenses, users),
+            retainUsers(trainings, users), coverage, licenseSourceAvailable, trainingSourceAvailable);
+    }
+
+    private static <V> Map<UserId, V> retainUsers(Map<UserId, V> values, Set<UserId> users) {
+        Map<UserId, V> retained = new HashMap<>();
+        for (UserId user : users) {
+            V value = values.get(user);
+            if (value != null) {
+                retained.put(user, value);
+            }
+        }
+        return retained;
     }
 }

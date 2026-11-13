@@ -109,7 +109,8 @@ class AgentPoliciesDemoSeederTest {
     void segundaExecucaoNaoDuplica() {
         AgentPoliciesDemoSeeder seeder =
             new AgentPoliciesDemoSeeder(repository, directory(true, false), "qsoft");
-        seeder.seed();
+        seeder.onApplicationEvent(org.mockito.Mockito.mock(
+            org.springframework.boot.context.event.ApplicationReadyEvent.class));
         seeder.seed();
 
         assertThat(calls).hasSize(4);

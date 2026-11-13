@@ -9,6 +9,13 @@ import org.junit.jupiter.api.Test;
 class ChunkingTest {
 
     @Test
+    void cutsLongWordsWithoutLosingTextAndIgnoresTabOnlySlices() {
+        String word = "a".repeat(801);
+        assertThat(Chunking.split(word)).containsExactly("a".repeat(800), "a");
+        assertThat(Chunking.split("a" + "\t".repeat(1600) + "b")).containsExactly("a", "b");
+    }
+
+    @Test
     void separaParagrafosEmTrechos() {
         List<String> chunks = Chunking.split("Primeiro parágrafo.\n\nSegundo parágrafo.\n\n  ");
 

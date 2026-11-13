@@ -26,6 +26,23 @@ class QueryHistoricalDashboardTest {
     private final UserId user = UserId.of(UUID.randomUUID());
 
     @Test
+    void mappedDepartmentAllowsHistoryWithoutPersonalLegacyLink() {
+        UUID department = UUID.randomUUID();
+        when(auth.visibilityFor(tenant, user, Resource.USAGE, Action.READ))
+            .thenReturn(new VisibilityScope.Departments(Set.of(department), user));
+        when(departments.legacyIds(tenant, Set.of(department))).thenReturn(Set.of("D-1"));
+        var scope = new HistoricalDashboardQuery.Scope(false, Set.of("D-1"), null);
+        when(query.coverage(new HistoricalDashboardQuery.Filter(tenant, null, null, null, null, scope)))
+            .thenReturn(new HistoricalDashboardQuery.Coverage(null, null));
+        LocalDate from = LocalDate.of(2026, 7, 1);
+        LocalDate to = from.plusDays(1);
+
+        service.execute(tenant, user, from, to, "D-1", null);
+
+        verify(query).series(new HistoricalDashboardQuery.Filter(tenant, from, to, "D-1", null, scope));
+    }
+
+    @Test
     void restrictedScopesNeverQueryHistoricalData() {
         for (var scope : new VisibilityScope[]{new VisibilityScope.None(),
                 new VisibilityScope.SelfOnly(user), new VisibilityScope.Departments(Set.of(UUID.randomUUID()), user)}) {

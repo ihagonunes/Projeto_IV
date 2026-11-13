@@ -191,6 +191,56 @@ class PolicyEvaluatorTest {
     }
 
     @Test
+    void byTargetAllowsDepartmentGrantButTenantGateRequiresTenantScopeAndHonorsChatCeiling() {
+        TenantId tenant = activeTenant();
+        UserId actor = activeUser(tenant);
+        assign(tenant, actor, roleWith(tenant, manageUsers, "MANAGER"), UUID.randomUUID());
+        assign(tenant, actor, roleWith(tenant, Permission.of(Resource.CHAT, Action.READ), "EXECUTIVE"), null);
+
+        assertThat(evaluator.gateByTarget(tenant, actor, Resource.USER, Action.MANAGE)).isTrue();
+        assertThat(evaluator.gateTenantOnly(tenant, actor, Resource.USER, Action.MANAGE)).isFalse();
+        assertThat(evaluator.gateTenantOnly(tenant, actor, Resource.CHAT, Action.READ)).isFalse();
+        assertThat(evaluator.isAllowed(tenant, actor, Resource.CHAT, Action.READ, new AccessTarget.TenantTarget()))
+            .isFalse();
+        assertThat(evaluator.visibilityFor(tenant, actor, Resource.CHAT, Action.READ))
+            .isEqualTo(new VisibilityScope.SelfOnly(actor));
+
+        assign(tenant, actor, roleWith(tenant, manageUsers, "EXECUTIVE"), null);
+        assertThat(evaluator.gateTenantOnly(tenant, actor, Resource.USER, Action.MANAGE)).isTrue();
+    }
+
+    @Test
+    void scopedAuthorizationRejectsInactiveOrCrossTenantContext() {
+        TenantId tenant = activeTenant();
+        UserId actor = activeUser(tenant);
+        assertThat(evaluator.gateByTarget(activeTenant(), actor, Resource.USER, Action.READ)).isFalse();
+        tenants.remove(tenant);
+        assertThat(evaluator.gateByTarget(tenant, actor, Resource.USER, Action.READ)).isFalse();
+        tenants.put(tenant, Tenant.restore(tenant, "inactive", "Tenant", TenantStatus.INACTIVE,
+            Instant.now(), Instant.now()));
+        assertThat(evaluator.gateByTarget(tenant, actor, Resource.USER, Action.READ)).isFalse();
+        users.get(actor).deactivate();
+        assertThat(evaluator.gateByTarget(tenant, actor, Resource.USER, Action.READ)).isFalse();
+    }
+
+    @Test
+    void scopedPermissionsIgnoreMissingForeignAndNonMatchingRoles() {
+        TenantId tenant = activeTenant();
+        UserId actor = activeUser(tenant);
+        Role missing = roleWith(tenant, manageUsers);
+        assign(tenant, actor, missing, null);
+        roles.remove(missing.id());
+        Role foreign = roleWith(activeTenant(), manageUsers);
+        assignments.add(new RoleAssignment(RoleAssignmentId.random(), actor, foreign.id(),
+            tenant, ScopeType.TENANT, null, GrantOrigin.MIGRATION, null, Instant.now(), null, null));
+        Permission readUsage = Permission.of(Resource.USAGE, Action.READ);
+        assign(tenant, actor, roleWith(tenant, readUsage), null);
+
+        assertThat(evaluator.gateByTarget(tenant, actor, Resource.USER, Action.MANAGE)).isFalse();
+        assertThat(evaluator.effectivePermissions(tenant, actor)).containsExactly(readUsage);
+    }
+
+    @Test
     void shouldAllowWhenRoleHasPermission() {
         TenantId tenantId = activeTenant();
         UserId userId = activeUser(tenantId);

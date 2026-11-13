@@ -52,6 +52,31 @@ class DashboardScopeResolverTest {
                 "COLLABORATOR", departmentId, "ACTIVE")));
     }
 
+    @Test
+    void departmentScopeAllowsSelfWithoutDepartmentButDeniesUnassignedPeers() {
+        UUID peer = UUID.randomUUID();
+        givenUser(userId.value(), tenantId, null);
+        givenUser(peer, tenantId, null);
+        when(authorizationQuery.visibilityFor(tenantId, userId, Resource.USAGE, Action.READ))
+            .thenReturn(new VisibilityScope.Departments(Set.of(UUID.randomUUID()), userId));
+
+        assertThat(resolveUser(userId.value()).requestedUserId()).isEqualTo(userId.value());
+        assertThatThrownBy(() -> resolveUser(peer)).isInstanceOf(UsageVisibilityDeniedException.class);
+    }
+
+    @Test
+    void tenantWideUserFilterStillRequiresSameTenantIdentity() {
+        UUID target = UUID.randomUUID();
+        when(authorizationQuery.visibilityFor(tenantId, userId, Resource.USAGE, Action.READ))
+            .thenReturn(new VisibilityScope.TenantWide());
+        givenUser(target, tenantId, null);
+
+        assertThat(resolveUser(target).requestedUserId()).isEqualTo(target);
+
+        givenUser(target, TenantId.random(), null);
+        assertThatThrownBy(() -> resolveUser(target)).isInstanceOf(UsageVisibilityDeniedException.class);
+    }
+
     private UsageMetricsRepository.UsageMetricsFilter resolve(UUID requested) {
         return resolver.resolve(tenantId, userId, requested, null, null,
             UsageMetricsRepository.Granularity.DAY);

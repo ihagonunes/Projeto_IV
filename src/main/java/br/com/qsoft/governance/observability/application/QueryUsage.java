@@ -79,9 +79,7 @@ public class QueryUsage {
         if (visibility instanceof VisibilityScope.Departments departments) {
             return Objects.equals(userId, departments.self().value());
         }
-        if (visibility instanceof VisibilityScope.SelfOnly selfOnly) {
-            return Objects.equals(userId, selfOnly.self().value());
-        }
-        return false;
+        // A consulta já rejeitou None. O único escopo restante é SelfOnly.
+        return Objects.equals(userId, ((VisibilityScope.SelfOnly) visibility).self().value());
     }
 }

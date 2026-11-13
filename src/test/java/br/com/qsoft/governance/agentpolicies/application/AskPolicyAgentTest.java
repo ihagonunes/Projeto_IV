@@ -156,6 +156,29 @@ class AskPolicyAgentTest {
         return new AskPolicyCommand(tenantId, userId, "pergunta", null);
     }
 
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"{}", "{broken"})
+    void invalidToolArgumentsFallBackToOriginalQuestionAndEmptyHitsAreReported(String arguments) {
+        when(knowledge.search(tenantId, userId, "pergunta"))
+            .thenReturn(List.of(hit("P", "t")), List.of());
+        completion.results.add(result(null, List.of(new ToolCall("search", AgentPromptBuilder.TOOL_SEARCH, arguments),
+            new ToolCall("other", "x".repeat(300), "{}"))));
+        completion.results.add(result("ok", List.of()));
+
+        assertThat(agent.ask(command()).answer()).isEqualTo("ok");
+        org.mockito.Mockito.verify(knowledge, org.mockito.Mockito.times(2)).search(tenantId, userId, "pergunta");
+        assertThat(completion.commands.get(1).messages()).anyMatch(message ->
+            "Nenhum trecho encontrado.".equals(message.content()));
+        assertThat(saved.getLast().toolsCalled()).anyMatch(name -> name.startsWith("xxxxx") && name.length() < 300);
+    }
+
+    @Test
+    void policyAnswerDefaultsMissingCollectionsToEmpty() {
+        var answer = new PolicyAnswer("ok", null, null, null, null);
+        assertThat(answer.sources()).isEmpty();
+        assertThat(answer.toolsUsed()).isEmpty();
+    }
+
     private static KnowledgeHit hit(String title, String text) {
         return new KnowledgeHit(UUID.randomUUID(), text, UUID.randomUUID(), title, 1, 1.0);
     }

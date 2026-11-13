@@ -55,29 +55,22 @@ public final class CreditsCalculator {
             license = activeDays > 0 ? HUNDRED.setScale(2) : ZERO;
         }
 
-        BigDecimal score = score(usage, training, license, applicability,
-            trainingAvailable, licenseAvailable);
+        BigDecimal score = score(usage, training, license);
         DataStatus dataStatus = trainingAvailable && licenseAvailable
             ? DataStatus.COMPLETE : DataStatus.PARTIAL;
         return new CreditsItem(userId, usage, training, license, applicability, score, dataStatus);
     }
 
-    private static BigDecimal score(BigDecimal usage, BigDecimal training, BigDecimal license,
-                                    LicenseApplicability applicability,
-                                    boolean trainingAvailable, boolean licenseAvailable) {
+    private static BigDecimal score(BigDecimal usage, BigDecimal training, BigDecimal license) {
         BigDecimal numerator = usage.multiply(new BigDecimal("0.50"));
         BigDecimal weight = new BigDecimal("0.50");
-        if (trainingAvailable && training != null) {
+        if (training != null) {
             numerator = numerator.add(training.multiply(new BigDecimal("0.30")));
             weight = weight.add(new BigDecimal("0.30"));
         }
-        if (licenseAvailable && applicability == LicenseApplicability.APPLICABLE
-            && license != null) {
+        if (license != null) {
             numerator = numerator.add(license.multiply(new BigDecimal("0.20")));
             weight = weight.add(new BigDecimal("0.20"));
-        }
-        if (weight.signum() == 0) {
-            return null;
         }
         return numerator.divide(weight, 2, RoundingMode.HALF_UP);
     }

@@ -17,7 +17,11 @@ import br.com.qsoft.governance.sharedkernel.rbac.Resource;
 import br.com.qsoft.governance.sharedkernel.rbac.VisibilityScope;
 import java.math.BigDecimal;
 import java.time.YearMonth;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -32,8 +36,52 @@ class QueryPeerConsumptionTest {
     private final AuthorizationQuery authorization = mock(AuthorizationQuery.class);
     private final IdentityQuery identity = mock(IdentityQuery.class);
     private final PeerConsumptionQuery port = mock(PeerConsumptionQuery.class);
+    private final HistoricalIdentityQuery legacyUsers = mock(HistoricalIdentityQuery.class);
+    private final HistoricalDepartmentQuery legacyDepartments = mock(HistoricalDepartmentQuery.class);
     private final QueryPeerConsumption query = new QueryPeerConsumption(authorization, identity,
-        mock(HistoricalIdentityQuery.class), mock(HistoricalDepartmentQuery.class), port);
+        legacyUsers, legacyDepartments, port);
+
+    @Test
+    void suppressesCurrentMonthAndActorWithoutDepartmentBeforeAggregate() {
+        when(authorization.visibilityFor(tenant, actor, Resource.USAGE, Action.READ))
+            .thenReturn(new VisibilityScope.SelfOnly(actor));
+        assertThat(query.average(tenant, actor, YearMonth.now(ZoneOffset.UTC),
+            QueryPeerConsumption.Source.OPERACIONAL)).isNull();
+        verifyNoInteractions(identity);
+
+        when(identity.eligibleUsers(tenant)).thenReturn(List.of(user(actor, tenant, null)));
+        assertThat(query.average(tenant, actor, month, QueryPeerConsumption.Source.OPERACIONAL)).isNull();
+        verifyNoInteractions(port);
+    }
+
+    @Test
+    void historicalCohortRequiresDepartmentAndActorMappingsAndTenDistinctOtherPeers() {
+        when(authorization.visibilityFor(tenant, actor, Resource.USAGE, Action.READ))
+            .thenReturn(new VisibilityScope.SelfOnly(actor));
+        Map<UserId, String> peers = IntStream.range(0, 10).boxed()
+            .collect(Collectors.toMap(i -> UserId.random(), i -> "legacy-" + i));
+        var contexts = new ArrayList<>(peers.keySet().stream().map(id -> user(id, tenant, department)).toList());
+        contexts.add(user(actor, tenant, department));
+        when(identity.eligibleUsers(tenant)).thenReturn(contexts);
+
+        assertThat(query.average(tenant, actor, month, QueryPeerConsumption.Source.HISTORICO)).isNull();
+        verifyNoInteractions(legacyUsers);
+        when(legacyDepartments.legacyIds(tenant, Set.of(department))).thenReturn(Set.of("dept-1"));
+        assertThat(query.average(tenant, actor, month, QueryPeerConsumption.Source.HISTORICO)).isNull();
+
+        UserId repeated = peers.keySet().iterator().next();
+        Map<UserId, String> withActorId = new java.util.HashMap<>(peers);
+        withActorId.put(repeated, "legacy-actor");
+        when(legacyUsers.employeeId(tenant, actor)).thenReturn(Optional.of("legacy-actor"));
+        when(legacyUsers.employeeIds(tenant, peers.keySet())).thenReturn(withActorId);
+        assertThat(query.average(tenant, actor, month, QueryPeerConsumption.Source.HISTORICO)).isNull();
+        verifyNoInteractions(port);
+
+        var average = new PeerConsumptionQuery.Average(BigDecimal.TEN, BigDecimal.ONE);
+        when(legacyUsers.employeeIds(tenant, peers.keySet())).thenReturn(peers);
+        when(port.historical(tenant, Set.of("dept-1"), Set.copyOf(peers.values()), month)).thenReturn(average);
+        assertThat(query.average(tenant, actor, month, QueryPeerConsumption.Source.HISTORICO)).isEqualTo(average);
+    }
 
     @Test
     void onlyOwnDepartmentAndTenantReachAggregateAndActorIsExcluded() {

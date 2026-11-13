@@ -180,6 +180,14 @@ class RegisterTenantTest {
             .isInstanceOf(IllegalArgumentException.class);
     }
 
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"admin", "admin@", "admin@\u2003"})
+    void rejectsMalformedAdminEmail(String email) {
+        assertThatThrownBy(() -> useCase().register(new RegisterTenantCommand(
+            "qsoft", "QSOFT", "qsoft.com", "Admin", email, "test-password")))
+            .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("adminEmail inválido");
+    }
+
     @Test
     void shouldRejectShortAdminPassword() {
         assertThatThrownBy(() -> useCase().register(new RegisterTenantCommand(

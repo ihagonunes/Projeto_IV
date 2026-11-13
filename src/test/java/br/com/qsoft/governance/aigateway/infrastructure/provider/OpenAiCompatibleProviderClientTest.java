@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import br.com.qsoft.governance.aigateway.api.completion.CompletionMessage;
+import br.com.qsoft.governance.aigateway.api.completion.ToolCall;
 import br.com.qsoft.governance.aigateway.api.completion.ToolSpec;
 import br.com.qsoft.governance.aigateway.application.port.ProviderClient.ProviderCall;
 import br.com.qsoft.governance.aigateway.application.port.ProviderClient.ProviderResponse;
@@ -15,14 +16,18 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import com.sun.net.httpserver.HttpServer;
+import com.sun.net.httpserver.HttpExchange;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.LoggerFactory;
 import tools.jackson.databind.ObjectMapper;
 
@@ -40,6 +45,7 @@ class OpenAiCompatibleProviderClientTest {
     private final AtomicReference<String> requestBody = new AtomicReference<>();
     private final AtomicReference<String> openCodeSession = new AtomicReference<>();
     private final AtomicReference<String> userAgent = new AtomicReference<>();
+    private final AtomicReference<String> responseOverride = new AtomicReference<>();
 
     @BeforeEach
     void setUp() throws IOException {
@@ -54,7 +60,7 @@ class OpenAiCompatibleProviderClientTest {
             userAgent.set(exchange.getRequestHeaders().getFirst("User-Agent"));
             requestBody.set(new String(exchange.getRequestBody().readAllBytes(),
                 StandardCharsets.UTF_8));
-            byte[] response = """
+            String standardResponse = """
                 {
                   "choices": [{
                     "message": {
@@ -65,7 +71,9 @@ class OpenAiCompatibleProviderClientTest {
                   }],
                   "usage": {"prompt_tokens": 11, "completion_tokens": 7}
                 }
-                """.getBytes(StandardCharsets.UTF_8);
+                """;
+            String override = responseOverride.get();
+            byte[] response = (override == null ? standardResponse : override).getBytes(StandardCharsets.UTF_8);
             exchange.getResponseHeaders().add("Content-Type", "application/json");
             exchange.sendResponseHeaders(200, response.length);
             exchange.getResponseBody().write(response);
@@ -73,6 +81,91 @@ class OpenAiCompatibleProviderClientTest {
         });
         server.start();
         baseUrl = "http://127.0.0.1:" + server.getAddress().getPort();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", "{}", "{\"choices\":[1]}", "{invalid json"})
+    void respostaInvalidaViraFalhaDeParse(String response) {
+        responseOverride.set(response);
+        assertThatThrownBy(() -> clientWithoutCredential().call(localCall(List.of(), List.of())))
+            .isInstanceOfSatisfying(ProviderFailureException.class,
+                failure -> assertThat(failure.errorCode()).isEqualTo("PARSE"));
+    }
+
+    @Test
+    void aceitaCamposOpcionaisEIgnoraFerramentasMalformadas() {
+        responseOverride.set("""
+            {"choices":[{"message":{"tool_calls":[true,{},{"function":{}},
+              {"function":{"name":"lookup"}},{"id":"call-2","function":{"name":"search","arguments":"{}"}}]}}],
+              "usage":{"prompt_tokens":"unknown"}}
+            """);
+
+        ProviderResponse response = clientWithoutCredential().call(localCall(
+            List.of(new CompletionMessage("TOOL", null, "call-1")),
+            List.of(new ToolSpec("lookup", null, "{}"))));
+
+        assertThat(authorization.get()).isNull();
+        assertThat(requestBody.get()).contains("\"role\":\"tool\"", "\"content\":\"\"",
+            "\"tool_call_id\":\"call-1\"", "\"description\":\"\"");
+        assertThat(response.content()).isNull();
+        assertThat(response.usage()).isEqualTo(new Usage.Known(0, 0));
+        assertThat(response.toolCalls()).containsExactly(
+            new ToolCall("lookup", "lookup", "{}"),
+            new ToolCall("call-2", "search", "{}"));
+    }
+
+    @Test
+    void aceitaChoiceSemMensagemComoRespostaSemConteudo() {
+        responseOverride.set("{\"choices\":[{}]}");
+        ProviderResponse response = clientWithoutCredential().call(localCall(List.of(), List.of()));
+        assertThat(response.content()).isNull();
+        assertThat(response.toolCalls()).isEmpty();
+        assertThat(response.usage()).isInstanceOf(Usage.Unknown.class);
+    }
+
+    @Test
+    void rejeitaSchemaDeFerramentaInvalidoAntesDoEnvio() {
+        assertThatThrownBy(() -> clientWithoutCredential().call(localCall(
+            List.of(), List.of(new ToolSpec("lookup", "Busca", "{invalid json")))))
+            .isInstanceOfSatisfying(ProviderFailureException.class,
+                failure -> assertThat(failure.errorCode()).isEqualTo("PARSE"));
+        assertThat(requestBody.get()).isNull();
+    }
+
+    @Test
+    void conexaoEncerradaAntesDosHeadersViraFalhaDeConexao() {
+        server.createContext("/disconnect/chat/completions", HttpExchange::close);
+
+        assertThatThrownBy(() -> clientWithoutCredential().call(new ProviderCall(
+            ProviderKind.OPENAI_COMPATIBLE, baseUrl + "/disconnect", null, 5000, "gpt-x",
+            List.of(), List.of())))
+            .isInstanceOfSatisfying(ProviderFailureException.class,
+                failure -> assertThat(failure.errorCode()).isEqualTo("CONNECT"));
+    }
+
+    @Test
+    void urlAusenteFalhaSemEnviarRequisicao() {
+        assertThatThrownBy(() -> clientWithoutCredential().call(new ProviderCall(
+            ProviderKind.OPENAI_COMPATIBLE, null, null, 5000, "gpt-x", List.of(), List.of())))
+            .isInstanceOfSatisfying(ProviderFailureException.class,
+                failure -> assertThat(failure.errorCode()).isEqualTo("PARSE"));
+        assertThat(requestBody.get()).isNull();
+    }
+
+    @Test
+    void reconheceTimeoutDeSocketEncapsuladoPeloClienteHttp() {
+        assertThat(OpenAiCompatibleProviderClient.isTimeout(
+            new IOException("Falha de transporte", new SocketTimeoutException()))).isTrue();
+    }
+
+    private ProviderCall localCall(List<CompletionMessage> messages, List<ToolSpec> tools) {
+        return new ProviderCall(ProviderKind.OPENAI_COMPATIBLE, baseUrl, " ", 5000, "gpt-x", messages, tools);
+    }
+
+    private static OpenAiCompatibleProviderClient clientWithoutCredential() {
+        return new OpenAiCompatibleProviderClient(reference -> {
+            throw new AssertionError("resolver não deveria ser chamado");
+        }, new ObjectMapper());
     }
 
     @AfterEach

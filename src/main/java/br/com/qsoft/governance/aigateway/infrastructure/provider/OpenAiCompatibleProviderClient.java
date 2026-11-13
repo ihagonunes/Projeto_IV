@@ -172,7 +172,7 @@ public class OpenAiCompatibleProviderClient implements ProviderClient {
         return value instanceof Number number ? number.longValue() : 0L;
     }
 
-    private static boolean isTimeout(Throwable throwable) {
+    static boolean isTimeout(Throwable throwable) {
         Throwable current = throwable;
         while (current != null) {
             if (current instanceof SocketTimeoutException || current instanceof HttpTimeoutException) {

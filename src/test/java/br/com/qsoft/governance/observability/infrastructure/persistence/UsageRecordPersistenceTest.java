@@ -33,8 +33,11 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
+import br.com.qsoft.governance.observability.application.UsageVisibilityDeniedException;
+import br.com.qsoft.governance.sharedkernel.rbac.VisibilityScope;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -57,6 +60,51 @@ class UsageRecordPersistenceTest {
     private UsageRecordRepositoryAdapter repositoryAdapter;
 
     private final UsageRecordJpaMapper mapper = new UsageRecordJpaMapper();
+
+    @Test
+    void specificationUnionsDepartmentScopeWithSelfAndDeniesNoVisibility() {
+        UsageRecord record = criarRecordExemplo();
+        var self = br.com.qsoft.governance.sharedkernel.id.UserId.random();
+        var departments = java.util.Set.of(java.util.UUID.randomUUID());
+        var scope = new VisibilityScope.Departments(departments, self);
+        Specification<UsageRecordJpaEntity> departmentSpec = specification(record, scope);
+        Specification<UsageRecordJpaEntity> selfSpec = specification(record, new VisibilityScope.SelfOnly(self));
+        Specification<UsageRecordJpaEntity> denied = specification(record, new VisibilityScope.None());
+
+        Root<UsageRecordJpaEntity> root = mock();
+        CriteriaBuilder builder = mock();
+        Path<java.util.UUID> tenantPath = mock();
+        Path<java.util.UUID> departmentPath = mock();
+        Path<java.util.UUID> userPath = mock();
+        Predicate tenantPredicate = mock();
+        Predicate departmentPredicate = mock();
+        Predicate userPredicate = mock();
+        Predicate union = mock();
+        when(root.<java.util.UUID>get("tenantId")).thenReturn(tenantPath);
+        when(root.<java.util.UUID>get("departmentId")).thenReturn(departmentPath);
+        when(root.<java.util.UUID>get("userId")).thenReturn(userPath);
+        when(builder.equal(tenantPath, record.tenantId().value())).thenReturn(tenantPredicate);
+        when(departmentPath.in(departments)).thenReturn(departmentPredicate);
+        when(builder.equal(userPath, self.value())).thenReturn(userPredicate);
+        when(builder.or(departmentPredicate, userPredicate)).thenReturn(union);
+
+        departmentSpec.toPredicate(root, null, builder);
+        selfSpec.toPredicate(root, null, builder);
+        assertThatThrownBy(() -> denied.toPredicate(root, null, builder))
+            .isInstanceOf(UsageVisibilityDeniedException.class);
+
+        ArgumentCaptor<Predicate[]> predicates = ArgumentCaptor.forClass(Predicate[].class);
+        verify(builder, org.mockito.Mockito.times(2)).and(predicates.capture());
+        assertThat(predicates.getAllValues().getFirst()).containsExactly(tenantPredicate, union);
+        assertThat(predicates.getAllValues().getLast()).containsExactly(tenantPredicate, userPredicate);
+    }
+
+    private Specification<UsageRecordJpaEntity> specification(UsageRecord record, VisibilityScope visibility) {
+        ArgumentCaptor<Specification<UsageRecordJpaEntity>> spec = ArgumentCaptor.captor();
+        when(jpaRepository.findAll(spec.capture(), any(PageRequest.class))).thenReturn(new PageImpl<>(List.of()));
+        repositoryAdapter.search(new UsageRecordFilter(record.tenantId(), visibility, null, null, null, null), 0, 10);
+        return spec.getValue();
+    }
 
     @BeforeEach
     void setUp() {

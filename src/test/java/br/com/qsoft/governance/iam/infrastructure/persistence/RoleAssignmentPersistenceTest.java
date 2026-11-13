@@ -15,6 +15,7 @@ import br.com.qsoft.governance.sharedkernel.rbac.ScopeType;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,6 +31,21 @@ class RoleAssignmentPersistenceTest {
 
     @InjectMocks
     private RoleAssignmentRepositoryAdapter adapter;
+
+    @Test
+    void countsAndLooksUpAdminGrantsWithinTenant() {
+        TenantId tenant = TenantId.random();
+        RoleId role = RoleId.random();
+        UUID first = UUID.randomUUID();
+        UUID second = UUID.randomUUID();
+        when(jpaRepository.countByTenantIdAndRoleIdAndRevokedAtIsNull(tenant.value(), role.value()))
+            .thenReturn(2L);
+        when(jpaRepository.findUserIdsWithOnlyTenantAdminGrant(tenant.value()))
+            .thenReturn(List.of(first, second, first));
+
+        assertThat(adapter.countActiveByTenantIdAndRoleId(tenant, role)).isEqualTo(2);
+        assertThat(adapter.findUserIdsWithOnlyTenantAdminGrant(tenant)).isEqualTo(Set.of(UserId.of(first), UserId.of(second)));
+    }
 
     @Test
     void deve_testarRoleAssignmentJpaEntity_gettersESetters() {

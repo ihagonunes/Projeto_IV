@@ -33,7 +33,7 @@ public class StubProviderClient implements ProviderClient {
     @Override
     public ProviderResponse call(ProviderCall call) {
         this.lastCall = call;
-        String mode = call.externalModelName() == null ? DEFAULT_MODE : call.externalModelName();
+        String mode = call.externalModelName();
         switch (mode) {
             case TIMEOUT_MODE -> throw new ProviderTimeoutException();
             case ERROR_MODE -> throw new ProviderFailureException("HTTP_500");

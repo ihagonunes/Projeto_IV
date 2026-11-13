@@ -110,4 +110,16 @@ class RoleAssignmentTest {
         assertThat(again.revokedAt()).isEqualTo(revoked.revokedAt());
         assertThat(again.revokedBy()).isEqualTo(revoked.revokedBy());
     }
+
+    @Test
+    void revocationRequiresTimestampAndActorTogether() {
+        assertThatThrownBy(() -> new RoleAssignment(
+            RoleAssignmentId.random(), actor, RoleId.random(), tenantId, ScopeType.SELF,
+            null, GrantOrigin.DIRECT, null, Instant.EPOCH, Instant.EPOCH, null))
+            .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("revokedAt", "revokedBy");
+        assertThatThrownBy(() -> new RoleAssignment(
+            RoleAssignmentId.random(), actor, RoleId.random(), tenantId, ScopeType.SELF,
+            null, GrantOrigin.DIRECT, null, Instant.EPOCH, null, actor))
+            .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("revokedAt", "revokedBy");
+    }
 }

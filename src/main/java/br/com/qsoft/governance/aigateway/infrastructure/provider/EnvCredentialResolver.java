@@ -2,6 +2,7 @@ package br.com.qsoft.governance.aigateway.infrastructure.provider;
 
 import br.com.qsoft.governance.aigateway.application.port.CredentialResolver;
 import br.com.qsoft.governance.aigateway.application.port.ProviderFailureException;
+import java.util.function.Function;
 import org.springframework.stereotype.Component;
 
 /**
@@ -12,12 +13,22 @@ import org.springframework.stereotype.Component;
 @Component
 public class EnvCredentialResolver implements CredentialResolver {
 
+    private final Function<String, String> environment;
+
+    public EnvCredentialResolver() {
+        this(System::getenv);
+    }
+
+    EnvCredentialResolver(Function<String, String> environment) {
+        this.environment = environment;
+    }
+
     @Override
     public String resolve(String credentialRef) {
         if (credentialRef == null || credentialRef.isBlank()) {
             throw new ProviderFailureException("CREDENTIAL_MISSING");
         }
-        String value = System.getenv(credentialRef);
+        String value = environment.apply(credentialRef);
         if (value == null || value.isBlank()) {
             throw new ProviderFailureException("CREDENTIAL_MISSING");
         }

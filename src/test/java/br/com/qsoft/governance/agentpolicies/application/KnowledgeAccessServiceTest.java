@@ -72,6 +72,7 @@ class KnowledgeAccessServiceTest {
 
     @Test
     void consultaVaziaNaoChamaRepositorio() {
+        assertThat(service.search(tenantId, userId, null)).isEmpty();
         assertThat(service.search(tenantId, userId, "  ")).isEmpty();
         assertThat(requestedDepartments).isEmpty();
     }

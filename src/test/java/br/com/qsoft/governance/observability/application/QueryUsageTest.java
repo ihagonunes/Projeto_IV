@@ -162,4 +162,22 @@ class QueryUsageTest {
             tenantId, actor, null, UUID.randomUUID(), null, null, 0, 20)))
             .isInstanceOf(UsageVisibilityDeniedException.class);
     }
+
+    @Test
+    void departmentScopeAllowsItsDepartmentAndOnlySelfAsExplicitUser() {
+        UUID department = UUID.randomUUID();
+        when(authorizationQuery.visibilityFor(tenantId, actor, Resource.USAGE, Action.READ))
+            .thenReturn(new VisibilityScope.Departments(Set.of(department), actor));
+        queryUsage.query(new QueryUsageCommand(tenantId, actor, department, actor.value(), null, null, 0, 20));
+        assertThatThrownBy(() -> queryUsage.query(new QueryUsageCommand(
+            tenantId, actor, department, UUID.randomUUID(), null, null, 0, 20)))
+            .isInstanceOf(UsageVisibilityDeniedException.class);
+
+        when(authorizationQuery.visibilityFor(tenantId, actor, Resource.USAGE, Action.READ))
+            .thenReturn(new VisibilityScope.SelfOnly(actor));
+        queryUsage.query(new QueryUsageCommand(tenantId, actor, null, actor.value(), null, null, 0, 20));
+        assertThatThrownBy(() -> queryUsage.query(new QueryUsageCommand(
+            tenantId, actor, department, null, null, null, 0, 20)))
+            .isInstanceOf(UsageVisibilityDeniedException.class);
+    }
 }

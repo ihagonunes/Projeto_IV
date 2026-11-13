@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import br.com.qsoft.governance.iam.application.port.InviteRepository;
@@ -17,6 +19,7 @@ import br.com.qsoft.governance.iam.domain.exception.UserEmailAlreadyExistsExcept
 import br.com.qsoft.governance.iam.domain.invite.Invite;
 import br.com.qsoft.governance.iam.domain.invite.InviteStatus;
 import br.com.qsoft.governance.iam.domain.rbac.Role;
+import br.com.qsoft.governance.iam.domain.rbac.SystemRole;
 import br.com.qsoft.governance.iam.domain.tenant.Tenant;
 import br.com.qsoft.governance.iam.domain.tenant.TenantStatus;
 import br.com.qsoft.governance.iam.domain.user.HierarchyLevel;
@@ -33,6 +36,8 @@ import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class CreateInviteTest {
 
@@ -171,9 +176,70 @@ class CreateInviteTest {
         assertThat(invite.tenantId()).isEqualTo(tenantId);
         assertThat(invite.email()).isEqualTo("ana@x.com");
         assertThat(invite.status()).isEqualTo(InviteStatus.PENDING);
+        assertThat(invite.hierarchyLevel()).isEqualTo(HierarchyLevel.COLLABORATOR);
         assertThat(invite.tokenHash()).isNotBlank();
         assertThat(issued.token()).isNotBlank();
         assertThat(invite.expiresAt()).isAfter(Instant.now());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "LEADER, , LEADER",
+        "MANAGER, , MANAGER",
+        "EXECUTIVE, , EXECUTIVE",
+        "TENANT_ADMIN, , EXECUTIVE",
+        "MANAGER, COLLABORATOR, COLLABORATOR"
+    })
+    void shouldDeriveHierarchyLevelUnlessProvided(SystemRole targetRole, HierarchyLevel provided,
+                                                  HierarchyLevel expected) {
+        TenantId tenantId = activeTenant();
+        Role role = roleRepository.save(Role.create(RoleId.random(), tenantId, targetRole.name()));
+        UUID departmentId = UUID.randomUUID();
+        UUID invitedBy = UUID.randomUUID();
+
+        Invite invite = useCase.create(new CreateInviteCommand(
+            tenantId, "ana@x.com", targetRole.name(), departmentId, provided, invitedBy)).invite();
+
+        assertThat(invite.hierarchyLevel()).isEqualTo(expected);
+        assertThat(invite.roleId()).isEqualTo(role.id().value());
+        assertThat(invite.departmentId()).isEqualTo(departmentId);
+        assertThat(invite.invitedBy()).isEqualTo(invitedBy);
+        verify(grantAuthority).canGrantByInvite(tenantId, UserId.of(invitedBy), targetRole, departmentId);
+    }
+
+    @Test
+    void shouldRejectUnknownSystemRole() {
+        TenantId tenantId = activeTenant();
+
+        assertThatThrownBy(() -> useCase.create(new CreateInviteCommand(
+            tenantId, "ana@x.com", "CUSTOM_ROLE", null, null, UUID.randomUUID())))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("roleKey inválido", "CUSTOM_ROLE");
+        assertThat(invitesByToken).isEmpty();
+    }
+
+    @Test
+    void shouldRejectWhenRoleExistsOnlyInAnotherTenant() {
+        TenantId tenantId = activeTenant();
+        TenantId otherTenantId = activeTenant();
+        roleRepository.save(Role.create(RoleId.random(), otherTenantId, "EXECUTIVE"));
+
+        assertThatThrownBy(() -> useCase.create(new CreateInviteCommand(
+            tenantId, "ana@x.com", "EXECUTIVE", null, null, UUID.randomUUID())))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("Papel de sistema ausente", "EXECUTIVE");
+        assertThat(invitesByToken).isEmpty();
+    }
+
+    @Test
+    void shouldRejectMissingInviterBeforeCheckingDelegation() {
+        TenantId tenantId = activeTenant();
+
+        assertThatThrownBy(() -> useCase.create(new CreateInviteCommand(
+            tenantId, "ana@x.com", "COLLABORATOR", null, null, null)))
+            .isInstanceOf(AuthorizationDeniedException.class);
+        verifyNoInteractions(grantAuthority);
+        assertThat(invitesByToken).isEmpty();
     }
 
     @Test
