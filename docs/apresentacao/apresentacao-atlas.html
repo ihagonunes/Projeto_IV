@@ -1,0 +1,796 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ATLAS · Apresentação</title>
+<link rel="icon" href="../marketing/brand-kit/logo/icone/atlas-icone-64.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --gold:#F0C22F; --gold-d:#D0A728; --gold-a:rgba(240,194,47,.15);
+  --bg:#0B1020; --card:#10182D; --composer:#151D30; --line:#25314A;
+  --text:#E2E8F0; --muted:#A9B4C9; --silver:#8B8EA1;
+  --ok:#4ADE80; --err:#F87171; --info:#38BDF8;
+  --ease:cubic-bezier(.2,.8,.2,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#05080F;overflow:hidden;color:var(--text);font-family:Poppins,system-ui,sans-serif}
+#stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;transform-origin:center;background:var(--bg);overflow:hidden;box-shadow:0 0 120px rgba(0,0,0,.8)}
+#bg{position:absolute;inset:0;z-index:0}
+.glow{position:absolute;width:1100px;height:1100px;border-radius:50%;filter:blur(40px);pointer-events:none;z-index:0;transition:transform 1.6s var(--ease),opacity 1.6s}
+.glow.g1{background:radial-gradient(circle,rgba(240,194,47,.16),transparent 60%);left:-300px;top:-400px}
+.glow.g2{background:radial-gradient(circle,rgba(56,189,248,.08),transparent 60%);right:-350px;bottom:-500px}
+.grid{position:absolute;inset:0;z-index:0;background-image:linear-gradient(rgba(37,49,74,.35) 1px,transparent 1px),linear-gradient(90deg,rgba(37,49,74,.35) 1px,transparent 1px);background-size:80px 80px;mask-image:radial-gradient(ellipse at center,#000 20%,transparent 75%)}
+
+/* ---------- slides ---------- */
+.slide{position:absolute;inset:0;z-index:2;padding:96px 128px 120px;opacity:0;visibility:hidden;display:flex;flex-direction:column;justify-content:center}
+.slide.active{opacity:1;visibility:visible}
+.slide.leaving{visibility:visible;animation:leave .55s var(--ease) forwards}
+@keyframes leave{to{opacity:0;transform:translateX(-60px) scale(.98);filter:blur(6px)}}
+.slide.leaving.back{animation-name:leaveBack}
+@keyframes leaveBack{to{opacity:0;transform:translateX(60px) scale(.98);filter:blur(6px)}}
+
+.r{opacity:0}
+.slide.active .r{animation:rise .9s var(--ease) forwards;animation-delay:calc(var(--d,0) * 110ms + 150ms)}
+.slide.active .r.l{animation-name:fromLeft}
+.slide.active .r.s{animation-name:pop}
+.slide.active .r.f{animation-name:fade}
+@keyframes rise{from{opacity:0;transform:translateY(34px);filter:blur(8px)}to{opacity:1;transform:none;filter:none}}
+@keyframes fromLeft{from{opacity:0;transform:translateX(-50px);filter:blur(8px)}to{opacity:1;transform:none;filter:none}}
+@keyframes pop{from{opacity:0;transform:scale(.85);filter:blur(10px)}to{opacity:1;transform:none;filter:none}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+
+.eyebrow{font-size:20px;letter-spacing:4px;text-transform:uppercase;color:var(--gold);font-weight:600;display:flex;align-items:center;gap:16px}
+.eyebrow::before{content:"";width:48px;height:2px;background:var(--gold)}
+h1,h2{font-weight:600;letter-spacing:-.5px;line-height:1.08}
+h2{font-size:68px;margin:18px 0 44px}
+h2 em,.hl{font-style:normal;color:var(--gold)}
+p{color:var(--muted);font-size:26px;line-height:1.5}
+.muted{color:var(--muted)}
+.small{font-size:20px}
+.row{display:flex;gap:32px}
+.col{display:flex;flex-direction:column;gap:24px}
+.grow{flex:1}
+
+.panel{background:linear-gradient(180deg,rgba(21,29,48,.92),rgba(16,24,45,.92));border:1px solid var(--line);border-radius:16px;padding:32px 36px;position:relative;backdrop-filter:blur(6px)}
+.panel.kpi::before{content:"";position:absolute;left:24px;right:24px;top:-1px;height:3px;background:var(--gold);border-radius:0 0 3px 3px}
+.panel.side{border-left:4px solid var(--gold)}
+.panel h3{font-size:30px;font-weight:600;margin-bottom:12px;color:var(--text)}
+.panel p{font-size:22px}
+.label{font-size:16px;letter-spacing:2px;text-transform:uppercase;color:var(--silver);font-weight:500}
+.big{font-size:84px;font-weight:600;color:var(--gold);line-height:1}
+.src{font-size:15px;color:var(--silver);margin-top:14px}
+.chip{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:999px;border:1px solid rgba(240,194,47,.45);background:rgba(240,194,47,.08);color:var(--gold);font-size:18px;font-weight:500}
+.chip.blue{border-color:rgba(56,189,248,.45);background:rgba(56,189,248,.08);color:var(--info)}
+.chip.green{border-color:rgba(74,222,128,.45);background:rgba(74,222,128,.08);color:var(--ok)}
+.chip.red{border-color:rgba(248,113,113,.45);background:rgba(248,113,113,.08);color:var(--err)}
+.ico{width:56px;height:56px;border-radius:12px;display:grid;place-items:center;background:rgba(240,194,47,.1);border:1px solid rgba(240,194,47,.35);color:var(--gold);flex:none}
+.ico svg{width:30px;height:30px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* border beam */
+.beam{position:relative}
+.beam::after{content:"";position:absolute;inset:-1px;border-radius:inherit;padding:2px;background:conic-gradient(from var(--a,0deg),transparent 0 70%,var(--gold) 85%,transparent 100%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;animation:beam 5s linear infinite;pointer-events:none}
+@property --a{syntax:'<angle>';initial-value:0deg;inherits:false}
+@keyframes beam{to{--a:360deg}}
+
+/* ---------- chrome ---------- */
+#hud{position:absolute;left:0;right:0;bottom:0;height:84px;z-index:5;display:flex;align-items:center;justify-content:space-between;padding:0 128px;pointer-events:none}
+#hud img{height:34px;opacity:.85}
+#hud .meta{display:flex;gap:28px;align-items:center;font-size:17px;color:var(--silver);letter-spacing:1px}
+#hud .meta b{color:var(--text);font-weight:500}
+#timer{font-variant-numeric:tabular-nums}
+#timer.over{color:var(--err)}
+#progress{position:absolute;left:0;bottom:0;height:4px;background:var(--gold);z-index:6;transition:width .8s var(--ease);box-shadow:0 0 18px rgba(240,194,47,.6)}
+.nav{position:absolute;top:0;bottom:0;width:50%;z-index:4;cursor:pointer}
+.nav.prev{left:0;cursor:w-resize}.nav.next{right:0;cursor:e-resize}
+.nav::after{content:"";position:absolute;top:50%;width:64px;height:64px;margin-top:-32px;border-radius:50%;border:1px solid rgba(240,194,47,.4);opacity:0;transition:opacity .3s}
+.nav.prev::after{left:28px}.nav.next::after{right:28px}
+.nav:hover::after{opacity:.6}
+#hint{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);font:13px Poppins;color:#5c6680;z-index:10;transition:opacity 1s;pointer-events:none}
+
+/* ---------- slide 1 ---------- */
+.cover{flex-direction:row;align-items:center;gap:90px;padding-top:70px}
+.emblem{position:relative;width:560px;height:560px;flex:none;display:grid;place-items:center}
+.emblem img{width:420px;position:relative;z-index:2;filter:drop-shadow(0 0 60px rgba(240,194,47,.25))}
+.orbit{position:absolute;inset:0;border-radius:50%;border:1px solid rgba(240,194,47,.25)}
+.orbit.o2{inset:50px;border-style:dashed;border-color:rgba(139,142,161,.3);animation:spin 40s linear infinite}
+.orbit.o1{animation:spin 18s linear infinite reverse}
+.orbit.o1::before{content:"";position:absolute;top:-7px;left:50%;width:14px;height:14px;border-radius:50%;background:var(--gold);box-shadow:0 0 24px var(--gold)}
+.orbit.o2::before{content:"";position:absolute;bottom:-5px;left:30%;width:10px;height:10px;border-radius:50%;background:var(--info);box-shadow:0 0 18px var(--info)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.wordmark{height:120px;margin-bottom:10px}
+.brand{font-family:'Cinzel Decorative',serif}
+.slogan{font-size:46px;font-weight:300;color:var(--text);margin:18px 0 8px}
+.slogan b{color:var(--gold);font-weight:600}
+.team{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:44px;max-width:1000px}
+.member{border:1px solid var(--line);background:rgba(16,24,45,.8);border-radius:12px;padding:16px 20px}
+.member .label{font-size:14px;color:var(--gold)}
+.member div:last-child{font-size:21px;margin-top:4px}
+
+/* ---------- agenda ---------- */
+.agenda{display:grid;grid-template-columns:1fr 1fr;gap:18px 64px}
+.agenda .it{display:flex;align-items:center;gap:26px;padding:16px 0;border-bottom:1px solid var(--line);font-size:30px}
+.agenda .n{font-size:22px;color:var(--gold);font-weight:600;width:44px;font-variant-numeric:tabular-nums}
+.agenda .t{margin-left:auto;font-size:17px;color:var(--silver)}
+
+/* ---------- problem ---------- */
+.hook{font-size:54px;font-weight:600;line-height:1.15;max-width:1500px;margin:14px 0 36px}
+.hook span{color:var(--gold)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:24px}
+.stats .panel{padding:26px 28px}
+.stats .big{font-size:72px}
+.stats p{font-size:20px;margin-top:10px;color:var(--text)}
+.gap{display:grid;grid-template-columns:1fr 1fr 1fr 1.15fr;gap:20px;margin-top:28px;align-items:stretch}
+.gap .panel{padding:22px 24px}
+.gap h4{font-size:22px;font-weight:600;margin-bottom:6px}
+.gap p{font-size:18px}
+.gap .x{color:var(--err);font-size:17px;margin-top:8px}
+.gap .ours{border-color:rgba(240,194,47,.6);background:linear-gradient(180deg,rgba(240,194,47,.14),rgba(16,24,45,.95))}
+.gap .ours h4{color:var(--gold)}
+
+/* ---------- objectives ---------- */
+.goal{font-size:34px;line-height:1.35;color:var(--text);font-weight:400}
+.goal b{color:var(--gold);font-weight:600}
+.specs{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.spec{display:flex;gap:16px;align-items:center;font-size:21px;padding:14px 18px;border:1px solid var(--line);border-radius:12px;background:rgba(16,24,45,.7)}
+.spec .n{color:var(--gold);font-weight:700}
+.case .item{display:flex;gap:18px;align-items:flex-start;padding:16px 0;border-bottom:1px solid var(--line)}
+.case .item:last-child{border:0}
+.case h4{font-size:23px;font-weight:600}
+.case p{font-size:18px}
+
+/* ---------- demo ---------- */
+.personas{display:grid;grid-template-columns:repeat(4,1fr);gap:22px;flex:1}
+.persona{display:flex;flex-direction:column;gap:14px;padding:28px}
+.avatar{width:72px;height:72px;border-radius:50%;display:grid;place-items:center;font-size:28px;font-weight:600;color:var(--bg);background:var(--gold)}
+.persona .role{font-size:16px;color:var(--silver);letter-spacing:1px;text-transform:uppercase}
+.persona h3{font-size:30px;margin:0}
+.journey{font-size:18px;color:var(--muted);line-height:1.45;border-left:2px solid var(--line);padding-left:14px}
+.decision{margin-top:auto;padding:16px 18px;border-radius:12px;background:rgba(240,194,47,.08);border:1px solid rgba(240,194,47,.35);font-size:19px;line-height:1.4}
+.decision .label{color:var(--gold);font-size:13px;display:block;margin-bottom:4px}
+.screen{font-size:15px;font-family:ui-monospace,Consolas,monospace;color:var(--info)}
+.demo-cta{display:flex;align-items:center;gap:22px;margin-top:22px}
+.btn{display:inline-flex;align-items:center;gap:12px;background:var(--gold);color:var(--bg);font-weight:600;font-size:22px;padding:16px 30px;border-radius:8px;box-shadow:0 8px 30px rgba(240,194,47,.35);position:relative;z-index:7;pointer-events:auto;text-decoration:none}
+.live{width:12px;height:12px;border-radius:50%;background:var(--err);box-shadow:0 0 0 0 rgba(248,113,113,.7);animation:pulse 1.6s infinite}
+@keyframes pulse{70%{box-shadow:0 0 0 16px rgba(248,113,113,0)}100%{box-shadow:0 0 0 0 rgba(248,113,113,0)}}
+
+/* ---------- differentials (flow) ---------- */
+.flow{display:flex;align-items:stretch;gap:0;margin-top:10px}
+.step{flex:1;position:relative;padding:36px 28px 34px;border:1px solid var(--line);background:rgba(16,24,45,.85);border-radius:14px;margin-right:46px}
+.step:last-child{margin-right:0}
+.step::after{content:"";position:absolute;right:-40px;top:50%;width:34px;height:2px;background:linear-gradient(90deg,var(--gold),transparent)}
+.step:last-child::after{display:none}
+.step .k{font-size:15px;color:var(--gold);letter-spacing:2px;font-weight:600}
+.step h4{font-size:28px;margin:8px 0;font-weight:600}
+.step p{font-size:20px}
+.packet{position:absolute;top:50%;left:0;width:14px;height:14px;margin-top:-7px;border-radius:50%;background:var(--gold);box-shadow:0 0 22px var(--gold);z-index:3;opacity:0}
+.slide.active .packet{animation:travel 5.5s 1.6s var(--ease) infinite}
+@keyframes travel{0%{left:0;opacity:0}5%{opacity:1}95%{opacity:1}100%{left:100%;opacity:0}}
+.innov{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:34px}
+.innov .panel{display:flex;gap:20px;align-items:flex-start;padding:30px 30px}
+.innov h3{font-size:27px;margin-bottom:6px}
+.innov p{font-size:20px}
+
+/* ---------- agile ---------- */
+.board{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.lane{background:rgba(16,24,45,.7);border:1px solid var(--line);border-radius:12px;padding:16px;min-height:420px}
+.lane .label{margin-bottom:12px;display:flex;justify-content:space-between}
+.card{background:var(--composer);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:12px;font-size:18px;line-height:1.35}
+.card .key{font-size:13px;color:var(--gold);font-weight:600;letter-spacing:1px}
+.card.moving{animation:moveCard 6s 1.8s var(--ease) infinite}
+@keyframes moveCard{0%,30%{transform:none}45%,80%{transform:translateX(calc(100% + 32px));border-color:var(--gold)}95%,100%{transform:translateX(calc(100% + 32px));opacity:0}}
+.gherkin{font-family:ui-monospace,Consolas,monospace;font-size:19px;line-height:1.7;color:var(--text)}
+.gherkin b{color:var(--gold);font-weight:600}
+.gherkin .ok{color:var(--ok)}
+
+/* ---------- architecture ---------- */
+#arch{width:100%;height:auto}
+#arch .box{fill:rgba(16,24,45,.95);stroke:var(--line);stroke-width:2}
+#arch .box.gold{stroke:var(--gold)}
+#arch text{fill:var(--text);font-family:Poppins;font-size:22px}
+#arch .t{font-size:26px;font-weight:600}
+#arch .s{fill:var(--muted);font-size:17px}
+#arch .g{fill:var(--gold);font-size:15px;letter-spacing:2px;font-weight:600}
+#arch .mod{fill:rgba(240,194,47,.07);stroke:rgba(240,194,47,.4);stroke-width:1.5}
+#arch .mt{font-size:16px;fill:var(--text)}
+#arch .wire{fill:none;stroke:var(--gold);stroke-width:2.5;stroke-dasharray:900;stroke-dashoffset:900}
+#arch .wire.b{stroke:var(--info)}
+.slide.active #arch .wire{animation:draw 1.6s var(--ease) forwards;animation-delay:calc(var(--d,0)*200ms + 600ms)}
+@keyframes draw{to{stroke-dashoffset:0}}
+#arch .dot{fill:var(--gold);filter:drop-shadow(0 0 6px var(--gold))}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.metrics .panel{padding:18px 22px}
+.metrics .big{font-size:52px}
+.patterns{display:flex;flex-wrap:wrap;gap:10px}
+
+/* ---------- AI ---------- */
+.pipeline{display:flex;flex-direction:column;gap:14px}
+.pipe{display:flex;align-items:center;gap:20px;padding:18px 22px;border:1px solid var(--line);border-radius:12px;background:rgba(16,24,45,.85)}
+.pipe .n{width:40px;height:40px;border-radius:50%;border:1px solid var(--gold);color:var(--gold);display:grid;place-items:center;font-weight:600;flex:none}
+.pipe h4{font-size:22px;font-weight:600}
+.pipe p{font-size:17px}
+.receipt{font-family:ui-monospace,Consolas,monospace;font-size:19px;line-height:1.9}
+.receipt .ln{display:flex;justify-content:space-between;border-bottom:1px dashed var(--line)}
+.receipt .ln span:last-child{color:var(--gold)}
+.bars{display:flex;flex-direction:column;gap:12px;margin-top:10px}
+.bar{display:grid;grid-template-columns:160px 1fr 110px;align-items:center;gap:14px;font-size:17px}
+.bar .tr{height:14px;border-radius:7px;background:var(--line);overflow:hidden;position:relative}
+.bar .fi{height:100%;width:0;border-radius:7px;background:linear-gradient(90deg,var(--gold-d),var(--gold))}
+.bar .fi.warn{background:linear-gradient(90deg,#f59e0b,var(--err))}
+.slide.active .bar .fi{transition:width 1.6s var(--ease);transition-delay:1s;width:var(--w)}
+.bar .proj{position:absolute;top:0;bottom:0;border-right:2px dashed var(--err)}
+
+/* ---------- quality ---------- */
+.pyramid{display:flex;flex-direction:column;align-items:center;gap:10px}
+.pyr{height:76px;display:flex;align-items:center;justify-content:center;gap:14px;font-size:22px;font-weight:500;border-radius:10px;border:1px solid rgba(240,194,47,.4);background:rgba(240,194,47,.08)}
+.pyr b{color:var(--gold)}
+.ci{display:flex;align-items:center;gap:0;margin-top:8px}
+.ci .stage{flex:1;text-align:center;padding:18px 10px;border:1px solid var(--line);background:rgba(16,24,45,.9);font-size:18px;position:relative}
+.ci .stage:first-child{border-radius:12px 0 0 12px}.ci .stage:last-child{border-radius:0 12px 12px 0}
+.ci .stage .st{display:block;font-size:14px;color:var(--silver);margin-top:4px}
+.ci .stage.pass{border-color:rgba(74,222,128,.5)}
+.slide.active .ci .stage{animation:ciPass .5s forwards;animation-delay:calc(var(--d)*450ms + 1.2s)}
+@keyframes ciPass{to{background:rgba(74,222,128,.12);border-color:rgba(74,222,128,.6)}}
+.slide.active .ci .stage .st::after{content:" ✓";color:var(--ok)}
+
+/* ---------- roadmap ---------- */
+.timeline{position:relative;display:grid;grid-template-columns:repeat(3,1fr);gap:40px;margin-top:40px}
+.timeline::before{content:"";position:absolute;left:0;right:0;top:34px;height:2px;background:var(--line)}
+.timeline .fillline{position:absolute;left:0;top:34px;height:2px;width:0;background:var(--gold);box-shadow:0 0 12px var(--gold)}
+.slide.active .timeline .fillline{transition:width 2.4s var(--ease) .6s;width:66%}
+.milestone .pt{width:70px;height:70px;border-radius:50%;background:var(--bg);border:2px solid var(--gold);display:grid;place-items:center;color:var(--gold);font-weight:700;font-size:22px;position:relative;z-index:2;margin-bottom:26px}
+.milestone.now .pt{background:var(--gold);color:var(--bg);box-shadow:0 0 0 10px rgba(240,194,47,.15)}
+.milestone.future .pt{border-color:var(--silver);color:var(--silver)}
+.milestone h3{font-size:40px;font-weight:600}
+.milestone ul{list-style:none;margin-top:14px}
+.milestone li{font-size:24px;color:var(--muted);padding:8px 0 8px 24px;position:relative}
+.milestone li::before{content:"";position:absolute;left:0;top:18px;width:10px;height:2px;background:var(--gold)}
+
+/* ---------- business ---------- */
+.canvas{display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:auto auto;gap:22px}
+.canvas .panel{padding:30px 32px}
+.canvas h3{font-size:24px;display:flex;gap:14px;align-items:center}
+.canvas p,.canvas li{font-size:21px;color:var(--muted);line-height:1.5}
+.canvas ul{list-style:none;margin-top:6px}
+.canvas li{padding:3px 0}
+.canvas li b{color:var(--text);font-weight:500}
+.tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:10px}
+.tier{border:1px solid var(--line);border-radius:10px;padding:12px;text-align:center}
+.tier.mid{border-color:var(--gold)}
+.tier .label{font-size:12px}
+.tier div:nth-child(2){font-size:26px;color:var(--gold);font-weight:600;margin:4px 0}
+.tier div:last-child{font-size:14px;color:var(--silver)}
+
+/* ---------- limits ---------- */
+.check{display:flex;gap:16px;align-items:flex-start;padding:14px 0;border-bottom:1px solid var(--line);font-size:21px}
+.check:last-child{border:0}
+.check .m{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:17px;font-weight:700}
+.check .m.y{background:rgba(74,222,128,.15);color:var(--ok);border:1px solid rgba(74,222,128,.5)}
+.check .m.p{background:rgba(240,194,47,.12);color:var(--gold);border:1px solid rgba(240,194,47,.5)}
+.check small{display:block;color:var(--silver);font-size:16px;margin-top:2px}
+.lim{display:flex;gap:14px;padding:12px 0;font-size:20px;color:var(--muted);border-bottom:1px solid var(--line)}
+.lim:last-child{border:0}
+.lim::before{content:"—";color:var(--err)}
+.verdict{margin-top:auto;font-size:30px;font-weight:500}
+.verdict b{color:var(--gold)}
+
+/* ---------- thanks ---------- */
+.thanks{align-items:center;justify-content:center;text-align:center}
+.thanks .emblem{width:340px;height:340px;margin-bottom:28px}
+.thanks .emblem img{width:220px}
+.thanks h1{font-size:120px;font-family:'Cinzel Decorative',serif;font-weight:700;color:var(--gold);letter-spacing:4px}
+.thanks .slogan{font-size:42px}
+.thanks .partners{display:flex;gap:18px;margin-top:36px;justify-content:center}
+
+/* light-theme guard (projeção sempre escura) */
+@media (prefers-color-scheme: light){ :root{color-scheme:dark} }
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="bg"></canvas>
+  <div class="grid"></div>
+  <div class="glow g1" id="g1"></div>
+  <div class="glow g2" id="g2"></div>
+
+  <!-- ============ 1 · CAPA ============ -->
+  <section class="slide cover" data-title="Abertura" data-time="30">
+    <div class="emblem r s" style="--d:0">
+      <div class="orbit o1"></div><div class="orbit o2"></div>
+      <img src="../marketing/brand-kit/logo/simbolo/atlas-simbolo-original.png" alt="Símbolo ATLAS">
+    </div>
+    <div class="grow">
+      <div class="eyebrow r" style="--d:1">Projeto Integrador IV · ESPM × QSOFT</div>
+      <img class="wordmark r" style="--d:2;margin-top:24px" src="../marketing/brand-kit/logo/nome/atlas-nome-dourado.png" alt="ATLAS">
+      <div class="r" style="--d:3;font-size:34px;font-weight:500">Plataforma de Governança Corporativa de IA</div>
+      <div class="slogan r" style="--d:4">IA com <b>controle</b>. Sem bloqueio.</div>
+      <div class="team">
+        <div class="member r" style="--d:5"><div class="label">Product Owner</div><div>Nome do PO</div></div>
+        <div class="member r" style="--d:6"><div class="label">Scrum Master</div><div>Nome do SM</div></div>
+        <div class="member r" style="--d:7"><div class="label">Tech Lead</div><div>Nome do Tech Lead</div></div>
+        <div class="member r" style="--d:8"><div class="label">Devs &amp; Testers</div><div>Nomes</div></div>
+        <div class="member r" style="--d:9"><div class="label">Analista de Dados e IA</div><div>Nome</div></div>
+        <div class="member r" style="--d:10"><div class="label">Empresa parceira</div><div>QSOFT</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 2 · AGENDA ============ -->
+  <section class="slide" data-title="Agenda" data-time="20">
+    <div class="eyebrow r">Agenda</div>
+    <h2 class="r" style="--d:1">O que vamos <em>mostrar</em></h2>
+    <div class="agenda">
+      <div class="it r l" style="--d:2"><span class="n">01</span>O problema e a lacuna<span class="t">1 min</span></div>
+      <div class="it r l" style="--d:8"><span class="n">07</span>Arquitetura da solução<span class="t">2 min</span></div>
+      <div class="it r l" style="--d:3"><span class="n">02</span>Objetivos e case QSOFT<span class="t">1 min</span></div>
+      <div class="it r l" style="--d:9"><span class="n">08</span>Integração com IA e métricas<span class="t">2 min</span></div>
+      <div class="it r l" style="--d:4"><span class="n">03</span>Demonstração ao vivo<span class="t">5 min</span></div>
+      <div class="it r l" style="--d:10"><span class="n">09</span>Qualidade e time to market<span class="t">2 min</span></div>
+      <div class="it r l" style="--d:5"><span class="n">04</span>Diferenciais e inovação<span class="t">2 min</span></div>
+      <div class="it r l" style="--d:11"><span class="n">10</span>Planos: MVP1 → MVP2<span class="t">1 min</span></div>
+      <div class="it r l" style="--d:6"><span class="n">05</span>Gerenciamento ágil<span class="t">1 min</span></div>
+      <div class="it r l" style="--d:12"><span class="n">11</span>Modelo de negócios<span class="t">1 min</span></div>
+      <div class="it r l" style="--d:7"><span class="n">06</span>Limitações e resultados<span class="t">1 min</span></div>
+      <div class="it r l" style="--d:13"><span class="n">12</span>Agradecimentos<span class="t"></span></div>
+    </div>
+  </section>
+
+  <!-- ============ 3 · PROBLEMA ============ -->
+  <section class="slide" data-title="Introdução · Problema" data-time="60">
+    <div class="eyebrow r">01 · O problema</div>
+    <div class="hook r" style="--d:1">Sua empresa já usa IA.<br>Ninguém sabe <span>quanto custa</span>, <span>quem usa</span> nem se é <span>seguro</span>.</div>
+    <div class="stats">
+      <div class="panel kpi r" style="--d:2"><div class="big"><span class="count" data-to="78">0</span>%</div><p>dos usuários de IA no trabalho levam <b>as próprias ferramentas</b>: o Shadow AI.</p><div class="src">Microsoft &amp; LinkedIn, Work Trend Index 2024</div></div>
+      <div class="panel kpi r" style="--d:3"><div class="big"><span class="count" data-to="95">0</span>%</div><p>das empresas não veem <b>retorno mensurável</b> no investimento em IA generativa.</p><div class="src">MIT NANDA, The GenAI Divide, 2025</div></div>
+      <div class="panel kpi r" style="--d:4"><div class="big"><span class="count" data-to="97">0</span>%</div><p>das empresas que sofreram incidente com IA <b>não tinham controle de acesso</b> à IA.</p><div class="src">IBM, Cost of a Data Breach 2025</div></div>
+      <div class="panel kpi r" style="--d:5"><div class="big">+US$<span class="count" data-to="670">0</span>k</div><p>é o custo extra de um vazamento quando há <b>muito Shadow AI</b>.</p><div class="src">IBM, Cost of a Data Breach 2025</div></div>
+    </div>
+    <div class="gap">
+      <div class="panel r" style="--d:7"><h4>Bloquear (CASB, firewall)</h4><p>Proíbe as ferramentas públicas.</p><div class="x">✕ Empurra o uso para a sombra</div></div>
+      <div class="panel r" style="--d:8"><h4>Licença de um chat corporativo</h4><p>Um fornecedor para todos.</p><div class="x">✕ Sem orçamento por área, sem política por modelo</div></div>
+      <div class="panel r" style="--d:9"><h4>Gateway técnico de LLM</h4><p>Roteia e mede tokens.</p><div class="x">✕ Sem adoção, capacitação e visão executiva</div></div>
+      <div class="panel ours beam r s" style="--d:11"><h4>A lacuna que o ATLAS ocupa</h4><p style="color:var(--text)">Governar <b class="hl">sem bloquear</b>: acesso, política, custo e adoção no mesmo lugar, por empresa.</p></div>
+    </div>
+  </section>
+
+  <!-- ============ 4 · OBJETIVOS ============ -->
+  <section class="slide" data-title="Objetivos e case real" data-time="60">
+    <div class="eyebrow r">02 · Objetivos</div>
+    <h2 class="r" style="--d:1">Um <em>case real</em>, com dados reais</h2>
+    <div class="row grow" style="gap:48px">
+      <div class="col" style="flex:1.35">
+        <div class="panel side r l" style="--d:2">
+          <div class="label" style="margin-bottom:10px">Objetivo geral</div>
+          <div class="goal"><b>Centralizar o acesso governado à IA</b> com políticas internas, controle de consumo e custo, capacitação e indicadores executivos.</div>
+        </div>
+        <div class="label r" style="--d:3">Objetivos específicos</div>
+        <div class="specs">
+          <div class="spec r" style="--d:4"><span class="n">1</span>Chat corporativo só com modelos permitidos à área</div>
+          <div class="spec r" style="--d:5"><span class="n">2</span>Agente que responde às políticas citando a fonte</div>
+          <div class="spec r" style="--d:6"><span class="n">3</span>Orçamento por departamento, alerta e projeção</div>
+          <div class="spec r" style="--d:7"><span class="n">4</span>Adoção e capacitação medidas (treino × uso)</div>
+          <div class="spec r" style="--d:8"><span class="n">5</span>Isolamento multiempresa e RBAC no backend</div>
+          <div class="spec r" style="--d:9"><span class="n">6</span>Indicadores executivos para decidir</div>
+        </div>
+      </div>
+      <div class="panel case r s" style="flex:1;--d:5">
+        <div class="item"><div class="ico"><svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h1m4 0h1M9 13h1m4 0h1M9 17h1m4 0h1"/></svg></div><div><h4>Empresa parceira</h4><p>QSOFT: produto white-label, para ser revendido a vários clientes.</p></div></div>
+        <div class="item"><div class="ico"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg></div><div><h4>Base de dados</h4><p>Dataset QSOFT de uso de IA, importado em esquema histórico separado (ADR-26).</p></div></div>
+        <div class="item"><div class="ico"><svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg></div><div><h4>Premissas do projeto</h4><p>Arquitetura Funcional e Demonstração C4 da QSOFT, traduzidas em 42 ADRs.</p></div></div>
+        <div class="item"><div class="ico"><svg viewBox="0 0 24 24"><circle cx="8" cy="8" r="4"/><circle cx="16" cy="16" r="4"/><path d="M11 11l2 2"/></svg></div><div><h4>Interdisciplinaridade</h4><p>Engenharia de software, dados e IA, gestão ágil, segurança, UX e negócios.</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 5 · DEMO ============ -->
+  <section class="slide" data-title="Solução · Demonstração" data-time="300">
+    <div class="eyebrow r">03 · A solução na prática</div>
+    <h2 class="r" style="--d:1;margin-bottom:28px">Cada persona, uma <em>decisão melhor</em></h2>
+    <div class="personas">
+      <div class="panel persona r" style="--d:2">
+        <div class="avatar">M</div>
+        <div><div class="role">Colaboradora · Marketing</div><h3>Marina</h3></div>
+        <div class="screen">/chat · /agente</div>
+        <div class="journey">Pede 3 títulos para a campanha. O ATLAS confere a política da área, escolhe o modelo autorizado e mostra o recibo: tokens, custo e latência.</div>
+        <div class="decision"><span class="label">Apoio à decisão</span>“Posso colar a planilha de clientes?” <b class="hl">Não</b>, e a resposta cita a política de LGPD.</div>
+      </div>
+      <div class="panel persona r" style="--d:3">
+        <div class="avatar" style="background:var(--info)">R</div>
+        <div><div class="role">Gestor · Marketing</div><h3>Rafael</h3></div>
+        <div class="screen">/dashboard/gestor</div>
+        <div class="journey">Abre o painel e vê o aviso: Marketing usou 82% do orçamento. A projeção do mês é recalculada por departamento.</div>
+        <div class="decision"><span class="label">Apoio à decisão</span>Projetado R$ 5.560, <b class="hl">esgota em 22/11</b>. Ele age antes de estourar.</div>
+      </div>
+      <div class="panel persona r" style="--d:4">
+        <div class="avatar" style="background:var(--ok)">P</div>
+        <div><div class="role">Governança de TI · Admin</div><h3>Paula</h3></div>
+        <div class="screen">/onboarding/ia</div>
+        <div class="journey">Libera o modelo Atlas Analítico só para o Marketing. No chat da Marina, o seletor passa de 1 para 2 modelos.</div>
+        <div class="decision"><span class="label">Apoio à decisão</span>Cada área usa <b class="hl">só os modelos certos</b>, com o custo de cada um visível.</div>
+      </div>
+      <div class="panel persona r" style="--d:5">
+        <div class="avatar" style="background:#c084fc">C</div>
+        <div><div class="role">Diretora de Operações</div><h3>Carla</h3></div>
+        <div class="screen">/dashboard/executivo</div>
+        <div class="journey">Filtra o período: a adoção sobe de 52% para 68%. Cruza treinamento × uso em 4 quadrantes.</div>
+        <div class="decision"><span class="label">Apoio à decisão</span>13 pessoas <b class="hl">usam IA sem treinamento</b>. Ela sabe onde investir em capacitação.</div>
+      </div>
+    </div>
+    <div class="demo-cta r" style="--d:7">
+      <a class="btn" href="#" id="demoLink" target="_blank" rel="noopener"><span class="live"></span>Abrir a demo na nuvem</a>
+      <span class="muted small">Empresa fictícia NexoCode · 60 colaboradores · 6 departamentos · Docker em cloud</span>
+    </div>
+  </section>
+
+  <!-- ============ 6 · DIFERENCIAIS ============ -->
+  <section class="slide" data-title="Diferenciais e inovação" data-time="120">
+    <div class="eyebrow r">04 · Diferenciais</div>
+    <h2 class="r" style="--d:1">Governança <em>antes</em> de cada resposta</h2>
+    <div class="flow" style="position:relative">
+      <div class="packet"></div>
+      <div class="step r" style="--d:2"><div class="k">1 · PEDIDO</div><h4>Colaborador pergunta</h4><p>No chat corporativo, com o histórico privado.</p></div>
+      <div class="step r" style="--d:3"><div class="k">2 · AUTORIZAÇÃO</div><h4>RBAC + escopo</h4><p>Regra determinística. <b class="hl">A IA nunca decide acesso.</b></p></div>
+      <div class="step r" style="--d:4"><div class="k">3 · POLÍTICA</div><h4>Modelo da área</h4><p>Roteamento pela política do departamento.</p></div>
+      <div class="step r" style="--d:5"><div class="k">4 · EXECUÇÃO</div><h4>Gateway de IA</h4><p>Credencial por referência, tentativa registrada.</p></div>
+      <div class="step r" style="--d:6"><div class="k">5 · RECIBO</div><h4>Custo e uso</h4><p>Tokens, custo e latência em cada resposta.</p></div>
+      <div class="step beam r s" style="--d:7"><div class="k">6 · DECISÃO</div><h4>Indicadores</h4><p>Orçamento, adoção e AI Credits sem expor o conteúdo.</p></div>
+    </div>
+    <div class="innov">
+      <div class="panel r" style="--d:8"><div class="ico"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div><div><h3>Privado por padrão</h3><p>O conteúdo das conversas nunca alimenta o analytics. Só metadados.</p></div></div>
+      <div class="panel r" style="--d:9"><div class="ico"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 6-7"/></svg></div><div><h3>Previsão sem caixa-preta</h3><p>Projeção do orçamento determinística e auditável, sem LLM (ADR-41).</p></div></div>
+      <div class="panel r" style="--d:10"><div class="ico"><svg viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="M9 12l2 2 4-4"/></svg></div><div><h3>Incentivo, não bloqueio</h3><p>Indicadores e AI Credits orientam a adoção, sem travar o acesso.</p></div></div>
+    </div>
+  </section>
+
+  <!-- ============ 7 · AGILE ============ -->
+  <section class="slide" data-title="Gerenciamento ágil" data-time="60">
+    <div class="eyebrow r">05 · Gerenciamento ágil</div>
+    <h2 class="r" style="--d:1">Backlog guiado por <em>critérios de aceite</em></h2>
+    <div class="row grow" style="gap:40px">
+      <div class="col" style="flex:1.25">
+        <div class="board">
+          <div class="lane r" style="--d:2"><div class="label">Backlog <span>PO</span></div>
+            <div class="card"><div class="key">BACKLOG</div>Exportar relatório executivo</div>
+            <div class="card"><div class="key">BACKLOG</div>Governance Score e ROI</div>
+          </div>
+          <div class="lane r" style="--d:3"><div class="label">Sprint <span>SM</span></div>
+            <div class="card moving"><div class="key">POPROJ-53</div>Dashboard: métricas, filtros e agregações</div>
+            <div class="card"><div class="key">SPRINT 4</div>Treinamento × uso</div>
+          </div>
+          <div class="lane r" style="--d:4"><div class="label">Review <span>TL</span></div>
+            <div class="card"><div class="key">POPROJ-23</div>Métricas, logs de uso e custos de IA</div>
+          </div>
+          <div class="lane r" style="--d:5"><div class="label">Done <span>CI ✓</span></div>
+            <div class="card"><div class="key">POPROJ-51</div>Multi-tenancy e isolamento lógico</div>
+            <div class="card"><div class="key">POPROJ-52</div>RBAC e matriz de permissões</div>
+            <div class="card"><div class="key">POPROJ-21</div>Roteamento determinístico de IA</div>
+          </div>
+        </div>
+        <div class="row r" style="--d:6;gap:16px">
+          <span class="chip">4 sprints</span><span class="chip blue">Jira: SPI / POPROJ</span><span class="chip">Task packets em <code>ai/tasks</code></span><span class="chip green">PR com template</span>
+        </div>
+      </div>
+      <div class="panel side r s" style="flex:1;--d:4">
+        <div class="label" style="margin-bottom:16px">ATDD · critério de aceite vira teste</div>
+        <div class="gherkin">
+          <b>Dado</b> que o Marketing gastou R$ 3.280<br>
+          &nbsp;&nbsp;de um orçamento de R$ 4.000<br>
+          <b>E</b> a média dos últimos 14 dias é R$ 190<br>
+          <b>Quando</b> o gestor abre a projeção do mês<br>
+          <b>Então</b> vê “Projetado R$ 5.560”<br>
+          <b>E</b> vê “Esgota em 22/11”<br>
+          <span class="ok">✓ teste de aceite automatizado · CI verde</span>
+        </div>
+        <p class="small" style="margin-top:18px">Cada história nasce com o cenário de aceite. O teste é escrito a partir dele, antes da tela.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 8 · ARQUITETURA ============ -->
+  <section class="slide" data-title="Arquitetura da solução" data-time="120">
+    <div class="eyebrow r">06 · Arquitetura</div>
+    <h2 class="r" style="--d:1;margin-bottom:20px">Um deploy. <em>Fronteiras fortes.</em></h2>
+    <div class="row" style="gap:36px;align-items:flex-start">
+      <svg id="arch" class="r f" style="--d:2;flex:2.1" viewBox="0 0 1100 560">
+        <!-- wires -->
+        <path class="wire" style="--d:1" d="M190 120 C 250 120, 250 120, 300 120"/>
+        <path class="wire" style="--d:2" d="M800 200 C 860 200, 860 120, 905 120"/>
+        <path class="wire" style="--d:3" d="M550 400 L550 450"/>
+        <path class="wire b" style="--d:4" d="M800 300 C 860 300, 860 330, 905 330"/>
+        <!-- client -->
+        <rect class="box" x="10" y="60" width="180" height="120" rx="14"/>
+        <text class="g" x="30" y="92">FRONT</text><text class="t" x="30" y="128">Web</text><text class="s" x="30" y="156">Node · Express · EJS</text>
+        <!-- monolith -->
+        <rect class="box gold" x="300" y="20" width="500" height="380" rx="16"/>
+        <text class="g" x="324" y="54">BACKEND · MONÓLITO MODULAR</text><text class="s" x="324" y="80">Java 21 · Spring Boot 4 · Security + JWT</text>
+        <g>
+          <rect class="mod" x="324" y="100" width="146" height="44" rx="8"/><text class="mt" x="340" y="128">iam</text>
+          <rect class="mod" x="478" y="100" width="146" height="44" rx="8"/><text class="mt" x="494" y="128">department</text>
+          <rect class="mod" x="632" y="100" width="146" height="44" rx="8"/><text class="mt" x="648" y="128">project</text>
+          <rect class="mod" x="324" y="154" width="146" height="44" rx="8"/><text class="mt" x="340" y="182">aigateway</text>
+          <rect class="mod" x="478" y="154" width="146" height="44" rx="8"/><text class="mt" x="494" y="182">chat</text>
+          <rect class="mod" x="632" y="154" width="146" height="44" rx="8"/><text class="mt" x="648" y="182">agentpolicies</text>
+          <rect class="mod" x="324" y="208" width="146" height="44" rx="8"/><text class="mt" x="340" y="236">observability</text>
+          <rect class="mod" x="478" y="208" width="146" height="44" rx="8"/><text class="mt" x="494" y="236">engagement</text>
+          <rect class="mod" x="632" y="208" width="146" height="44" rx="8"/><text class="mt" x="648" y="236">govscore</text>
+          <rect class="mod" x="324" y="262" width="454" height="44" rx="8" style="fill:rgba(56,189,248,.07);stroke:rgba(56,189,248,.45)"/><text class="mt" x="340" y="290">sharedkernel · TenantContext · Resource × Action</text>
+        </g>
+        <text class="s" x="324" y="340">api → application → domain ← infrastructure</text>
+        <text class="s" x="324" y="368">ArchUnit bloqueia import entre módulos</text>
+        <!-- AI -->
+        <rect class="box" x="905" y="60" width="185" height="130" rx="14"/>
+        <text class="g" x="925" y="92">IA</text><text class="t" x="925" y="128">Providers</text><text class="s" x="925" y="156">via porta do gateway</text><text class="s" x="925" y="178">credencial por ref.</text>
+        <!-- obs -->
+        <rect class="box" x="905" y="270" width="185" height="120" rx="14"/>
+        <text class="g" x="925" y="302" style="fill:var(--info)">OBSERVABILIDADE</text><text class="t" x="925" y="338">Actuator</text><text class="s" x="925" y="366">health · uso · alertas</text>
+        <!-- DB -->
+        <rect class="box gold" x="300" y="450" width="500" height="100" rx="16"/>
+        <text class="g" x="324" y="482">POSTGRESQL 18 · FLYWAY</text>
+        <text class="s" x="324" y="510">V001 → V024 · tenant_id em toda tabela de negócio</text>
+        <text class="s" x="324" y="534">operacional  |  historical_* (dataset QSOFT)</text>
+        <!-- docker frame -->
+        <rect x="2" y="6" width="1096" height="552" rx="20" fill="none" stroke="rgba(56,189,248,.35)" stroke-dasharray="8 8"/>
+        <text x="24" y="490" class="s" style="fill:var(--info)">Docker Compose</text><text x="24" y="516" class="s" style="fill:var(--info)">CI · GitHub Actions</text>
+        <circle class="dot" r="6"><animateMotion dur="3s" repeatCount="indefinite" path="M190 120 L300 120 L550 120 L550 450"/></circle>
+        <circle class="dot" r="6" style="fill:var(--info)"><animateMotion dur="3.6s" begin="1s" repeatCount="indefinite" path="M550 180 L800 200 C 860 200, 860 120, 905 120"/></circle>
+      </svg>
+      <div class="col" style="flex:1">
+        <div class="metrics">
+          <div class="panel kpi r" style="--d:4;grid-column:span 2"><div class="label">Módulos</div><div class="big"><span class="count" data-to="11">0</span></div></div>
+          <div class="panel kpi r" style="--d:5;grid-column:span 2"><div class="label">ADRs</div><div class="big"><span class="count" data-to="42">0</span></div></div>
+          <div class="panel kpi r" style="--d:6;grid-column:span 2"><div class="label">Migrations</div><div class="big"><span class="count" data-to="24">0</span></div></div>
+          <div class="panel kpi r" style="--d:7;grid-column:span 2"><div class="label">Testes</div><div class="big"><span class="count" data-to="1138">0</span></div></div>
+        </div>
+        <div class="label r" style="--d:8">Padrões em destaque</div>
+        <div class="patterns r" style="--d:9">
+          <span class="chip">Monólito modular</span><span class="chip">Ports &amp; Adapters</span><span class="chip">Domain Events</span><span class="chip">Repository</span><span class="chip">BFF</span><span class="chip">Strategy (providers)</span><span class="chip">Value Objects (TenantId)</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 9 · ARQUITETURA + IA ============ -->
+  <section class="slide" data-title="Integração com modelos de IA" data-time="120">
+    <div class="eyebrow r">07 · Monólito + IA</div>
+    <h2 class="r" style="--d:1;margin-bottom:30px">IA medida, prevista e <em>avaliada</em></h2>
+    <div class="row grow" style="gap:36px">
+      <div class="pipeline" style="flex:1">
+        <div class="pipe r l" style="--d:2"><div class="n">1</div><div><h4>Catálogo Provider → Modelo</h4><p>Preço por 1k tokens; modelo padrão obrigatório por área.</p></div></div>
+        <div class="pipe r l" style="--d:3"><div class="n">2</div><div><h4>Roteamento determinístico</h4><p>ModelPolicy do departamento. Sem fallback escondido.</p></div></div>
+        <div class="pipe r l" style="--d:4"><div class="n">3</div><div><h4>Execução com tentativa registrada</h4><p>Falha tratada e uso entregue ao observability (ADR-38).</p></div></div>
+        <div class="pipe r l" style="--d:5"><div class="n">4</div><div><h4>Agente de Políticas</h4><p>Responde só com documentos permitidos e cita as fontes.</p></div></div>
+        <div class="pipe r l" style="--d:6"><div class="n">5</div><div><h4>Indicadores</h4><p>Adoção 30 dias, treino × uso, AI Credits, score.</p></div></div>
+      </div>
+      <div class="col" style="flex:1">
+        <div class="panel kpi r s" style="--d:4">
+          <div class="label" style="margin-bottom:8px">Recibo de execução · métrica por resposta</div>
+          <div class="receipt">
+            <div class="ln"><span>modelo</span><span>Atlas Criativo</span></div>
+            <div class="ln"><span>tokens entrada / saída</span><span>120 / 340</span></div>
+            <div class="ln"><span>custo</span><span>R$ 0,0049</span></div>
+            <div class="ln"><span>latência</span><span>0,8 s</span></div>
+          </div>
+        </div>
+        <div class="panel r" style="--d:6">
+          <div class="label">Predição · orçamento do mês (gasto + média × dias)</div>
+          <div class="bars">
+            <div class="bar"><span>Marketing</span><div class="tr"><div class="fi warn" style="--w:82%"></div><div class="proj" style="left:100%"></div></div><span class="chip red" style="font-size:14px;padding:4px 10px">22/11</span></div>
+            <div class="bar"><span>Comercial</span><div class="tr"><div class="fi" style="--w:68%"></div></div><span class="chip" style="font-size:14px;padding:4px 10px">96%</span></div>
+            <div class="bar"><span>Engenharia</span><div class="tr"><div class="fi" style="--w:46%"></div></div><span class="chip green" style="font-size:14px;padding:4px 10px">ok</span></div>
+            <div class="bar"><span>Atendimento</span><div class="tr"><div class="fi" style="--w:36%"></div></div><span class="chip green" style="font-size:14px;padding:4px 10px">ok</span></div>
+          </div>
+        </div>
+        <div class="panel side r" style="--d:8">
+          <div class="label" style="margin-bottom:8px">Avaliação da qualidade</div>
+          <p class="small" style="color:var(--text)">Respostas do agente com fonte rastreável · provider simulado nos testes, resultado determinístico · a IA nunca decide autorização · conteúdo privado fora do analytics.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 10 · TIME TO MARKET ============ -->
+  <section class="slide" data-title="Arquitetura e time to market" data-time="120">
+    <div class="eyebrow r">08 · Qualidade</div>
+    <h2 class="r" style="--d:1">Mudar rápido <em>sem quebrar</em></h2>
+    <div class="row grow" style="gap:44px">
+      <div class="col" style="flex:1">
+        <div class="label r" style="--d:2">Testabilidade</div>
+        <div class="pyramid">
+          <div class="pyr r s" style="--d:3;width:46%"><b>e2e</b> fluxos do front</div>
+          <div class="pyr r s" style="--d:4;width:64%"><b>Integração</b> PostgreSQL real · Testcontainers</div>
+          <div class="pyr r s" style="--d:5;width:82%"><b>Arquitetura</b> ArchUnit · fronteiras</div>
+          <div class="pyr r s" style="--d:6;width:100%"><b>Unidade + mocks</b> domínio puro · provider fake</div>
+        </div>
+        <div class="row r" style="--d:7;gap:14px;justify-content:center;margin-top:8px">
+          <span class="chip"><span class="count" data-to="1138">0</span>&nbsp;testes</span><span class="chip blue">JaCoCo</span><span class="chip green">Qodana</span>
+        </div>
+      </div>
+      <div class="col" style="flex:1">
+        <div class="panel side r" style="--d:3"><h3>Manutenibilidade</h3><p>Cada módulo com api · domain · application · infrastructure. Outro módulo só enxerga a <code>api</code>. Mudança local, risco local.</p></div>
+        <div class="panel side r" style="--d:4"><h3>Decisões rastreáveis</h3><p>42 ADRs e task packets curtos: quem chega ao time entende o porquê em minutos.</p></div>
+        <div class="label r" style="--d:5">Pipeline automatizado · GitHub Actions</div>
+        <div class="ci r" style="--d:5">
+          <div class="stage" style="--d:0">Push / PR<span class="st">gatilho</span></div>
+          <div class="stage" style="--d:1">Unidade + ArchUnit<span class="st">mvn test</span></div>
+          <div class="stage" style="--d:2">Integração<span class="st">Postgres</span></div>
+          <div class="stage" style="--d:3">Front + import<span class="st">node --test</span></div>
+          <div class="stage" style="--d:4">Qualidade<span class="st">Qodana</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 11 · PLANOS ============ -->
+  <section class="slide" data-title="Planos" data-time="60">
+    <div class="eyebrow r">09 · Planos</div>
+    <h2 class="r" style="--d:1">Do MVP à <em>escala</em></h2>
+    <div class="timeline">
+      <div class="fillline"></div>
+      <div class="milestone now r" style="--d:2"><div class="pt">1</div><h3>MVP1 · hoje</h3>
+        <ul><li>Chat governado com recibo</li><li>Políticas, catálogo e RBAC</li><li>Orçamento, projeção e alertas</li><li>Adoção, treino × uso, AI Credits</li></ul></div>
+      <div class="milestone r" style="--d:4"><div class="pt">→</div><h3>Pilotos em empresas</h3>
+        <ul><li>Primeiros testes funcionais com clientes da QSOFT</li><li>Provider real de produção</li><li>Exportação do relatório executivo</li><li>Medir tempo de onboarding</li></ul></div>
+      <div class="milestone future r" style="--d:6"><div class="pt">2</div><h3>MVP2 · escala</h3>
+        <ul><li>Multiempresa em escala, white-label por revenda</li><li>Governance Score e ROI estimado</li><li>Detecção de Shadow AI e trilha de auditoria</li><li>RAG nas políticas, se a demanda pedir</li></ul></div>
+    </div>
+  </section>
+
+  <!-- ============ 12 · NEGÓCIO ============ -->
+  <section class="slide" data-title="Modelo de negócios" data-time="60">
+    <div class="eyebrow r">10 · Modelo de negócios</div>
+    <h2 class="r" style="--d:1;margin-bottom:30px">Governança como <em>serviço</em></h2>
+    <div class="canvas">
+      <div class="panel r" style="--d:2"><h3><span class="ico" style="width:44px;height:44px"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-6 7-6s7 2.5 7 6M17 11a3 3 0 1 0 0-6M22 20c0-2.8-1.8-4.8-4.5-5.6"/></svg></span>Público-alvo</h3>
+        <ul><li><b>Médias empresas</b> que já usam IA sem controle</li><li>Compradores: <b>CIO, CFO e RH</b></li><li>Canal: <b>parceiros como a QSOFT</b> (white-label)</li></ul></div>
+      <div class="panel kpi beam r s" style="--d:3"><h3><span class="ico" style="width:44px;height:44px"><svg viewBox="0 0 24 24"><path d="M12 2l3 6.5 7 .9-5 4.8 1.3 7L12 18l-6.3 3.2L7 14.2 2 9.4l7-.9z"/></svg></span>Proposta de valor</h3>
+        <p style="color:var(--text)">Liberar IA para todos com <b class="hl">custo previsível, política aplicada e adoção medida</b>, em vez de proibir.</p></div>
+      <div class="panel r" style="--d:4"><h3><span class="ico" style="width:44px;height:44px"><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></svg></span>Escala</h3>
+        <ul><li>Multi-tenant: <b>um deploy, muitos clientes</b></li><li>Onboarding guiado e importação por planilha</li><li>Revenda white-label multiplica o canal</li></ul></div>
+      <div class="panel r" style="--d:5;grid-column:span 2"><h3><span class="ico" style="width:44px;height:44px"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg></span>Monetização <span class="label" style="margin-left:auto">valores ilustrativos</span></h3>
+        <div class="tiers">
+          <div class="tier"><div class="label">Essencial</div><div>R$ 15</div><div>por usuário/mês · chat + catálogo</div></div>
+          <div class="tier mid"><div class="label">Gestão</div><div>R$ 29</div><div>+ orçamento, projeção e adoção</div></div>
+          <div class="tier"><div class="label">Enterprise</div><div>sob consulta</div><div>white-label, SSO e suporte</div></div>
+        </div>
+        <p class="small" style="margin-top:10px">+ repasse do consumo de IA com margem, ou a empresa traz a própria chave.</p></div>
+      <div class="panel r" style="--d:6"><h3><span class="ico" style="width:44px;height:44px"><svg viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>Custos estimados</h3>
+        <ul><li><b>Cloud</b>: 1 app + 1 PostgreSQL gerenciado</li><li><b>Tokens</b>: repassados ao cliente</li><li><b>Time</b>: produto, suporte e vendas via parceiro</li></ul></div>
+    </div>
+  </section>
+
+  <!-- ============ 13 · LIMITAÇÕES ============ -->
+  <section class="slide" data-title="Limitações" data-time="60">
+    <div class="eyebrow r">11 · Limitações</div>
+    <h2 class="r" style="--d:1;margin-bottom:30px">O que ficou de fora, e o que <em>foi cumprido</em></h2>
+    <div class="row grow" style="gap:40px">
+      <div class="panel r" style="flex:1.2;--d:2">
+        <div class="label" style="margin-bottom:6px">Objetivos específicos</div>
+        <div class="check r" style="--d:3"><span class="m y">✓</span><div>Chat corporativo com modelos por área<small>Recibo de custo, tokens e latência</small></div></div>
+        <div class="check r" style="--d:4"><span class="m y">✓</span><div>Agente de políticas com fontes<small>Documentos filtrados por permissão</small></div></div>
+        <div class="check r" style="--d:5"><span class="m y">✓</span><div>Orçamento, alerta e projeção<small>Determinístico e testado (ADR-41)</small></div></div>
+        <div class="check r" style="--d:6"><span class="m y">✓</span><div>Adoção, capacitação e AI Credits<small>Treino × uso em 4 quadrantes</small></div></div>
+        <div class="check r" style="--d:7"><span class="m y">✓</span><div>Multiempresa e RBAC no backend<small>Testes de acesso permitido e negado entre tenants</small></div></div>
+        <div class="check r" style="--d:8"><span class="m p">◐</span><div>Indicadores executivos<small>Governance Score e ROI ainda aguardam integração</small></div></div>
+      </div>
+      <div class="col" style="flex:1">
+        <div class="panel side r" style="--d:4">
+          <div class="label" style="margin-bottom:6px">Limitações</div>
+          <div class="lim">Sem detecção automática de Shadow AI</div>
+          <div class="lim">Exportação do relatório ainda estática</div>
+          <div class="lim">Sem RAG/pgvector: busca simples nas políticas</div>
+          <div class="lim">Sem fallback automático entre modelos</div>
+          <div class="lim">Validado com dataset e empresa fictícia, ainda sem piloto</div>
+        </div>
+        <div class="verdict r" style="--d:10">Objetivo geral: <b>cumprido</b>. A governança funciona de ponta a ponta no MVP.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 14 · OBRIGADO ============ -->
+  <section class="slide thanks" data-title="Agradecimentos" data-time="30">
+    <div class="emblem r s">
+      <div class="orbit o1"></div><div class="orbit o2"></div>
+      <img src="../marketing/brand-kit/logo/simbolo/atlas-simbolo-original.png" alt="Símbolo ATLAS">
+    </div>
+    <h1 class="r" style="--d:2">Obrigado</h1>
+    <div class="slogan r" style="--d:3">IA com <b>controle</b>. ATLAS.</div>
+    <p class="r" style="--d:4">Agradecemos à QSOFT, aos professores orientadores e à ESPM.</p>
+    <div class="partners r" style="--d:5"><span class="chip">QSOFT</span><span class="chip">ESPM · Projeto Integrador IV</span><span class="chip blue">Perguntas?</span></div>
+  </section>
+
+  <!-- HUD -->
+  <div class="nav prev" id="navPrev" title="Voltar"></div>
+  <div class="nav next" id="navNext" title="Avançar"></div>
+  <div id="hud">
+    <img src="../marketing/brand-kit/logo/assinatura/atlas-assinatura-horizontal-fundo-escuro.png" alt="ATLAS" onerror="this.style.display='none'">
+    <div class="meta"><span id="stitle"></span><span id="timer">0:00 / 0:30</span><span><b id="sn">1</b> / <span id="st">14</span></span></div>
+  </div>
+  <div id="progress"></div>
+</div>
+<div id="hint">clique à direita para avançar · à esquerda para voltar · ← → · F tela cheia</div>
+
+<script>
+(function(){
+  // URL da demo hospedada: preencha aqui
+  var DEMO_URL = '#';
+  document.getElementById('demoLink').href = DEMO_URL;
+  document.getElementById('demoLink').addEventListener('click', function(e){ e.stopPropagation(); if(DEMO_URL==='#') e.preventDefault(); });
+
+  var stage = document.getElementById('stage');
+  function fit(){ var s = Math.min(innerWidth/1920, innerHeight/1080); stage.style.transform = 'translate(-50%,-50%) scale('+s+')'; }
+  addEventListener('resize', fit); fit();
+
+  var slides = [].slice.call(document.querySelectorAll('.slide'));
+  var cur = -1, started = 0;
+  var g1 = document.getElementById('g1'), g2 = document.getElementById('g2');
+  document.getElementById('st').textContent = slides.length;
+
+  function fmt(s){ s=Math.max(0,Math.floor(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
+
+  function countUp(el){
+    var to = +el.dataset.to, t0 = null, dur = 1600;
+    el.textContent = '0';
+    function step(ts){ if(!t0) t0 = ts; var p = Math.min(1,(ts-t0)/dur), e = 1-Math.pow(1-p,3);
+      el.textContent = Math.round(to*e).toLocaleString('pt-BR'); if(p<1) requestAnimationFrame(step); }
+    setTimeout(function(){ requestAnimationFrame(step); }, 500);
+  }
+
+  function go(i){
+    if(i<0 || i>=slides.length || i===cur) return;
+    var back = i < cur;
+    if(cur>=0){ var old = slides[cur]; old.classList.remove('active'); old.classList.add('leaving'); if(back) old.classList.add('back');
+      setTimeout(function(){ old.classList.remove('leaving','back'); }, 560); }
+    var s = slides[i];
+    // reinicia as animações
+    s.classList.remove('active'); void s.offsetWidth; s.classList.add('active');
+    s.querySelectorAll('.count').forEach(countUp);
+    cur = i; started = performance.now();
+    document.getElementById('sn').textContent = i+1;
+    document.getElementById('stitle').textContent = s.dataset.title;
+    document.getElementById('progress').style.width = ((i+1)/slides.length*100)+'%';
+    var a = i*47;
+    g1.style.transform = 'translate('+(Math.cos(a)*260)+'px,'+(Math.sin(a)*160+i*20)+'px)';
+    g2.style.transform = 'translate('+(-Math.sin(a)*220)+'px,'+(-Math.cos(a)*140)+'px)';
+    try{ history.replaceState(null,'','#'+(i+1)); }catch(e){}
+  }
+  function next(){ go(cur+1); } function prev(){ go(cur-1); }
+
+  document.getElementById('navNext').addEventListener('click', next);
+  document.getElementById('navPrev').addEventListener('click', prev);
+  addEventListener('keydown', function(e){
+    if(['ArrowRight','PageDown',' ','Enter'].indexOf(e.key)>-1){ e.preventDefault(); next(); }
+    else if(['ArrowLeft','PageUp','Backspace'].indexOf(e.key)>-1){ e.preventDefault(); prev(); }
+    else if(e.key==='Home') go(0); else if(e.key==='End') go(slides.length-1);
+    else if(e.key==='f'||e.key==='F'){ if(!document.fullscreenElement) document.documentElement.requestFullscreen().catch(function(){}); else document.exitFullscreen(); }
+  });
+  var tx=null; addEventListener('touchstart',function(e){tx=e.touches[0].clientX},{passive:true});
+  addEventListener('touchend',function(e){ if(tx===null) return; var dx=e.changedTouches[0].clientX-tx; if(Math.abs(dx)>50){ dx<0?next():prev(); } tx=null; });
+
+  setInterval(function(){
+    if(cur<0) return; var el = document.getElementById('timer'), lim = +slides[cur].dataset.time, el2 = (performance.now()-started)/1000;
+    el.textContent = fmt(el2)+' / '+fmt(lim); el.classList.toggle('over', el2>lim);
+  }, 250);
+  setTimeout(function(){ document.getElementById('hint').style.opacity = 0; }, 5000);
+
+  addEventListener('hashchange', function(){ var n=parseInt(location.hash.slice(1),10); if(n>0) go(n-1); });
+  var start = parseInt((location.hash||'').slice(1),10);
+  go(start>0 && start<=slides.length ? start-1 : 0);
+
+  // fundo: rede de "circuitos" em movimento
+  var c = document.getElementById('bg'), x = c.getContext('2d'); c.width=1920; c.height=1080;
+  var pts = []; for(var k=0;k<70;k++) pts.push({x:Math.random()*1920,y:Math.random()*1080,vx:(Math.random()-.5)*.35,vy:(Math.random()-.5)*.35,g:Math.random()<.18});
+  (function draw(){
+    x.clearRect(0,0,1920,1080);
+    for(var i=0;i<pts.length;i++){ var p=pts[i]; p.x+=p.vx; p.y+=p.vy;
+      if(p.x<0||p.x>1920) p.vx*=-1; if(p.y<0||p.y>1080) p.vy*=-1;
+      for(var j=i+1;j<pts.length;j++){ var q=pts[j], dx=p.x-q.x, dy=p.y-q.y, d=dx*dx+dy*dy;
+        if(d<46000){ x.strokeStyle='rgba(139,142,161,'+(0.13*(1-d/46000))+')'; x.lineWidth=1; x.beginPath(); x.moveTo(p.x,p.y); x.lineTo(q.x,q.y); x.stroke(); } }
+      x.fillStyle = p.g ? 'rgba(240,194,47,.75)' : 'rgba(139,142,161,.35)'; x.beginPath(); x.arc(p.x,p.y,p.g?2.6:1.6,0,7); x.fill(); }
+    requestAnimationFrame(draw);
+  })();
+})();
+</script>
+</body>
+</html>
