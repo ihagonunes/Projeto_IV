@@ -139,6 +139,16 @@ class ChatExchangeTest {
     }
 
     @Test
+    void conversaExcluidaRejeitaEnvioSemGravarOuChamarProvider() {
+        Conversation deleted = Conversation.start(UUID.randomUUID(), tenantId, owner, "Pergunta").delete();
+
+        assertThatThrownBy(() -> exchange.exchange(deleted, "Nova mensagem", null))
+            .isInstanceOf(ConversationNotFoundException.class);
+        assertThat(messages).isEmpty();
+        assertThat(completions).isEmpty();
+    }
+
+    @Test
     void conversaArquivadaRejeitaEnvioSemGravarMensagem() {
         Conversation conversation = persistedConversation(owner).archive();
 

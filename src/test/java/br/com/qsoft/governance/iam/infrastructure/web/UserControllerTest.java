@@ -1,5 +1,6 @@
 package br.com.qsoft.governance.iam.infrastructure.web;
 
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -20,12 +21,15 @@ import br.com.qsoft.governance.iam.application.UserAccessView;
 import br.com.qsoft.governance.iam.application.port.UserRepository;
 import br.com.qsoft.governance.iam.application.rbac.PolicyEvaluator;
 import br.com.qsoft.governance.iam.domain.exception.UserNotFoundException;
+import br.com.qsoft.governance.iam.domain.rbac.Permission;
 import br.com.qsoft.governance.iam.domain.user.HierarchyLevel;
 import br.com.qsoft.governance.iam.domain.user.User;
 import br.com.qsoft.governance.iam.domain.user.UserStatus;
 import br.com.qsoft.governance.sharedkernel.id.TenantId;
 import br.com.qsoft.governance.sharedkernel.id.UserId;
 import br.com.qsoft.governance.sharedkernel.query.PageResult;
+import br.com.qsoft.governance.sharedkernel.rbac.Action;
+import br.com.qsoft.governance.sharedkernel.rbac.Resource;
 import br.com.qsoft.governance.sharedkernel.tenant.TenantContext;
 import br.com.qsoft.governance.sharedkernel.tenant.TenantContextHolder;
 import java.time.Instant;
@@ -162,12 +166,13 @@ class UserControllerTest {
         UserId userId = UserId.random();
         TenantContextHolder.set(new TenantContext(tenantId, userId));
         when(getUserAccess.forUser(tenantId, userId))
-            .thenReturn(new UserAccessView(userId.value(), List.of(), Set.of()));
+            .thenReturn(new UserAccessView(userId.value(), List.of(), Set.of(
+                Permission.of(Resource.USAGE, Action.READ), Permission.of(Resource.CHAT, Action.CREATE))));
 
         mockMvc.perform(get("/api/v1/usuarios/me/permissoes"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.userId").value(userId.value().toString()))
-            .andExpect(jsonPath("$.permissoes").isArray())
+            .andExpect(jsonPath("$.permissoes").value(containsInAnyOrder("CHAT:CREATE", "USAGE:READ")))
             .andExpect(jsonPath("$.concessoes").isArray());
     }
 

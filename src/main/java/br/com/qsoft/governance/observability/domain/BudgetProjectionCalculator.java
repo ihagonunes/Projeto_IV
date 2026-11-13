@@ -97,8 +97,7 @@ public final class BudgetProjectionCalculator {
         if (projected.compareTo(budget) >= 0) {
             return BudgetRecommendation.ESGOTA_NO_MES;
         }
-        if (projectedPct != null
-            && projectedPct.compareTo(BigDecimal.valueOf(alertThresholdPct)) >= 0) {
+        if (projectedPct.compareTo(BigDecimal.valueOf(alertThresholdPct)) >= 0) {
             return BudgetRecommendation.ATENCAO;
         }
         return BudgetRecommendation.DENTRO_DO_ORCAMENTO;

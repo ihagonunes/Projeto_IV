@@ -130,4 +130,30 @@ class BudgetProjectionCalculatorTest {
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("mes futuro");
     }
+
+    @Test
+    void custosAusentesSaoZeroEJanelaDeveSerPositiva() {
+        assertThatThrownBy(() -> new BudgetProjectionFacts(MONTH, TODAY, 0, BigDecimal.TEN,
+            false, 80, null, null))
+            .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("windowDays");
+
+        BudgetProjection projection = BudgetProjectionCalculator.calculate(facts(BigDecimal.TEN, 80, null, null));
+
+        assertThat(projection.spentToDate()).isZero();
+        assertThat(projection.dailyAverage()).isZero();
+        assertThat(projection.projected()).isZero();
+        assertThat(projection.recommendation()).isEqualTo(BudgetRecommendation.DENTRO_DO_ORCAMENTO);
+    }
+
+    @Test
+    void mesFechadoUsaGastoRealSemProjetarDiasRestantes() {
+        YearMonth closedMonth = MONTH.minusMonths(1);
+        var projection = BudgetProjectionCalculator.calculate(new BudgetProjectionFacts(closedMonth, TODAY,
+            14, new BigDecimal("100"), false, 80, new BigDecimal("25"), new BigDecimal("140")));
+
+        assertThat(projection.remainingDays()).isZero();
+        assertThat(projection.dailyAverage()).isEqualByComparingTo("10");
+        assertThat(projection.projected()).isEqualByComparingTo("25");
+        assertThat(projection.exhaustionDate()).isNull();
+    }
 }

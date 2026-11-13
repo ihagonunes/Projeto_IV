@@ -57,6 +57,7 @@ class CompleteAIRequestTest {
     private AttemptRecorder recorder;
     private UsageDeliveryPublisher delivery;
     private CompleteAIRequest service;
+    private ExecutionStatus rejectedWrite;
 
     private final IdentityQuery identityQuery = new IdentityQuery() {
         @Override
@@ -76,6 +77,9 @@ class CompleteAIRequestTest {
     private final RequestAttemptRepository attemptRepository = new RequestAttemptRepository() {
         @Override
         public RequestAttempt save(RequestAttempt attempt) {
+            if (attempt.executionStatus() == rejectedWrite) {
+                throw new IllegalStateException("Falha simulada de persistência");
+            }
             attempts.put(attempt.requestId(), attempt);
             return attempt;
         }
@@ -415,6 +419,57 @@ class CompleteAIRequestTest {
     private CompletionCommand command(String purpose, String userMessage) {
         return new CompletionCommand(tenantId, userId, modelId, purpose,
             List.of(CompletionMessage.user(userMessage)), List.of());
+    }
+
+    @Test
+    void recordsSafeDenialCodesForRoutingFailures() {
+        var failures = Map.of(
+            new br.com.qsoft.governance.aigateway.api.exception.NoModelConfiguredException(), "NO_MODEL_CONFIGURED",
+            new br.com.qsoft.governance.aigateway.api.exception.ModelUnavailableException(), "MODEL_UNAVAILABLE",
+            new br.com.qsoft.governance.aigateway.api.exception.ProviderInactiveException(), "PROVIDER_INACTIVE",
+            new br.com.qsoft.governance.aigateway.domain.exception.ModelNotFoundException(modelId), "MODEL_NOT_FOUND",
+            new br.com.qsoft.governance.aigateway.domain.exception.ProviderNotFoundException(providerId), "PROVIDER_NOT_FOUND",
+            new IllegalStateException("Falha de roteamento"), "DENIED");
+        failures.forEach((error, code) -> {
+            attempts.clear();
+            resolveModelForUserFailing(error);
+            assertThatThrownBy(() -> service.complete(command("CHAT", "Pergunta"))).isSameAs(error);
+            assertThat(attempts.values()).singleElement().satisfies(attempt -> {
+                assertThat(attempt.authorizationStatus()).isEqualTo(AuthorizationStatus.DENIED);
+                assertThat(attempt.denialReason()).isEqualTo(code);
+            });
+        });
+        assertThat(stub.lastCall()).isNull();
+        assertThat(published).isEmpty();
+    }
+
+    @Test
+    void successIsNotReturnedWhenResultCannotBeRecorded() {
+        rejectedWrite = ExecutionStatus.SUCCEEDED;
+
+        assertThatThrownBy(() -> service.complete(command("CHAT", "Pergunta")))
+            .isInstanceOf(AIAttemptNotRecordedException.class);
+        assertThat(attempts.values()).extracting(RequestAttempt::executionStatus)
+            .containsExactly(ExecutionStatus.IN_FLIGHT);
+        assertThat(published).isEmpty();
+    }
+
+    @Test
+    void failedTimeoutWritePreservesTimeoutAndLeavesAttemptForRecovery() {
+        resolved = resolved("stub-timeout");
+        rejectedWrite = ExecutionStatus.TIMED_OUT;
+
+        assertThatThrownBy(() -> service.complete(command("CHAT", "Pergunta")))
+            .isInstanceOf(AIProviderTimeoutException.class);
+        assertThat(attempts.values()).extracting(RequestAttempt::executionStatus)
+            .containsExactly(ExecutionStatus.IN_FLIGHT);
+    }
+
+    @Test
+    void absentOrBlankExternalModelNameFallsBackToCatalogName() {
+        assertThat(resolved(null).externalModelName()).isEqualTo("gpt-4o");
+        assertThat(resolved(" ").externalModelName()).isEqualTo("gpt-4o");
+        assertThat(resolved("provider-model").externalModelName()).isEqualTo("provider-model");
     }
 
     private ResolvedModel resolved(String externalName) {

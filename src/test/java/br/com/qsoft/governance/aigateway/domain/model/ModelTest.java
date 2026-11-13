@@ -107,6 +107,31 @@ class ModelTest {
     }
 
     @Test
+    void exigePrecoDeSaidaNaCriacaoEdicaoEAtivacao() {
+        assertThatThrownBy(() -> model(BigDecimal.ONE, null)).isInstanceOf(ModelPriceRequiredException.class);
+        Model available = defaultModel();
+        assertThatThrownBy(() -> available.updateDetails("Novo nome", null, BigDecimal.ONE, null))
+            .isInstanceOf(ModelPriceRequiredException.class);
+        assertThat(available.name()).isEqualTo("gpt-4");
+
+        Model disabled = available.disable().updateDetails("Modelo desativado", null, BigDecimal.ONE, null);
+        assertThat(disabled.outputPricePer1k()).isNull();
+        assertThatThrownBy(disabled::makeAvailable).isInstanceOf(ModelPriceRequiredException.class);
+        assertThat(disabled.status()).isEqualTo(ModelStatus.DISABLED);
+    }
+
+    @Test
+    void nomeExternoEmBrancoViraNuloENomeLongoEhRejeitado() {
+        var model = Model.create(UUID.randomUUID(), tenantId, providerId, "Modelo", "  ",
+            BigDecimal.ONE, BigDecimal.ONE);
+        assertThat(model.externalName()).isNull();
+
+        assertThatThrownBy(() -> model.updateDetails("Novo nome", "x".repeat(151), BigDecimal.ONE, BigDecimal.ONE))
+            .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("externalName");
+        assertThat(model.name()).isEqualTo("Modelo");
+    }
+
+    @Test
     void deve_aceitarModeloLegadoSemPrecoViaRestore() {
         Model m = Model.restore(UUID.randomUUID(), tenantId, providerId, "local-llm", null,
             ModelStatus.AVAILABLE, null, null, Instant.now(), Instant.now());

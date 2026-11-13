@@ -50,6 +50,16 @@ class QueryBudgetStatusTest {
     }
 
     @Test
+    void aggregateWithoutKnownCostCountsAsZero() {
+        when(budgets.budgetsFor(tenantId, month)).thenReturn(List.of(budget(BigDecimal.TEN, 80)));
+        when(metrics.costByDepartment(any())).thenReturn(List.of(new DepartmentCost(departmentId, 1, 10, 20, null)));
+
+        var item = useCase.query(tenantId, month, new VisibilityScope.TenantWide()).items().getFirst();
+
+        assertThat(item).isEqualTo(calculate(BigDecimal.TEN, 80, BigDecimal.ZERO));
+    }
+
+    @Test
     void abaixoDeOitentaPorCentoEhOk() {
         BudgetStatusItem item = calculate(new BigDecimal("1000.00"), 80, new BigDecimal("799.90"));
         assertThat(item.pctUsed()).isEqualByComparingTo("79.99");

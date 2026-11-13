@@ -45,6 +45,29 @@ class StubProviderClientTest {
     }
 
     @Test
+    void stubEchoUsaUltimaMensagemDoUsuarioEIgnoraOutrosPapeis() {
+        var request = new ProviderCall(ProviderKind.STUB, null, null, 30000,
+            StubProviderClient.DEFAULT_MODE, List.of(CompletionMessage.user("anterior"),
+                CompletionMessage.user("última pergunta"), CompletionMessage.system("instrução")), List.of());
+
+        ProviderResponse response = client.call(request);
+
+        assertThat(response.content()).isEqualTo("[stub] última pergunta");
+        assertThat(response.usage()).isEqualTo(new Usage.Known(2, 2));
+    }
+
+    @Test
+    void stubEchoSemMensagemDoUsuarioRetornaZeroTokens() {
+        var request = new ProviderCall(ProviderKind.STUB, null, null, 30000,
+            StubProviderClient.DEFAULT_MODE, List.of(CompletionMessage.system("instrução")), List.of());
+
+        ProviderResponse response = client.call(request);
+
+        assertThat(response.content()).isEqualTo("[stub] ");
+        assertThat(response.usage()).isEqualTo(new Usage.Known(0, 0));
+    }
+
+    @Test
     void stubTimeoutLancaProviderTimeout() {
         assertThatThrownBy(() -> client.call(call("stub-timeout", "oi")))
             .isInstanceOf(ProviderTimeoutException.class);

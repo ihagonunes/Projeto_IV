@@ -5,12 +5,16 @@ import br.com.qsoft.governance.observability.application.port.UsageMetricsReposi
 import br.com.qsoft.governance.observability.application.port.UsageMetricsRepository.Granularity;
 import br.com.qsoft.governance.observability.application.port.UsageMetricsRepository.UsageMetricsFilter;
 import br.com.qsoft.governance.observability.application.port.UsageMetricsRepository.UsageSeriesPoint;
+import br.com.qsoft.governance.observability.application.UsageVisibilityDeniedException;
 import br.com.qsoft.governance.sharedkernel.id.TenantId;
+import br.com.qsoft.governance.sharedkernel.id.UserId;
+import br.com.qsoft.governance.sharedkernel.rbac.VisibilityScope;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,11 +26,13 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -41,6 +47,47 @@ class UsageMetricsJdbcAdapterTest {
     private final TenantId tenantId = TenantId.random();
     private final Instant from = Instant.now().minusSeconds(86400);
     private final Instant to = Instant.now();
+
+    @Test
+    void intersectsRequestedDepartmentWithDepartmentVisibility() {
+        UUID department = UUID.randomUUID();
+        UserId self = UserId.random();
+        UsageMetricsFilter filter = new UsageMetricsFilter(tenantId,
+            new VisibilityScope.Departments(Set.of(department), self), department, from, to, Granularity.DAY);
+
+        adapter.requestsByPeriod(filter);
+
+        ArgumentCaptor<String> sql = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<Object[]> params = ArgumentCaptor.forClass(Object[].class);
+        verify(jdbcTemplate).query(sql.capture(), any(RowMapper.class), params.capture());
+        assertThat(sql.getValue()).contains("AND (department_id IN (?) OR user_id = ?) AND department_id = ?");
+        assertThat(params.getValue()).startsWith(tenantId.value(), department, self.value(), department);
+    }
+
+    @Test
+    void deniesEmptyVisibilityBeforeQuerying() {
+        UsageMetricsFilter filter = new UsageMetricsFilter(tenantId, new VisibilityScope.None(),
+            null, from, to, Granularity.DAY);
+
+        assertThatThrownBy(() -> adapter.requestsByPeriod(filter))
+            .isInstanceOf(UsageVisibilityDeniedException.class);
+        verifyNoInteractions(jdbcTemplate);
+    }
+
+    @Test
+    void tenantWideScopeStillFiltersByRequestedDepartment() {
+        UUID department = UUID.randomUUID();
+        UsageMetricsFilter filter = new UsageMetricsFilter(tenantId,
+            new VisibilityScope.TenantWide(), department, from, to, Granularity.DAY);
+
+        adapter.requestsByPeriod(filter);
+
+        ArgumentCaptor<String> sql = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<Object[]> params = ArgumentCaptor.forClass(Object[].class);
+        verify(jdbcTemplate).query(sql.capture(), any(RowMapper.class), params.capture());
+        assertThat(sql.getValue()).contains("WHERE tenant_id = ? AND department_id = ?");
+        assertThat(params.getValue()).startsWith(tenantId.value(), department);
+    }
 
     // --- requestsByPeriod Tests ---
 

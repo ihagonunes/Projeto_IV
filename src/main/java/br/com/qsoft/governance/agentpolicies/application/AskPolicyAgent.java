@@ -157,9 +157,6 @@ public class AskPolicyAgent {
     }
 
     private static String truncate(String value) {
-        if (value == null) {
-            return "unknown";
-        }
         return value.length() <= TOOL_NAME_MAX ? value : value.substring(0, TOOL_NAME_MAX);
     }
 }

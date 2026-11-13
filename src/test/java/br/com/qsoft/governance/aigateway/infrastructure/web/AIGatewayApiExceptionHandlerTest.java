@@ -37,6 +37,19 @@ class AIGatewayApiExceptionHandlerTest {
     }
 
     @Test
+    void exposesStablePriceValidationCodeAndDeniesAttemptAccess() {
+        var missingPrice = handler.handlePriceRequired(
+            new br.com.qsoft.governance.aigateway.domain.exception.ModelPriceRequiredException());
+        assertThat(missingPrice.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(missingPrice.getBody()).containsEntry("code", "MODEL_PRICE_REQUIRED");
+
+        var error = new br.com.qsoft.governance.aigateway.api.exception.AIAttemptAccessDeniedException();
+        var denied = handler.handleAttemptAccessDenied(error);
+        assertThat(denied.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(denied.getBody()).containsExactlyEntriesOf(Map.of("message", error.getMessage()));
+    }
+
+    @Test
     void deve_tratar_provider_not_found_exception() {
         ProviderNotFoundException ex = new ProviderNotFoundException(UUID.randomUUID());
         ResponseEntity<Map<String, String>> response = handler.handleNotFound(ex);

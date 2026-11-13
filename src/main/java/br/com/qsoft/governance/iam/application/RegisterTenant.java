@@ -89,7 +89,7 @@ public class RegisterTenant {
             throw new IllegalArgumentException("adminEmail inválido.");
         }
         String domain = Tenant.normalizeDomain(email.substring(at + 1));
-        if (domain == null || domain.isBlank()) {
+        if (domain.isBlank()) {
             throw new IllegalArgumentException("adminEmail inválido.");
         }
         return domain;

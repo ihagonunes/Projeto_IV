@@ -18,6 +18,10 @@ import br.com.qsoft.governance.sharedkernel.query.PageResult;
 import br.com.qsoft.governance.sharedkernel.tenant.TenantContext;
 import br.com.qsoft.governance.sharedkernel.tenant.TenantContextHolder;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.Path;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -29,6 +33,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -63,6 +70,66 @@ class UserPersistenceTest {
     @AfterEach
     void tearDown() {
         TenantContextHolder.clear();
+    }
+
+    @Test
+    void explicitlyScopesIdAndActiveUserLookupsByTenantWithoutThreadContext() {
+        TenantId tenant = TenantId.random();
+        User user = createSampleUserWith(UserId.random(), tenant);
+        UserJpaEntity entity = new UserJpaMapper().toEntity(user);
+        when(jpaRepository.findByIdAndTenantId(user.id().value(), tenant.value())).thenReturn(Optional.of(entity));
+        when(jpaRepository.findByTenantIdAndStatusOrderByNameAscIdAsc(tenant.value(), UserStatus.ACTIVE))
+            .thenReturn(List.of(entity));
+
+        assertThat(adapter.findByTenantIdAndId(tenant, user.id())).hasValueSatisfying(found ->
+            assertThat(found.tenantId()).isEqualTo(tenant));
+        assertThat(adapter.findByTenantIdAndId(TenantId.random(), user.id())).isEmpty();
+        assertThat(adapter.findActiveByTenantId(tenant)).extracting(User::id).containsExactly(user.id());
+    }
+
+    @ParameterizedTest
+    @CsvSource({"true,false", "true,true", "false,true"})
+    void searchIntersectsTenantWithUserAndDepartmentVisibility(boolean selfVisible, boolean departmentVisible) {
+        TenantId tenant = TenantId.random();
+        UUID user = UUID.randomUUID();
+        Set<UUID> departments = Set.of(UUID.randomUUID());
+        var filter = new UserSearchFilter(null, null, null, null, departmentVisible ? departments : Set.of(),
+            selfVisible ? user : null);
+        PageRequest page = PageRequest.of(0, 10);
+        when(jpaRepository.findAll(any(Specification.class), eq(page))).thenReturn(new PageImpl<>(List.of()));
+        adapter.search(tenant, filter, 0, 10);
+        ArgumentCaptor<Specification<UserJpaEntity>> spec = ArgumentCaptor.captor();
+        verify(jpaRepository).findAll(spec.capture(), eq(page));
+
+        Root<UserJpaEntity> root = mock();
+        CriteriaBuilder builder = mock();
+        Path<UUID> tenantPath = mock();
+        Predicate tenantPredicate = mock();
+        when(root.<UUID>get("tenantId")).thenReturn(tenantPath);
+        when(builder.equal(tenantPath, tenant.value())).thenReturn(tenantPredicate);
+        Predicate selfPredicate = mock();
+        if (selfVisible) {
+            Path<UUID> userPath = mock();
+            when(root.<UUID>get("id")).thenReturn(userPath);
+            when(builder.equal(userPath, user)).thenReturn(selfPredicate);
+        }
+        Predicate departmentPredicate = mock();
+        if (departmentVisible) {
+            Path<UUID> departmentPath = mock();
+            when(root.<UUID>get("departmentId")).thenReturn(departmentPath);
+            when(departmentPath.in(departments)).thenReturn(departmentPredicate);
+        }
+        Predicate visibility = selfVisible ? selfPredicate : departmentPredicate;
+        if (selfVisible && departmentVisible) {
+            visibility = mock();
+            when(builder.or(departmentPredicate, selfPredicate)).thenReturn(visibility);
+        }
+
+        spec.getValue().toPredicate(root, null, builder);
+
+        ArgumentCaptor<Predicate[]> predicates = ArgumentCaptor.forClass(Predicate[].class);
+        verify(builder).and(predicates.capture());
+        assertThat(predicates.getValue()).containsExactly(tenantPredicate, visibility);
     }
 
     @Test

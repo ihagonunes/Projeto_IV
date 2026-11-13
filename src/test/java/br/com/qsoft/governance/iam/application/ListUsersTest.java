@@ -211,4 +211,17 @@ class ListUsersTest {
             command(tenantId, null, UUID.randomUUID(), null, null, 0, 20)))
             .isInstanceOf(AuthorizationDeniedException.class);
     }
+
+    @Test
+    void departmentFilterWithinDepartmentScopeIsAllowedButSelfScopeCannotRequestIt() {
+        TenantId tenant = TenantId.random();
+        UUID department = UUID.randomUUID();
+        userIn(tenant, "in@x.com", "Pessoa", HierarchyLevel.COLLABORATOR, department);
+        when(authorizationQuery.visibilityFor(tenant, actor, Resource.USER, Action.READ))
+            .thenReturn(new VisibilityScope.Departments(Set.of(department), actor), new VisibilityScope.SelfOnly(actor));
+        var command = command(tenant, null, department, null, null, 0, 20);
+
+        assertThat(useCase.list(command).content()).extracting(User::email).containsExactly("in@x.com");
+        assertThatThrownBy(() -> useCase.list(command)).isInstanceOf(AuthorizationDeniedException.class);
+    }
 }

@@ -4,9 +4,7 @@ import br.com.qsoft.governance.engagement.application.port.EngagementFactsPort;
 import br.com.qsoft.governance.engagement.domain.AdoptionCalculator;
 import br.com.qsoft.governance.engagement.domain.AdoptionResult;
 import br.com.qsoft.governance.engagement.domain.EngagementFacts;
-import br.com.qsoft.governance.engagement.domain.LicenseFact;
 import br.com.qsoft.governance.engagement.domain.SourceKind;
-import br.com.qsoft.governance.engagement.domain.TrainingFact;
 import br.com.qsoft.governance.iam.api.model.UserContext;
 import br.com.qsoft.governance.iam.api.query.AuthorizationQuery;
 import br.com.qsoft.governance.iam.api.query.IdentityQuery;
@@ -17,7 +15,6 @@ import br.com.qsoft.governance.sharedkernel.rbac.Resource;
 import br.com.qsoft.governance.sharedkernel.rbac.VisibilityScope;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -26,6 +23,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -58,9 +56,7 @@ public class QueryAdoption {
 
         VisibilityScope visibility = authorizationQuery.visibilityFor(
             command.tenantId(), command.actor(), Resource.USAGE, Action.READ);
-        if (visibility instanceof VisibilityScope.None) {
-            throw new EngagementAccessDeniedException();
-        }
+        Predicate<UserContext> visible = EngagementVisibility.forScope(visibility);
 
         List<UserContext> contexts = identityQuery.eligibleUsers(command.tenantId());
         Set<UUID> eligibleDepartments = contexts.stream()
@@ -74,7 +70,7 @@ public class QueryAdoption {
         }
 
         Set<UserId> selected = contexts.stream()
-            .filter(context -> isVisible(visibility, context))
+            .filter(visible)
             .filter(context -> command.departmentId() == null
                 || command.departmentId().equals(context.departmentId()))
             .map(UserContext::userId)
@@ -87,28 +83,13 @@ public class QueryAdoption {
         EngagementFacts facts = source.load(command.tenantId(), effectiveAte);
         selected.retainAll(facts.eligible());
 
-        EngagementFacts scoped = subset(facts, selected);
+        EngagementFacts scoped = facts.restrictTo(selected);
         AdoptionResult overall = AdoptionCalculator.of(scoped, effectiveAte);
         List<AdoptionReport.DepartmentAdoption> byDepartment =
             byDepartment(contexts, selected, facts, effectiveAte);
 
         return new AdoptionReport(command.source(), effectiveAte,
             AdoptionCalculator.WINDOW_DAYS, overall, byDepartment, facts.coverage());
-    }
-
-    private static boolean isVisible(VisibilityScope visibility, UserContext context) {
-        if (visibility instanceof VisibilityScope.TenantWide) {
-            return true;
-        }
-        if (visibility instanceof VisibilityScope.Departments departments) {
-            return departments.self().equals(context.userId())
-                || (context.departmentId() != null
-                    && departments.ids().contains(context.departmentId()));
-        }
-        if (visibility instanceof VisibilityScope.SelfOnly selfOnly) {
-            return selfOnly.self().equals(context.userId());
-        }
-        return false;
     }
 
     private static List<AdoptionReport.DepartmentAdoption> byDepartment(
@@ -127,24 +108,8 @@ public class QueryAdoption {
             .sorted(Map.Entry.comparingByKey(Comparator.nullsLast(
                 Comparator.comparing(UUID::toString))))
             .map(entry -> new AdoptionReport.DepartmentAdoption(entry.getKey(),
-                AdoptionCalculator.of(subset(facts, entry.getValue()), ate)))
+                AdoptionCalculator.of(facts.restrictTo(entry.getValue()), ate)))
             .toList();
     }
 
-    private static EngagementFacts subset(EngagementFacts facts, Set<UserId> ids) {
-        Map<UserId, Set<LocalDate>> activeDays = facts.activeDays().entrySet().stream()
-            .filter(entry -> ids.contains(entry.getKey()))
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue,
-                (left, right) -> left, LinkedHashMap::new));
-        Map<UserId, List<LicenseFact>> licenses = facts.licenses().entrySet().stream()
-            .filter(entry -> ids.contains(entry.getKey()))
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue,
-                (left, right) -> left, LinkedHashMap::new));
-        Map<UserId, List<TrainingFact>> trainings = facts.trainings().entrySet().stream()
-            .filter(entry -> ids.contains(entry.getKey()))
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue,
-                (left, right) -> left, LinkedHashMap::new));
-        return new EngagementFacts(ids, activeDays, licenses, trainings,
-            facts.coverage(), facts.licenseSourceAvailable(), facts.trainingSourceAvailable());
-    }
 }

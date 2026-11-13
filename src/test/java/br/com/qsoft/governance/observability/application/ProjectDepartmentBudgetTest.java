@@ -45,6 +45,30 @@ class ProjectDepartmentBudgetTest {
         return new ProjectDepartmentBudget(budgets, metrics, clock);
     }
 
+    @Test
+    void closedMonthUsesWholeMonthAsActualCostPeriod() {
+        YearMonth month = YearMonth.of(2026, 9);
+        var visibility = new VisibilityScope.TenantWide();
+        givenBudget(month, BigDecimal.TEN);
+        var filter = new UsageMetricsRepository.UsageMetricsFilter(TENANT, visibility, DEPARTMENT,
+            Instant.parse("2026-09-01T00:00:00Z"), Instant.parse("2026-10-01T00:00:00Z"),
+            UsageMetricsRepository.Granularity.DAY);
+        when(metrics.costByDepartment(filter)).thenReturn(List.of(
+            new UsageMetricsRepository.DepartmentCost(DEPARTMENT, 1, 0, 0, BigDecimal.ONE)));
+
+        useCase(LocalDate.of(2026, 10, 12)).query(TENANT, DEPARTMENT, month, 14, visibility);
+
+        org.mockito.Mockito.verify(metrics).costByDepartment(filter);
+    }
+
+    @Test
+    void productionConstructorRejectsFutureMonthUsingUtcClock() {
+        YearMonth future = YearMonth.now(java.time.ZoneOffset.UTC).plusMonths(1);
+        var useCase = new ProjectDepartmentBudget(budgets, metrics);
+        assertThatThrownBy(() -> useCase.query(TENANT, DEPARTMENT, future, 14, new VisibilityScope.TenantWide()))
+            .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("futuro");
+    }
+
     private void givenBudget(YearMonth month, BigDecimal amount) {
         when(budgets.budgetFor(TENANT, DEPARTMENT, month)).thenReturn(Optional.of(
             new BudgetLimitInfo(DEPARTMENT, "Marketing", month, amount, 80, false)));

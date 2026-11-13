@@ -106,6 +106,15 @@ class QueryRequestAttemptsTest {
     }
 
     @Test
+    void selfScopeCannotRequestDepartmentEvenWithOwnUserFilter() {
+        when(authorizationQuery.visibilityFor(tenantId, actor, Resource.USAGE, Action.READ))
+            .thenReturn(new VisibilityScope.SelfOnly(actor));
+
+        assertThatThrownBy(() -> useCase.query(command(departmentA, actor.value(), null, null, 0, 20)))
+            .isInstanceOf(AIAttemptAccessDeniedException.class);
+    }
+
+    @Test
     void selfOnlyAceitaOFiltroDoProprioUsuario() {
         when(authorizationQuery.visibilityFor(tenantId, actor, Resource.USAGE, Action.READ))
             .thenReturn(new VisibilityScope.SelfOnly(actor));
