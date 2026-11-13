@@ -174,6 +174,19 @@ class RegisterTenantTest {
     }
 
     @Test
+    void rejectsMissingCommandSlugAndEmailDomainBeforeCreatingTenant() {
+        RegisterTenant register = useCase();
+        assertThatThrownBy(() -> register.register(null))
+            .isInstanceOf(IllegalArgumentException.class).hasMessage("Command é obrigatório.");
+        assertThatThrownBy(() -> register.register(command(null, "QSOFT", "qsoft.com")))
+            .isInstanceOf(IllegalArgumentException.class).hasMessage("slug é obrigatório.");
+        assertThatThrownBy(() -> register.register(command("qsoft", "QSOFT", null)))
+            .isInstanceOf(IllegalArgumentException.class).hasMessage("emailDomain é obrigatório.");
+        assertThat(bySlug).isEmpty();
+        assertThat(roles).isEmpty();
+    }
+
+    @Test
     void shouldRejectAdminEmailOutsideDomain() {
         assertThatThrownBy(() -> useCase().register(new RegisterTenantCommand(
             "qsoft", "QSOFT", "qsoft.com", "Admin", "admin@outro.com", "secret123")))
