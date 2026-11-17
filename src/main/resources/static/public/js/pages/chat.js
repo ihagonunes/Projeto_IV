@@ -386,26 +386,10 @@
     });
     $("chat-more").addEventListener("click", async () => { $("chat-more").disabled = true; try { await loadHistory(true); } catch { status("Não foi possível carregar mais conversas."); } finally { $("chat-more").disabled = false; } });
     $("chat-model").addEventListener("click", modelDialog);
+    let agentPlaza;
     $("chat-agent")?.addEventListener("click", () => {
-        const examples = [
-            ["Agente de Políticas", "Ajuda a localizar e entender as políticas internas."],
-            ["Agente de Dados", "Ajuda a interpretar tabelas e resumir indicadores."],
-            ["Agente de Escrita", "Ajuda a revisar textos e organizar rascunhos."]
-        ];
-        const plaza = node("div", null, "chat-agent-plaza");
-        const detail = node("p", "Passe o mouse sobre um nome ou selecione-o para ver a habilidade.", "chat-agent-detail");
-        detail.setAttribute("aria-live", "polite");
-        for (const [name, skill] of examples) {
-            const reveal = () => { detail.textContent = `${name} · ${skill}`; };
-            const marker = button(name, reveal, "chat-agent-marker");
-            marker.addEventListener("pointerenter", reveal);
-            marker.addEventListener("focus", reveal);
-            plaza.append(marker);
-        }
-        dialog("Praça dos agentes", [
-            node("p", "Prévia com agentes de exemplo. O envio pelo Chat continua usando o modelo selecionado.", "chat-dialog-note"),
-            plaza, detail
-        ]);
+        agentPlaza ||= window.AtlasAgentPlaza.mount();
+        dialog("Praça dos agentes", [agentPlaza]);
     });
     $("chat-usage").addEventListener("click", usageDialog);
     $("chat-attach").addEventListener("click", attachmentDialog);
