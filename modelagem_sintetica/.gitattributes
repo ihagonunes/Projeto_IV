@@ -1,0 +1,6 @@
+# Preserve exatamente os bytes dos componentes copiados da origem.
+pipeline.py -text whitespace=cr-at-eol
+fixtures.py -text whitespace=cr-at-eol
+test_pipeline.py -text whitespace=cr-at-eol
+demo_sintetica.py -text whitespace=cr-at-eol
+requirements.lock.txt -text whitespace=cr-at-eol

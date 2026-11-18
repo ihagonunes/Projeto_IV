@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="420" viewBox="0 0 760 420">
+<rect width="760" height="420" fill="white"/>
+<text x="35" y="28" font-size="18">SINTETICO — calinski_harabasz (media das sementes)</text>
+<path d="M70 60 V340 H710" fill="none" stroke="#444"/>
+<text x="5" y="340" font-size="11">66.3</text>
+<text x="5" y="275" font-size="11">408</text>
+<text x="5" y="210" font-size="11">749</text>
+<text x="5" y="145" font-size="11">1.09e+03</text>
+<text x="5" y="80" font-size="11">1.43e+03</text>
+<polyline points="90,340.0 188,329.8156419600046 286,312.8133430281512 384,253.4154676160185 482,203.3759194998008 580,177.03612843223678 678,80.0" fill="none" stroke="#2563eb" stroke-width="2"/>
+<text x="100" y="400" fill="#2563eb">kmeans</text>
+<polyline points="90,340.0 188,329.8156419600046 286,312.8133430281512 384,282.421788358284 482,234.06822854089717 580,179.28127101293774 678,92.9356753856087" fill="none" stroke="#dc2626" stroke-width="2"/>
+<text x="360" y="400" fill="#dc2626">ward</text>
+<text x="90" y="365">2</text>
+<text x="188" y="365">3</text>
+<text x="286" y="365">4</text>
+<text x="384" y="365">5</text>
+<text x="482" y="365">6</text>
+<text x="580" y="365">7</text>
+<text x="678" y="365">8</text>
+<text x="690" y="385">k</text></svg>
