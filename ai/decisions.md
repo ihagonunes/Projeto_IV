@@ -46,6 +46,7 @@ Este arquivo é um índice. Leia somente o ADR relacionado à tarefa.
 | ADR-40 | Engagement no MVP: fontes, elegíveis e parâmetros de adoção, treinamento e AI Credits | ACCEPTED | `ai/adr/ADR-40-engagement-mvp-sources-and-formulas.md` |
 | ADR-41 | Projeção determinística de orçamento (Pesquisa Operacional) | ACCEPTED | `ai/adr/ADR-41-deterministic-budget-projection.md` |
 | ADR-42 | Ciclo de vida da conversa, recibo durável e modelos do usuário (emenda ADR-39) | ACCEPTED | `ai/adr/ADR-42-chat-lifecycle-and-durable-receipt.md` |
+| ADR-43 | Orçamento mensal e saldo financeiro individual | ACCEPTED | `ai/adr/ADR-43-monthly-individual-spending.md` |
 
 ## Decisões abertas (pendentes de ADR)
 

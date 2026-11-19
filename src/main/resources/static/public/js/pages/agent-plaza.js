@@ -5,6 +5,14 @@
     else root.AtlasAgentPlaza = api;
 })(typeof window === "undefined" ? globalThis : window, function () {
     "use strict";
+    const artwork = {
+        policies: "01_politicas-internas", "ai-cost": "02_custos-de-ia", quality: "03_qualidade-de-processos",
+        writing: "04_escrita-e-documentos", sales: "05_comercial", people: "06_pessoas-e-treinamento",
+        data: "07_dados-e-validacao", marketing: "08_marketing-e-conteudo", projects: "09_projetos",
+        code: "10_codigo", support: "11_atendimento", research: "12_pesquisa", tests: "13_qualidade-e-testes",
+        stock: "14_estoque-e-compras", review: "15_revisor-critico", finance: "16_financeiro",
+        operations: "17_operacoes-e-producao", merge: "18_consolidador"
+    };
     const catalog = [
         ["policies", "Políticas internas", "Consulta políticas e documentos internos.", "Gerais"],
         ["writing", "Escrita e documentos", "Organiza textos, PDFs e documentos Word.", "Gerais"],
@@ -24,7 +32,11 @@
         ["research", "Pesquisa", "Reúne fontes e sintetiza informações.", "Gerais"],
         ["review", "Revisor crítico", "Aponta lacunas e contradições.", "Gerais"],
         ["merge", "Consolidador", "Reúne os ramos em uma única entrega.", "Gerais"]
-    ].map(([kind, name, description, category]) => ({ kind, name, description, category }));
+    ].map(([kind, name, description, category]) => ({ kind, name, description, category, image: `/public/img/agents/${artwork[kind]}.png` }));
+    const endpoints = {
+        task: { name: "Tarefa do usuário", description: "Recebe sua tarefa e inicia a esteira de agentes.", image: "/public/img/agents/19_tarefa-do-usuario.png" },
+        result: { name: "Resultado", description: "Recebe a entrega final da esteira de agentes.", image: "/public/img/agents/20_resultado.png" }
+    };
     const clamp = value => Math.max(0, Math.min(1, value));
     function createGraph() {
         return { nodes: [{ id: "task", kind: "task", name: "Tarefa do usuário", x: 0, y: 0 }], edges: [], nextId: 1 };
@@ -53,8 +65,77 @@
         graph.nodes = graph.nodes.filter(n => n.id !== id);
         graph.edges = graph.edges.filter(e => e.from !== id && e.to !== id);
     }
-    function mount() {
-        const graph = createGraph(); let source = null;
+    function reachableNodes(graph) {
+        const reached = new Set();
+        function visit(id) {
+            if (reached.has(id)) return;
+            reached.add(id);
+            graph.edges.filter(e => e.from === id).forEach(e => visit(e.to));
+        }
+        visit("task"); return reached;
+    }
+    function validateGraph(graph) {
+        const reached = reachableNodes(graph);
+        if (graph.nodes.some(n => n.kind !== "result" && !reached.has(n.id))) {
+            return { valid: false, needsMerge: false, message: "Conecte todos os agentes à tarefa do usuário antes de confirmar." };
+        }
+        if (!graph.nodes.some(n => !["task", "result"].includes(n.kind))) {
+            return { valid: false, needsMerge: false, message: "Adicione pelo menos um agente à esteira." };
+        }
+        const mergers = graph.nodes.filter(n => n.kind === "merge" && graph.edges.filter(e => e.to === n.id).length > 1);
+        const forks = graph.nodes.filter(n => graph.edges.filter(e => e.from === n.id).length > 1);
+        const unresolved = forks.some(fork => !mergers.some(merge => {
+            const memo = new Map();
+            function allPathsMeet(id) {
+                if (id === merge.id) return true;
+                if (memo.has(id)) return memo.get(id);
+                const exits = graph.edges.filter(e => e.from === id);
+                memo.set(id, false);
+                const meets = exits.length > 0 && exits.every(e => allPathsMeet(e.to));
+                memo.set(id, meets); return meets;
+            }
+            return allPathsMeet(fork.id);
+        }));
+        if (unresolved) return { valid: false, needsMerge: true, message: "Há ramos paralelos sem consolidação. Adicione o agente Consolidador para reunir os ramos." };
+        const result = graph.nodes.find(n => n.kind === "result");
+        if (!result || !reached.has(result.id)) return { valid: false, needsMerge: false, message: "Adicione o resultado e conecte a última etapa à sua entrada." };
+        if (graph.nodes.some(n => n.kind !== "result" && !graph.edges.some(e => e.from === n.id))) {
+            return { valid: false, needsMerge: false, message: "Conecte todas as pontas da esteira ao resultado." };
+        }
+        return { valid: true, needsMerge: false, message: "Esteira pronta para confirmar." };
+    }
+    function consolidate(graph, insert = kind => addNode(graph, kind, .7, .5)) {
+        if (!validateGraph(graph).needsMerge) return false;
+        // A junção deve acontecer num Consolidador, inclusive quando os ramos
+        // já foram ligados diretamente a um agente comum ou ao resultado.
+        for (const target of [...graph.nodes]) {
+            const incoming = graph.edges.filter(e => e.to === target.id);
+            if (target.kind === "merge" || incoming.length < 2) continue;
+            const merge = insert("merge");
+            graph.edges = graph.edges.filter(e => e.to !== target.id);
+            incoming.forEach(e => connect(graph, e.from, merge.id));
+            connect(graph, merge.id, target.id);
+        }
+        const result = graph.nodes.find(n => n.kind === "result");
+        const leaves = graph.nodes.filter(n => !["task", "result"].includes(n.kind) && !graph.edges.some(e => e.from === n.id));
+        if (leaves.length && (leaves.length > 1 || (result && graph.edges.some(e => e.to === result.id)))) {
+            const sources = new Set(leaves.map(n => n.id));
+            if (result) graph.edges.filter(e => e.to === result.id).forEach(e => sources.add(e.from));
+            const merge = insert("merge");
+            if (result) graph.edges = graph.edges.filter(e => e.to !== result.id);
+            sources.forEach(id => connect(graph, id, merge.id));
+            if (result) connect(graph, merge.id, result.id);
+        }
+        return true;
+    }
+    function mount({ onConfirm = () => {} } = {}) {
+        const graph = createGraph(); let source = null, confirmedSignature = null, missingResultWarning = false;
+        const pendingClicks = new Map();
+        function cancelClick(id) {
+            if (pendingClicks.has(id)) window.clearTimeout(pendingClicks.get(id).timer);
+            pendingClicks.delete(id);
+        }
+        const signature = () => JSON.stringify([graph.nodes.map(n => [n.id, n.kind]), graph.edges]);
         const el = (tag, text, cls) => { const n = document.createElement(tag); if (text) n.textContent = text; if (cls) n.className = cls; return n; };
         const button = (text, action, cls = "chat-action-button") => { const b = el("button", text, cls); b.type = "button"; b.addEventListener("click", action); return b; };
         const root = el("section", null, "chat-agent-plaza");
@@ -64,14 +145,65 @@
             const result = addAtAvailablePosition("result");
             if (result) { render(); announce("Resultado adicionado. Conecte a saída do consolidador à entrada do resultado."); }
         }, "chat-action-button is-primary");
-        toolbar.append(summary, addResult);
-        const instructions = el("p", "Arraste ou clique para adicionar agentes. Conecte de Saída para Entrada. Para remover uma conexão, clique duas vezes na seta.", "plaza-instructions");
+        const confirm = button("Confirmar esteira", () => {
+            for (const [id, pending] of [...pendingClicks]) { cancelClick(id); pending.activate(); }
+            if (!graph.nodes.some(n => n.kind === "result")) {
+                const message = "Falta adicionar o Resultado. Adicione essa etapa e conecte a saída final antes de confirmar a esteira.";
+                missingResultWarning = true; render(); announce(message); return;
+            }
+            const validation = validateGraph(graph);
+            if (!validation.valid) return announce(validation.message);
+            confirmedSignature = signature(); render();
+            announce("Esteira confirmada nesta sessão. A execução dos agentes ainda não está conectada.");
+            onConfirm();
+        }, "chat-action-button is-primary");
+        toolbar.append(summary, addResult, confirm);
+        const instructions = el("p", "Para conectar, clique primeiro na origem e depois no destino. Clique duas vezes no agente para removê-lo ou na seta para remover a conexão. Arraste para mover.", "plaza-instructions");
         const viewport = el("div", null, "plaza-viewport");
+        const scenery = el("div", null, "plaza-scenery"); scenery.setAttribute("aria-hidden", "true");
+        for (let frame = 1; frame <= 4; frame++) {
+            const image = el("img"); image.src = `/public/img/agent-plaza/fundo_0${frame}.png`; image.alt = "";
+            image.draggable = false; image.style.animationDelay = `${(frame - 1) * .75}s`;
+            scenery.append(image);
+        }
+        viewport.append(scenery);
         const canvas = el("div", null, "plaza-canvas"); canvas.setAttribute("aria-label", "Área de montagem do fluxo");
         const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg"); svg.setAttribute("class", "plaza-wires");
         const nodes = el("div"); canvas.append(svg, nodes); viewport.append(canvas);
         const live = el("p", "Comece pela tarefa do usuário e adicione o primeiro agente.", "plaza-status"); live.setAttribute("role", "status");
         const announce = message => { live.textContent = message; };
+        const tooltip = el("div", null, "plaza-tooltip");
+        tooltip.id = "plaza-agent-description"; tooltip.hidden = true; tooltip.setAttribute("role", "tooltip");
+        const hideTooltip = () => { tooltip.hidden = true; };
+        function character(card, agent) {
+            const figure = el("span", null, "plaza-figure");
+            const image = el("img", null, "plaza-sprite"); image.src = agent.image; image.alt = ""; image.draggable = false;
+            figure.append(image, el("strong", agent.name, "plaza-agent-name")); card.append(figure);
+            card.setAttribute("aria-description", agent.description);
+            function showTooltip() {
+                tooltip.textContent = agent.description; tooltip.hidden = false;
+                const head = image.getBoundingClientRect();
+                const bounds = tooltip.getBoundingClientRect();
+                const left = Math.max(8, Math.min(head.left + head.width / 2 - bounds.width / 2, window.innerWidth - bounds.width - 8));
+                tooltip.style.left = `${left}px`;
+                tooltip.style.top = `${Math.max(8, head.top - bounds.height - 10)}px`;
+                tooltip.style.setProperty("--bubble-pointer", `${Math.max(12, Math.min(bounds.width - 12, head.left + head.width / 2 - left))}px`);
+                card.setAttribute("aria-describedby", tooltip.id);
+            }
+            card.addEventListener("mouseenter", showTooltip); card.addEventListener("mouseleave", hideTooltip);
+            card.addEventListener("focusin", showTooltip); card.addEventListener("focusout", hideTooltip);
+        }
+        const resultNotice = el("div", null, "plaza-merge-notice plaza-result-notice");
+        const resultMessage = el("p", "Falta adicionar o Resultado. Adicione essa etapa e conecte a saída final antes de confirmar a esteira.");
+        resultMessage.setAttribute("role", "alert");
+        resultNotice.append(resultMessage, button("Adicionar Resultado", () => addResult.click()));
+        const mergeNotice = el("div", null, "plaza-merge-notice");
+        const mergeMessage = el("p"); mergeMessage.setAttribute("role", "status");
+        const autoMerge = button("Adicionar Consolidador e ligar ramos", () => {
+            consolidate(graph, addAtAvailablePosition); source = null; render();
+            announce(validateGraph(graph).message);
+        });
+        mergeNotice.append(mergeMessage, autoMerge);
         const workspace = el("div", null, "plaza-workspace");
         const library = el("aside", null, "plaza-library"); const libraryHeader = el("div", null, "plaza-library-header");
         library.id = "plaza-agent-library";
@@ -90,7 +222,7 @@
         libraryHeader.append(el("strong", "Agentes disponíveis"), search, category);
         const cards = el("div", null, "plaza-catalog"); library.append(libraryHeader, cards);
         workspace.append(viewport, library);
-        root.append(toolbar, instructions, workspace, live,
+        root.append(toolbar, instructions, resultNotice, mergeNotice, workspace, live, tooltip,
             el("p", "Rascunho visual · permanece ao fechar esta janela e é apagado ao recarregar a página. A execução dos agentes ainda não está conectada.", "plaza-footnote"));
         const inset = 8;
         const cardWidth = 148;
@@ -144,6 +276,7 @@
             render(); announce("Etapa posicionada. Use Entrada e Saída para definir a ordem.");
         });
         function layout() {
+            hideTooltip();
             const bounds = travel();
             const positions = new Map();
             graph.nodes.forEach((n, i) => {
@@ -156,8 +289,8 @@
             svg.replaceChildren();
             for (const edge of graph.edges) {
                 const a = positions.get(edge.from), b = positions.get(edge.to);
-                const x = a.x + cardWidth, y = a.y + cardHeight - 20;
-                const tx = b.x, ty = b.y + cardHeight - 20;
+                const x = a.x + cardWidth / 2 + 24, y = a.y + 28;
+                const tx = b.x + cardWidth / 2 - 24, ty = b.y + 28;
                 const curve = `M ${x} ${y} C ${x + 85} ${y}, ${tx - 85} ${ty}, ${tx} ${ty}`;
                 const arrow = `M ${tx - 8} ${ty - 5} L ${tx} ${ty} L ${tx - 8} ${ty + 5}`;
                 const wire = document.createElementNS(svg.namespaceURI, "g");
@@ -188,14 +321,59 @@
                 svg.append(wire);
             }
         }
+        function selectNode(n) {
+            if (!graph.nodes.some(candidate => candidate.id === n.id)) return;
+            if (!source) {
+                if (n.kind === "result") return announce("Resultado é a etapa final. Clique primeiro no agente de origem.");
+                source = n.id;
+                // Preserva o elemento para que o segundo clique de um clique duplo
+                // continue chegando ao mesmo agente.
+                graph.nodes.forEach((entry, index) => {
+                    const card = nodes.children[index];
+                    card.className = card.className.replace(/ is-connecting/g, "") + (entry.id === source ? " is-connecting" : "");
+                });
+                announce(`${n.name} selecionado como origem. Clique no agente de destino.`);
+                return;
+            }
+            const error = connect(graph, source, n.id); source = null;
+            render(); announce(error || "Conexão criada. Clique na próxima origem e depois no destino.");
+        }
+        root.clearSelection = () => {
+            const selected = Boolean(source) || pendingClicks.size > 0;
+            for (const id of [...pendingClicks.keys()]) cancelClick(id);
+            source = null;
+            if (!selected) return false;
+            for (const card of nodes.children) card.className = card.className.replace(/ is-connecting/g, "");
+            hideTooltip(); announce("Agente desmarcado. Clique em uma origem para iniciar outra conexão.");
+            return true;
+        };
         function render() {
             nodes.replaceChildren();
             graph.nodes.forEach(n => {
                 const card = el("article", null, `plaza-node plaza-${n.kind}${source === n.id ? " is-connecting" : ""}`);
                 card.draggable = true;
                 card.tabIndex = 0; card.setAttribute("aria-label", `${n.name}. Use as setas para mover.`);
-                card.addEventListener("dragstart", event => { const r = card.getBoundingClientRect(); drag(event, { id: n.id, dx: event.clientX - r.left, dy: event.clientY - r.top }); });
+                card.addEventListener("dragstart", event => { cancelClick(n.id); const r = card.getBoundingClientRect(); drag(event, { id: n.id, dx: event.clientX - r.left, dy: event.clientY - r.top }); });
+                card.addEventListener("click", event => {
+                    if (event.detail > 1) return;
+                    cancelClick(n.id);
+                    const activate = () => selectNode(n);
+                    const timer = window.setTimeout(() => { pendingClicks.delete(n.id); activate(); }, 500);
+                    pendingClicks.set(n.id, { timer, activate });
+                });
+                const remove = () => {
+                    cancelClick(n.id);
+                    if (n.kind === "task") return announce("A tarefa do usuário é o início e não pode ser removida.");
+                    removeNode(graph, n.id); if (source === n.id) source = null;
+                    render(); announce(`${n.name} e suas conexões removidos.`);
+                };
+                card.addEventListener("dblclick", remove);
                 card.addEventListener("keydown", event => {
+                    if (event.target === card && ["Enter", " ", "Delete"].includes(event.key)) {
+                        event.preventDefault(); cancelClick(n.id);
+                        if (event.key === "Delete") remove(); else selectNode(n);
+                        return;
+                    }
                     if (event.target !== card || !["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) return;
                     event.preventDefault();
                     const bounds = travel();
@@ -205,19 +383,22 @@
                     if (bounds.y && event.key === "ArrowDown") n.y = clamp(n.y + 20 / bounds.y);
                     layout();
                 });
-                card.append(el("span", n.kind === "task" ? "INÍCIO" : n.kind === "result" ? "ENTREGA FINAL" : n.kind === "merge" ? "CONSOLIDAÇÃO" : "AGENTE", "plaza-node-label"), el("strong", n.name));
-                if (n.kind !== "task") { const remove = button("×", () => { removeNode(graph, n.id); if (source === n.id) source = null; render(); announce("Etapa e suas conexões removidas."); }, "plaza-remove"); remove.setAttribute("aria-label", `Remover ${n.name}`); card.append(remove); }
-                const ports = el("div", null, "plaza-ports");
-                if (n.kind !== "task") { const input = button("● Entrada", () => {
-                    if (!source) return announce("Selecione primeiro a Saída de uma etapa.");
-                    const error = connect(graph, source, n.id); if (!error) source = null;
-                    render(); announce(error || "Conexão criada. Você pode criar outros ramos a partir da mesma saída.");
-                }, "plaza-port"); input.setAttribute("aria-label", `Entrada de ${n.name}`); ports.append(input); }
-                if (n.kind !== "result") { const output = button("Saída ●", () => { source = source === n.id ? null : n.id; render(); announce(source ? `Saída de ${n.name} selecionada. Escolha uma Entrada.` : "Conexão cancelada."); }, "plaza-port plaza-output"); output.setAttribute("aria-label", `Saída de ${n.name}`); output.setAttribute("aria-pressed", String(source === n.id)); ports.append(output); }
-                card.append(ports); nodes.append(card);
+                const agent = endpoints[n.kind] || catalog.find(a => a.kind === n.kind);
+                if (agent) { card.className += " plaza-character"; character(card, agent); }
+                else card.append(el("span", n.kind === "task" ? "INÍCIO" : "ENTREGA FINAL", "plaza-node-label"), el("strong", n.name));
+                nodes.append(card);
             });
             layout(); addResult.disabled = graph.nodes.some(n => n.kind === "result");
+            if (addResult.disabled) missingResultWarning = false;
+            resultNotice.hidden = !missingResultWarning;
             summary.textContent = `${graph.nodes.filter(n => !["task", "result"].includes(n.kind)).length} agentes · ${graph.edges.length} conexões`;
+            const validation = validateGraph(graph);
+            mergeNotice.hidden = !validation.needsMerge;
+            mergeMessage.textContent = validation.needsMerge ? validation.message : "";
+            const confirmed = confirmedSignature === signature();
+            root.dataset.confirmed = String(confirmed);
+            confirm.textContent = confirmed ? "Esteira confirmada" : "Confirmar esteira";
+            confirm.disabled = confirmed;
         }
         function renderCatalog() {
             cards.replaceChildren();
@@ -228,13 +409,14 @@
                     render(); announce(`${a.name} adicionado. Conecte as etapas para definir a ordem.`);
                 }, "plaza-agent-card");
                 card.draggable = true; card.setAttribute("aria-label", `Adicionar ${a.name}`); card.addEventListener("dragstart", event => drag(event, { kind: a.kind }));
-                card.append(el("small", a.category), el("strong", a.name), el("span", a.description)); cards.append(card);
+                character(card, a); cards.append(card);
             });
             if (!cards.children.length) cards.append(el("p", "Nenhum agente encontrado."));
         }
         search.addEventListener("input", renderCatalog); category.addEventListener("change", renderCatalog);
+        root.addEventListener("mouseleave", hideTooltip);
         new ResizeObserver(layout).observe(canvas);
         render(); renderCatalog(); return root;
     }
-    return { catalog, createGraph, addNode, connect, removeNode, mount };
+    return { catalog, createGraph, addNode, connect, removeNode, validateGraph, consolidate, mount };
 });

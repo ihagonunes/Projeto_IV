@@ -24,6 +24,9 @@
     function validateMessage(value) { return typeof value === "string" && value.trim().length > 0 && value.length <= MAX_LENGTH; }
     function errorMessage(error) {
         const code = error?.code || error?.data?.code;
+        if (code === "SPENDING_INSUFFICIENT") return "Saldo insuficiente para esta solicitação de IA. Consulte seu consumo financeiro.";
+        if (code === "SPENDING_NOT_CONFIGURED") return "O orçamento do seu departamento precisa ser configurado pelo executivo.";
+        if (code === "SPENDING_PRICE_MISSING") return "A moeda e a taxa deste modelo precisam ser configuradas pelo executivo.";
         if (error?.name === "AbortError") return "Espera interrompida. A execução no servidor pode continuar; confira o histórico antes de reenviar.";
         if (code === "CONVERSATION_ARCHIVED") return "Esta conversa está arquivada. Restaure-a para continuar.";
         if (code === "CONVERSATION_NOT_FOUND") return "Esta conversa não está mais disponível para sua conta.";

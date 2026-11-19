@@ -134,7 +134,10 @@ class PolicyAgentIT {
         seeder.seed(tenant.id(), "Política Secreta B", false, Set.of(departmentB),
             List.of(SECRET_B));
         stub.reset();
+        financialBudgets.configure(tenant, adminEmail, PASSWORD);
     }
+
+    @Autowired FinancialTestBudgets financialBudgets;
 
     @Test
     void fluxoCompletoComFontesERecibo() {

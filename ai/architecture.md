@@ -45,7 +45,7 @@ Outro módulo pode acessar somente `<module>.api.*`.
 |---|---|
 | sharedkernel | IDs, DomainEvent, TenantContext, exceções base, vocabulário de autorização (`Resource`/`Action`/`ScopeType`/`AccessTarget`/`VisibilityScope`/`Targeting` — ADR-34/ADR-36) |
 | iam | Tenant, User, autenticação, papéis de sistema, concessões com escopo (`RoleAssignment`), `AuthorizationQuery`, contrato `@RequiresPermission` (ADR-36/ADR-37) |
-| department | Department, Area, UserAreaMembership, BudgetLimit, ModelPolicy |
+| department | Department, Area, UserAreaMembership, BudgetLimit, ModelPolicy, orçamento empresarial mensal e livro financeiro individual (ADR-43) |
 | project | Project mínimo |
 | aigateway | Provider, AITool, Model, credenciais por referência, completion |
 | chat | Conversation, Message |

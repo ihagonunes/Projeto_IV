@@ -2,6 +2,8 @@
 <link rel="stylesheet" href="/public/css/pages/dashboards.css?v=spi92-leader">
 <% const teamDashboard = ['lider', 'gestor'].includes(profile); %>
 <% const compactDashboard = teamDashboard || profile === 'executivo'; %>
+<% const spendingBudgetEnabled = typeof canManageSpending !== 'undefined' && canManageSpending; %>
+<% const spendingAlertEnabled = typeof canManageSpendingAlert !== 'undefined' && canManageSpendingAlert; %>
 <link rel="stylesheet" href="/public/css/pages/dashboard.css?v=20261019-session-actions">
 <%- contentFor("body") %>
 
@@ -26,6 +28,9 @@
         <div class="dashboard-session-actions d-grid gap-2 w-100" aria-label="Navegação e sessão">
             <a href="/onboarding" class="btn btn-outline-secondary btn-sm w-100 d-flex align-items-center justify-content-center gap-2"><i class="bi bi-arrow-left" aria-hidden="true"></i><span>Voltar ao onboarding</span></a>
             <button type="button" id="dashboardLogout" class="btn btn-outline-secondary btn-sm w-100 d-flex align-items-center justify-content-center gap-2"><i class="bi bi-box-arrow-right" aria-hidden="true"></i><span>Sair</span></button>
+            <% if (typeof demoProfilesEnabled !== 'undefined' && demoProfilesEnabled) { %>
+            <%- include('../../../views/partials/demo-profiles') %>
+            <% } %>
         </div>
     </aside>
     <main id="dashboard-main" data-profile="<%= profile %>" data-demo-return="<%= demoReturn %>" class="demo-main dashboard-main">
@@ -36,6 +41,9 @@
                 <p class="demo-muted"><%= panel.description %></p>
             </div>
         </header>
+        <% if (spendingBudgetEnabled || spendingAlertEnabled) { %>
+        <div class="dashboard-actions mb-3" aria-label="Configuração financeira"><button type="button" data-spending-open class="btn btn-outline-secondary"><%= spendingBudgetEnabled ? 'Definir orçamento e distribuição' : 'Definir alerta de gastos' %></button></div>
+        <% } %>
         <section class="demo-panel p-3 mb-3" aria-label="Fonte dos indicadores">
 <label for="dashboard-source">Fonte dos cards e gráficos de consumo</label>
 <select id="dashboard-source" class="form-select custom-input" disabled><option value="HISTORICO">Histórico importado</option><option value="OPERACIONAL">Operacional</option></select>
@@ -209,12 +217,12 @@
             <% } %>
             <div class="dashboard-actions"><% for (const action of section.actions) { %>
                 <% if (action === 'Ajustar orçamento' && canManageBudget) { %>
-                <a href="/onboarding/departamentos/orcamentos" class="btn btn-outline-secondary btn-sm"><%= action %></a>
+                <% if (spendingBudgetEnabled) { %><p class="demo-muted small mb-0">Use “Definir orçamento e distribuição” no topo do dashboard para configurar o mês.</p><% } %>
                 <% } else { %>
                 <button type="button" class="btn btn-outline-secondary btn-sm" disabled><%= action %></button>
                 <% } %>
             <% } %></div>
-            <p class="demo-muted small mb-0 mt-3"><%= canManageBudget ? "A edição abre a tela de orçamento mensal." : (section.fields ? "O executivo define o orçamento mensal." : "A exportação ainda está indisponível.") %></p>
+            <p class="demo-muted small mb-0 mt-3"><%= canManageBudget ? "Distribuição automática por departamento e hierarquia." : (section.fields ? "O executivo define o orçamento mensal." : "A exportação ainda está indisponível.") %></p>
         </section>
         <% } %>
         <div class="demo-charts">
@@ -262,6 +270,13 @@
     </main>
 </div>
 <script src="/public/js/core/api-client.js?v=cookie-session-20261022"></script>
+<% if (spendingBudgetEnabled || spendingAlertEnabled) { %>
+<dialog id="spending-modal" class="spending-modal" aria-labelledby="spending-modal-title">
+ <div class="spending-modal-header"><h2 id="spending-modal-title"><%= spendingBudgetEnabled ? 'Orçamento de IA' : 'Alerta de gastos' %></h2><button type="button" data-spending-close aria-label="Fechar orçamento">×</button></div>
+ <%- include('../../departamentos/views/spending-panel', { embedded: true, permissions: new Set([...(spendingBudgetEnabled ? ['SPENDING_BUDGET:MANAGE'] : []), ...(spendingAlertEnabled ? ['SPENDING_ALERT:MANAGE'] : [])]) }) %>
+</dialog>
+<script src="/public/js/pages/spending.js?v=budget-automatic-1"></script>
+<% } %>
 <script src="/public/js/core/auth.js?v=cookie-session-20261022"></script>
 <script src="/public/js/core/session-actions.js?v=cookie-session-20261022"></script>
 <script src="/public/js/pages/dashboard-panels-core.js?v=spi93-20261105"></script>

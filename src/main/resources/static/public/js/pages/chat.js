@@ -33,40 +33,41 @@
         $("chat-model").disabled = state.pending; $("chat-attach").disabled = state.pending;
         warning(); resize();
     }
-    const tokenTankReference = 100000;
-    function usageTokens(series, field) {
-        if (!series.every(point => Number.isFinite(point[field]))) return null;
-        return series.reduce((sum, point) => sum + point[field], 0);
-    }
-    function renderTokenTank(total, reference, period) {
+    let financialBalance = null;
+    const money = value => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
+    function renderFinancialBalance(balance) {
         const tank = $("chat-token-tank"), label = $("chat-token-total");
         if (!tank || !label) return;
-        tank.style.setProperty("--token-level", `${Math.min(100, 100 * (total ?? 0) / reference)}%`);
-        label.textContent = total == null ? "—" : C.tokenLabel(total);
-        label.title = total == null ? "Consumo indisponível"
-            : `${period} · escala visual de ${C.tokenLabel(reference)} tokens`;
-        label.setAttribute("aria-label", `${label.textContent} tokens · ${label.title}`);
+        const percentage = balance?.limit > 0 ? 100 * balance.spent / balance.limit : 0;
+        tank.style.setProperty("--token-level", `${Math.min(100, percentage)}%`);
+        label.textContent = balance ? money(balance.spent) : "—";
+        label.title = balance ? `${money(balance.spent)} de ${money(balance.limit)} · ${balance.month} · saldo ${money(balance.available)} · reservado ${money(balance.reserved)}` : "Saldo indisponível";
+        label.setAttribute("aria-label", label.title);
+        $("chat-spending-limit").textContent = balance ? (balance.configured ? `de ${money(balance.limit)}` : "A definir") : "";
+        $("chat-spending-percentage").textContent = balance?.configured ? `${percentage.toFixed(1)}%` : "";
     }
     async function refreshTokenTank() {
         if (preview || !$("chat-token-tank")) return;
         try {
-            const usage = await service.usage();
-            const input = usageTokens(usage.series, "inputTokens");
-            const output = usageTokens(usage.series, "outputTokens");
-            renderTokenTank(input == null || output == null ? null : input + output,
-                tokenTankReference, "Uso pessoal no período padrão");
+            financialBalance = await window.API.get("/orcamento-ia/me");
         } catch {
-            renderTokenTank(null, tokenTankReference);
+            financialBalance = null;
         }
+        renderFinancialBalance(financialBalance);
+        warning();
     }
     function warning() {
-        if (preview) renderTokenTank(service.quota.used, service.quota.limit, "Prévia");
         let message = "";
         if ($("chat-input").value.length >= 7200) message = "Sua mensagem está próxima do limite de 8.000 caracteres. Esse limite não representa uma cota de tokens.";
         else if (preview && service.quota.used >= service.quota.limit) message = "Prévia: cota de tokens atingida. O bloqueio de envio ainda precisa ser definido no backend.";
         else if (preview && service.quota.used / service.quota.limit >= .8) message = "Prévia: você usou mais de 80% da cota fictícia de tokens. Acompanhe em Consumo.";
+        if (!preview && financialBalance) {
+            if (!financialBalance.configured) message = "O orçamento do seu departamento precisa ser configurado pelo executivo.";
+            else if (financialBalance.available <= 0) message = "Saldo financeiro esgotado ou reservado em solicitações pendentes.";
+            else if (financialBalance.alert) message = `Você atingiu ${financialBalance.alertPct}% do seu limite. Gasto ${money(financialBalance.spent)} de ${money(financialBalance.limit)} · saldo ${money(financialBalance.available)}.`;
+        }
         $("chat-token-warning").textContent = message; $("chat-token-warning").hidden = !message;
-        $("chat-usage-dot").hidden = !(preview && service.quota.used / service.quota.limit >= .8);
+        $("chat-usage-dot").hidden = preview ? service.quota.used / service.quota.limit < .8 : !financialBalance?.alert;
     }
     function history() {
         const container = $("chat-history"); container.replaceChildren();
@@ -265,37 +266,14 @@
     }
     async function usageDialog() {
         if (!preview) {
-            dialog("Seu consumo de IA", [node("p", "Carregando consumo pessoal…")]);
-            try {
-                const usage = await service.usage();
-                const requests = (usage.series || []).reduce((sum, point) => sum + Number(point.requests || 0), 0);
-                const input = usageTokens(usage.series, "inputTokens");
-                const output = usageTokens(usage.series, "outputTokens");
-                const grid = node("div", null, "chat-dialog-grid");
-                for (const [label, value] of [
-                    ["Requisições registradas", requests],
-                    ["Tokens de entrada", input],
-                    ["Tokens de saída", output],
-                    ["Total de tokens", input == null || output == null ? null : input + output]
-                ]) {
-                    const item = node("div", null, "chat-dialog-stat");
-                    item.append(node("span", label), node("strong", value == null ? "Indisponível" : C.tokenLabel(value)));
-                    grid.append(item);
-                }
-                dialog("Seu consumo de IA", [
-                    node("p", "Consumo pessoal informativo, restrito ao usuário autenticado."),
-                    grid,
-                    node("p", `O tanque usa os mesmos tokens do período. Cheio, ele representa ${C.tokenLabel(tokenTankReference)} tokens na escala visual. O envio segue as regras do Chat.`),
-                    node("p", "Contexto: o serviço envia no máximo as últimas 20 mensagens. Não há cálculo de ocupação da janela do modelo.", "chat-dialog-note")
-                ]);
-            } catch (error) {
-                dialog("Seu consumo de IA", [
-                    node("p", error.status === 403
-                        ? "Seu perfil não tem USAGE:READ para consultar o consumo pessoal."
-                        : "Não foi possível carregar o consumo pessoal."),
-                    node("p", "Nenhuma cota fictícia é exibida no modo conectado.")
-                ]);
+            await refreshTokenTank();
+            const b = financialBalance;
+            const grid = node("div", null, "chat-dialog-grid");
+            if (b) for (const [label, value] of [["Limite mensal", b.limit], ["Gasto confirmado", b.spent], ["Reservas pendentes", b.reserved], ["Saldo disponível", b.available]]) {
+                const item = node("div", null, "chat-dialog-stat");
+                item.append(node("span", label), node("strong", money(value))); grid.append(item);
             }
+            dialog("Seu consumo de IA", [node("p", b ? `Orçamento de ${b.month} · ${b.timezone} · alerta em ${b.alertPct}% do limite individual.` : "Não foi possível consultar seu saldo."), grid]);
             return;
         }
         const quota = service.quota;
@@ -342,6 +320,7 @@
             state.conversations = C.mergeById(state.conversations, [turn.conversa]);
             try { await loadHistory(); } catch { status("Resposta recebida. Não foi possível atualizar a lista de conversas. Recarregue o histórico mais tarde."); }
         } catch (error) {
+            void refreshTokenTank();
             const code = error.code || error.data?.code;
             status(C.errorMessage(error));
             $("chat-input").value = content;
@@ -387,8 +366,17 @@
     $("chat-more").addEventListener("click", async () => { $("chat-more").disabled = true; try { await loadHistory(true); } catch { status("Não foi possível carregar mais conversas."); } finally { $("chat-more").disabled = false; } });
     $("chat-model").addEventListener("click", modelDialog);
     let agentPlaza;
+    const plazaIsOpen = () => agentPlaza && $("chat-dialog-body").contains(agentPlaza);
+    $("chat-dialog").addEventListener("cancel", event => {
+        if (!plazaIsOpen()) return;
+        event.preventDefault(); agentPlaza.clearSelection();
+    });
+    $("chat-dialog").addEventListener("keydown", event => {
+        if (event.key !== "Escape" || !plazaIsOpen()) return;
+        event.preventDefault(); event.stopPropagation(); agentPlaza.clearSelection();
+    });
     $("chat-agent")?.addEventListener("click", () => {
-        agentPlaza ||= window.AtlasAgentPlaza.mount();
+        agentPlaza ||= window.AtlasAgentPlaza.mount({ onConfirm: () => { closeDialog(); toast("Esteira de agentes confirmada."); } });
         dialog("Praça dos agentes", [agentPlaza]);
     });
     $("chat-usage").addEventListener("click", usageDialog);

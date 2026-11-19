@@ -1,5 +1,5 @@
 <%- contentFor("espaco-head") %>
-<link rel="stylesheet" href="/public/css/pages/chat.css?v=spi-136-wire-removal">
+<link rel="stylesheet" href="/public/css/pages/chat.css?v=spi-136-escape-selection">
 <%- contentFor("body") %>
 <a class="chat-skip" href="#chat-input">Pular para a mensagem</a>
 <div id="chat-app" class="chat-shell" data-preview="<%= preview %>">
@@ -13,7 +13,14 @@
         <div class="chat-sidebar-bottom">
             <div class="chat-private"><i class="bi bi-shield-lock" aria-hidden="true"></i><div><strong>Um espaço só seu</strong><span>Suas conversas são privadas.</span></div></div>
             <a class="chat-nav-link" href="/dashboard"><i class="bi bi-grid" aria-hidden="true"></i> Voltar ao dashboard <span>↗</span></a>
-            <div class="chat-workspace"><span class="chat-avatar">A</span><div><strong>Workspace ATLAS</strong><small><%= preview ? 'Prévia · dados fictícios' : 'Sessão corporativa' %></small></div><button class="chat-icon" id="chat-help" aria-label="Sobre este chat"><i class="bi bi-info-circle" aria-hidden="true"></i></button></div>
+            <div class="chat-workspace">
+                <% if (!preview && typeof demoProfilesEnabled !== 'undefined' && demoProfilesEnabled) { %>
+                <%- include('../../../views/partials/demo-profiles') %>
+                <% } else { %>
+                <span class="chat-avatar">A</span><div><strong>Workspace ATLAS</strong><small><%= preview ? 'Prévia · dados fictícios' : 'Sessão corporativa' %></small></div>
+                <% } %>
+                <button class="chat-icon" id="chat-help" aria-label="Sobre este chat"><i class="bi bi-info-circle" aria-hidden="true"></i></button>
+            </div>
         </div>
     </aside>
     <button id="chat-overlay" class="chat-overlay" aria-label="Fechar menu de conversas" hidden></button>
@@ -53,17 +60,19 @@
             <div class="chat-composer-footer"><span><i class="bi bi-lock" aria-hidden="true"></i> Privado por padrão</span><span>A IA pode cometer erros. Confira informações importantes.</span><button id="chat-context" class="chat-text-button">Contexto: últimas 20 mensagens</button></div>
         </div>
     </main>
-    <aside class="chat-token-tank" aria-label="Consumo de tokens">
+    <aside class="chat-token-tank" aria-label="Consumo financeiro">
         <div class="chat-token-track" id="chat-token-tank" aria-hidden="true"><span></span></div>
         <div class="chat-token-caption">
-            <span aria-hidden="true">Tokens</span>
-            <output id="chat-token-total" aria-label="Total de tokens">—</output>
+            <span aria-hidden="true">Gasto</span>
+            <output id="chat-token-total" aria-label="Valor gasto">—</output>
+            <span id="chat-spending-limit" aria-label="Limite mensal"></span>
+            <span id="chat-spending-percentage" aria-label="Percentual gasto"></span>
         </div>
     </aside>
 </div>
 <dialog id="chat-dialog" class="chat-dialog" aria-labelledby="chat-dialog-title"><div class="chat-dialog-heading"><h2 id="chat-dialog-title"></h2><button id="chat-dialog-close" class="chat-icon" aria-label="Fechar janela">×</button></div><div id="chat-dialog-body"></div></dialog>
 <div id="chat-toast" class="chat-toast" role="status" aria-live="polite" hidden></div>
 <% if (!preview) { %><script src="/public/js/core/api-client.js"></script><% } %>
-<script src="/public/js/pages/chat-core.js?v=spi-141-20261101"></script>
-<script src="/public/js/pages/agent-plaza.js?v=spi-136-wire-removal"></script>
-<script src="/public/js/pages/chat.js?v=spi-136-pipeline-3"></script>
+<script src="/public/js/pages/chat-core.js?v=local-budget-001-final"></script>
+<script src="/public/js/pages/agent-plaza.js?v=spi-136-escape-selection"></script>
+<script src="/public/js/pages/chat.js?v=spi-136-escape-selection"></script>

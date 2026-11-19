@@ -6,9 +6,6 @@
 </head>
 <body class="<%= typeof bodyClass !== 'undefined' ? bodyClass : 'auth-bg' %>">
 
-    <% if (typeof demoProfilesEnabled !== "undefined" && demoProfilesEnabled) { %>
-        <%- include("partials/demo-profiles") %>
-    <% } %>
     <%- body %>
 
     <%- include("partials/rodape") %>

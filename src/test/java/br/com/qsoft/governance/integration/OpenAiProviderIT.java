@@ -149,7 +149,10 @@ class OpenAiProviderIT {
             Map.of("allowedModelIds", List.of(modelId.toString()),
                 "defaultModelId", modelId.toString())))
             .isEqualTo(204);
+        financialBudgets.configure(tenant, adminEmail, PASSWORD);
     }
+
+    @Autowired FinancialTestBudgets financialBudgets;
 
     @AfterEach
     void tearDown() {

@@ -99,6 +99,7 @@ public class OpenAiCompatibleProviderClient implements ProviderClient {
     private Map<String, Object> requestBody(ProviderCall call) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("model", call.externalModelName());
+        if (call.maxOutputTokens() != null) body.put("max_tokens", call.maxOutputTokens());
         body.put("messages", call.messages().stream().map(message -> {
             Map<String, Object> map = new LinkedHashMap<>();
             map.put("role", message.role().toLowerCase(Locale.ROOT));
@@ -165,11 +166,16 @@ public class OpenAiCompatibleProviderClient implements ProviderClient {
         if (!(response.get("usage") instanceof Map<?, ?> usage)) {
             return new Usage.Unknown();
         }
-        return new Usage.Known(number(usage.get("prompt_tokens")), number(usage.get("completion_tokens")));
-    }
-
-    private static long number(Object value) {
-        return value instanceof Number number ? number.longValue() : 0L;
+        Object input = usage.get("prompt_tokens"), output = usage.get("completion_tokens");
+        if (!(input instanceof Number) || !(output instanceof Number)) return new Usage.Unknown();
+        try {
+            long inputTokens = new java.math.BigDecimal(input.toString()).longValueExact();
+            long outputTokens = new java.math.BigDecimal(output.toString()).longValueExact();
+            if (inputTokens < 0 || outputTokens < 0) return new Usage.Unknown();
+            return new Usage.Known(inputTokens, outputTokens);
+        } catch (ArithmeticException | NumberFormatException ex) {
+            return new Usage.Unknown();
+        }
     }
 
     static boolean isTimeout(Throwable throwable) {

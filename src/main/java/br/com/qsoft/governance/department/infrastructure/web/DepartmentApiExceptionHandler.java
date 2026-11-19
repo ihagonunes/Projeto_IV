@@ -38,7 +38,7 @@ public class DepartmentApiExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Não autenticado."));
     }
 
-    @ExceptionHandler({ MethodArgumentNotValidException.class, IllegalArgumentException.class })
+    @ExceptionHandler({ MethodArgumentNotValidException.class, IllegalArgumentException.class, java.time.DateTimeException.class })
     public ResponseEntity<Map<String, String>> handleBadRequest(Exception ex) {
         String message;
         if (ex instanceof MethodArgumentNotValidException validation) {

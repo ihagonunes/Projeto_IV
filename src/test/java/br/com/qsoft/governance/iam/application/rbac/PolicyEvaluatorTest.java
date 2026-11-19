@@ -538,5 +538,22 @@ class PolicyEvaluatorTest {
             .isInstanceOf(NullPointerException.class)
             .hasMessage("context é obrigatório.");
     }
+
+    @Test
+    void spendingAlertIsCompanyWideWithoutExpandingOtherManagerPermissions() {
+        TenantId tenantId = activeTenant();
+        UserId userId = activeUser(tenantId);
+        Role role = roleWith(tenantId, Permission.of(Resource.SPENDING_ALERT, Action.MANAGE), "MANAGER");
+        assign(tenantId, userId, role, UUID.randomUUID());
+        assertThat(evaluator.isAllowed(tenantId, userId, Resource.SPENDING_ALERT, Action.MANAGE,
+            new AccessTarget.TenantTarget())).isTrue();
+        assertThat(evaluator.isAllowed(tenantId, userId, Resource.SPENDING_BUDGET, Action.MANAGE,
+            new AccessTarget.TenantTarget())).isFalse();
+        assertThat(evaluator.isAllowed(TenantId.random(), userId, Resource.SPENDING_ALERT, Action.MANAGE,
+            new AccessTarget.TenantTarget())).isFalse();
+        assignments.clear();
+        assertThat(evaluator.isAllowed(tenantId, userId, Resource.SPENDING_ALERT, Action.MANAGE,
+            new AccessTarget.TenantTarget())).isFalse();
+    }
 }
 

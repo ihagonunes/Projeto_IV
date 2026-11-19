@@ -251,10 +251,12 @@ public class PolicyEvaluator {
 
     /** Teto por recurso: CHAT tem escopo efetivo SELF, qualquer que seja a concessão. */
     private ScopeType effectiveScope(RoleAssignment grant, Resource resource) {
+        if (resource == Resource.SPENDING_ALERT) return ScopeType.TENANT;
         return resource == Resource.CHAT ? ScopeType.SELF : grant.scopeType();
     }
 
     private boolean coversWithCeiling(RoleAssignment grant, Resource resource, AccessTarget target) {
+        if (resource == Resource.SPENDING_ALERT) return target instanceof AccessTarget.TenantTarget;
         if (resource == Resource.CHAT) {
             return target instanceof AccessTarget.OwnedTarget owned
                 && Objects.equals(owned.owner(), grant.userId());

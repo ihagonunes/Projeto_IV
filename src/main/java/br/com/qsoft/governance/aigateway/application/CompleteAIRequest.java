@@ -28,6 +28,9 @@ import java.math.BigDecimal;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;
+import java.nio.charset.StandardCharsets;
+import br.com.qsoft.governance.department.api.spending.SpendingBudget;
+import br.com.qsoft.governance.department.api.spending.SpendingDeniedException;
 import org.springframework.stereotype.Service;
 
 /**
@@ -47,17 +50,19 @@ public class CompleteAIRequest implements AICompletionService {
     private final ProviderClientRegistry providerClientRegistry;
     private final AttemptRecorder attemptRecorder;
     private final UsageDeliveryPublisher deliveryPublisher;
+    private final SpendingBudget spendingBudget;
 
     public CompleteAIRequest(IdentityQuery identityQuery,
                              ResolveModelForUser resolveModelForUser,
                              ProviderClientRegistry providerClientRegistry,
                              AttemptRecorder attemptRecorder,
-                             UsageDeliveryPublisher deliveryPublisher) {
+                             UsageDeliveryPublisher deliveryPublisher, SpendingBudget spendingBudget) {
         this.identityQuery = identityQuery;
         this.resolveModelForUser = resolveModelForUser;
         this.providerClientRegistry = providerClientRegistry;
         this.attemptRecorder = attemptRecorder;
         this.deliveryPublisher = deliveryPublisher;
+        this.spendingBudget = spendingBudget;
     }
 
     @Override
@@ -78,7 +83,33 @@ public class CompleteAIRequest implements AICompletionService {
             throw ex;
         }
 
-        recordInFlight(requestId, tenantId, userId, purpose, resolved);
+        // Cada byte UTF-8 é uma cota conservadora para os tokenizers suportados.
+        long inputBound = 256;
+        for (var message : command.messages()) {
+            inputBound += 64 + (message.content() == null ? 0 : message.content().getBytes(StandardCharsets.UTF_8).length);
+            inputBound += message.role().getBytes(StandardCharsets.UTF_8).length;
+            inputBound += message.toolCallId() == null ? 0 : message.toolCallId().getBytes(StandardCharsets.UTF_8).length;
+        }
+        for (var tool : command.tools()) {
+            inputBound += 128 + (tool.toString().getBytes(StandardCharsets.UTF_8).length * 2L);
+        }
+        final int outputLimit = 2048;
+        try {
+            if (resolved.inputPricePer1k() == null || resolved.outputPricePer1k() == null) {
+                throw new SpendingDeniedException("SPENDING_PRICE_MISSING", "Os preços deste modelo precisam ser configurados.");
+            }
+            spendingBudget.reserve(tenantId, userId, resolved.modelId(), requestId,
+                resolved.estimatedCost(inputBound, outputLimit));
+        } catch (SpendingDeniedException ex) {
+            recordDenied(requestId, tenantId, userId, departmentId, purpose, resolved.modelId(), ex.code());
+            throw ex;
+        }
+        try {
+            recordInFlight(requestId, tenantId, userId, purpose, resolved);
+        } catch (RuntimeException ex) {
+            spendingBudget.settle(tenantId, requestId, BigDecimal.ZERO);
+            throw ex;
+        }
 
         long startedAt = System.nanoTime();
         ProviderClient.ProviderResponse response;
@@ -86,12 +117,13 @@ public class CompleteAIRequest implements AICompletionService {
             response = clientFor(resolved).call(new ProviderClient.ProviderCall(
                 resolved.providerKind(), resolved.baseUrl(), resolved.credentialRef(),
                 resolved.timeoutMs(), resolved.externalModelName(), command.messages(),
-                command.tools()));
+                command.tools(), outputLimit));
         } catch (ProviderTimeoutException ex) {
             long latencyMs = elapsed(startedAt);
             recordSafely(() -> attemptRecorder.recordTimeout(requestId, latencyMs));
             throw new AIProviderTimeoutException();
         } catch (ProviderFailureException ex) {
+            if (ex.billingDeclaredZero()) spendingBudget.settle(tenantId, requestId, BigDecimal.ZERO);
             long latencyMs = elapsed(startedAt);
             recordSafely(() -> attemptRecorder.recordFailure(
                 requestId, ex.errorCode(), latencyMs, ex.billingDeclaredZero()));
@@ -102,6 +134,9 @@ public class CompleteAIRequest implements AICompletionService {
 
         long latencyMs = elapsed(startedAt);
         Usage usage = usageOf(response, resolved);
+        if (usage.estimatedCost() != null) {
+            spendingBudget.settle(tenantId, requestId, usage.estimatedCost());
+        }
         try {
             attemptRecorder.recordSuccess(requestId, usage.inputTokens(), usage.outputTokens(),
                 usage.costStatus(), usage.estimatedCost(), latencyMs, usage.deliveryStatus(),

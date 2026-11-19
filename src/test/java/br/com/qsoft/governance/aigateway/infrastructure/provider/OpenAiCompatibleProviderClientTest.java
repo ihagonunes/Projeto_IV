@@ -108,7 +108,7 @@ class OpenAiCompatibleProviderClientTest {
         assertThat(requestBody.get()).contains("\"role\":\"tool\"", "\"content\":\"\"",
             "\"tool_call_id\":\"call-1\"", "\"description\":\"\"");
         assertThat(response.content()).isNull();
-        assertThat(response.usage()).isEqualTo(new Usage.Known(0, 0));
+        assertThat(response.usage()).isInstanceOf(Usage.Unknown.class);
         assertThat(response.toolCalls()).containsExactly(
             new ToolCall("lookup", "lookup", "{}"),
             new ToolCall("call-2", "search", "{}"));

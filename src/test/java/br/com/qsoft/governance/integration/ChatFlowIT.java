@@ -1,6 +1,7 @@
 package br.com.qsoft.governance.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import br.com.qsoft.governance.GovernanceApplication;
 import br.com.qsoft.governance.aigateway.application.ChangeModelStatus;
@@ -154,6 +155,36 @@ class ChatFlowIT {
                     List.of(echoModel.id().toString(), errorModel.id().toString()),
                 "defaultModelId", echoModel.id().toString())))
             .isEqualTo(204);
+        financialBudgets.configure(tenant, adminEmail, PASSWORD);
+    }
+
+    @Autowired FinancialTestBudgets financialBudgets;
+
+    @Test
+    void financialPermissionsAndOwnBalanceAreEnforcedByBackend() {
+        assertThat(status(executiveEmail, "/api/v1/orcamento-ia")).isEqualTo(200);
+        assertThat(status(managerEmail, "/api/v1/orcamento-ia")).isEqualTo(403);
+        assertThat(status(adminEmail, "/api/v1/orcamento-ia")).isEqualTo(403);
+        assertThat(status(collabEmail, "/api/v1/orcamento-ia")).isEqualTo(403);
+        assertThat(putStatus(managerEmail, "/api/v1/orcamento-ia/alerta", Map.of("percentage", 75))).isEqualTo(204);
+        assertThat(putStatus(executiveEmail, "/api/v1/orcamento-ia/alerta", Map.of("percentage", 50))).isEqualTo(403);
+        assertThat(putStatus(adminEmail, "/api/v1/orcamento-ia/alerta", Map.of("percentage", 50))).isEqualTo(403);
+        var balance = get(collabEmail, "/api/v1/orcamento-ia/me?userId=" + UUID.randomUUID());
+        assertThat(balance.get("alertPct")).isEqualTo(75);
+        assertThat(balance.get("configured")).isEqualTo(true);
+        assertThat(get(otherCollabEmail, "/api/v1/orcamento-ia/me").get("configured")).isEqualTo(false);
+    }
+
+    @Test
+    void financialConsumptionIsChargedAndUnconfiguredEmployeeCannotCallProvider() {
+        var before = get(collabEmail, "/api/v1/orcamento-ia/me");
+        post(collabEmail, "/api/v1/conversas", Map.of("mensagem", "medir consumo financeiro"));
+        var after = get(collabEmail, "/api/v1/orcamento-ia/me");
+        assertThat(new BigDecimal(after.get("spent").toString()))
+            .isGreaterThan(new BigDecimal(before.get("spent").toString()));
+        assertThat(new BigDecimal(after.get("reserved").toString())).isZero();
+        assertThat(new BigDecimal(after.get("available").toString()))
+            .isLessThan(new BigDecimal(before.get("available").toString()));
     }
 
     @Test
@@ -456,7 +487,7 @@ class ChatFlowIT {
     }
 
     @Test
-    void pr02_modeloLegadoSemPrecoProduzInconclusivoSemUsageRecord() {
+    void pr02_modeloLegadoSemPrecoBloqueiaAntesDeGerarGasto() {
         UUID legacyId = UUID.randomUUID();
         modelRepository.save(Model.restore(legacyId, tenant.id(), providerId,
             "legacy " + legacyId, "stub-echo", ModelStatus.AVAILABLE, null, null,
@@ -468,22 +499,21 @@ class ChatFlowIT {
                 "defaultModelId", legacyId.toString())))
             .isEqualTo(204);
 
-        Map<String, Object> created = post(managerEmail, "/api/v1/conversas",
-            Map.of("mensagem", "a b"));
-        Map<?, ?> receipt = (Map<?, ?>) created.get("recibo");
-        String requestId = (String) receipt.get("requestId");
-
-        assertThat(receipt.get("statusCusto")).isEqualTo("INCONCLUSIVE");
-        assertThat(receipt.get("custoEstimado")).isNull();
+        assertThatThrownBy(() -> post(managerEmail, "/api/v1/conversas", Map.of("mensagem", "a b")))
+            .isInstanceOfSatisfying(RestClientResponseException.class, ex -> {
+                assertThat(ex.getStatusCode().value()).isEqualTo(409);
+                assertThat(ex.getResponseBodyAsString()).contains("SPENDING_PRICE_MISSING");
+            });
         assertThat(jdbcTemplate.queryForObject(
-            "SELECT count(*) FROM observability_usage_records WHERE request_id = ?",
-            Integer.class, UUID.fromString(requestId))).isZero();
+            "SELECT count(*) FROM observability_usage_records WHERE tenant_id = ?",
+            Integer.class, tenant.id().value())).isZero();
 
         Map<String, Object> attempt = jdbcTemplate.queryForMap(
-            "SELECT cost_status, error_code FROM aigateway_request_attempts WHERE request_id = ?",
-            UUID.fromString(requestId));
-        assertThat(attempt.get("cost_status")).isEqualTo("INCONCLUSIVE");
-        assertThat(attempt.get("error_code")).isEqualTo("PRICE_MISSING");
+            "SELECT authorization_status, execution_status, denial_reason FROM aigateway_request_attempts WHERE tenant_id = ? AND model_id = ?",
+            tenant.id().value(), legacyId);
+        assertThat(attempt.get("authorization_status")).isEqualTo("DENIED");
+        assertThat(attempt.get("execution_status")).isEqualTo("NOT_STARTED");
+        assertThat(attempt.get("denial_reason")).isEqualTo("SPENDING_PRICE_MISSING");
     }
 
     @Test
