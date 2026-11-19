@@ -1,66 +1,28 @@
-.demo-session-bar {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    flex-wrap: wrap;
-    gap: .4rem;
-    padding: .25rem clamp(.5rem, 2vw, 1rem);
-    background: linear-gradient(135deg, #1a2234f7, #101625f7);
-    color: #f4f6ff;
-    font: 12px/1.4 system-ui, sans-serif;
-    border-bottom: 1px solid #d9b85a40;
+/* SPI-136 / SPI-92: troca de sessão no rodapé das sidebars. */
+.demo-session-switcher{display:flex;align-items:center;flex-wrap:wrap;gap:10px;width:100%;min-width:0;padding:14px 0 0;border-top:1px solid #ffffff12;color:#e2e8f0;font:11px/1.4 var(--font-family-base,sans-serif);box-sizing:border-box}
+.chat-workspace:has(.demo-session-switcher){align-items:flex-start;border-top:0;padding-top:0}
+.chat-workspace .demo-session-switcher{flex:1;width:auto}
+.chat-workspace:has(.demo-session-switcher)>.chat-icon{margin-top:14px}
+.demo-session-avatar{width:32px;height:32px;flex-shrink:0;display:grid;place-items:center;border:1px solid #ffffff15;border-radius:50%;background:#273047;color:#f0c22f}
+.demo-session-fields{flex:1;min-width:0;display:grid;gap:5px}
+.demo-session-fields strong{font-size:11px}
+.demo-session-fields>span{font-size:9px;color:#929bb0}
+.demo-session-panel{flex-basis:100%;padding:10px;border:1px solid #ffffff15;border-radius:8px;background:#11192a}
+.demo-session-switcher [hidden]{display:none!important}
+.demo-session-toggle{display:grid;place-items:center;flex-shrink:0;width:30px;height:30px;padding:0;border:1px solid transparent;border-radius:7px;background:none;color:#929bb0;font-size:15px;cursor:pointer}
+.demo-session-toggle:hover,.demo-session-toggle[aria-expanded=true]{color:#f0c22f;background:#ffffff09;border-color:#ffffff15}
+.demo-session-fields label{font-size:9px;color:#929bb0;margin:0}
+.demo-session-fields select{width:100%;min-width:0;max-width:100%;padding:6px;color:#e2e8f0;color-scheme:dark;background:#11192a;border:1px solid #ffffff22;border-radius:7px;font:inherit}
+.demo-session-fields a{width:fit-content;font-size:10px;color:#d4bc68;text-decoration:none}
+.demo-session-fields a:hover{color:#ffe6a5}
+.demo-session-switcher :focus-visible{outline:2px solid #f4d67f;outline-offset:2px}
+.demo-session-switcher [role=status]{flex-basis:100%;color:#f4d67f;font-size:10px;overflow-wrap:anywhere}
+.demo-session-switcher [role=status]:empty{display:none}
+.dashboard-session-actions{margin-top:auto}
+@media(max-height:700px){
+    .chat-sidebar:has(.demo-session-switcher){gap:10px;padding-top:18px;overflow-y:auto}
+    .chat-sidebar:has(.demo-session-switcher) .chat-sidebar-bottom{flex-shrink:0;padding-top:10px}
+    .chat-sidebar:has(.demo-session-switcher) .chat-private{padding-bottom:10px}
+    .chat-sidebar:has(.demo-session-switcher) .chat-nav-link{padding-top:9px;padding-bottom:9px}
+    .chat-sidebar:has(.demo-session-switcher) .chat-brand img{height:45px}
 }
-body:has(> .demo-session-bar):has(> :is(.chat-shell, .login-wrapper, .onboarding-welcome-wrapper)) {
-    display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
-    min-height: 0;
-    height: var(--app-viewport-height, 100dvh);
-}
-body:has(> .demo-session-bar) > :is(.chat-shell, .login-wrapper, .onboarding-welcome-wrapper) {
-    width: 100%;
-    height: 100%;
-    min-height: 0;
-}
-body:has(> .demo-session-bar):has(> :is(.login-wrapper, .onboarding-welcome-wrapper)) {
-    background-color: var(--bg-color-main, #0b1020) !important;
-}
-body:has(> .demo-session-bar) .onboarding-welcome-wrapper > :is(.onboarding-welcome-left, .onboarding-welcome-right) {
-    height: auto;
-    max-height: none;
-}
-body:has(> .demo-session-bar) .login-wrapper > .login-bg-container {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-}
-.demo-session-bar label {
-    color: #b8bfd0;
-    font-size: 11px;
-    font-weight: 600;
-}
-.demo-session-bar select {
-    max-width: 100%;
-    min-height: 26px;
-    padding: 2px 6px;
-    color: inherit;
-    color-scheme: dark;
-    background: #11192a;
-    border: 1px solid #ffffff22;
-    border-radius: 7px;
-    font: inherit;
-}
-.demo-session-bar a {
-    padding: .28rem .48rem;
-    border-radius: 7px;
-    color: #f4d67f;
-    background: #f4d67f0d;
-    text-decoration: none;
-    font-weight: 600;
-}
-.demo-session-bar a:hover { background: #f4d67f25; color: #ffe6a5; }
-.demo-session-bar select:enabled:hover { border-color: #d9b85a80; }
-.demo-session-bar :focus-visible { outline: 2px solid #f4d67f; outline-offset: 2px; }
-.demo-session-bar [role="status"]:empty { display: none; }
-.demo-session-bar [role="status"] { flex-basis: 100%; color: #f4d67f; }
