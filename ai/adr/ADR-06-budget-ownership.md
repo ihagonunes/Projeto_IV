@@ -37,3 +37,12 @@ A edição do orçamento de um departamento por mês exige a permissão
 próprio tenant. As consultas analíticas continuam sujeitas às permissões
 de leitura de cada perfil. A edição do orçamento mensal é separada da
 gestão de cadastro de departamentos.
+
+## Emenda LOCAL-BUDGET-001
+
+O ADR-43 acrescenta orçamento empresarial mensal em BRL, distribuição percentual
+por departamento e limites financeiros individuais bloqueantes. Department
+mantém o livro de reservas e liquidações consultado pelo Gateway. Os dados
+legados de orçamento e custo continuam históricos; a tela de edição encaminha
+para o orçamento empresarial. O alerta individual usa o limiar empresarial
+definido pelo gestor, enquanto o executivo distribui os limites.

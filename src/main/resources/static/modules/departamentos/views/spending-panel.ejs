@@ -1,0 +1,33 @@
+<style>
+.spending-page{max-width:1100px;margin:30px auto;padding:20px;color:#e2e8f0}.spending-panel{padding:22px;margin-bottom:18px;border:1px solid #43506a;border-radius:12px;background:#111c30}.spending-page label{display:block;margin:8px 0}.spending-page input,.spending-page select{padding:8px;border:1px solid #64748b;border-radius:6px;background:#172338;color:#fff;max-width:100%}.spending-page input[type=number]{width:135px}.spending-page button,.spending-page a{margin:5px;padding:8px 12px;border-radius:6px}.spending-table{overflow:auto}.spending-page table{width:100%;border-collapse:collapse}.spending-page td,.spending-page th{padding:10px;text-align:left;border-bottom:1px solid #43506a}.spending-fields{display:flex;flex-wrap:wrap;gap:15px}.spending-message{padding:12px;color:#ffe692}.spending-page [hidden]{display:none!important}
+.spending-modal{width:min(1100px,calc(100vw - 32px));max-height:90dvh;box-sizing:border-box;border:1px solid #43506a;border-radius:14px;background:#111c30;color:#e2e8f0;padding:18px;overflow:auto}.spending-modal::backdrop{background:#030712bb}.spending-modal:has([data-executive="false"]){width:min(520px,calc(100vw - 32px))}.spending-modal-header{display:flex;justify-content:space-between;align-items:center;gap:12px}.spending-modal-header button{border:1px solid #64748b;border-radius:6px;color:inherit;background:#172338;padding:6px 12px}.spending-modal .spending-page{margin:0;padding:10px 0;}.spending-modal h2{font-size:1.2rem}
+</style>
+<main class="spending-page" id="spending-page"
+ data-executive="<%= permissions && permissions.has('SPENDING_BUDGET:MANAGE') ? 'true' : 'false' %>"
+ data-manager="<%= permissions && permissions.has('SPENDING_ALERT:MANAGE') ? 'true' : 'false' %>">
+ <% if (!embedded) { %><h1>Orçamento de IA</h1><% } %>
+ <p id="spending-message" class="spending-message" role="status"></p>
+ <section class="spending-panel" id="spending-alert" hidden>
+  <h2>Alerta da empresa</h2>
+  <form id="spending-alert-form"><label>Percentual do limite individual <input id="spending-threshold" type="number" min="1" max="100" step="1" required> %</label>
+   <p>O mesmo percentual vale para todos os cargos e considera o gasto confirmado.</p><button>Salvar alerta</button></form>
+ </section>
+ <section id="spending-budget" hidden>
+  <form id="spending-plan-form">
+   <div class="spending-panel"><h2>Orçamento mensal da empresa</h2>
+    <p id="spending-period"></p>
+    <div class="spending-fields"><label>Orçamento em BRL <input id="spending-amount" type="number" min="0" step="0.01" required></label>
+     <label>Fuso da empresa <input id="spending-timezone" required value="America/Sao_Paulo"></label></div>
+    <button id="spending-save-timezone" type="button">Salvar fuso</button>
+    <p>O mês seguinte reutiliza a distribuição vigente. O consumo e as reservas permanecem no mês de origem.</p>
+   </div>
+   <div class="spending-panel"><h2>Distribuição por departamento</h2><div class="spending-table"><table><thead><tr><th>Departamento</th><th>Percentual</th><th>Parcela em BRL</th></tr></thead><tbody id="spending-departments"></tbody></table></div><p id="spending-percentage-total"></p></div>
+   <div class="spending-panel"><h2>Pesos por cargo</h2><div id="spending-weights" class="spending-fields"></div><button id="spending-suggest" type="button">Atualizar cálculo</button><p>Os limites são calculados automaticamente pela parcela do departamento e pelo peso de cada hierarquia.</p></div>
+   <div class="spending-panel"><h2>Limites calculados por hierarquia e departamento</h2><div class="spending-table"><table><thead><tr><th>Departamento</th><th>Hierarquia</th><th>Pessoas</th><th>Limite por pessoa</th><th>Parcela calculada</th></tr></thead><tbody id="spending-employees"></tbody></table></div></div>
+   <div class="spending-panel"><h2>Moeda dos preços e conversão por modelo</h2><p>Informe a moeda dos preços cadastrados e quantos reais equivalem a uma unidade dessa moeda. Em BRL, use taxa 1. A referência identifica a fonte e a data da taxa.</p><div class="spending-table"><table><thead><tr><th>Modelo</th><th>Moeda</th><th>Taxa para BRL</th><th>Referência</th></tr></thead><tbody id="spending-models"></tbody></table></div></div>
+   <button type="submit">Confirmar distribuição mensal</button>
+  </form>
+  <section class="spending-panel"><h2>Reservas pendentes de conciliação</h2><p>Após 10 minutos, confira a cobrança com o provedor e concilie a reserva. O custo informado usa a moeda original fotografada na reserva. Informe zero somente com confirmação de ausência de cobrança.</p><div id="spending-pending"></div></section>
+ </section>
+ <% if (!embedded) { %><a href="/chat">Voltar ao chat</a> <a href="/dashboard">Dashboard</a><% } %>
+</main>

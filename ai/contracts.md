@@ -318,6 +318,51 @@ Response:
 
 ## REST
 
+### Orçamento financeiro individual — LOCAL-BUDGET-001 / ADR-43
+
+Atualização: a configuração é por departamento e hierarquia. `allocations` é
+uma projeção calculada para consulta e nunca uma atribuição aceita do cliente.
+Na confirmação, o servidor persiste orçamento, percentuais, pesos e taxas.
+Pessoas ativas recebem automaticamente a parcela correspondente à hierarquia
+no departamento. As reservas validam saldo individual e os tetos agregados
+empresarial/departamental, com departamento fotografado na reserva (V026).
+
+`department.api.spending.SpendingBudget` expõe reserva e liquidação financeira
+ao Gateway. Ambas são transações independentes e serializadas por tenant.
+Reserva fotografia moeda, taxa para BRL, referência e mês. Uso desconhecido
+mantém reserva até conciliação. Nenhum conteúdo de mensagens entra no livro.
+
+- `GET /api/v1/orcamento-ia/me`: saldo do usuário autenticado (`CHAT:READ`, SELF).
+- `GET /api/v1/orcamento-ia?month=AAAA-MM`: visão financeira do executivo.
+- `PUT /api/v1/orcamento-ia/{month}`: confirma orçamento, percentuais, limites,
+  pesos e taxas (`SPENDING_BUDGET:MANAGE`, TENANT).
+- `POST /api/v1/orcamento-ia/sugestao`: calcula proposta por pesos sem salvar.
+- `PUT /api/v1/orcamento-ia/fuso`: configura o fuso antes do primeiro orçamento
+  vigente. Default operacional `America/Sao_Paulo`, editável pelo executivo.
+- `GET|PUT /api/v1/orcamento-ia/alerta`: percentual empresarial, de 1 a 100,
+  exclusivo de `SPENDING_ALERT:MANAGE` concedido ao gestor. Esse recurso tem
+  alcance empresarial; as demais permissões do gestor preservam seus escopos.
+- `PUT /api/v1/orcamento-ia/reservas/{requestId}`: conciliação pelo executivo,
+  com custo na moeda original e referência. Aguarda 10 minutos desde a criação
+  para não conciliar chamadas dentro do timeout máximo de 120 segundos.
+- `GET /api/v1/ai-gateway/models/spending`: catálogo e preços para o executivo,
+  sem permissão de edição do catálogo.
+
+Saldo contém `month`, `timezone`, `limit`, `spent`, `reserved`, `available`,
+`alertPct`, `alert`, `configured`. Valores são BRL com precisão de 8 casas no
+livro e limites atribuídos em centavos. O percentual usa gasto confirmado.
+O saldo disponível desconta tanto gasto quanto reservas.
+
+Erros `SPENDING_NOT_CONFIGURED`, `SPENDING_PRICE_MISSING` e
+`SPENDING_INSUFFICIENT` retornam 409 antes de chamar o provider. A execução usa
+limite de 2048 tokens de saída e reserva conservadora de entrada. Callback tardio
+com custo superior à conciliação é registrado como ajuste, sem duplicar valores.
+
+Orçamentos/consumos legados não são migrados implicitamente para o novo livro.
+O executivo deve confirmar os limites e as moedas antes do uso após ativação.
+O mês seguinte copia orçamento, percentuais e pesos do plano mais recente e
+recalcula os limites pelo quadro ativo. A renovação ocorre no primeiro acesso ao mês.
+
 - prefixo `/api/v1`;
 - login: `/api/v1/auth/login`;
 - tenant não é parâmetro confiável do cliente;

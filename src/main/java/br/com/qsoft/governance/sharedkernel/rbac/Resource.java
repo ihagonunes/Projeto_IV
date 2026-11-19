@@ -16,6 +16,8 @@ public enum Resource {
     INVITE,
     DEPARTMENT,
     DEPARTMENT_BUDGET,
+    SPENDING_BUDGET,
+    SPENDING_ALERT,
     PROJECT,
     MODEL,
     AI_TOOL,

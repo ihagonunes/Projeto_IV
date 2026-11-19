@@ -23,8 +23,13 @@ public interface ProviderClient {
         int timeoutMs,
         String externalModelName,
         List<CompletionMessage> messages,
-        List<ToolSpec> tools
+        List<ToolSpec> tools,
+        Integer maxOutputTokens
     ) {
+        public ProviderCall(ProviderKind kind, String baseUrl, String credentialRef, int timeoutMs,
+                            String externalModelName, List<CompletionMessage> messages, List<ToolSpec> tools) {
+            this(kind, baseUrl, credentialRef, timeoutMs, externalModelName, messages, tools, null);
+        }
         public ProviderCall {
             Objects.requireNonNull(kind, "kind é obrigatório.");
             Objects.requireNonNull(externalModelName, "externalModelName é obrigatório.");

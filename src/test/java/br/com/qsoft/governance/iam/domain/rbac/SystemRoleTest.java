@@ -12,8 +12,8 @@ class SystemRoleTest {
     void permissionCountsMatchTheSpec() {
         assertThat(SystemRole.COLLABORATOR.permissions()).hasSize(5);
         assertThat(SystemRole.LEADER.permissions()).hasSize(7);
-        assertThat(SystemRole.MANAGER.permissions()).hasSize(13);
-        assertThat(SystemRole.EXECUTIVE.permissions()).hasSize(15);
+        assertThat(SystemRole.MANAGER.permissions()).hasSize(14);
+        assertThat(SystemRole.EXECUTIVE.permissions()).hasSize(16);
         assertThat(SystemRole.TENANT_ADMIN.permissions()).hasSize(18);
     }
 
@@ -24,7 +24,13 @@ class SystemRoleTest {
         assertThat(SystemRole.MANAGER.permissions())
             .containsAll(SystemRole.LEADER.permissions());
         assertThat(SystemRole.EXECUTIVE.permissions())
-            .containsAll(SystemRole.MANAGER.permissions());
+            .containsAll(SystemRole.MANAGER.permissions().stream()
+                .filter(p -> p.resource() != Resource.SPENDING_ALERT).toList());
+        assertThat(SystemRole.MANAGER.permissions()).anyMatch(p -> p.resource() == Resource.SPENDING_ALERT);
+        assertThat(SystemRole.EXECUTIVE.permissions()).noneMatch(p -> p.resource() == Resource.SPENDING_ALERT);
+        assertThat(SystemRole.EXECUTIVE.permissions()).anyMatch(p -> p.resource() == Resource.SPENDING_BUDGET);
+        assertThat(SystemRole.TENANT_ADMIN.permissions()).noneMatch(p ->
+            p.resource() == Resource.SPENDING_BUDGET || p.resource() == Resource.SPENDING_ALERT);
     }
 
     @Test

@@ -40,6 +40,13 @@ public class AIGatewayCatalogController {
 
     public record DashboardModelResponse(UUID id, String name) { }
 
+    @GetMapping("/models/spending")
+    @RequiresPermission(resource = Resource.SPENDING_BUDGET, action = Action.MANAGE)
+    public ResponseEntity<List<ModelResponse>> spendingModels() {
+        var tenant = TenantContextHolder.require().tenantId();
+        return ResponseEntity.ok(listModels.list(tenant).stream().map(ModelResponse::from).toList());
+    }
+
     @GetMapping("/models/dashboard")
     @RequiresPermission(resource = Resource.USAGE, action = Action.READ,
         targeting = Targeting.BY_TARGET)

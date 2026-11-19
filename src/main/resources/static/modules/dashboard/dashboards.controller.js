@@ -9,7 +9,9 @@ function render(req, res) {
         titulo: layouts[profile].title,
         bodyClass: "auth-bg dashboard-demo dashboard-layout",
         profile, panel: layouts[profile], indicatorReason: reason,
-        canManageBudget: profile === "executivo" && res.locals.permissions?.has("DEPARTMENT_BUDGET:MANAGE"),
+        canManageBudget: profile === "executivo" && res.locals.permissions?.has("SPENDING_BUDGET:MANAGE"),
+        canManageSpending: profile === "executivo" && res.locals.permissions?.has("SPENDING_BUDGET:MANAGE"),
+        canManageSpendingAlert: profile === "gestor" && res.locals.permissions?.has("SPENDING_ALERT:MANAGE"),
         demoReturn: profile === "colaborador" && process.env.NODE_ENV !== "production"
             && process.env.QSOFT_DASHBOARD_DEMO === "true"
     });

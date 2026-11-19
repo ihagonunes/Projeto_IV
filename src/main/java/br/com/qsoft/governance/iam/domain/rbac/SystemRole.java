@@ -89,6 +89,7 @@ public enum SystemRole {
         permissions.add(p(Resource.DEPARTMENT, Action.READ));
         permissions.add(p(Resource.PROJECT, Action.MANAGE));
         permissions.add(p(Resource.AI_TOOL, Action.READ));
+        permissions.add(p(Resource.SPENDING_ALERT, Action.MANAGE));
         return Set.copyOf(permissions);
     }
 
@@ -96,6 +97,8 @@ public enum SystemRole {
         Set<Permission> permissions = new HashSet<>(managerPermissions());
         permissions.add(p(Resource.TENANT, Action.READ));
         permissions.add(p(Resource.DEPARTMENT_BUDGET, Action.MANAGE));
+        permissions.add(p(Resource.SPENDING_BUDGET, Action.MANAGE));
+        permissions.remove(p(Resource.SPENDING_ALERT, Action.MANAGE));
         return Set.copyOf(permissions);
     }
 

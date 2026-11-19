@@ -1,5 +1,9 @@
 # SPEC-02 — Orçamento por departamento com alerta (POPROJ-54)
 
+Atualização LOCAL-BUDGET-001: o orçamento empresarial mensal e os limites
+financeiros individuais bloqueantes são definidos no ADR-43. Este documento
+descreve os contratos legados de orçamento e métricas departamentais.
+
 Base: ADR-06. O `department` é dono do `BudgetLimit` e o `observability` é dono de `ActualCost`,
 `BudgetStatus` e `Alert`. Regra já decidida: o orçamento **alerta, não bloqueia** (A105). Limiares:
 80% e 100% (EPIC-003).

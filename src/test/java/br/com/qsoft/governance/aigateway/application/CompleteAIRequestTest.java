@@ -116,6 +116,9 @@ class CompleteAIRequestTest {
         }
     };
 
+    private final br.com.qsoft.governance.department.api.spending.SpendingBudget spending =
+        org.mockito.Mockito.mock(br.com.qsoft.governance.department.api.spending.SpendingBudget.class);
+
     @BeforeEach
     void setUp() {
         attempts.clear();
@@ -127,7 +130,7 @@ class CompleteAIRequestTest {
         recorder = new AttemptRecorder(attemptRepository);
         delivery = new UsageDeliveryPublisher(publisher, attemptRepository, recorder);
         service = new CompleteAIRequest(identityQuery, resolveModelForUser, kind -> stub,
-            recorder, delivery);
+            recorder, delivery, spending);
     }
 
     // ── TR01: sucesso ────────────────────────────────────────────────────────
@@ -184,23 +187,12 @@ class CompleteAIRequestTest {
     }
 
     @Test
-    void precoAusenteComUsoConhecidoProduzInconclusivoSemEvento() {
+    void precoAusenteBloqueiaAntesDeChamarProvider() {
         resolved = new ResolvedModel(modelId, "gpt-4o", "stub-echo", providerId, "OpenAI",
             ProviderKind.STUB, null, null, 30000, departmentId, null, null);
-
-        CompletionResult result = service.complete(command("CHAT", "a b"));
-
-        assertThat(result.inputTokens()).isEqualTo(2L);
-        assertThat(result.outputTokens()).isEqualTo(2L);
-        assertThat(result.costStatus()).isEqualTo("INCONCLUSIVE");
-        assertThat(result.estimatedCost()).isNull();
-
-        RequestAttempt attempt = attempts.get(result.requestId());
-        assertThat(attempt.executionStatus()).isEqualTo(ExecutionStatus.SUCCEEDED);
-        assertThat(attempt.costStatus()).isEqualTo(CostStatus.INCONCLUSIVE);
-        assertThat(attempt.estimatedCost()).isNull();
-        assertThat(attempt.deliveryStatus()).isEqualTo(DeliveryStatus.NOT_APPLICABLE);
-        assertThat(attempt.errorCode()).isEqualTo("PRICE_MISSING");
+        assertThatThrownBy(() -> service.complete(command("CHAT", "a b")))
+            .isInstanceOf(br.com.qsoft.governance.department.api.spending.SpendingDeniedException.class);
+        assertThat(stub.lastCall()).isNull();
         assertThat(published).isEmpty();
     }
 
@@ -251,7 +243,7 @@ class CompleteAIRequestTest {
         };
         delivery = new UsageDeliveryPublisher(publisher, attemptRepository, recorder);
         service = new CompleteAIRequest(identityQuery, resolveModelForUser, kind -> stub,
-            recorder, delivery);
+            recorder, delivery, spending);
 
         service.complete(command("CHAT", "oi"));
 
@@ -300,7 +292,7 @@ class CompleteAIRequestTest {
         };
         service = new CompleteAIRequest(identityQuery, resolveModelForUser, kind -> stub,
             new AttemptRecorder(failing), new UsageDeliveryPublisher(publisher, failing,
-                new AttemptRecorder(failing)));
+                new AttemptRecorder(failing)), spending);
 
         assertThatThrownBy(() -> service.complete(command("CHAT", "oi")))
             .isInstanceOf(AIAttemptNotRecordedException.class);
@@ -348,7 +340,7 @@ class CompleteAIRequestTest {
             }
         };
         service = new CompleteAIRequest(identityQuery, resolveModelForUser, kind -> stub,
-            recorder, delivery);
+            recorder, delivery, spending);
 
         assertThatThrownBy(() -> service.complete(command("CHAT", "oi")))
             .isInstanceOf(AIProviderFailureException.class);
@@ -369,7 +361,7 @@ class CompleteAIRequestTest {
         };
         delivery = new UsageDeliveryPublisher(publisher, attemptRepository, recorder);
         service = new CompleteAIRequest(identityQuery, resolveModelForUser, kind -> stub,
-            recorder, delivery);
+            recorder, delivery, spending);
 
         CompletionResult result = service.complete(command("CHAT", "oi"));
 
@@ -487,6 +479,27 @@ class CompleteAIRequestTest {
         };
         // Recria o serviço com o resolutor que nega.
         service = new CompleteAIRequest(identityQuery, resolveModelForUser, kind -> stub,
-            recorder, delivery);
+            recorder, delivery, spending);
+    }
+
+    @Test
+    void financialDenialDoesNotCallProvider() {
+        org.mockito.Mockito.doThrow(new br.com.qsoft.governance.department.api.spending.SpendingDeniedException(
+            "SPENDING_INSUFFICIENT", "Saldo insuficiente")).when(spending).reserve(
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+        assertThatThrownBy(() -> service.complete(command("CHAT", "oi")))
+            .isInstanceOf(br.com.qsoft.governance.department.api.spending.SpendingDeniedException.class);
+        assertThat(stub.lastCall()).isNull();
+        assertThat(attempts.values()).hasSize(1).allMatch(attempt -> attempt.executionStatus() == ExecutionStatus.NOT_STARTED
+            && "SPENDING_INSUFFICIENT".equals(attempt.denialReason()));
+    }
+
+    @Test
+    void successfulCompletionSettlesFinancialReservationAndCapsOutput() {
+        var result = service.complete(command("CHAT", "oi"));
+        org.mockito.Mockito.verify(spending).settle(org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.eq(result.requestId()), org.mockito.ArgumentMatchers.any());
+        assertThat(stub.lastCall().maxOutputTokens()).isEqualTo(2048);
     }
 }
