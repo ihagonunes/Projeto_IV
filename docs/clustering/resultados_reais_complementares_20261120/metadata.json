@@ -1,0 +1,141 @@
+{
+  "codigo": "PARCIAL",
+  "contagens": {
+    "begin": 1,
+    "close": 1,
+    "commit": 0,
+    "conexoes": 1,
+    "preflight": 1,
+    "rollback": 1,
+    "sql_09a": 1,
+    "sql_09c": 1
+  },
+  "formato": "clustering-agregado-ipc-1",
+  "modo": "clustering_complementar_real",
+  "observacao": "Amostras individuais e identificadores nao exportados; perfis somente execucao 17.",
+  "origem": "IPC_OPERACIONAL_VALIDADO",
+  "reconciliacao": {
+    "chaves_apenas_09a": 0,
+    "chaves_apenas_09c": 0,
+    "chaves_com_divergencia_de_valores": 0,
+    "chaves_comuns": 12438,
+    "chaves_unicas_09a": 12438,
+    "chaves_unicas_09c": 12438,
+    "comparador_version": "1.1.1",
+    "contrato_version": "usuario-mes-1.1",
+    "divergencias_por_campo": {
+      "dias_com_registros_mes": 0,
+      "input_tokens_negativos_mes": 0,
+      "input_tokens_nulos_mes": 0,
+      "input_tokens_presentes_mes": 0,
+      "legacy_model_id_nulos_mes": 0,
+      "modelos_nao_nulos_distintos_mes": 0,
+      "output_tokens_negativos_mes": 0,
+      "output_tokens_nulos_mes": 0,
+      "output_tokens_presentes_mes": 0,
+      "primeira_ocorrencia_mes": 0,
+      "registros_mes": 0,
+      "request_count_negativos_mes": 0,
+      "request_count_nulos_mes": 0,
+      "request_count_presentes_mes": 0,
+      "soma_input_tokens_mes": 0,
+      "soma_output_tokens_mes": 0,
+      "soma_request_count_mes": 0,
+      "ultima_ocorrencia_mes": 0
+    },
+    "duplicidades_09a": 0,
+    "duplicidades_09c": 0,
+    "grupos_empresa_mes_09a": 194,
+    "grupos_empresa_mes_09c": 194,
+    "grupos_empresa_mes_apenas_09a": 0,
+    "grupos_empresa_mes_apenas_09c": 0,
+    "grupos_empresa_mes_com_divergencias_aditivas": 0,
+    "linhas_09a": 12438,
+    "linhas_09c": 12438,
+    "motivo_totais_indisponiveis": null,
+    "reconciliacao_empresa_mes": {
+      "grupos_09a": 194,
+      "grupos_09c": 194,
+      "grupos_apenas_09a": 0,
+      "grupos_apenas_09c": 0,
+      "grupos_com_divergencias_aditivas": 0,
+      "motivo": "Comparador 1.1.1 nao disponibiliza totais nem identificacao de cada grupo",
+      "situacao": "contagens_disponiveis",
+      "totais_e_identificacao_por_grupo": "indispon\u00edvel"
+    },
+    "status": "CONCILIADO",
+    "totais_aditivos_globais": {
+      "input_tokens_negativos_mes": {
+        "iguais": true,
+        "valor_09a": "0",
+        "valor_09c": "0"
+      },
+      "input_tokens_nulos_mes": {
+        "iguais": true,
+        "valor_09a": "0",
+        "valor_09c": "0"
+      },
+      "input_tokens_presentes_mes": {
+        "iguais": true,
+        "valor_09a": "269470",
+        "valor_09c": "269470"
+      },
+      "legacy_model_id_nulos_mes": {
+        "iguais": true,
+        "valor_09a": "0",
+        "valor_09c": "0"
+      },
+      "output_tokens_negativos_mes": {
+        "iguais": true,
+        "valor_09a": "0",
+        "valor_09c": "0"
+      },
+      "output_tokens_nulos_mes": {
+        "iguais": true,
+        "valor_09a": "0",
+        "valor_09c": "0"
+      },
+      "output_tokens_presentes_mes": {
+        "iguais": true,
+        "valor_09a": "269470",
+        "valor_09c": "269470"
+      },
+      "registros_mes": {
+        "iguais": true,
+        "valor_09a": "269470",
+        "valor_09c": "269470"
+      },
+      "request_count_negativos_mes": {
+        "iguais": true,
+        "valor_09a": "0",
+        "valor_09c": "0"
+      },
+      "request_count_nulos_mes": {
+        "iguais": true,
+        "valor_09a": "0",
+        "valor_09c": "0"
+      },
+      "request_count_presentes_mes": {
+        "iguais": true,
+        "valor_09a": "269470",
+        "valor_09c": "269470"
+      },
+      "soma_input_tokens_mes": {
+        "iguais": true,
+        "valor_09a": "3284410909",
+        "valor_09c": "3284410909"
+      },
+      "soma_output_tokens_mes": {
+        "iguais": true,
+        "valor_09a": "3076926289",
+        "valor_09c": "3076926289"
+      },
+      "soma_request_count_mes": {
+        "iguais": true,
+        "valor_09a": "8309345",
+        "valor_09c": "8309345"
+      }
+    },
+    "totais_disponiveis": true
+  }
+}

@@ -1,0 +1,344 @@
+{
+  "analise": "diversidade",
+  "detalhes": null,
+  "estado": "CONCLUIDA",
+  "registros": [
+    {
+      "algoritmo": "kmeans",
+      "calinski_harabasz": 2472.0681200844588,
+      "davies_bouldin": 0.5072409275455005,
+      "k": 2,
+      "semente": 17,
+      "silhouette": 0.7295548173985886
+    },
+    {
+      "algoritmo": "kmeans",
+      "calinski_harabasz": 2472.0681200844588,
+      "davies_bouldin": 0.5072409275455005,
+      "k": 2,
+      "semente": 29,
+      "silhouette": 0.7295548173985886
+    },
+    {
+      "algoritmo": "kmeans",
+      "calinski_harabasz": 2472.0681200844588,
+      "davies_bouldin": 0.5072409275455005,
+      "k": 2,
+      "semente": 43,
+      "silhouette": 0.7295548173985886
+    },
+    {
+      "algoritmo": "ward",
+      "calinski_harabasz": 2420.580992891721,
+      "davies_bouldin": 0.5338954016934827,
+      "k": 2,
+      "semente": 17,
+      "silhouette": 0.7225452499657381
+    },
+    {
+      "algoritmo": "ward",
+      "calinski_harabasz": 2420.580992891721,
+      "davies_bouldin": 0.5338954016934827,
+      "k": 2,
+      "semente": 29,
+      "silhouette": 0.7225452499657381
+    },
+    {
+      "algoritmo": "ward",
+      "calinski_harabasz": 2420.580992891721,
+      "davies_bouldin": 0.5338954016934827,
+      "k": 2,
+      "semente": 43,
+      "silhouette": 0.7225452499657381
+    },
+    {
+      "algoritmo": "kmeans",
+      "calinski_harabasz": 2357.953222483067,
+      "davies_bouldin": 0.5303538580842304,
+      "k": 3,
+      "semente": 17,
+      "silhouette": 0.6522214000534823
+    },
+    {
+      "algoritmo": "kmeans",
+      "calinski_harabasz": 2357.9474984450176,
+      "davies_bouldin": 0.5311008685870439,
+      "k": 3,
+      "semente": 29,
+      "silhouette": 0.6516044692317339
+    },
+    {
+      "algoritmo": "kmeans",
+      "calinski_harabasz": 2357.9532224830673,
+      "davies_bouldin": 0.5303538580842304,
+      "k": 3,
+      "semente": 43,
+      "silhouette": 0.6522214000534823
+    },
+    {
+      "algoritmo": "ward",
+      "calinski_harabasz": 2288.9236858241125,
+      "davies_bouldin": 0.5119770655330973,
+      "k": 3,
+      "semente": 17,
+      "silhouette": 0.6617906032827868
+    },
+    {
+      "algoritmo": "ward",
+      "calinski_harabasz": 2288.9236858241125,
+      "davies_bouldin": 0.5119770655330973,
+      "k": 3,
+      "semente": 29,
+      "silhouette": 0.6617906032827868
+    },
+    {
+      "algoritmo": "ward",
+      "calinski_harabasz": 2288.9236858241125,
+      "davies_bouldin": 0.5119770655330973,
+      "k": 3,
+      "semente": 43,
+      "silhouette": 0.6617906032827868
+    },
+    {
+      "algoritmo": "kmeans",
+      "calinski_harabasz": 2435.7603128201567,
+      "davies_bouldin": 0.7186718355635547,
+      "k": 4,
+      "semente": 17,
+      "silhouette": 0.4625002447979807
+    },
+    {
+      "algoritmo": "kmeans",
+      "calinski_harabasz": 2435.7603128201563,
+      "davies_bouldin": 0.7186718355635547,
+      "k": 4,
+      "semente": 29,
+      "silhouette": 0.4625002447979807
+    },
+    {
+      "algoritmo": "kmeans",
+      "calinski_harabasz": 2435.7603128201563,
+      "davies_bouldin": 0.7186718355635547,
+      "k": 4,
+      "semente": 43,
+      "silhouette": 0.4625002447979807
+    },
+    {
+      "algoritmo": "ward",
+      "calinski_harabasz": 2261.591919723726,
+      "davies_bouldin": 0.8259804386457972,
+      "k": 4,
+      "semente": 17,
+      "silhouette": 0.45536127385049463
+    },
+    {
+      "algoritmo": "ward",
+      "calinski_harabasz": 2261.591919723726,
+      "davies_bouldin": 0.8259804386457972,
+      "k": 4,
+      "semente": 29,
+      "silhouette": 0.45536127385049463
+    },
+    {
+      "algoritmo": "ward",
+      "calinski_harabasz": 2261.591919723726,
+      "davies_bouldin": 0.8259804386457972,
+      "k": 4,
+      "semente": 43,
+      "silhouette": 0.45536127385049463
+    },
+    {
+      "algoritmo": "kmeans",
+      "calinski_harabasz": 2437.2744244654946,
+      "davies_bouldin": 0.6586386968177683,
+      "k": 5,
+      "semente": 17,
+      "silhouette": 0.48215125220164257
+    },
+    {
+      "algoritmo": "kmeans",
+      "calinski_harabasz": 2437.310111270598,
+      "davies_bouldin": 0.657080906865764,
+      "k": 5,
+      "semente": 29,
+      "silhouette": 0.48330657539981714
+    },
+    {
+      "algoritmo": "kmeans",
+      "calinski_harabasz": 2437.310111270599,
+      "davies_bouldin": 0.657080906865764,
+      "k": 5,
+      "semente": 43,
+      "silhouette": 0.48330657539981714
+    },
+    {
+      "algoritmo": "ward",
+      "calinski_harabasz": 2294.48337950465,
+      "davies_bouldin": 0.6457764850874058,
+      "k": 5,
+      "semente": 17,
+      "silhouette": 0.489287883903516
+    },
+    {
+      "algoritmo": "ward",
+      "calinski_harabasz": 2294.48337950465,
+      "davies_bouldin": 0.6457764850874058,
+      "k": 5,
+      "semente": 29,
+      "silhouette": 0.489287883903516
+    },
+    {
+      "algoritmo": "ward",
+      "calinski_harabasz": 2294.48337950465,
+      "davies_bouldin": 0.6457764850874058,
+      "k": 5,
+      "semente": 43,
+      "silhouette": 0.489287883903516
+    },
+    {
+      "algoritmo": "kmeans",
+      "calinski_harabasz": 2571.7647293939576,
+      "davies_bouldin": 0.6725727172726749,
+      "k": 6,
+      "semente": 17,
+      "silhouette": 0.4963229643211285
+    },
+    {
+      "algoritmo": "kmeans",
+      "calinski_harabasz": 2571.764729393957,
+      "davies_bouldin": 0.6725727172726748,
+      "k": 6,
+      "semente": 29,
+      "silhouette": 0.4963229643211285
+    },
+    {
+      "algoritmo": "kmeans",
+      "calinski_harabasz": 2571.7647293939576,
+      "davies_bouldin": 0.6725727172726749,
+      "k": 6,
+      "semente": 43,
+      "silhouette": 0.4963229643211285
+    },
+    {
+      "algoritmo": "ward",
+      "calinski_harabasz": 2382.813038519986,
+      "davies_bouldin": 0.661829240500133,
+      "k": 6,
+      "semente": 17,
+      "silhouette": 0.48488669587380845
+    },
+    {
+      "algoritmo": "ward",
+      "calinski_harabasz": 2382.813038519986,
+      "davies_bouldin": 0.661829240500133,
+      "k": 6,
+      "semente": 29,
+      "silhouette": 0.48488669587380845
+    },
+    {
+      "algoritmo": "ward",
+      "calinski_harabasz": 2382.813038519986,
+      "davies_bouldin": 0.661829240500133,
+      "k": 6,
+      "semente": 43,
+      "silhouette": 0.48488669587380845
+    },
+    {
+      "algoritmo": "kmeans",
+      "calinski_harabasz": 2631.0664698866467,
+      "davies_bouldin": 0.7320306748979851,
+      "k": 7,
+      "semente": 17,
+      "silhouette": 0.4172895528565772
+    },
+    {
+      "algoritmo": "kmeans",
+      "calinski_harabasz": 2629.6880289857595,
+      "davies_bouldin": 0.7351180857516837,
+      "k": 7,
+      "semente": 29,
+      "silhouette": 0.41728169961551914
+    },
+    {
+      "algoritmo": "kmeans",
+      "calinski_harabasz": 2631.0889156896474,
+      "davies_bouldin": 0.7317592192036363,
+      "k": 7,
+      "semente": 43,
+      "silhouette": 0.41763931371469815
+    },
+    {
+      "algoritmo": "ward",
+      "calinski_harabasz": 2473.990680513421,
+      "davies_bouldin": 0.7577404491706583,
+      "k": 7,
+      "semente": 17,
+      "silhouette": 0.39197305138351335
+    },
+    {
+      "algoritmo": "ward",
+      "calinski_harabasz": 2473.990680513421,
+      "davies_bouldin": 0.7577404491706583,
+      "k": 7,
+      "semente": 29,
+      "silhouette": 0.39197305138351335
+    },
+    {
+      "algoritmo": "ward",
+      "calinski_harabasz": 2473.990680513421,
+      "davies_bouldin": 0.7577404491706583,
+      "k": 7,
+      "semente": 43,
+      "silhouette": 0.39197305138351335
+    },
+    {
+      "algoritmo": "kmeans",
+      "calinski_harabasz": 2702.791118646744,
+      "davies_bouldin": 0.6633482092711769,
+      "k": 8,
+      "semente": 17,
+      "silhouette": 0.456056315433595
+    },
+    {
+      "algoritmo": "kmeans",
+      "calinski_harabasz": 2701.6822843377986,
+      "davies_bouldin": 0.6624265675684436,
+      "k": 8,
+      "semente": 29,
+      "silhouette": 0.45714823659524956
+    },
+    {
+      "algoritmo": "kmeans",
+      "calinski_harabasz": 2702.81314260371,
+      "davies_bouldin": 0.6627185305775847,
+      "k": 8,
+      "semente": 43,
+      "silhouette": 0.456385000105359
+    },
+    {
+      "algoritmo": "ward",
+      "calinski_harabasz": 2510.3597679175577,
+      "davies_bouldin": 0.6775910089477033,
+      "k": 8,
+      "semente": 17,
+      "silhouette": 0.42900597045192645
+    },
+    {
+      "algoritmo": "ward",
+      "calinski_harabasz": 2510.3597679175577,
+      "davies_bouldin": 0.6775910089477033,
+      "k": 8,
+      "semente": 29,
+      "silhouette": 0.42900597045192645
+    },
+    {
+      "algoritmo": "ward",
+      "calinski_harabasz": 2510.3597679175577,
+      "davies_bouldin": 0.6775910089477033,
+      "k": 8,
+      "semente": 43,
+      "silhouette": 0.42900597045192645
+    }
+  ],
+  "tipo": "metricas"
+}

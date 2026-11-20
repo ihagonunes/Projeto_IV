@@ -1,0 +1,76 @@
+{
+  "arquivos": {
+    "README.md": {
+      "bytes": 343,
+      "sha256": "7cc7f14ea7ddc691ef782bc3d6180252393fed36d5d09c66e9446b0fe3731b41"
+    },
+    "consumo/ari.json": {
+      "bytes": 108,
+      "sha256": "eb194b703deab2c11e74ff214bfa17f63f7551e8936d96ac895b047036df0199"
+    },
+    "consumo/diagnosticos.json": {
+      "bytes": 483,
+      "sha256": "0455a6c5f3ad401181e213bfd888bfd305b65fd564f67bf23842d667e9aa50b6"
+    },
+    "consumo/distribuicoes.json": {
+      "bytes": 118,
+      "sha256": "3848878a9f3d29618f3885177c335dca63524365774927e97ffeef70dbcf3aa7"
+    },
+    "consumo/metricas.json": {
+      "bytes": 113,
+      "sha256": "9fd59a34f2b2bea143e16f6b8860873ed9a422072f6249a1fb376f872f0d192e"
+    },
+    "consumo/perfis.json": {
+      "bytes": 111,
+      "sha256": "70f0fec330c0a78e6046255ba4cc423d9b4863e8f8bc26e87070e4c8c2d3543f"
+    },
+    "diversidade/ari.json": {
+      "bytes": 8586,
+      "sha256": "2fcf35658dcae79973f9f9404132d9348f20f862b32407fa682b2c78c6c2905a"
+    },
+    "diversidade/diagnosticos.json": {
+      "bytes": 1773,
+      "sha256": "a8e5d12c0c6a376944dcaa22767371cfa655fd7244077f7a772e276708616ec8"
+    },
+    "diversidade/distribuicoes.json": {
+      "bytes": 26080,
+      "sha256": "133cd1d0df9b09b530328e86dec45eaf2cb4869bf645aa94ee8a2dd233b844cc"
+    },
+    "diversidade/metricas.json": {
+      "bytes": 8754,
+      "sha256": "f322ec203c5b1570688c82216c20f31291bfb72b5078d344176435ef50e7756e"
+    },
+    "diversidade/perfis.json": {
+      "bytes": 17741,
+      "sha256": "dadfe768c60fb7648ab41905e0087f717a9c9ae22d194d7269e7a2a8764bb6d6"
+    },
+    "metadata.json": {
+      "bytes": 4018,
+      "sha256": "2b856b520a4f1e03597ebd437a3e15d58afb6d3dccd6c1d1a65f0f2d8cd132d8"
+    },
+    "regularidade/ari.json": {
+      "bytes": 8647,
+      "sha256": "38fba58f4a245c160189835a868d6f7370b35a3eb7620a772da3ef8fbbcd674b"
+    },
+    "regularidade/diagnosticos.json": {
+      "bytes": 1826,
+      "sha256": "5e35c312d75829a2f15deb01efa098fcd9f667bfb7106427ff22810c69cb8659"
+    },
+    "regularidade/distribuicoes.json": {
+      "bytes": 26108,
+      "sha256": "53ef2d673d12410c91681f6a52a8e081a407439d001b4eb50d4e69594795beb8"
+    },
+    "regularidade/metricas.json": {
+      "bytes": 8727,
+      "sha256": "e93dcd2d9a5fbb480eb9f8d0085014615ae354a1270994b754cdd743da949789"
+    },
+    "regularidade/perfis.json": {
+      "bytes": 17819,
+      "sha256": "7f0a02c89750e7f0e08c79836c10f4c71e6e60639c504348b9c7d1d53ab6a20e"
+    }
+  },
+  "formato": "clustering-agregado-ipc-1",
+  "manifesto_auto_incluso": false,
+  "natureza": "RESULTADO_OPERACIONAL_AGREGADO",
+  "status": "PARCIAL"
+}

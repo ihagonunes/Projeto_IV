@@ -1,0 +1,848 @@
+{
+  "analise": "diversidade",
+  "detalhes": null,
+  "estado": "CONCLUIDA",
+  "registros": [
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 0,
+      "k": 2,
+      "medias_caracteristicas": [
+        "4.245965333839916",
+        "0.7295091173466777",
+        "0.9824388307462665"
+      ],
+      "semente": 17,
+      "usuarios": 901
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 1,
+      "k": 2,
+      "medias_caracteristicas": [
+        "1.6883035047047792",
+        "0.6554928851697127",
+        "0.5246731859789183"
+      ],
+      "semente": 17,
+      "usuarios": 157
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 0,
+      "k": 3,
+      "medias_caracteristicas": [
+        "4.345527364240981",
+        "0.7288094380605475",
+        "0.9908112292570959"
+      ],
+      "semente": 17,
+      "usuarios": 859
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 1,
+      "k": 3,
+      "medias_caracteristicas": [
+        "1.4043591620797504",
+        "0.5389088521433867",
+        "0.3438825471913707"
+      ],
+      "semente": 17,
+      "usuarios": 68
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 2,
+      "k": 3,
+      "medias_caracteristicas": [
+        "2.0028548635418866",
+        "0.7443281561926829",
+        "0.7103833401543324"
+      ],
+      "semente": 17,
+      "usuarios": 131
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 0,
+      "k": 4,
+      "medias_caracteristicas": [
+        "3.0619075555317177",
+        "0.3621558438705395",
+        "0.9863732836887196"
+      ],
+      "semente": 17,
+      "usuarios": 298
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 1,
+      "k": 4,
+      "medias_caracteristicas": [
+        "1.4043591620797504",
+        "0.5389088521433867",
+        "0.3438825471913707"
+      ],
+      "semente": 17,
+      "usuarios": 68
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 2,
+      "k": 4,
+      "medias_caracteristicas": [
+        "2.006221384128361",
+        "0.7510633349551166",
+        "0.7081079988056732"
+      ],
+      "semente": 17,
+      "usuarios": 129
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 3,
+      "k": 4,
+      "medias_caracteristicas": [
+        "5.015863202319686",
+        "0.9213937550135376",
+        "0.99268542292521"
+      ],
+      "semente": 17,
+      "usuarios": 563
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 0,
+      "k": 5,
+      "medias_caracteristicas": [
+        "2.468195465736449",
+        "0.765092137852003",
+        "0.8566902814853635"
+      ],
+      "semente": 17,
+      "usuarios": 122
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 1,
+      "k": 5,
+      "medias_caracteristicas": [
+        "1.8183012017222546",
+        "0.7244107259163095",
+        "0.6159936554673398"
+      ],
+      "semente": 17,
+      "usuarios": 95
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 2,
+      "k": 5,
+      "medias_caracteristicas": [
+        "3.144950461144795",
+        "0.30958414349993724",
+        "1.0"
+      ],
+      "semente": 17,
+      "usuarios": 247
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 3,
+      "k": 5,
+      "medias_caracteristicas": [
+        "1.3382660423476749",
+        "0.5060912890131065",
+        "0.28784271284271284"
+      ],
+      "semente": 17,
+      "usuarios": 49
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 4,
+      "k": 5,
+      "medias_caracteristicas": [
+        "5.0907195505819365",
+        "0.9115120758071233",
+        "0.9970847195617839"
+      ],
+      "semente": 17,
+      "usuarios": 545
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 0,
+      "k": 6,
+      "medias_caracteristicas": [
+        "5.1411063098327245",
+        "0.8950173970059035",
+        "0.9997304582210244"
+      ],
+      "semente": 17,
+      "usuarios": 530
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 1,
+      "k": 6,
+      "medias_caracteristicas": [
+        "1.9586571230188257",
+        "0.7292737999344948",
+        "0.7000518394135414"
+      ],
+      "semente": 17,
+      "usuarios": 94
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 2,
+      "k": 6,
+      "medias_caracteristicas": [
+        "1.57779549884813",
+        "0.6722511544371493",
+        "0.45587283087283104"
+      ],
+      "semente": 17,
+      "usuarios": 57
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 3,
+      "k": 6,
+      "medias_caracteristicas": [
+        "2.8151459651459643",
+        "0.8619369485762485",
+        "0.8947978697978699"
+      ],
+      "semente": 17,
+      "usuarios": 111
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 4,
+      "k": 6,
+      "medias_caracteristicas": [
+        "3.1006446721322765",
+        "0.30626847878940033",
+        "1.0"
+      ],
+      "semente": 17,
+      "usuarios": 242
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 5,
+      "k": 6,
+      "medias_caracteristicas": [
+        "1.2086144179894178",
+        "0.38245213050480337",
+        "0.19090608465608463"
+      ],
+      "semente": 17,
+      "usuarios": 24
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 0,
+      "k": 7,
+      "medias_caracteristicas": [
+        "2.9191344157197845",
+        "0.2723978748217221",
+        "1.0"
+      ],
+      "semente": 17,
+      "usuarios": 205
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 1,
+      "k": 7,
+      "medias_caracteristicas": [
+        "1.57779549884813",
+        "0.6722511544371493",
+        "0.45587283087283104"
+      ],
+      "semente": 17,
+      "usuarios": 57
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 2,
+      "k": 7,
+      "medias_caracteristicas": [
+        "5.24714893949588",
+        "1.1395838539987642",
+        "0.9970359572400387"
+      ],
+      "semente": 17,
+      "usuarios": 245
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 3,
+      "k": 7,
+      "medias_caracteristicas": [
+        "1.9588453213453219",
+        "0.7323996215336455",
+        "0.6978790533138357"
+      ],
+      "semente": 17,
+      "usuarios": 92
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 4,
+      "k": 7,
+      "medias_caracteristicas": [
+        "4.923598051779868",
+        "0.679714561470794",
+        "1.0"
+      ],
+      "semente": 17,
+      "usuarios": 330
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 5,
+      "k": 7,
+      "medias_caracteristicas": [
+        "1.2086144179894178",
+        "0.38245213050480337",
+        "0.19090608465608463"
+      ],
+      "semente": 17,
+      "usuarios": 24
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 6,
+      "k": 7,
+      "medias_caracteristicas": [
+        "2.692972900115757",
+        "0.8188262069653534",
+        "0.8905323512466368"
+      ],
+      "semente": 17,
+      "usuarios": 105
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 0,
+      "k": 8,
+      "medias_caracteristicas": [
+        "2.9356922752885515",
+        "0.4210988813596876",
+        "1.0"
+      ],
+      "semente": 17,
+      "usuarios": 161
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 1,
+      "k": 8,
+      "medias_caracteristicas": [
+        "1.57779549884813",
+        "0.6722511544371493",
+        "0.45587283087283104"
+      ],
+      "semente": 17,
+      "usuarios": 57
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 2,
+      "k": 8,
+      "medias_caracteristicas": [
+        "1.9605908743271387",
+        "0.7360523646274219",
+        "0.6967568451084932"
+      ],
+      "semente": 17,
+      "usuarios": 91
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 3,
+      "k": 8,
+      "medias_caracteristicas": [
+        "5.088986457986455",
+        "0.700023027274437",
+        "1.0"
+      ],
+      "semente": 17,
+      "usuarios": 325
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 4,
+      "k": 8,
+      "medias_caracteristicas": [
+        "1.2086144179894178",
+        "0.38245213050480337",
+        "0.19090608465608463"
+      ],
+      "semente": 17,
+      "usuarios": 24
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 5,
+      "k": 8,
+      "medias_caracteristicas": [
+        "5.14270082564074",
+        "1.1601813334427618",
+        "0.9953269191466614"
+      ],
+      "semente": 17,
+      "usuarios": 233
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 6,
+      "k": 8,
+      "medias_caracteristicas": [
+        "2.638685242150589",
+        "0.7930248626693972",
+        "0.8878072697379625"
+      ],
+      "semente": 17,
+      "usuarios": 101
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 7,
+      "k": 8,
+      "medias_caracteristicas": [
+        "3.0606060606060606",
+        "0.0",
+        "1.0"
+      ],
+      "semente": 17,
+      "usuarios": 66
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 0,
+      "k": 2,
+      "medias_caracteristicas": [
+        "1.7317420515991948",
+        "0.6631365950221446",
+        "0.5506935445506873"
+      ],
+      "semente": 17,
+      "usuarios": 175
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 1,
+      "k": 2,
+      "medias_caracteristicas": [
+        "4.289494402036869",
+        "0.7295030504780593",
+        "0.9866134840370395"
+      ],
+      "semente": 17,
+      "usuarios": 883
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 0,
+      "k": 3,
+      "medias_caracteristicas": [
+        "4.289494402036869",
+        "0.7295030504780593",
+        "0.9866134840370395"
+      ],
+      "semente": 17,
+      "usuarios": 883
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 1,
+      "k": 3,
+      "medias_caracteristicas": [
+        "1.4043591620797504",
+        "0.5389088521433867",
+        "0.3438825471913707"
+      ],
+      "semente": 17,
+      "usuarios": 68
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 2,
+      "k": 3,
+      "medias_caracteristicas": [
+        "1.9397984673685615",
+        "0.7420850671320097",
+        "0.6821248325921223"
+      ],
+      "semente": 17,
+      "usuarios": 107
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 0,
+      "k": 4,
+      "medias_caracteristicas": [
+        "2.793824259449262",
+        "0.4321103511976756",
+        "0.9657157688407684"
+      ],
+      "semente": 17,
+      "usuarios": 296
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 1,
+      "k": 4,
+      "medias_caracteristicas": [
+        "1.4043591620797504",
+        "0.5389088521433867",
+        "0.3438825471913707"
+      ],
+      "semente": 17,
+      "usuarios": 68
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 2,
+      "k": 4,
+      "medias_caracteristicas": [
+        "1.9397984673685615",
+        "0.7420850671320097",
+        "0.6821248325921223"
+      ],
+      "semente": 17,
+      "usuarios": 107
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 3,
+      "k": 4,
+      "medias_caracteristicas": [
+        "5.043699448384288",
+        "0.8794659789056479",
+        "0.9971513438293679"
+      ],
+      "semente": 17,
+      "usuarios": 587
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 0,
+      "k": 5,
+      "medias_caracteristicas": [
+        "1.4043591620797504",
+        "0.5389088521433867",
+        "0.3438825471913707"
+      ],
+      "semente": 17,
+      "usuarios": 68
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 1,
+      "k": 5,
+      "medias_caracteristicas": [
+        "5.043699448384288",
+        "0.8794659789056479",
+        "0.9971513438293679"
+      ],
+      "semente": 17,
+      "usuarios": 587
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 2,
+      "k": 5,
+      "medias_caracteristicas": [
+        "1.9397984673685615",
+        "0.7420850671320097",
+        "0.6821248325921223"
+      ],
+      "semente": 17,
+      "usuarios": 107
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 3,
+      "k": 5,
+      "medias_caracteristicas": [
+        "2.882734673632735",
+        "0.28357473455107063",
+        "1.0"
+      ],
+      "semente": 17,
+      "usuarios": 206
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 4,
+      "k": 5,
+      "medias_caracteristicas": [
+        "2.5903182003182015",
+        "0.7720918737443481",
+        "0.8872429730763061"
+      ],
+      "semente": 17,
+      "usuarios": 90
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 0,
+      "k": 6,
+      "medias_caracteristicas": [
+        "5.043699448384288",
+        "0.8794659789056479",
+        "0.9971513438293679"
+      ],
+      "semente": 17,
+      "usuarios": 587
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 1,
+      "k": 6,
+      "medias_caracteristicas": [
+        "2.882734673632735",
+        "0.28357473455107063",
+        "1.0"
+      ],
+      "semente": 17,
+      "usuarios": 206
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 2,
+      "k": 6,
+      "medias_caracteristicas": [
+        "1.9397984673685615",
+        "0.7420850671320097",
+        "0.6821248325921223"
+      ],
+      "semente": 17,
+      "usuarios": 107
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 3,
+      "k": 6,
+      "medias_caracteristicas": [
+        "1.2086144179894178",
+        "0.38245213050480337",
+        "0.19090608465608463"
+      ],
+      "semente": 17,
+      "usuarios": 24
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 4,
+      "k": 6,
+      "medias_caracteristicas": [
+        "2.5903182003182015",
+        "0.7720918737443481",
+        "0.8872429730763061"
+      ],
+      "semente": 17,
+      "usuarios": 90
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 5,
+      "k": 6,
+      "medias_caracteristicas": [
+        "1.511129022492659",
+        "0.6242488821280683",
+        "0.4273242540287994"
+      ],
+      "semente": 17,
+      "usuarios": 44
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 0,
+      "k": 7,
+      "medias_caracteristicas": [
+        "2.882734673632735",
+        "0.28357473455107063",
+        "1.0"
+      ],
+      "semente": 17,
+      "usuarios": 206
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 1,
+      "k": 7,
+      "medias_caracteristicas": [
+        "1.2086144179894178",
+        "0.38245213050480337",
+        "0.19090608465608463"
+      ],
+      "semente": 17,
+      "usuarios": 24
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 2,
+      "k": 7,
+      "medias_caracteristicas": [
+        "1.9397984673685615",
+        "0.7420850671320097",
+        "0.6821248325921223"
+      ],
+      "semente": 17,
+      "usuarios": 107
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 3,
+      "k": 7,
+      "medias_caracteristicas": [
+        "5.085335228320839",
+        "1.117445939011356",
+        "0.9939850317548156"
+      ],
+      "semente": 17,
+      "usuarios": 278
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 4,
+      "k": 7,
+      "medias_caracteristicas": [
+        "2.5903182003182015",
+        "0.7720918737443481",
+        "0.8872429730763061"
+      ],
+      "semente": 17,
+      "usuarios": 90
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 5,
+      "k": 7,
+      "medias_caracteristicas": [
+        "1.511129022492659",
+        "0.6242488821280683",
+        "0.4273242540287994"
+      ],
+      "semente": 17,
+      "usuarios": 44
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 6,
+      "k": 7,
+      "medias_caracteristicas": [
+        "5.006240720803824",
+        "0.66536103097883",
+        "1.0"
+      ],
+      "semente": 17,
+      "usuarios": 309
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 0,
+      "k": 8,
+      "medias_caracteristicas": [
+        "1.9397984673685615",
+        "0.7420850671320097",
+        "0.6821248325921223"
+      ],
+      "semente": 17,
+      "usuarios": 107
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 1,
+      "k": 8,
+      "medias_caracteristicas": [
+        "1.2086144179894178",
+        "0.38245213050480337",
+        "0.19090608465608463"
+      ],
+      "semente": 17,
+      "usuarios": 24
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 2,
+      "k": 8,
+      "medias_caracteristicas": [
+        "1.511129022492659",
+        "0.6242488821280683",
+        "0.4273242540287994"
+      ],
+      "semente": 17,
+      "usuarios": 44
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 3,
+      "k": 8,
+      "medias_caracteristicas": [
+        "5.085335228320839",
+        "1.117445939011356",
+        "0.9939850317548156"
+      ],
+      "semente": 17,
+      "usuarios": 278
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 4,
+      "k": 8,
+      "medias_caracteristicas": [
+        "2.5903182003182015",
+        "0.7720918737443481",
+        "0.8872429730763061"
+      ],
+      "semente": 17,
+      "usuarios": 90
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 5,
+      "k": 8,
+      "medias_caracteristicas": [
+        "2.79888101977388",
+        "0.4172599665537182",
+        "1.0"
+      ],
+      "semente": 17,
+      "usuarios": 140
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 6,
+      "k": 8,
+      "medias_caracteristicas": [
+        "5.006240720803824",
+        "0.66536103097883",
+        "1.0"
+      ],
+      "semente": 17,
+      "usuarios": 309
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 7,
+      "k": 8,
+      "medias_caracteristicas": [
+        "3.0606060606060606",
+        "0.0",
+        "1.0"
+      ],
+      "semente": 17,
+      "usuarios": 66
+    }
+  ],
+  "tipo": "perfis"
+}
