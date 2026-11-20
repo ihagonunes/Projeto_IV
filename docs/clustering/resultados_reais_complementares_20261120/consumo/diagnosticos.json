@@ -1,0 +1,20 @@
+{
+  "analise": "consumo",
+  "detalhes": {
+    "descritivo": {
+      "fracoes_indisponiveis": 0,
+      "fracoes_validas": 1058,
+      "media_fracao_saida": "0.4973819555246072489450832431"
+    },
+    "estado": "BLOQUEADA",
+    "exclusoes": 0,
+    "motivo": "SEMANTICA_NAO_COMPROVADA",
+    "motivos_exclusao": {},
+    "usuarios_candidatos": 1058,
+    "usuarios_elegiveis": 1058,
+    "usuarios_treinados": 0
+  },
+  "estado": "BLOQUEADA",
+  "registros": null,
+  "tipo": "diagnosticos"
+}

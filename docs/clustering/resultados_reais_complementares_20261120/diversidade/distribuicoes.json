@@ -1,0 +1,1478 @@
+{
+  "analise": "diversidade",
+  "detalhes": null,
+  "estado": "CONCLUIDA",
+  "registros": [
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 0,
+      "k": 2,
+      "semente": 17,
+      "usuarios": 901
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 1,
+      "k": 2,
+      "semente": 17,
+      "usuarios": 157
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 0,
+      "k": 2,
+      "semente": 29,
+      "usuarios": 157
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 1,
+      "k": 2,
+      "semente": 29,
+      "usuarios": 901
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 0,
+      "k": 2,
+      "semente": 43,
+      "usuarios": 901
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 1,
+      "k": 2,
+      "semente": 43,
+      "usuarios": 157
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 0,
+      "k": 2,
+      "semente": 17,
+      "usuarios": 175
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 1,
+      "k": 2,
+      "semente": 17,
+      "usuarios": 883
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 0,
+      "k": 2,
+      "semente": 29,
+      "usuarios": 175
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 1,
+      "k": 2,
+      "semente": 29,
+      "usuarios": 883
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 0,
+      "k": 2,
+      "semente": 43,
+      "usuarios": 175
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 1,
+      "k": 2,
+      "semente": 43,
+      "usuarios": 883
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 0,
+      "k": 3,
+      "semente": 17,
+      "usuarios": 859
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 1,
+      "k": 3,
+      "semente": 17,
+      "usuarios": 68
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 2,
+      "k": 3,
+      "semente": 17,
+      "usuarios": 131
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 0,
+      "k": 3,
+      "semente": 29,
+      "usuarios": 858
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 1,
+      "k": 3,
+      "semente": 29,
+      "usuarios": 132
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 2,
+      "k": 3,
+      "semente": 29,
+      "usuarios": 68
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 0,
+      "k": 3,
+      "semente": 43,
+      "usuarios": 859
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 1,
+      "k": 3,
+      "semente": 43,
+      "usuarios": 131
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 2,
+      "k": 3,
+      "semente": 43,
+      "usuarios": 68
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 0,
+      "k": 3,
+      "semente": 17,
+      "usuarios": 883
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 1,
+      "k": 3,
+      "semente": 17,
+      "usuarios": 68
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 2,
+      "k": 3,
+      "semente": 17,
+      "usuarios": 107
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 0,
+      "k": 3,
+      "semente": 29,
+      "usuarios": 883
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 1,
+      "k": 3,
+      "semente": 29,
+      "usuarios": 68
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 2,
+      "k": 3,
+      "semente": 29,
+      "usuarios": 107
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 0,
+      "k": 3,
+      "semente": 43,
+      "usuarios": 883
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 1,
+      "k": 3,
+      "semente": 43,
+      "usuarios": 68
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 2,
+      "k": 3,
+      "semente": 43,
+      "usuarios": 107
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 0,
+      "k": 4,
+      "semente": 17,
+      "usuarios": 298
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 1,
+      "k": 4,
+      "semente": 17,
+      "usuarios": 68
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 2,
+      "k": 4,
+      "semente": 17,
+      "usuarios": 129
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 3,
+      "k": 4,
+      "semente": 17,
+      "usuarios": 563
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 0,
+      "k": 4,
+      "semente": 29,
+      "usuarios": 563
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 1,
+      "k": 4,
+      "semente": 29,
+      "usuarios": 68
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 2,
+      "k": 4,
+      "semente": 29,
+      "usuarios": 129
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 3,
+      "k": 4,
+      "semente": 29,
+      "usuarios": 298
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 0,
+      "k": 4,
+      "semente": 43,
+      "usuarios": 563
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 1,
+      "k": 4,
+      "semente": 43,
+      "usuarios": 68
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 2,
+      "k": 4,
+      "semente": 43,
+      "usuarios": 129
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 3,
+      "k": 4,
+      "semente": 43,
+      "usuarios": 298
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 0,
+      "k": 4,
+      "semente": 17,
+      "usuarios": 296
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 1,
+      "k": 4,
+      "semente": 17,
+      "usuarios": 68
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 2,
+      "k": 4,
+      "semente": 17,
+      "usuarios": 107
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 3,
+      "k": 4,
+      "semente": 17,
+      "usuarios": 587
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 0,
+      "k": 4,
+      "semente": 29,
+      "usuarios": 296
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 1,
+      "k": 4,
+      "semente": 29,
+      "usuarios": 68
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 2,
+      "k": 4,
+      "semente": 29,
+      "usuarios": 107
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 3,
+      "k": 4,
+      "semente": 29,
+      "usuarios": 587
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 0,
+      "k": 4,
+      "semente": 43,
+      "usuarios": 296
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 1,
+      "k": 4,
+      "semente": 43,
+      "usuarios": 68
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 2,
+      "k": 4,
+      "semente": 43,
+      "usuarios": 107
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 3,
+      "k": 4,
+      "semente": 43,
+      "usuarios": 587
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 0,
+      "k": 5,
+      "semente": 17,
+      "usuarios": 122
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 1,
+      "k": 5,
+      "semente": 17,
+      "usuarios": 95
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 2,
+      "k": 5,
+      "semente": 17,
+      "usuarios": 247
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 3,
+      "k": 5,
+      "semente": 17,
+      "usuarios": 49
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 4,
+      "k": 5,
+      "semente": 17,
+      "usuarios": 545
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 0,
+      "k": 5,
+      "semente": 29,
+      "usuarios": 122
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 1,
+      "k": 5,
+      "semente": 29,
+      "usuarios": 49
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 2,
+      "k": 5,
+      "semente": 29,
+      "usuarios": 548
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 3,
+      "k": 5,
+      "semente": 29,
+      "usuarios": 95
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 4,
+      "k": 5,
+      "semente": 29,
+      "usuarios": 244
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 0,
+      "k": 5,
+      "semente": 43,
+      "usuarios": 548
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 1,
+      "k": 5,
+      "semente": 43,
+      "usuarios": 95
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 2,
+      "k": 5,
+      "semente": 43,
+      "usuarios": 244
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 3,
+      "k": 5,
+      "semente": 43,
+      "usuarios": 49
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 4,
+      "k": 5,
+      "semente": 43,
+      "usuarios": 122
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 0,
+      "k": 5,
+      "semente": 17,
+      "usuarios": 68
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 1,
+      "k": 5,
+      "semente": 17,
+      "usuarios": 587
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 2,
+      "k": 5,
+      "semente": 17,
+      "usuarios": 107
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 3,
+      "k": 5,
+      "semente": 17,
+      "usuarios": 206
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 4,
+      "k": 5,
+      "semente": 17,
+      "usuarios": 90
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 0,
+      "k": 5,
+      "semente": 29,
+      "usuarios": 68
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 1,
+      "k": 5,
+      "semente": 29,
+      "usuarios": 587
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 2,
+      "k": 5,
+      "semente": 29,
+      "usuarios": 107
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 3,
+      "k": 5,
+      "semente": 29,
+      "usuarios": 206
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 4,
+      "k": 5,
+      "semente": 29,
+      "usuarios": 90
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 0,
+      "k": 5,
+      "semente": 43,
+      "usuarios": 68
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 1,
+      "k": 5,
+      "semente": 43,
+      "usuarios": 587
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 2,
+      "k": 5,
+      "semente": 43,
+      "usuarios": 107
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 3,
+      "k": 5,
+      "semente": 43,
+      "usuarios": 206
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 4,
+      "k": 5,
+      "semente": 43,
+      "usuarios": 90
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 0,
+      "k": 6,
+      "semente": 17,
+      "usuarios": 530
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 1,
+      "k": 6,
+      "semente": 17,
+      "usuarios": 94
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 2,
+      "k": 6,
+      "semente": 17,
+      "usuarios": 57
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 3,
+      "k": 6,
+      "semente": 17,
+      "usuarios": 111
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 4,
+      "k": 6,
+      "semente": 17,
+      "usuarios": 242
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 5,
+      "k": 6,
+      "semente": 17,
+      "usuarios": 24
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 0,
+      "k": 6,
+      "semente": 29,
+      "usuarios": 530
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 1,
+      "k": 6,
+      "semente": 29,
+      "usuarios": 111
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 2,
+      "k": 6,
+      "semente": 29,
+      "usuarios": 24
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 3,
+      "k": 6,
+      "semente": 29,
+      "usuarios": 57
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 4,
+      "k": 6,
+      "semente": 29,
+      "usuarios": 242
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 5,
+      "k": 6,
+      "semente": 29,
+      "usuarios": 94
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 0,
+      "k": 6,
+      "semente": 43,
+      "usuarios": 530
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 1,
+      "k": 6,
+      "semente": 43,
+      "usuarios": 94
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 2,
+      "k": 6,
+      "semente": 43,
+      "usuarios": 24
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 3,
+      "k": 6,
+      "semente": 43,
+      "usuarios": 242
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 4,
+      "k": 6,
+      "semente": 43,
+      "usuarios": 111
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 5,
+      "k": 6,
+      "semente": 43,
+      "usuarios": 57
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 0,
+      "k": 6,
+      "semente": 17,
+      "usuarios": 587
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 1,
+      "k": 6,
+      "semente": 17,
+      "usuarios": 206
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 2,
+      "k": 6,
+      "semente": 17,
+      "usuarios": 107
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 3,
+      "k": 6,
+      "semente": 17,
+      "usuarios": 24
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 4,
+      "k": 6,
+      "semente": 17,
+      "usuarios": 90
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 5,
+      "k": 6,
+      "semente": 17,
+      "usuarios": 44
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 0,
+      "k": 6,
+      "semente": 29,
+      "usuarios": 587
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 1,
+      "k": 6,
+      "semente": 29,
+      "usuarios": 206
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 2,
+      "k": 6,
+      "semente": 29,
+      "usuarios": 107
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 3,
+      "k": 6,
+      "semente": 29,
+      "usuarios": 24
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 4,
+      "k": 6,
+      "semente": 29,
+      "usuarios": 90
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 5,
+      "k": 6,
+      "semente": 29,
+      "usuarios": 44
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 0,
+      "k": 6,
+      "semente": 43,
+      "usuarios": 587
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 1,
+      "k": 6,
+      "semente": 43,
+      "usuarios": 206
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 2,
+      "k": 6,
+      "semente": 43,
+      "usuarios": 107
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 3,
+      "k": 6,
+      "semente": 43,
+      "usuarios": 24
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 4,
+      "k": 6,
+      "semente": 43,
+      "usuarios": 90
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 5,
+      "k": 6,
+      "semente": 43,
+      "usuarios": 44
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 0,
+      "k": 7,
+      "semente": 17,
+      "usuarios": 205
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 1,
+      "k": 7,
+      "semente": 17,
+      "usuarios": 57
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 2,
+      "k": 7,
+      "semente": 17,
+      "usuarios": 245
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 3,
+      "k": 7,
+      "semente": 17,
+      "usuarios": 92
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 4,
+      "k": 7,
+      "semente": 17,
+      "usuarios": 330
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 5,
+      "k": 7,
+      "semente": 17,
+      "usuarios": 24
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 6,
+      "k": 7,
+      "semente": 17,
+      "usuarios": 105
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 0,
+      "k": 7,
+      "semente": 29,
+      "usuarios": 330
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 1,
+      "k": 7,
+      "semente": 29,
+      "usuarios": 52
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 2,
+      "k": 7,
+      "semente": 29,
+      "usuarios": 30
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 3,
+      "k": 7,
+      "semente": 29,
+      "usuarios": 93
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 4,
+      "k": 7,
+      "semente": 29,
+      "usuarios": 103
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 5,
+      "k": 7,
+      "semente": 29,
+      "usuarios": 205
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 6,
+      "k": 7,
+      "semente": 29,
+      "usuarios": 245
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 0,
+      "k": 7,
+      "semente": 43,
+      "usuarios": 205
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 1,
+      "k": 7,
+      "semente": 43,
+      "usuarios": 93
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 2,
+      "k": 7,
+      "semente": 43,
+      "usuarios": 57
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 3,
+      "k": 7,
+      "semente": 43,
+      "usuarios": 330
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 4,
+      "k": 7,
+      "semente": 43,
+      "usuarios": 104
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 5,
+      "k": 7,
+      "semente": 43,
+      "usuarios": 245
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 6,
+      "k": 7,
+      "semente": 43,
+      "usuarios": 24
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 0,
+      "k": 7,
+      "semente": 17,
+      "usuarios": 206
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 1,
+      "k": 7,
+      "semente": 17,
+      "usuarios": 24
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 2,
+      "k": 7,
+      "semente": 17,
+      "usuarios": 107
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 3,
+      "k": 7,
+      "semente": 17,
+      "usuarios": 278
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 4,
+      "k": 7,
+      "semente": 17,
+      "usuarios": 90
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 5,
+      "k": 7,
+      "semente": 17,
+      "usuarios": 44
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 6,
+      "k": 7,
+      "semente": 17,
+      "usuarios": 309
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 0,
+      "k": 7,
+      "semente": 29,
+      "usuarios": 206
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 1,
+      "k": 7,
+      "semente": 29,
+      "usuarios": 24
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 2,
+      "k": 7,
+      "semente": 29,
+      "usuarios": 107
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 3,
+      "k": 7,
+      "semente": 29,
+      "usuarios": 278
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 4,
+      "k": 7,
+      "semente": 29,
+      "usuarios": 90
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 5,
+      "k": 7,
+      "semente": 29,
+      "usuarios": 44
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 6,
+      "k": 7,
+      "semente": 29,
+      "usuarios": 309
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 0,
+      "k": 7,
+      "semente": 43,
+      "usuarios": 206
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 1,
+      "k": 7,
+      "semente": 43,
+      "usuarios": 24
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 2,
+      "k": 7,
+      "semente": 43,
+      "usuarios": 107
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 3,
+      "k": 7,
+      "semente": 43,
+      "usuarios": 278
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 4,
+      "k": 7,
+      "semente": 43,
+      "usuarios": 90
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 5,
+      "k": 7,
+      "semente": 43,
+      "usuarios": 44
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 6,
+      "k": 7,
+      "semente": 43,
+      "usuarios": 309
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 0,
+      "k": 8,
+      "semente": 17,
+      "usuarios": 161
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 1,
+      "k": 8,
+      "semente": 17,
+      "usuarios": 57
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 2,
+      "k": 8,
+      "semente": 17,
+      "usuarios": 91
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 3,
+      "k": 8,
+      "semente": 17,
+      "usuarios": 325
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 4,
+      "k": 8,
+      "semente": 17,
+      "usuarios": 24
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 5,
+      "k": 8,
+      "semente": 17,
+      "usuarios": 233
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 6,
+      "k": 8,
+      "semente": 17,
+      "usuarios": 101
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 7,
+      "k": 8,
+      "semente": 17,
+      "usuarios": 66
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 0,
+      "k": 8,
+      "semente": 29,
+      "usuarios": 235
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 1,
+      "k": 8,
+      "semente": 29,
+      "usuarios": 57
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 2,
+      "k": 8,
+      "semente": 29,
+      "usuarios": 93
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 3,
+      "k": 8,
+      "semente": 29,
+      "usuarios": 159
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 4,
+      "k": 8,
+      "semente": 29,
+      "usuarios": 24
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 5,
+      "k": 8,
+      "semente": 29,
+      "usuarios": 320
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 6,
+      "k": 8,
+      "semente": 29,
+      "usuarios": 104
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 7,
+      "k": 8,
+      "semente": 29,
+      "usuarios": 66
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 0,
+      "k": 8,
+      "semente": 43,
+      "usuarios": 233
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 1,
+      "k": 8,
+      "semente": 43,
+      "usuarios": 57
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 2,
+      "k": 8,
+      "semente": 43,
+      "usuarios": 91
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 3,
+      "k": 8,
+      "semente": 43,
+      "usuarios": 101
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 4,
+      "k": 8,
+      "semente": 43,
+      "usuarios": 160
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 5,
+      "k": 8,
+      "semente": 43,
+      "usuarios": 24
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 6,
+      "k": 8,
+      "semente": 43,
+      "usuarios": 66
+    },
+    {
+      "algoritmo": "kmeans",
+      "cluster_local": 7,
+      "k": 8,
+      "semente": 43,
+      "usuarios": 326
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 0,
+      "k": 8,
+      "semente": 17,
+      "usuarios": 107
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 1,
+      "k": 8,
+      "semente": 17,
+      "usuarios": 24
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 2,
+      "k": 8,
+      "semente": 17,
+      "usuarios": 44
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 3,
+      "k": 8,
+      "semente": 17,
+      "usuarios": 278
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 4,
+      "k": 8,
+      "semente": 17,
+      "usuarios": 90
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 5,
+      "k": 8,
+      "semente": 17,
+      "usuarios": 140
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 6,
+      "k": 8,
+      "semente": 17,
+      "usuarios": 309
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 7,
+      "k": 8,
+      "semente": 17,
+      "usuarios": 66
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 0,
+      "k": 8,
+      "semente": 29,
+      "usuarios": 107
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 1,
+      "k": 8,
+      "semente": 29,
+      "usuarios": 24
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 2,
+      "k": 8,
+      "semente": 29,
+      "usuarios": 44
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 3,
+      "k": 8,
+      "semente": 29,
+      "usuarios": 278
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 4,
+      "k": 8,
+      "semente": 29,
+      "usuarios": 90
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 5,
+      "k": 8,
+      "semente": 29,
+      "usuarios": 140
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 6,
+      "k": 8,
+      "semente": 29,
+      "usuarios": 309
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 7,
+      "k": 8,
+      "semente": 29,
+      "usuarios": 66
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 0,
+      "k": 8,
+      "semente": 43,
+      "usuarios": 107
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 1,
+      "k": 8,
+      "semente": 43,
+      "usuarios": 24
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 2,
+      "k": 8,
+      "semente": 43,
+      "usuarios": 44
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 3,
+      "k": 8,
+      "semente": 43,
+      "usuarios": 278
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 4,
+      "k": 8,
+      "semente": 43,
+      "usuarios": 90
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 5,
+      "k": 8,
+      "semente": 43,
+      "usuarios": 140
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 6,
+      "k": 8,
+      "semente": 43,
+      "usuarios": 309
+    },
+    {
+      "algoritmo": "ward",
+      "cluster_local": 7,
+      "k": 8,
+      "semente": 43,
+      "usuarios": 66
+    }
+  ],
+  "tipo": "distribuicoes"
+}

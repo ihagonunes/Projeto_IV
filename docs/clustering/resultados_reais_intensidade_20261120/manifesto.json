@@ -1,0 +1,36 @@
+{
+  "arquivos": {
+    "README.md": {
+      "bytes": 343,
+      "sha256": "7cc7f14ea7ddc691ef782bc3d6180252393fed36d5d09c66e9446b0fe3731b41"
+    },
+    "intensidade/ari.json": {
+      "bytes": 8630,
+      "sha256": "31d21c259d19a16d3f8b50aa5198c45725c5e195af1ff7cdc9398c3cde066839"
+    },
+    "intensidade/diagnosticos.json": {
+      "bytes": 735,
+      "sha256": "11f7e0d36095a11055cc2fa2eae278be260415b1fe80e9240bfaa5c71923154a"
+    },
+    "intensidade/distribuicoes.json": {
+      "bytes": 26149,
+      "sha256": "44411890f04a2fee091ed5aadb4bde7755dbbb09edc7b35757ab01d663600b4b"
+    },
+    "intensidade/metricas.json": {
+      "bytes": 8739,
+      "sha256": "4aa64eada537be2e62cd65cb18ef45e1ab0550170d9d770b3bdba64d44aa1a33"
+    },
+    "intensidade/perfis.json": {
+      "bytes": 20342,
+      "sha256": "0f4fa8edb701202c6d0e4d1af801b7f1536aae04899639316859ea165f45c41c"
+    },
+    "metadata.json": {
+      "bytes": 4007,
+      "sha256": "aeea62abadaa63d6a2611ecfd17d0fcd042a8e5386bbc4e14b77be40b6b26ad5"
+    }
+  },
+  "formato": "clustering-agregado-ipc-1",
+  "manifesto_auto_incluso": false,
+  "natureza": "RESULTADO_OPERACIONAL_AGREGADO",
+  "status": "CONCLUIDO"
+}

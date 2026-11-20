@@ -1,0 +1,498 @@
+{
+  "analise": "regularidade",
+  "detalhes": null,
+  "estado": "CONCLUIDA",
+  "registros": [
+    {
+      "algoritmo": "kmeans",
+      "ari": 1.0,
+      "k": 2,
+      "sementes": [
+        17,
+        29
+      ],
+      "tipo": "estabilidade_permutacoes"
+    },
+    {
+      "algoritmo": "kmeans",
+      "ari": 1.0,
+      "k": 2,
+      "sementes": [
+        17,
+        43
+      ],
+      "tipo": "estabilidade_permutacoes"
+    },
+    {
+      "algoritmo": "kmeans",
+      "ari": 1.0,
+      "k": 2,
+      "sementes": [
+        29,
+        43
+      ],
+      "tipo": "estabilidade_permutacoes"
+    },
+    {
+      "algoritmo": "ward",
+      "ari": 1.0,
+      "k": 2,
+      "sementes": [
+        17,
+        29
+      ],
+      "tipo": "estabilidade_permutacoes"
+    },
+    {
+      "algoritmo": "ward",
+      "ari": 1.0,
+      "k": 2,
+      "sementes": [
+        17,
+        43
+      ],
+      "tipo": "estabilidade_permutacoes"
+    },
+    {
+      "algoritmo": "ward",
+      "ari": 1.0,
+      "k": 2,
+      "sementes": [
+        29,
+        43
+      ],
+      "tipo": "estabilidade_permutacoes"
+    },
+    {
+      "algoritmo": "kmeans",
+      "ari": 0.9502770595433112,
+      "k": 3,
+      "sementes": [
+        17,
+        29
+      ],
+      "tipo": "estabilidade_permutacoes"
+    },
+    {
+      "algoritmo": "kmeans",
+      "ari": 0.9502770595433112,
+      "k": 3,
+      "sementes": [
+        17,
+        43
+      ],
+      "tipo": "estabilidade_permutacoes"
+    },
+    {
+      "algoritmo": "kmeans",
+      "ari": 1.0,
+      "k": 3,
+      "sementes": [
+        29,
+        43
+      ],
+      "tipo": "estabilidade_permutacoes"
+    },
+    {
+      "algoritmo": "ward",
+      "ari": 1.0,
+      "k": 3,
+      "sementes": [
+        17,
+        29
+      ],
+      "tipo": "estabilidade_permutacoes"
+    },
+    {
+      "algoritmo": "ward",
+      "ari": 1.0,
+      "k": 3,
+      "sementes": [
+        17,
+        43
+      ],
+      "tipo": "estabilidade_permutacoes"
+    },
+    {
+      "algoritmo": "ward",
+      "ari": 1.0,
+      "k": 3,
+      "sementes": [
+        29,
+        43
+      ],
+      "tipo": "estabilidade_permutacoes"
+    },
+    {
+      "algoritmo": "kmeans",
+      "ari": 1.0,
+      "k": 4,
+      "sementes": [
+        17,
+        29
+      ],
+      "tipo": "estabilidade_permutacoes"
+    },
+    {
+      "algoritmo": "kmeans",
+      "ari": 0.997332020826391,
+      "k": 4,
+      "sementes": [
+        17,
+        43
+      ],
+      "tipo": "estabilidade_permutacoes"
+    },
+    {
+      "algoritmo": "kmeans",
+      "ari": 0.997332020826391,
+      "k": 4,
+      "sementes": [
+        29,
+        43
+      ],
+      "tipo": "estabilidade_permutacoes"
+    },
+    {
+      "algoritmo": "ward",
+      "ari": 1.0,
+      "k": 4,
+      "sementes": [
+        17,
+        29
+      ],
+      "tipo": "estabilidade_permutacoes"
+    },
+    {
+      "algoritmo": "ward",
+      "ari": 1.0,
+      "k": 4,
+      "sementes": [
+        17,
+        43
+      ],
+      "tipo": "estabilidade_permutacoes"
+    },
+    {
+      "algoritmo": "ward",
+      "ari": 1.0,
+      "k": 4,
+      "sementes": [
+        29,
+        43
+      ],
+      "tipo": "estabilidade_permutacoes"
+    },
+    {
+      "algoritmo": "kmeans",
+      "ari": 0.9990400705888919,
+      "k": 5,
+      "sementes": [
+        17,
+        29
+      ],
+      "tipo": "estabilidade_permutacoes"
+    },
+    {
+      "algoritmo": "kmeans",
+      "ari": 0.9990400705888919,
+      "k": 5,
+      "sementes": [
+        17,
+        43
+      ],
+      "tipo": "estabilidade_permutacoes"
+    },
+    {
+      "algoritmo": "kmeans",
+      "ari": 1.0,
+      "k": 5,
+      "sementes": [
+        29,
+        43
+      ],
+      "tipo": "estabilidade_permutacoes"
+    },
+    {
+      "algoritmo": "ward",
+      "ari": 1.0,
+      "k": 5,
+      "sementes": [
+        17,
+        29
+      ],
+      "tipo": "estabilidade_permutacoes"
+    },
+    {
+      "algoritmo": "ward",
+      "ari": 1.0,
+      "k": 5,
+      "sementes": [
+        17,
+        43
+      ],
+      "tipo": "estabilidade_permutacoes"
+    },
+    {
+      "algoritmo": "ward",
+      "ari": 1.0,
+      "k": 5,
+      "sementes": [
+        29,
+        43
+      ],
+      "tipo": "estabilidade_permutacoes"
+    },
+    {
+      "algoritmo": "kmeans",
+      "ari": 1.0,
+      "k": 6,
+      "sementes": [
+        17,
+        29
+      ],
+      "tipo": "estabilidade_permutacoes"
+    },
+    {
+      "algoritmo": "kmeans",
+      "ari": 0.9948007496913536,
+      "k": 6,
+      "sementes": [
+        17,
+        43
+      ],
+      "tipo": "estabilidade_permutacoes"
+    },
+    {
+      "algoritmo": "kmeans",
+      "ari": 0.9948007496913536,
+      "k": 6,
+      "sementes": [
+        29,
+        43
+      ],
+      "tipo": "estabilidade_permutacoes"
+    },
+    {
+      "algoritmo": "ward",
+      "ari": 1.0,
+      "k": 6,
+      "sementes": [
+        17,
+        29
+      ],
+      "tipo": "estabilidade_permutacoes"
+    },
+    {
+      "algoritmo": "ward",
+      "ari": 1.0,
+      "k": 6,
+      "sementes": [
+        17,
+        43
+      ],
+      "tipo": "estabilidade_permutacoes"
+    },
+    {
+      "algoritmo": "ward",
+      "ari": 1.0,
+      "k": 6,
+      "sementes": [
+        29,
+        43
+      ],
+      "tipo": "estabilidade_permutacoes"
+    },
+    {
+      "algoritmo": "kmeans",
+      "ari": 0.9835940197982721,
+      "k": 7,
+      "sementes": [
+        17,
+        29
+      ],
+      "tipo": "estabilidade_permutacoes"
+    },
+    {
+      "algoritmo": "kmeans",
+      "ari": 0.9770049377639176,
+      "k": 7,
+      "sementes": [
+        17,
+        43
+      ],
+      "tipo": "estabilidade_permutacoes"
+    },
+    {
+      "algoritmo": "kmeans",
+      "ari": 0.9933035648278958,
+      "k": 7,
+      "sementes": [
+        29,
+        43
+      ],
+      "tipo": "estabilidade_permutacoes"
+    },
+    {
+      "algoritmo": "ward",
+      "ari": 1.0,
+      "k": 7,
+      "sementes": [
+        17,
+        29
+      ],
+      "tipo": "estabilidade_permutacoes"
+    },
+    {
+      "algoritmo": "ward",
+      "ari": 1.0,
+      "k": 7,
+      "sementes": [
+        17,
+        43
+      ],
+      "tipo": "estabilidade_permutacoes"
+    },
+    {
+      "algoritmo": "ward",
+      "ari": 1.0,
+      "k": 7,
+      "sementes": [
+        29,
+        43
+      ],
+      "tipo": "estabilidade_permutacoes"
+    },
+    {
+      "algoritmo": "kmeans",
+      "ari": 0.911039547477424,
+      "k": 8,
+      "sementes": [
+        17,
+        29
+      ],
+      "tipo": "estabilidade_permutacoes"
+    },
+    {
+      "algoritmo": "kmeans",
+      "ari": 0.9128058890529946,
+      "k": 8,
+      "sementes": [
+        17,
+        43
+      ],
+      "tipo": "estabilidade_permutacoes"
+    },
+    {
+      "algoritmo": "kmeans",
+      "ari": 0.9982067495345819,
+      "k": 8,
+      "sementes": [
+        29,
+        43
+      ],
+      "tipo": "estabilidade_permutacoes"
+    },
+    {
+      "algoritmo": "ward",
+      "ari": 1.0,
+      "k": 8,
+      "sementes": [
+        17,
+        29
+      ],
+      "tipo": "estabilidade_permutacoes"
+    },
+    {
+      "algoritmo": "ward",
+      "ari": 1.0,
+      "k": 8,
+      "sementes": [
+        17,
+        43
+      ],
+      "tipo": "estabilidade_permutacoes"
+    },
+    {
+      "algoritmo": "ward",
+      "ari": 1.0,
+      "k": 8,
+      "sementes": [
+        29,
+        43
+      ],
+      "tipo": "estabilidade_permutacoes"
+    },
+    {
+      "algoritmo": "kmeans_ward",
+      "ari": 0.45961492746876964,
+      "k": 2,
+      "sementes": [
+        17,
+        17
+      ],
+      "tipo": "concordancia_primeira_execucao"
+    },
+    {
+      "algoritmo": "kmeans_ward",
+      "ari": 0.2531394005349523,
+      "k": 3,
+      "sementes": [
+        17,
+        17
+      ],
+      "tipo": "concordancia_primeira_execucao"
+    },
+    {
+      "algoritmo": "kmeans_ward",
+      "ari": 0.6234406713266649,
+      "k": 4,
+      "sementes": [
+        17,
+        17
+      ],
+      "tipo": "concordancia_primeira_execucao"
+    },
+    {
+      "algoritmo": "kmeans_ward",
+      "ari": 0.6991294368196901,
+      "k": 5,
+      "sementes": [
+        17,
+        17
+      ],
+      "tipo": "concordancia_primeira_execucao"
+    },
+    {
+      "algoritmo": "kmeans_ward",
+      "ari": 0.7619140241005184,
+      "k": 6,
+      "sementes": [
+        17,
+        17
+      ],
+      "tipo": "concordancia_primeira_execucao"
+    },
+    {
+      "algoritmo": "kmeans_ward",
+      "ari": 0.6240497276639173,
+      "k": 7,
+      "sementes": [
+        17,
+        17
+      ],
+      "tipo": "concordancia_primeira_execucao"
+    },
+    {
+      "algoritmo": "kmeans_ward",
+      "ari": 0.43851302725614466,
+      "k": 8,
+      "sementes": [
+        17,
+        17
+      ],
+      "tipo": "concordancia_primeira_execucao"
+    }
+  ],
+  "tipo": "ari"
+}
