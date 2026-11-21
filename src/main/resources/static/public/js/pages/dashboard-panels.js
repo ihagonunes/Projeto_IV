@@ -25,6 +25,10 @@
     }
     function chart(title, rows, format = C.number, note = "") {
         for (const target of chartNodes.filter(item => item.dataset.dashboardChart === title)) {
+            if (window.AtlasDashboardVisuals) {
+                window.AtlasDashboardVisuals.renderRows(target, title, rows, format, note);
+                continue;
+            }
             target.replaceChildren(node("p", note, "demo-muted small"));
             target.classList.add("dashboard-connected-chart");
             target.classList.remove("dashboard-chart-slot");
@@ -93,7 +97,7 @@
         const gross = requests => hours(requests) * hourlyValueUsd;
         const cost = requests => requests * unitCostUsd;
         const net = requests => gross(requests) - cost(requests);
-        const usd = value => C.money(value, "HISTORICO");
+        const usd = value => C.money(value, "HISTORICO", 2);
         const note = "Simulação de demo · 30 s por requisição, US$ 15/h e custo simulado de US$ 0,01 por requisição.";
         card("Tempo economizado estimado", C.number(hours(data.requests)) + " h", note);
         card("Valor gerado estimado", usd(gross(data.requests)), note);
@@ -218,6 +222,7 @@
     }
     function render() {
         const current = ++revision, entry = cache.get(source.value);
+        window.AtlasDashboardVisuals?.selectSource(source.value, entry);
         for (const section of document.querySelectorAll("[data-dashboard-chart-source]")) {
             section.hidden = section.dataset.dashboardChartSource !== source.value;
         }
@@ -236,7 +241,7 @@
         const note = sourceNote(data);
         status.textContent = `${note} Período: ${entry.from} a ${entry.to}. Fontes nunca são somadas.`;
         card("Meu consumo de tokens", C.number(data.tokens), `${note} Entrada ${C.number(C.sum(data.costs, "input"))}; saída ${C.number(C.sum(data.costs, "output"))}.`);
-        for (const label of ["Meu custo registrado", "Gastos da equipe", "Gastos do departamento", "Gastos corporativos"]) card(label, C.money(data.cost, data.source), note);
+        for (const label of ["Meu custo registrado", "Gastos da equipe", "Gastos do departamento", "Gastos corporativos"]) card(label, C.money(data.cost, data.source, 2), note);
         const tokens = data.series.flatMap(row => [{ name: `${row.period} · entrada`, value: row.input }, { name: `${row.period} · saída`, value: row.output }]);
         chart("Meu consumo ao longo do tempo", tokens, C.number, "Tokens de entrada e saída por dia; valores ausentes não são estimados.");
         for (const title of ["Evolução dos gastos do departamento", "FinOps corporativo"]) chart(title, data.series.map(row => ({ name: row.period, value: row.cost })), value => C.money(value, data.source), note);
@@ -293,7 +298,8 @@
                 const link = node("a", "Abrir meu Chat"); link.href = "/chat";
                 return [item.titulo || "Conversa sem título", "Chat", new Date(item.createdAt).toLocaleString("pt-BR"), link];
             }), "Conversas ativas pessoais, independentes dos filtros analíticos. O Agente de Políticas ainda não possui histórico unificado. Gerencie e exclua conversas no Chat.");
-            const section = document.querySelector('[data-dashboard-table="Meu histórico"]');
+            const section = document.querySelector('[data-dashboard-table="Minhas conversas no Chat"]');
+            if (!section) return;
             let navigation = section.querySelector(".dashboard-history-pagination");
             if (!navigation) { navigation = node("div", null, "dashboard-history-pagination"); section.append(navigation); }
             navigation.replaceChildren();

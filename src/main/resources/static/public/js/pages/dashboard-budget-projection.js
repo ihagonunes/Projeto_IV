@@ -43,6 +43,7 @@
         return alert ? alert.departmentId : items[0].departmentId;
     }
     function render(data) {
+        window.AtlasDashboardVisuals?.projection(data, money);
         text("budget-projection-title", "Projeção do mês");
         text("budget-projection-spent", money(data.gastoAteHoje));
         text("budget-projection-projected", money(data.projetado));
@@ -84,6 +85,7 @@
                 text("budget-projection-status", number(100 * demo.projected / demo.budget) + "% do orçamento simulado");
                 text("budget-projection-detail", "Cenário de 30 dias: média diária de " + demo.money(demo.daily)
                     + " e " + demo.remainingDays + " dias restantes. Orçamento simulado de " + demo.money(demo.budget) + ".");
+                window.AtlasDashboardVisuals?.projection({ gastoAteHoje: demo.spent, projetado: demo.projected, orcamento: demo.budget }, demo.money, true);
             } else {
                 render(data);
             }
