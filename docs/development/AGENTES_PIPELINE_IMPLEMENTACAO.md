@@ -738,7 +738,20 @@ Saída: pipeline executável com limites claros.
 - [ ] Testes unit/ArchUnit/integração/frontend/E2E.
 - [ ] Documentação canônica atualizada.
 
-## 18. Referências
+## 18. Pacotes de implementação
+
+Os pacotes seguem o modelo de `ai/tasks/sprint-04` e estão em `ai/tasks/agents/`:
+
+| Pacote | Conteúdo |
+|---|---|
+| `TASK-AGENTS-BE-01-module-rbac-migrations.md` | módulo, V027/V028, RBAC, ArchUnit |
+| `TASK-AGENTS-BE-02-catalogo-global-e-overrides.md` | seed V029, catálogo e override |
+| `TASK-AGENTS-BE-03-fluxos-e-versoes.md` | CRUD, versões, concorrência, soft delete |
+| `TASK-AGENTS-BE-04-validacao-e-publicacao.md` | validação server-side e publicação |
+| `TASK-AGENTS-BE-05-frontend-persistente.md` | catálogo/API no editor |
+| `TASK-AGENTS-BE-06-execucao.md` | execução, bloqueada pelo ADR-45 |
+
+## 19. Referências
 
 - `ai/project.md` — escopo de produto.
 - `ai/architecture.md` — módulos, ownership e allowlist.
