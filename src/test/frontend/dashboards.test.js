@@ -26,7 +26,13 @@ test("render dos cinco layouts com ações de sessão e filtros aguardando auten
             assert.match(html, /<body[^>]*>[\s\S]*<main/);
             assert.ok(!html.includes('chart.umd'));
             assert.ok(html.includes('/js/pages/dashboard-metrics.js'));
-            assert.ok(!html.includes('dashboard-data'));
+            assert.doesNotMatch(html, /src="[^"]*dashboard-data\.js/);
+            assert.match(html, /<details id="dashboard-detail"/);
+            if (profile !== 'administrador') {
+                assert.match(html, /id="dashboard-timeline-plot"/);
+                assert.match(html, /data-timeline-mode="models"[^>]*disabled/);
+                assert.match(html, /dashboard-visual-core\.js/);
+            }
             assert.equal(html.includes('id="engagement-panel"'), profile !== 'administrador');
             if (profile === 'colaborador') {
                 assert.match(html, /Meus AI Credits/);
