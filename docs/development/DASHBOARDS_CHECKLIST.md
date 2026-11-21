@@ -1,5 +1,20 @@
 # Checklist dos dashboards — SPI-93
 
+## Evolução visual local — SPI-92 / SPI-93 (20/11/2026)
+
+- Cards e superfícies seguem o estudo visual aprovado; CSS restrito a `.dashboard-layout`.
+- Os quatro perfis mantêm indicadores, tabelas, metadados de cobertura e permissões.
+- A simulação de retorno do colaborador, quando já habilitada no ambiente, aparece em destaque; as premissas permanecem explícitas.
+- O gráfico principal oferece geral, todos por modelo e modelo individual; alterna tokens totais, entrada, saída, requisições e custo.
+- Comparação por modelo usa somente o catálogo autorizado da fonte e os endpoints existentes, preservando departamento, pessoa, período e `/me` no perfil pessoal. Até três consultas simultâneas; cache somente no recorte atual e cancelamento ao trocar o contexto.
+- Datas ausentes e custo desconhecido permanecem lacunas, sem zero inventado. Gráficos têm alternativa textual e tabela de valores exatos.
+- Atalhos 7/30/90 dias usam a data final selecionada e reaplicam os filtros existentes.
+- Histórico e operacional continuam acessíveis em “Todos os dados de consumo”, sem soma das fontes. Engajamento e orçamento conservam suas janelas próprias.
+- Cadastro, onboarding, chat, backend, schema e controles de autorização não foram alterados. O modal financeiro existente conserva os mesmos contratos.
+- Validação local: 127 testes frontend e 1.150 testes Java/ArchUnit; `scripts/check --changed` e `scripts/check` concluídos com Java 21 e `MAVEN_ARGS=-Dmaven.clean.skip=true` para preservar o servidor em execução. Conferência autenticada dos quatro perfis em 1440, 768 e 390 px. CI remoto não executado; nenhuma publicação ou commit.
+
+O restante deste documento registra a integração anterior e suas pendências.
+
 Implementação local na `b-evelyn`, 03/11/2026. Integração da apresentação SPI-92/93
 com APIs existentes de consumo, engajamento (SPI-144/147) e orçamento (SPI-131).
 Sem mocks, mudanças de RBAC, commits ou publicação no GitHub.

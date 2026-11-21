@@ -6,9 +6,15 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
     "use strict";
     const number = value => value == null ? "Sem dado" : Number(value).toLocaleString("pt-BR", { maximumFractionDigits: 4 });
-    const money = (value, source) => value == null ? "Sem dado" : source === "HISTORICO"
-        ? Number(value).toLocaleString("pt-BR", { style: "currency", currency: "USD", maximumFractionDigits: 4 })
-        : `${number(value)} (moeda não informada)`;
+    const money = (value, source, digits = 4) => {
+        if (value == null) return "Sem dado";
+        const small = digits === 2 && Number(value) > 0 && Number(value) < 0.01;
+        const shown = small ? 0.01 : Number(value);
+        const formatted = source === "HISTORICO"
+            ? shown.toLocaleString("pt-BR", { style: "currency", currency: "USD", maximumFractionDigits: digits })
+            : `${shown.toLocaleString("pt-BR", { maximumFractionDigits: digits })} (moeda não informada)`;
+        return (small ? "< " : "") + formatted;
+    };
     const sum = (rows, key) => rows.reduce((total, row) => total + Number(row[key] || 0), 0);
     const knownSum = (rows, key) => rows.some(row => row[key] != null) ? sum(rows, key) : null;
     function normalize(source, data, names = new Map()) {

@@ -1,0 +1,4 @@
+<section class="demo-panel demo-chart-panel"<% if (chart[2]) { %> data-dashboard-chart-source="<%= chart[2] %>" hidden<% } %>>
+    <div class="demo-section-title"><div><h2><%= chart[0] %></h2><p><%= chart[1] %></p></div></div>
+    <div data-dashboard-chart="<%= chart[0] %>" class="dashboard-chart-slot"><p><%= indicatorReason(chart[0]) %></p></div>
+</section>

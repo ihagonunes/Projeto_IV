@@ -1,0 +1,31 @@
+<section id="dashboard-consumption" class="demo-panel dashboard-timeline" aria-labelledby="dashboard-timeline-title">
+    <div class="demo-section-title">
+        <div>
+            <p class="demo-eyebrow">CONSUMO DE IA</p>
+            <h2 id="dashboard-timeline-title"><%= profile === 'colaborador' ? 'Meu consumo ao longo do tempo' : profile === 'gestor' ? 'Evolução dos gastos do departamento' : profile === 'executivo' ? 'FinOps corporativo' : 'Evolução do consumo da equipe' %></h2>
+            <p id="dashboard-timeline-context">Aguardando a consulta autenticada da fonte selecionada.</p>
+        </div>
+    </div>
+    <div class="dashboard-chart-controls">
+        <div class="dashboard-segments" role="group" aria-label="Visualização do consumo">
+            <button type="button" data-timeline-mode="general" aria-pressed="true" disabled>Geral</button>
+            <button type="button" data-timeline-mode="models" aria-pressed="false" disabled>Todos por modelo</button>
+            <button type="button" data-timeline-mode="single" aria-pressed="false" disabled>Um modelo</button>
+        </div>
+        <label for="dashboard-timeline-metric">Métrica
+            <select id="dashboard-timeline-metric" class="form-select custom-input" disabled>
+                <option value="tokens"<% if (profile === 'colaborador') { %> selected<% } %>>Tokens totais</option>
+                <option value="input">Tokens de entrada</option>
+                <option value="output">Tokens de saída</option>
+                <option value="requests">Requisições</option>
+                <option value="cost"<% if (profile !== 'colaborador') { %> selected<% } %>>Custo estimado</option>
+            </select>
+        </label>
+        <label id="dashboard-timeline-model-field" for="dashboard-timeline-model" hidden>Modelo do gráfico
+            <select id="dashboard-timeline-model" class="form-select custom-input" disabled></select>
+        </label>
+    </div>
+    <p id="dashboard-timeline-message" class="dashboard-chart-message" role="status" aria-live="polite">Carregando dados do consumo…</p>
+    <div id="dashboard-timeline-plot"></div>
+    <p class="dashboard-chart-footnote">Os controles deste gráfico preservam o período, a pessoa e o departamento autorizados. Engajamento e orçamento têm janelas próprias.</p>
+</section>
