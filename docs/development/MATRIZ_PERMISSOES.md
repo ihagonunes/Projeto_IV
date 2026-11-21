@@ -100,3 +100,36 @@ requisição seguinte.
 | Sem permissão no gate; fora do escopo; filtro fora do escopo; ator = alvo; não domina | 403 |
 | Último `TENANT_ADMIN`; convidante perdeu autoridade no aceite; concessão duplicada | 409 |
 | Token de convite inválido, expirado ou reutilizado | 400 |
+
+## 5. Proposta para agentes (ADR-44/45 — decidida, não implantada)
+
+> Esta seção é **design pendente**, não a matriz vigente. As contagens de controle
+> da seção 1 continuam válidas até a migration de RBAC do módulo `agents`.
+
+O recurso `AGENT` e as ações propostas são:
+
+| Permissão | Escopo proposto | Uso |
+|---|---|---|
+| `AGENT:READ` | SELF/DEPARTMENT/TENANT | catálogo e fluxos visíveis |
+| `AGENT:MANAGE` | SELF/DEPARTMENT/TENANT | criar, editar, validar, publicar e arquivar fluxos; catálogo no escopo administrativo |
+| `AGENT:RUN` | SELF/DEPARTMENT/TENANT | executar fluxo visível |
+
+Distribuição decidida em 21/11/2026:
+
+| Papel | Permissões de agente |
+|---|---|
+| `COLLABORATOR` | `AGENT:READ`, `AGENT:RUN` em fluxos próprios; sem `AGENT:MANAGE` |
+| `LEADER` | `AGENT:READ`, `AGENT:MANAGE`, `AGENT:RUN` no departamento |
+| `MANAGER` | `AGENT:READ`, `AGENT:MANAGE`, `AGENT:RUN` no departamento |
+| `EXECUTIVE` | `AGENT:READ`, `AGENT:RUN` no tenant; sem `AGENT:MANAGE` |
+| `TENANT_ADMIN` | `AGENT:READ`, `AGENT:MANAGE`, `AGENT:RUN` no tenant |
+
+Regras:
+- `AGENT:MANAGE` não implica `AGENT:READ`; a leitura continua explícita.
+- O catálogo global é somente leitura na aplicação; overrides por tenant usam
+  `AGENT:MANAGE` no escopo do tenant.
+- Fluxos usam `BY_TARGET` com checagem fina de dono/departamento.
+- A execução revalida `AGENT:RUN` e a visibilidade da versão publicada.
+- `CHAT:*` e `AI_TOOL:MANAGE` não substituem permissões de agente.
+- Qualquer alteração desta proposta exige atualização do `SystemRole` e da
+  migration de RBAC, além desta matriz.

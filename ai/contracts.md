@@ -61,7 +61,8 @@ Contratos são Java APIs internas entre módulos. Não equivalem automaticamente
 | project | `ProjectQueryPort` |
 | aigateway | `AICompletionService`, `ModelResolutionQuery` (`resolve`/`allowedModels`), `AttemptReceiptQuery` (recibo por tenant + dono), `AIToolCatalogQuery` (`findModel`/`allModelsExist`), catálogo administrativo HTTP |
 | chat | HTTP `/api/v1/conversas` (lista/busca, mensagens, PATCH, DELETE, `GET /modelos`); casos de uso internos `ChatExchange`, `SendMessage`, `ListConversations`, `UpdateConversation`, `DeleteConversation` |
-| agentpolicies | `KnowledgeAccessService`, `AskPolicyAgent`, KnowledgeDocument commands/queries |
+| agentpolicies | `KnowledgeAccessService`, `AskPolicyAgent`, KnowledgeDocument commands/queries; porta de resposta de políticas a expor para `agents` (planejada) |
+| agents (planejado) | `AgentCatalogQuery`, `AgentFlowQuery`, `AgentFlowCommandService`, `AgentFlowExecutionService`; HTTP `/api/v1/agentes/*`; sem dependência de `chat` no MVP |
 | observability | `UsageActivityQuery` (dias ativos por usuário, dia UTC e `tenant_id` explícito); HTTP `GET /observability/orcamentos/projecao` (`projection-v1`, interno `ProjectDepartmentBudget`); `UsageMetricsQueryPort`, `CostMetricsQueryPort`, `BudgetStatusQueryPort` (implementado por `QueryBudgetStatus`) |
 | engagement | Sem superfície `api.*` consumida por outro módulo na Sprint 4; HTTP `/api/v1/engajamento/*`; internos `EngagementFactsPort` (OPERACIONAL/HISTORICO), `QueryAdoption`, `QueryTrainingCross`, `QueryCredits`, cálculos puros de adoção/treinamento/Credits |
 | governancescore | `GovernanceScoreQueryPort`, Breakdown, Department scores, History |
@@ -83,6 +84,41 @@ Contratos são Java APIs internas entre módulos. Não equivalem automaticamente
   sem ASSISTANT/requestId → 409 `TURN_IN_PROGRESS_OR_FAILED`.
 - `AttemptReceiptQuery.receipts(tenant, owner, requestIds)` — lote de até 100 ids, sempre com
   `tenant_id` e `user_id = owner`; retorna `ReceiptInfo` de `aigateway.api`.
+
+### Agentes (planejado — ADR-44/45)
+
+> **Status:** contratos de desenho. Não implementados no código atual. A superfície
+> `agents.api` só deve ser criada junto com o módulo `agents`. O catálogo é global
+> (seed Flyway) e resolvido com override do tenant; execution endpoints só entram
+> depois do ADR-45.
+
+Rotas em português, seguindo o padrão de `conversas`/`orcamentos`:
+
+| Método | Rota | Permissão | Regra |
+|---|---|---|---|
+| GET | `/api/v1/agentes/catalogo` | `AGENT:READ` | definições globais resolvidas com override do tenant; sem `tenant_id` do cliente |
+| GET | `/api/v1/agentes/fluxos?status=&page=&size=` | `AGENT:READ` | somente fluxos visíveis; `DELETED` nunca aparece |
+| POST | `/api/v1/agentes/fluxos` | `AGENT:MANAGE` | cria rascunho; valida DAG e limites |
+| GET | `/api/v1/agentes/fluxos/{id}` | `AGENT:READ` | outro tenant/dono fora do escopo → 404 |
+| PUT | `/api/v1/agentes/fluxos/{id}` | `AGENT:MANAGE` | cria nova versão; `row_version`/`If-Match`; conflito → 409/412 |
+| DELETE | `/api/v1/agentes/fluxos/{id}` | `AGENT:MANAGE` | arquivamento lógico |
+| POST | `/api/v1/agentes/fluxos/{id}/validar` | `AGENT:MANAGE` | validação server-side sem persistir |
+| POST | `/api/v1/agentes/fluxos/{id}/publicar` | `AGENT:MANAGE` | publica uma versão validada |
+| POST | `/api/v1/agentes/fluxos/{id}/execucoes` | `AGENT:RUN` | `Idempotency-Key`; execução limitada |
+| GET | `/api/v1/agentes/execucoes/{id}` | `AGENT:READ` | status, etapas e recibos; sem prompt/resposta em log |
+
+Portas internas previstas em `agents.api`:
+- `AgentCatalogQuery.catalogFor(TenantId, UserId, UUID departmentId?)` — catálogo
+  global resolvido com override do tenant.
+- `AgentCatalogOverrideCommandService.upsert/remove(TenantId, UserId, AgentKey, ...)`.
+- `AgentFlowQuery.flow(TenantId, UserId, UUID flowId)`.
+- `AgentFlowCommandService.create/update/validate/publish/archive(...)`.
+- `AgentFlowExecutionService.execute(ExecuteAgentFlowCommand)` — somente após ADR-45.
+- DTOs próprios, sem expor entidades JPA ou repositórios.
+
+O grafo é JSON versionado (`schema_version`), com `agent_key` estável — nunca o
+nome de exibição. A execução pina a versão publicada. O chat **não** recebe
+`agentFlowId` no MVP; integração posterior exige contrato novo e múltiplos recibos.
 
 ### Engajamento (ADR-40)
 

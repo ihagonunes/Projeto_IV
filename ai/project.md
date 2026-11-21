@@ -26,6 +26,8 @@ Projeto Integrador IV em parceria com a QSOFT. Produto white-label e multi-tenan
 - Catálogo Provider/AITool/Model e ModelPolicy por Department.
 - Chat corporativo privado.
 - Agente corporativo de políticas/conhecimento interno.
+- Pipelines determinísticos de agentes (planejado; ADR-44/45), com catálogo,
+  montagem em DAG, persistência versionada e execução governada.
 - Observability de uso, custo, orçamento e alertas.
 - Engagement, AILicense, TrainingRecord e AI Credits.
 - AI Adoption & Governance Score.
@@ -37,7 +39,8 @@ Projeto Integrador IV em parceria com a QSOFT. Produto white-label e multi-tenan
 - broker/event bus distribuído;
 - fallback automático de modelo;
 - roteamento por custo/latência;
-- multiagentes;
+- agentes autônomos sem DAG, auto-delegação irrestrita ou enxame multiagente;
+  o escopo é pipeline determinístico de agentes, não autonomia aberta;
 - RAG obrigatório;
 - pgvector obrigatório;
 - refresh token;

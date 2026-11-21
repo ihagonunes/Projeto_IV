@@ -1,5 +1,11 @@
 # Praça dos agentes — SPI-136
 
+> **Status:** protótipo visual local. Persistência, catálogo real e execução
+> estão planejados em
+> [AGENTES_PIPELINE_IMPLEMENTACAO.md](AGENTES_PIPELINE_IMPLEMENTACAO.md)
+> (ADR-44/45) e rastreados em **SPI-180**. O produto é desktop; mobile não é
+> requisito.
+
 Editor visual da interface do chat, conforme escopo solicitado para a praça.
 Abra **Agentes** no chat. A área começa com **Tarefa do usuário**.
 A barra lateral contém 18 agentes de exemplo em uma lista vertical com busca

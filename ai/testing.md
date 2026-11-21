@@ -53,6 +53,23 @@ Executa `*IT` com Testcontainers/PostgreSQL real e exige Docker.
 - paginação;
 - endpoint privado/publicado corretamente.
 
+### Agentes (planejado — ADR-44/45)
+
+- **Unit:** validação do DAG, topological sort, fan-out/merge `CONCATENATE`,
+  fail-fast, timeout, idempotência e serialização versionada do grafo.
+- **ArchUnit:** `agents` só acessa `sharedkernel`, `iam.api`, `aigateway.api` e
+  `agentpolicies.api`; nenhum import interno cross-module.
+- **Integration PostgreSQL/Testcontainers:** catálogo global + override por
+  tenant, versões imutáveis, concorrência otimista, tenant A ≠ B, RBAC 403/404,
+  execução de fluxo linear e com um ramo/merge, recibos por etapa e limites de
+  payload.
+- **Provider simulado:** usar `STUB`/servidor HTTP local do JDK; nenhum provider
+  externo obrigatório no CI.
+- **Frontend desktop:** editor, foco por teclado, salvar/carregar, conflito e
+  mensagens de validação. Mobile/touch não é requisito do produto.
+- **E2E de navegador:** complementar, para drag-and-drop desktop e diálogo; não
+  substitui unit/ArchUnit/integração.
+
 ### E2E
 
 Selenium é complementar e só entra quando houver frontend formalizado. Não substitui testes de arquitetura, integração ou segurança.

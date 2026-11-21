@@ -13,6 +13,7 @@ br.com.qsoft.governance
 ├── aigateway
 ├── chat
 ├── agentpolicies
+├── agents
 ├── observability
 ├── engagement
 ├── governancescore
@@ -49,7 +50,8 @@ Outro módulo pode acessar somente `<module>.api.*`.
 | project | Project mínimo |
 | aigateway | Provider, AITool, Model, credenciais por referência, completion |
 | chat | Conversation, Message |
-| agentpolicies | KnowledgeDocument/Version, Agent, AgentExecution, KnowledgeAccess |
+| agentpolicies | KnowledgeDocument/Version, AgentExecution, KnowledgeAccess |
+| agents | AgentDefinition global + override por tenant, AgentFlow/Version, AgentFlowExecution/Step (ADR-44/45; planejado) |
 | observability | UsageRecord, custo, BudgetStatus, Alert |
 | engagement | AILicense, TrainingRecord, snapshots mensais de AI Credits (V023), adoção e cruzamento treinamento × uso |
 | governancescore | score, breakdown, snapshot/histórico |
@@ -69,11 +71,16 @@ O histórico é lido pelo adapter nativo do próprio módulo com `company_id` ex
 | aigateway | sharedkernel, iam, department |
 | chat | sharedkernel, iam, aigateway |
 | agentpolicies | sharedkernel, iam, department, aigateway |
+| agents (planejado) | sharedkernel, iam, aigateway, agentpolicies |
 | observability | sharedkernel, iam, department |
 | engagement | sharedkernel, iam, observability, aigateway |
 | governancescore | sharedkernel, iam, engagement, observability |
 
 ArchUnit deve falhar para qualquer dependência não declarada ou import interno cross-module.
+
+> **Agentes e chat:** a seta `chat -> agents.api` não existe no MVP de agentes.
+> Ela só pode ser adicionada com o ADR-45 e a allowlist explícita; a integração
+> inicial usa o endpoint de execução de agentes, sem alterar o turno do chat.
 
 ## Multi-tenancy
 
@@ -114,6 +121,28 @@ Model AVAILABLE
 ```
 
 Múltiplos Providers podem estar ACTIVE. Provider local não implica Docker.
+
+## Agentes (planejado — ADR-44/45)
+
+O módulo `agents` é o dono do catálogo e dos fluxos determinísticos de agentes:
+`AgentDefinition`, `AgentFlow`, `AgentFlowVersion`, `AgentFlowExecution` e
+`AgentFlowStep`. Ele não é dono de `Conversation`/`Message` (chat), de
+`KnowledgeDocument` (agentpolicies) nem de `Provider`/`Model` (aigateway).
+
+- O catálogo global guarda `agent_key` estável, prompt/template versionado,
+  allowlist de ferramentas, escopo de conhecimento e política de modelo; o tenant
+  pode sobrescrever esses campos em `AgentDefinitionOverride`.
+- O fluxo é um DAG validado no servidor: uma tarefa, um resultado, sem ciclos,
+  sem arestas duplicadas, com limites de nós/arestas e versão de schema.
+- A execução é determinística por versão publicada; cada etapa usa
+  `AICompletionService` e cada tentativa/recibo continua no `aigateway`.
+- A execução não lê tabelas de outro módulo e não usa FK cross-module.
+- O caminho inicial é um endpoint de execução próprio. Integração com o chat
+  (`chat -> agents.api`) só entra depois de ADR-45 aceito e da allowlist
+  atualizada; não há dependência de chat no MVP de agentes.
+- `agentpolicies` permanece especializado em conhecimento/políticas; um nó de
+  políticas pode consumir uma porta em `agentpolicies.api` quando essa superfície
+  existir.
 
 ## Segurança
 

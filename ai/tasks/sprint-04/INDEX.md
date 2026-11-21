@@ -47,7 +47,7 @@ Fora do plano, também entraram:
 >   ACCEPTED.
 > - **Abertas:**
 >   - **S4-D1** (provider da demo): o responsável informa depois; não bloqueia código;
->   - **S4-D8 = ADIAR** (28/10): `user_permission` continua no schema. A TASK-S4-H2 sai da Sprint 4 e a V024 não é usada.
+>   - **S4-D8 = ADIAR** (28/10): `user_permission` continua no schema. A TASK-S4-H2 sai da Sprint 4; a V024 foi usada pelo LOCAL-BUDGET-001 e o drop continua fora da sprint.
 
 | # | Decisão | Opções | Recomendação | Bloqueia |
 |---|---|---|---|---|
@@ -58,7 +58,7 @@ Fora do plano, também entraram:
 | S4-D5 | Lista nominal no cruzamento de treinamento | (a) só para quem tem `USER:READ` no recorte · (b) para todo `USAGE:READ` · (c) nunca | **(a)** | E4 |
 | S4-D6 | Projeção de orçamento (SPI-131) | (a) endpoint no `observability` · (b) ferramenta do agente (muda a allowlist) | **(a)**; (b) fica para depois | B1 |
 | S4-D7 | Exclusão de conversa | (a) soft delete, conteúdo retido · (b) exclusão física | **(a)**; expurgo é decisão futura (LGPD) | C1 |
-| S4-D8 | `DROP TABLE user_permission` (V024) | agora · adiar | **Decidido: adiar** (28/10); a recomendação era "agora" | H2 (fora da sprint) |
+| S4-D8 | `DROP TABLE user_permission` (V029+) | agora · adiar | **Decidido: adiar** (28/10); a recomendação era "agora" | H2 (fora da sprint) |
 | S4-D9 | `compose.yaml` passa a repassar `JWT_SECRET` | sim · não | **Sim** (mudança de config) | parte de H1 |
 | S4-D10 | Idioma das rotas novas do engajamento | `/api/v1/engajamento/*` · `/api/v1/adoption/*` (Jira) | **PT**, como `conversas`, `orcamentos`, `usuarios` | E3–E5 |
 | S4-D11 | Cota pessoal no chat | (a) sem cota, só o consumo informativo pelo `/metrics/me/*` · (b) criar cota | **(a)** nesta sprint | C3 |
@@ -114,8 +114,13 @@ graph LR
 |---|---|---|
 | V022 | C1 | `chat` (`DELETED`, `deleted_at`, `client_message_id`) |
 | V023 | E2 | `engagement` (licenças, treinamentos, snapshots) |
-| V024 | — | **não usar nesta sprint** (S4-D8 = adiar); fica reservada para o drop futuro de `user_permission` |
-| V025+ | — | livre; pedir antes de usar |
+| V024 | LOCAL-BUDGET-001 | permissão de orçamento mensal executivo (já aplicada) |
+| V025 | LOCAL-BUDGET-001 | livro financeiro individual (já aplicada) |
+| V026 | LOCAL-BUDGET-001 | snapshot departamental do livro (já aplicada) |
+| V027 | AGENTS (ADR-44) | **reservada** para catálogo global/overrides e fluxos |
+| V028 | AGENTS (ADR-44) | **reservada** para RBAC `AGENT:*` |
+| V029 | AGENTS (ADR-44) | **reservada** para seed global das 17 definições |
+| V030+ | AGENTS (ADR-45) / livre | execução somente após ADR-45; demais usos pedir antes |
 
 > As SPI-139, 145 e 147 citam V018, V019 e V020. **Essas versões já existem.** Use as desta tabela.
 
@@ -172,7 +177,7 @@ que já existem.
 |---|---|---|
 | SPI-128, SPI-130 (estavam "A fazer" na Sprint 3) | **Fechadas** em 28/10: implementadas na E1/E2 da Sprint 3 (`819107d`, `f9119ec`) | — |
 | SPI-173 (criada em 28/10, Sprint 4) | "Linha de base verde, compose com JWT_SECRET e testes do front no CI" | H1 |
-| (não criar agora) | "Remover tabela legada user_permission (V024)", adiada pela S4-D8 | H2, fora da sprint |
+| (não criar agora) | "Remover tabela legada user_permission (V029+)", adiada pela S4-D8 | H2, fora da sprint |
 | Sprint 3 (ativa) | Encerrar no Jira; todas as tarefas estão concluídas, exceto SPI-128/130 acima | — |
 
 ## 7. Roteiro de demonstração ao fim da Sprint 4

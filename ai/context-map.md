@@ -15,6 +15,7 @@ O agente não deve carregar toda a documentação por padrão.
 | 2 | `ai/epics/EPIC-XXX-*.md` | Somente epic relacionado. |
 | 2 | `ai/tasks/TASK-*.md` | Quando existir task packet. |
 | 2 | `docs/development/DASHBOARD_INDICADORES_E_CALCULOS.md` | Indicadores dos dashboards: fórmulas, fontes existentes e lacunas propostas; não substitui ADRs. |
+| 2 | `docs/development/AGENTES_PIPELINE_IMPLEMENTACAO.md` | Plano de implementação de agentes/pipelines (ADR-44/45), quando a tarefa envolver catálogo, fluxos ou execução de agentes. |
 | 3 | Código/testes | Somente caminhos apontados pelo plano/diff. |
 | 4 | `docs/reference/*` | Apenas quando o contexto condensado não bastar. |
 
