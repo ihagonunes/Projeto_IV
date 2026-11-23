@@ -2,6 +2,9 @@ package br.com.qsoft.governance.iam.domain.rbac;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import br.com.qsoft.governance.sharedkernel.id.RoleId;
+import br.com.qsoft.governance.sharedkernel.id.TenantId;
+import br.com.qsoft.governance.sharedkernel.rbac.Action;
 import br.com.qsoft.governance.sharedkernel.rbac.Resource;
 import br.com.qsoft.governance.sharedkernel.rbac.ScopeType;
 import org.junit.jupiter.api.Test;
@@ -10,11 +13,11 @@ class SystemRoleTest {
 
     @Test
     void permissionCountsMatchTheSpec() {
-        assertThat(SystemRole.COLLABORATOR.permissions()).hasSize(5);
-        assertThat(SystemRole.LEADER.permissions()).hasSize(7);
-        assertThat(SystemRole.MANAGER.permissions()).hasSize(14);
-        assertThat(SystemRole.EXECUTIVE.permissions()).hasSize(16);
-        assertThat(SystemRole.TENANT_ADMIN.permissions()).hasSize(18);
+        assertThat(SystemRole.COLLABORATOR.permissions()).hasSize(7);
+        assertThat(SystemRole.LEADER.permissions()).hasSize(10);
+        assertThat(SystemRole.MANAGER.permissions()).hasSize(17);
+        assertThat(SystemRole.EXECUTIVE.permissions()).hasSize(18);
+        assertThat(SystemRole.TENANT_ADMIN.permissions()).hasSize(21);
     }
 
     @Test
@@ -25,12 +28,41 @@ class SystemRoleTest {
             .containsAll(SystemRole.LEADER.permissions());
         assertThat(SystemRole.EXECUTIVE.permissions())
             .containsAll(SystemRole.MANAGER.permissions().stream()
-                .filter(p -> p.resource() != Resource.SPENDING_ALERT).toList());
+                .filter(p -> p.resource() != Resource.SPENDING_ALERT
+                    && p.resource() != Resource.AGENT).toList());
         assertThat(SystemRole.MANAGER.permissions()).anyMatch(p -> p.resource() == Resource.SPENDING_ALERT);
         assertThat(SystemRole.EXECUTIVE.permissions()).noneMatch(p -> p.resource() == Resource.SPENDING_ALERT);
         assertThat(SystemRole.EXECUTIVE.permissions()).anyMatch(p -> p.resource() == Resource.SPENDING_BUDGET);
         assertThat(SystemRole.TENANT_ADMIN.permissions()).noneMatch(p ->
             p.resource() == Resource.SPENDING_BUDGET || p.resource() == Resource.SPENDING_ALERT);
+
+        assertThat(SystemRole.EXECUTIVE.permissions())
+            .contains(SystemRole.MANAGER.permissions().stream()
+                .filter(p -> p.resource() == Resource.AGENT
+                    && p.action() != Action.MANAGE)
+                .toArray(Permission[]::new));
+    }
+
+    @Test
+    void agentPermissionsFollowTheDecidedMatrix() {
+        Permission read = Permission.of(Resource.AGENT, Action.READ);
+        Permission manage = Permission.of(Resource.AGENT, Action.MANAGE);
+        Permission run = Permission.of(Resource.AGENT, Action.RUN);
+
+        assertThat(SystemRole.COLLABORATOR.permissions()).contains(read, run).doesNotContain(manage);
+        assertThat(SystemRole.LEADER.permissions()).contains(read, manage, run);
+        assertThat(SystemRole.MANAGER.permissions()).contains(read, manage, run);
+        assertThat(SystemRole.EXECUTIVE.permissions()).contains(read, run).doesNotContain(manage);
+        assertThat(SystemRole.TENANT_ADMIN.permissions()).contains(read, manage, run);
+    }
+
+    @Test
+    void agentManageDoesNotImplyAgentRead() {
+        Role role = Role.create(RoleId.random(), TenantId.random(), "CUSTOM_ONLY_MANAGE")
+            .grantPermission(Permission.of(Resource.AGENT, Action.MANAGE));
+
+        assertThat(role.hasPermission(Permission.of(Resource.AGENT, Action.READ))).isFalse();
+        assertThat(role.hasPermission(Permission.of(Resource.AGENT, Action.RUN))).isFalse();
     }
 
     @Test

@@ -12,5 +12,6 @@ public enum Action {
     READ,
     UPDATE,
     DELETE,
-    MANAGE
+    MANAGE,
+    RUN
 }

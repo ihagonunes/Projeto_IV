@@ -69,6 +69,8 @@ public enum SystemRole {
         return Set.of(
             p(Resource.CHAT, Action.CREATE),
             p(Resource.CHAT, Action.READ),
+            p(Resource.AGENT, Action.READ),
+            p(Resource.AGENT, Action.RUN),
             p(Resource.KNOWLEDGE_DOCUMENT, Action.READ),
             p(Resource.USAGE, Action.READ),
             p(Resource.MODEL, Action.READ));
@@ -78,6 +80,7 @@ public enum SystemRole {
         Set<Permission> permissions = new HashSet<>(collaboratorPermissions());
         permissions.add(p(Resource.USER, Action.READ));
         permissions.add(p(Resource.GOVERNANCE_SCORE, Action.READ));
+        permissions.add(p(Resource.AGENT, Action.MANAGE));
         return Set.copyOf(permissions);
     }
 
@@ -99,6 +102,8 @@ public enum SystemRole {
         permissions.add(p(Resource.DEPARTMENT_BUDGET, Action.MANAGE));
         permissions.add(p(Resource.SPENDING_BUDGET, Action.MANAGE));
         permissions.remove(p(Resource.SPENDING_ALERT, Action.MANAGE));
+        // Executivo lê e executa fluxos no tenant, mas não administra (ADR-44).
+        permissions.remove(p(Resource.AGENT, Action.MANAGE));
         return Set.copyOf(permissions);
     }
 
@@ -120,6 +125,9 @@ public enum SystemRole {
         permissions.add(p(Resource.MODEL, Action.MANAGE));
         permissions.add(p(Resource.KNOWLEDGE_DOCUMENT, Action.READ));
         permissions.add(p(Resource.KNOWLEDGE_DOCUMENT, Action.MANAGE));
+        permissions.add(p(Resource.AGENT, Action.READ));
+        permissions.add(p(Resource.AGENT, Action.MANAGE));
+        permissions.add(p(Resource.AGENT, Action.RUN));
         permissions.add(p(Resource.LICENSE, Action.MANAGE));
         permissions.add(p(Resource.TRAINING, Action.MANAGE));
         return Set.copyOf(permissions);

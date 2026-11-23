@@ -29,7 +29,7 @@ class ArchitectureRulesTest {
 
     private static final Set<String> BUSINESS_MODULES = Set.of(
         "iam", "department", "project", "aigateway", "chat",
-        "agentpolicies", "observability", "engagement", "governancescore"
+        "agentpolicies", "agents", "observability", "engagement", "governancescore"
     );
 
     private static final Map<String, Set<String>> ALLOWED_DEPENDENCIES = Map.of(
@@ -39,6 +39,7 @@ class ArchitectureRulesTest {
         "aigateway", Set.of("iam", "department"),
         "chat", Set.of("iam", "aigateway"),
         "agentpolicies", Set.of("iam", "department", "aigateway"),
+        "agents", Set.of("iam", "aigateway", "agentpolicies"),
         "observability", Set.of("iam", "department"),
         "engagement", Set.of("iam", "observability", "aigateway"),
         "governancescore", Set.of("iam", "engagement", "observability")
@@ -128,9 +129,50 @@ class ArchitectureRulesTest {
                 ROOT + ".aigateway..",
                 ROOT + ".chat..",
                 ROOT + ".agentpolicies..",
+                ROOT + ".agents..",
                 ROOT + ".iam..")
             .should().dependOnClassesThat().resideInAPackage(ROOT + ".engagement..")
             .check(classes);
+    }
+
+    /** ADR-44: `chat -> agents.api` não existe no MVP de agentes. */
+    @Test
+    void chatMustNotDependOnAgents() {
+        noClasses().that().resideInAPackage(ROOT + ".chat..")
+            .should().dependOnClassesThat().resideInAPackage(ROOT + ".agents..")
+            .check(classes());
+    }
+
+    /** ADR-44: `agents` não depende de `chat` (nem da API, nem de internos). */
+    @Test
+    void agentsMustNotDependOnChat() {
+        noClasses().that().resideInAPackage(ROOT + ".agents..")
+            .should().dependOnClassesThat().resideInAPackage(ROOT + ".chat..")
+            .check(classes());
+    }
+
+    /** ADR-44: allowlist do módulo `agents` limitada a api.* dos módulos permitidos. */
+    @Test
+    void agentsMustOnlyDependOnAllowlistedModules() {
+        noClasses().that().resideInAPackage(ROOT + ".agents..")
+            .should().dependOnClassesThat().resideInAnyPackage(
+                ROOT + ".department..",
+                ROOT + ".project..",
+                ROOT + ".chat..",
+                ROOT + ".observability..",
+                ROOT + ".engagement..",
+                ROOT + ".governancescore..",
+                ROOT + ".platform..",
+                ROOT + ".iam.domain..",
+                ROOT + ".iam.application..",
+                ROOT + ".iam.infrastructure..",
+                ROOT + ".aigateway.domain..",
+                ROOT + ".aigateway.application..",
+                ROOT + ".aigateway.infrastructure..",
+                ROOT + ".agentpolicies.domain..",
+                ROOT + ".agentpolicies.application..",
+                ROOT + ".agentpolicies.infrastructure..")
+            .check(classes());
     }
 
     @Test

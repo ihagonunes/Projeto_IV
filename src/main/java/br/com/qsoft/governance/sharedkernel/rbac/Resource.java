@@ -22,6 +22,7 @@ public enum Resource {
     MODEL,
     AI_TOOL,
     CHAT,
+    AGENT,
     KNOWLEDGE_DOCUMENT,
     LICENSE,
     TRAINING,
