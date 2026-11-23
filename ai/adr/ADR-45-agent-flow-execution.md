@@ -2,9 +2,12 @@
 
 ## Status
 
-PROPOSED (2026-11-18) — aguarda aceite das semânticas de execução. Não
-implementar o motor antes de `ACCEPTED`; o ADR-44 pode ser implementado sem ele
-(catálogo + persistência de rascunho).
+ACCEPTED (2026-11-22) — decisão do responsável pela plataforma (SPI-180), após
+a entrega do BE-05. O MVP executa de forma **síncrona**, com fail-fast,
+`merge=CONCATENATE`, timeout por etapa/total, paralelismo máximo 2 e sem retry
+automático (a classificação de falha transitória exige uma porta nova no
+`aigateway`). A integração com o chat continua fora deste ADR e exige emenda +
+allowlist.
 
 ## Contexto
 
@@ -152,5 +155,5 @@ Quando aprovada:
 - Endpoint de execução/polling e limites configuráveis.
 - Testes de concorrência, timeout, falha parcial, idempotência e isolamento.
 - Integração com chat e dashboards fica para uma fase posterior.
-- Enquanto este ADR estiver `PROPOSED`, a praça continua sendo apenas editor
-  persistente, sem execução.
+- Com o ADR `ACCEPTED` (2026-11-22), a praça executa versões publicadas pelo
+  endpoint próprio, sem alterar o turno do chat.

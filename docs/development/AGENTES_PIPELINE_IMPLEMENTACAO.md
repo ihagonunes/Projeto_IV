@@ -1,12 +1,36 @@
 # Agentes — implementação do catálogo, editor e pipeline
 
 **Status:** plano de implementação; Jira **SPI-180**; ADR-44 aceito para o
-módulo `agents`; ADR-45 em `PROPOSED` para execução.
-**Data:** 21/11/2026.
+módulo `agents`; ADR-45 **ACCEPTED** (2026-11-22) para execução.
+**Data:** 21/11/2026; status atualizado em 22/11/2026.
 **Escopo de produto:** pipelines determinísticos de agentes em desktop.
 **Fora de escopo:** aplicação mobile, agentes autônomos sem DAG, auto-delegação
 irrestrita, broker/fila distribuída, multiagentes como enxame e benchmarking
 entre tenants.
+
+## 0.1 Status da implementação (22/11/2026)
+
+| Pacote | Entrega | Migration | Estado |
+|---|---|---|---|
+| BE-01 | Módulo `agents`, camadas, persistência e RBAC `AGENT:*` | V027, V028 | ✅ |
+| BE-02 | Catálogo global (17), overrides e API de catálogo | V029 | ✅ |
+| BE-03 | Fluxos/versões, `If-Match`/412, soft delete e paginação | — | ✅ |
+| BE-04 | Validação do DAG e publicação | — | ✅ |
+| BE-05 | Frontend persistente (catálogo/save/publish, conflito, foco) | — | ✅ (revisão da responsável pelo chat pendente) |
+| BE-06 | Execução síncrona, etapas, recibos, idempotência e timeout | V030 | ✅ |
+| BE-07 | Execução no frontend + seed + E2E Playwright MCP | — | ✅ |
+
+Pendências conhecidas após o BE-06:
+
+- retry automático apenas para falhas transitórias e limite de execuções
+  concorrentes por tenant/usuário (ADR-45 §3/§6);
+- política de retenção/expurgo do `result_text` (LGPD);
+- integração `chat -> agents.api` (emenda ao ADR-45 + allowlist);
+- correção do SRI do Bootstrap no front (pré-existente, fora da praça);
+- revisão humana do componente de chat (BE-05).
+
+Runbook do E2E e seed: `docs/development/E2E_AGENTES_PLAYWRIGHT.md`.
+Pacote do BE-07: `ai/tasks/agents/TASK-AGENTS-BE-07-execucao-frontend-e2e.md`.
 
 ## 0. Readequação após os commits f71ec3c e eeb4200 (17–18/11/2026)
 
@@ -186,9 +210,10 @@ agents -> sharedkernel, iam.api, aigateway.api, agentpolicies.api
   persistência/versionamento; RBAC.
 - ADR-45: execução; **proposto**, não implementar antes do aceite.
 - Primeiro incremento: **Marco A** (editor persistente), sem motor de execução.
-- 17 definições globais visíveis; baseline executável: `policies`, `writing`,
-  `data`. O override do tenant pode alterar prompt, ferramentas, conhecimento,
-  política e status.
+- 17 definições globais visíveis; executáveis no baseline (revisão de 22/11):
+  os 6 "Gerais" — `policies`, `writing`, `data`, `projects`, `research`,
+  `review`. O override do tenant pode alterar prompt, ferramentas, conhecimento,
+  política e status. Sem RAG: o nó de políticas não consome `agentpolicies`.
 - RBAC: colaborador lê/executa fluxos próprios; líder/gestor administram o
   departamento; executivo lê/executa o tenant; admin administra o tenant.
 - Rascunho inválido pode ser salvo como `INVALID`; publicar/executar exige `VALID`.
@@ -242,11 +267,15 @@ As 17 definições globais entram por Flyway (`V029`); o admin do tenant só cri
 overrides. A resolução efetiva é `global` + `override` do tenant.
 
 A praça tem 18 cartões, mas apenas 17 são `AgentDefinition`; `merge` é nó de
-consolidação, não agente. O seed global (V029) cria as 17 definições: `policies`,
-`writing` e `data` como `ACTIVE`/executáveis no baseline; as demais como
-`DRAFT`/não executáveis. O override do tenant pode alterar prompt, ferramentas,
-conhecimento, política de modelo e status; habilitar outros agentes é uma decisão
-do admin do tenant e deve ser validada na publicação/execução.
+consolidação, não agente. O seed global (V029) cria as 17 definições. Revisão de
+22/11/2026: os 6 agentes "Gerais" — `policies`, `writing`, `data`, `projects`,
+`research`, `review` — ficam `ACTIVE`/executáveis para permitir um fluxo básico;
+os outros 11 ficam `DRAFT` como prévia. **Não há RAG neste incremento**: o nó de
+políticas não consome `agentpolicies`, `knowledge_scope` é `{"mode":"NONE"}` e os
+prompts não prometem consulta a documentos externos. O override do tenant pode
+alterar prompt, ferramentas, conhecimento, política de modelo e status;
+habilitar outros agentes é uma decisão do admin do tenant e deve ser validada na
+publicação/execução.
 
 ### 4.2 Fluxos e versões
 
@@ -439,6 +468,14 @@ Regras:
 - `POST /execucoes` com `Idempotency-Key`.
 - Nenhum `/ai/complete` público.
 
+> **Implementado (BE-03/BE-04/BE-06):** CRUD de fluxos, `POST .../validar`,
+> `POST .../publicar`, `POST .../execucoes` e `GET /execucoes/{id}` estão no
+> código. A validação server-side usa os códigos estáveis de
+> `FlowGraphValidator`; a publicação exige versão `VALID` e pina a versão; a
+> execução é síncrona (fail-fast, `CONCATENATE`, timeout por etapa/total,
+> paralelismo 2, idempotência) e usa `purpose=AGENT_FLOW` no gateway. Chat
+> continua sem `agentFlowId`.
+
 ## 8. RBAC
 
 Novo recurso `AGENT` e ações:
@@ -537,6 +574,14 @@ Quando aprovada:
 - conflito 409/412 com opção de recarregar/sobrescrever;
 - erros de validação por nó/aresta;
 - execução separada (quando ADR-45 aceito).
+
+> **Implementado (BE-05):** fora da prévia, o catálogo vem da API e a
+> persistência usa `createService` (carregar, criar, salvar com `If-Match`,
+> validar e publicar). Conflito 409/412 oferece recarregar/sobrescrever; erros
+> do servidor marcam o nó/aresta; IDs novos de nó são UUID. A prévia
+> (`/chat/previa`) continua com o catálogo estático, sem `client` e sem `fetch`.
+> Salvar é explícito (sem autosave); o `mount()` legado continua devolvendo o
+> elemento raiz.
 
 ### 11.2 Drag-and-drop real
 

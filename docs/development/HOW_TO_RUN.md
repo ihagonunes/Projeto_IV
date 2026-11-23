@@ -29,11 +29,14 @@ Guia prático para rodar a Plataforma de Governança de IA (Monólito Modular + 
 | `observability` | ✅ Registro de uso, consulta, dashboard (uso e custo) e histórico QSOFT (schema `historical`) |
 | `sharedkernel` / `platform` | ✅ Tipos transversais e configuração |
 | `chat`, `agentpolicies` | 🚧 Planejados para a Sprint 3 (`ai/tasks/sprint-03/`) |
-| `agents` | ⏳ Planejado (ADR-44/45; editor persistente e pipeline) |
+| `agents` | ✅ ADR-44/45: catálogo, fluxos, publicação e execução síncrona (BE-06); frontend persistente no BE-05 |
 | `project`, `engagement`, `governancescore` | ⏳ Planejados |
 
-Migrations Flyway atuais: **`V001`-`V026`**. Os testes e pendências atualizados
+Migrations Flyway atuais: **`V001`-`V030`**. Os testes e pendências atualizados
 estão em [Validação e pendências](VALIDACAO_E_PENDENCIAS.md).
+
+> E2E dos agentes (Playwright MCP + provider STUB + seed descartável):
+> [`E2E_AGENTES_PLAYWRIGHT.md`](E2E_AGENTES_PLAYWRIGHT.md).
 
 > `POST /api/v1/tenants` recebe os dados do primeiro administrador e cria sua
 > concessão TENANT_ADMIN. O setup usa esse fluxo; o seed de demonstração é opcional.
@@ -63,8 +66,7 @@ Variáveis úteis (`.env`):
 ---
 
 ## 2. Rodar o backend
-
-As migrations Flyway (`V001`-`V026`) são aplicadas automaticamente na inicialização (`ddl-auto=validate`).
+As migrations Flyway (`V001`-`V030`) são aplicadas automaticamente na inicialização (`ddl-auto=validate`).
 
 ### Modo A — desenvolvimento local (PostgreSQL instalado)
 

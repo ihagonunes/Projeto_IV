@@ -48,7 +48,7 @@ Este arquivo é um índice. Leia somente o ADR relacionado à tarefa.
 | ADR-42 | Ciclo de vida da conversa, recibo durável e modelos do usuário (emenda ADR-39) | ACCEPTED | `ai/adr/ADR-42-chat-lifecycle-and-durable-receipt.md` |
 | ADR-43 | Orçamento mensal e saldo financeiro individual | ACCEPTED | `ai/adr/ADR-43-monthly-individual-spending.md` |
 | ADR-44 | Módulo `agents`: catálogo, fluxos e persistência | ACCEPTED (2026-11-18; implementação pendente) | `ai/adr/ADR-44-agents-module-and-flow-persistence.md` |
-| ADR-45 | Execução determinística de pipelines de agentes | PROPOSED (aguarda aceite) | `ai/adr/ADR-45-agent-flow-execution.md` |
+| ADR-45 | Execução determinística de pipelines de agentes | ACCEPTED (2026-11-22) | `ai/adr/ADR-45-agent-flow-execution.md` |
 
 ## Decisões abertas (pendentes de ADR)
 

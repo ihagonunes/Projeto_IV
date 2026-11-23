@@ -53,22 +53,40 @@ Executa `*IT` com Testcontainers/PostgreSQL real e exige Docker.
 - paginação;
 - endpoint privado/publicado corretamente.
 
-### Agentes (planejado — ADR-44/45)
+### Agentes (ADR-44/45)
 
-- **Unit:** validação do DAG, topological sort, fan-out/merge `CONCATENATE`,
-  fail-fast, timeout, idempotência e serialização versionada do grafo.
+- **Implementado (V027/V028 + BE-02..BE-06):** unit do modelo de domínio,
+  `SystemRole` com `AGENT:*`, persistência/isolamento por tenant, seed global
+  (V029), vocabulário fechado das políticas, API do catálogo, CRUD de fluxos
+  com versão imutável, validação do DAG/publicação e execução síncrona com
+  etapas/recibos (idempotência, fail-fast, timeout, `CONCATENATE`, Tenant A ≠ B).
 - **ArchUnit:** `agents` só acessa `sharedkernel`, `iam.api`, `aigateway.api` e
-  `agentpolicies.api`; nenhum import interno cross-module.
-- **Integration PostgreSQL/Testcontainers:** catálogo global + override por
-  tenant, versões imutáveis, concorrência otimista, tenant A ≠ B, RBAC 403/404,
-  execução de fluxo linear e com um ramo/merge, recibos por etapa e limites de
-  payload.
+  `agentpolicies.api`; nenhum import interno cross-module; `chat -> agents` proibido
+  no MVP.
+- **Planejado:** validação do DAG, topological sort, fan-out/merge `CONCATENATE`,
+  fail-fast, timeout, idempotência e serialização versionada do grafo.
+- **Integration PostgreSQL/Testcontainers (fundação):** catálogo global +
+  override por tenant, versões por fluxo, tenant A ≠ B, constraints de status e
+  unicidade, migração RBAC idempotente e decisões `AGENT:*` (403/404).
+- **Integration planejado:** concorrência otimista, execução de fluxo linear e
+  com um ramo/merge, recibos por etapa e limites de payload.
 - **Provider simulado:** usar `STUB`/servidor HTTP local do JDK; nenhum provider
   externo obrigatório no CI.
 - **Frontend desktop:** editor, foco por teclado, salvar/carregar, conflito e
   mensagens de validação. Mobile/touch não é requisito do produto.
+- **Implementado (BE-05):** catálogo via API, `If-Match` na persistência,
+  conflito 409/412, erros por nó, foco preservado após render, DRAFT não
+  adicionável e prévia isolada (sem client/fetch).
 - **E2E de navegador:** complementar, para drag-and-drop desktop e diálogo; não
   substitui unit/ArchUnit/integração.
+- **E2E de agentes (BE-07):** executado em 22/11/2026 com Playwright MCP sobre
+  backend 8081 + front 3100 + PostgreSQL descartável + provider STUB + seed via
+  API. Fluxo de 5 agentes publicado e executado na UI: `SUCCEEDED`, 9 etapas,
+  5 recibos `KNOWN`, custo `0.00828`. Em 23/11/2026 foram cobertos também:
+  drag real (`dragTo`), conflito 412 live no save, isolamento live (Tenant B →
+  404), 412 de publicação (DOM) e concorrência real
+  (`AgentsFlowConcurrencyIT`). Runbook e evidências em
+  `docs/development/E2E_AGENTES_PLAYWRIGHT.md`. Nenhuma dependência npm nova.
 
 ### E2E
 

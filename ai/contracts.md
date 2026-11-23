@@ -62,7 +62,7 @@ Contratos são Java APIs internas entre módulos. Não equivalem automaticamente
 | aigateway | `AICompletionService`, `ModelResolutionQuery` (`resolve`/`allowedModels`), `AttemptReceiptQuery` (recibo por tenant + dono), `AIToolCatalogQuery` (`findModel`/`allModelsExist`), catálogo administrativo HTTP |
 | chat | HTTP `/api/v1/conversas` (lista/busca, mensagens, PATCH, DELETE, `GET /modelos`); casos de uso internos `ChatExchange`, `SendMessage`, `ListConversations`, `UpdateConversation`, `DeleteConversation` |
 | agentpolicies | `KnowledgeAccessService`, `AskPolicyAgent`, KnowledgeDocument commands/queries; porta de resposta de políticas a expor para `agents` (planejada) |
-| agents (planejado) | `AgentCatalogQuery`, `AgentFlowQuery`, `AgentFlowCommandService`, `AgentFlowExecutionService`; HTTP `/api/v1/agentes/*`; sem dependência de `chat` no MVP |
+| agents | `GET /api/v1/agentes/catalogo` e override do catálogo (BE-02); fluxos e execução planejados; sem dependência de `chat` no MVP |
 | observability | `UsageActivityQuery` (dias ativos por usuário, dia UTC e `tenant_id` explícito); HTTP `GET /observability/orcamentos/projecao` (`projection-v1`, interno `ProjectDepartmentBudget`); `UsageMetricsQueryPort`, `CostMetricsQueryPort`, `BudgetStatusQueryPort` (implementado por `QueryBudgetStatus`) |
 | engagement | Sem superfície `api.*` consumida por outro módulo na Sprint 4; HTTP `/api/v1/engajamento/*`; internos `EngagementFactsPort` (OPERACIONAL/HISTORICO), `QueryAdoption`, `QueryTrainingCross`, `QueryCredits`, cálculos puros de adoção/treinamento/Credits |
 | governancescore | `GovernanceScoreQueryPort`, Breakdown, Department scores, History |
@@ -85,27 +85,71 @@ Contratos são Java APIs internas entre módulos. Não equivalem automaticamente
 - `AttemptReceiptQuery.receipts(tenant, owner, requestIds)` — lote de até 100 ids, sempre com
   `tenant_id` e `user_id = owner`; retorna `ReceiptInfo` de `aigateway.api`.
 
-### Agentes (planejado — ADR-44/45)
+### Agentes (ADR-44/45)
 
-> **Status:** contratos de desenho. Não implementados no código atual. A superfície
-> `agents.api` só deve ser criada junto com o módulo `agents`. O catálogo é global
-> (seed Flyway) e resolvido com override do tenant; execution endpoints só entram
+> **Status:** catálogo global (V027/V029), RBAC (V028) e leitura/override pela
+> API estão implementados. `agents.api` (portas Java) segue vazia: nenhum outro
+> módulo consome agentes. Fluxos e execução continuam planejados; execução só
 > depois do ADR-45.
+>
+> **Sem RAG neste incremento.** `agentpolicies` continua sendo o módulo de
+> políticas/RAG e **não** é consumido por `agents`. O seed tem 6 agentes "Gerais"
+> `ACTIVE` (policies, writing, data, projects, research, review) e 11 `DRAFT`
+> (apresentação/prévia). `executable` é um indicador de prontidão — não é
+> autorização de execução; o BE-04/06 revalidam DAG, publicação e `AGENT:RUN`.
+>
+> **Vocabulário fechado das políticas** (validado na aplicação): `toolsJson` =
+> array de identificadores textuais (vazio no seed); `knowledgeScopeJson` =
+> `{"mode":"NONE"}`; `modelPolicyJson` = `{"mode":"INHERIT"}`. Novos modos
+> exigem mudança explícita de contrato.
+>
+> **Auditoria:** o override registra apenas `updated_at`; autor da alteração
+> fica para um ADR futuro.
 
-Rotas em português, seguindo o padrão de `conversas`/`orcamentos`:
+Implementado (BE-02):
 
 | Método | Rota | Permissão | Regra |
 |---|---|---|---|
-| GET | `/api/v1/agentes/catalogo` | `AGENT:READ` | definições globais resolvidas com override do tenant; sem `tenant_id` do cliente |
-| GET | `/api/v1/agentes/fluxos?status=&page=&size=` | `AGENT:READ` | somente fluxos visíveis; `DELETED` nunca aparece |
-| POST | `/api/v1/agentes/fluxos` | `AGENT:MANAGE` | cria rascunho; valida DAG e limites |
-| GET | `/api/v1/agentes/fluxos/{id}` | `AGENT:READ` | outro tenant/dono fora do escopo → 404 |
-| PUT | `/api/v1/agentes/fluxos/{id}` | `AGENT:MANAGE` | cria nova versão; `row_version`/`If-Match`; conflito → 409/412 |
-| DELETE | `/api/v1/agentes/fluxos/{id}` | `AGENT:MANAGE` | arquivamento lógico |
-| POST | `/api/v1/agentes/fluxos/{id}/validar` | `AGENT:MANAGE` | validação server-side sem persistir |
-| POST | `/api/v1/agentes/fluxos/{id}/publicar` | `AGENT:MANAGE` | publica uma versão validada |
-| POST | `/api/v1/agentes/fluxos/{id}/execucoes` | `AGENT:RUN` | `Idempotency-Key`; execução limitada |
-| GET | `/api/v1/agentes/execucoes/{id}` | `AGENT:READ` | status, etapas e recibos; sem prompt/resposta em log |
+| GET | `/api/v1/agentes/catalogo` | `AGENT:READ` (`BY_TARGET`) | versão mais recente de cada `agent_key`, resolvida com override do tenant; `status` e `executable`; não expõe prompt/políticas completas; `tenant_id` só do contexto |
+| PUT | `/api/v1/agentes/catalogo/{agentKey}/override` | `AGENT:MANAGE` (`TENANT_ONLY`) | cria/atualiza override parcial (prompt, ferramentas, conhecimento, política, status); valida o vocabulário fechado (400); `agent_key`/versão inexistente → 404; `expectedUpdatedAt` divergente (comparado em ms) → 409; catálogo global nunca é editado |
+| DELETE | `/api/v1/agentes/catalogo/{agentKey}/override` | `AGENT:MANAGE` (`TENANT_ONLY`) | remove todas as versões do override do agente no tenant (204, idempotente); `agent_key` desconhecido → 404 |
+
+Implementado (BE-03):
+
+| Método | Rota | Permissão | Regra |
+|---|---|---|---|
+| GET | `/api/v1/agentes/fluxos?status=&page=&size=` | `AGENT:READ` (`BY_TARGET`) | página zero-based (default 20, máx 100) dos fluxos visíveis; `TENANT` vê tudo, `DEPARTMENT` vê o departamento ou o próprio, `SELF` vê o próprio; `DELETED` nunca aparece |
+| POST | `/api/v1/agentes/fluxos` | `AGENT:MANAGE` (`BY_TARGET`) | cria rascunho + versão 1 (`INVALID`) com `id`/`owner`/`tenant` do servidor; `departmentId` nulo usa a lotação do ator; departamento fora do escopo → 403 |
+| GET | `/api/v1/agentes/fluxos/{id}` | `AGENT:READ` (`BY_TARGET`) | devolve `rowVersion`, versão corrente e grafo; outro tenant/fora do escopo → 404 |
+| PUT | `/api/v1/agentes/fluxos/{id}` | `AGENT:MANAGE` (`BY_TARGET`) | exige `If-Match` ou `rowVersion` (400 se ausente); divergência → 412; cria versão imutável com `version_number` incrementado e avança `current_version_id`/`row_version`; grafo estruturalmente válido fica `INVALID` até o BE-04 |
+| DELETE | `/api/v1/agentes/fluxos/{id}` | `AGENT:MANAGE` (`BY_TARGET`) | soft delete (`deleted_at`), 204; outro tenant/fora do escopo → 404 |
+
+Fluxos e execução (implementado no BE-06, ADR-45 ACCEPTED):
+
+| Método | Rota | Permissão | Regra |
+|---|---|---|---|
+| POST | `/api/v1/agentes/fluxos/{id}/execucoes` | `AGENT:RUN` (`BY_TARGET`) | `Idempotency-Key` obrigatória; fluxo `PUBLISHED` e versão `VALID`; execução síncrona, fail-fast, timeout por etapa/total, paralelismo 2; 409 se não publicado, 422 se versão inválida, 404 fora do escopo |
+| GET | `/api/v1/agentes/execucoes/{id}` | `AGENT:READ` (`BY_TARGET`) | status, etapas, `requestId` e recibos; custo agregado preserva `INCONCLUSIVE`; outro tenant/fora do escopo → 404 |
+
+Propósito `AGENT_FLOW` (novo valor em `RequestPurpose`), modelo resolvido pela
+política do departamento, sem ferramentas/RAG no MVP. `merge`/`result` usam
+`CONCATENATE` em ordem estável de arestas.
+
+Implementado (BE-04):
+
+| Método | Rota | Permissão | Regra |
+|---|---|---|---|
+| POST | `/api/v1/agentes/fluxos/{id}/validar` | `AGENT:MANAGE` (`BY_TARGET`) | valida sem persistir; devolve `{valid, needsMerge, errors:[{code,message,path}]}`; outro tenant/fora do escopo → 404 |
+| POST | `/api/v1/agentes/fluxos/{id}/publicar` | `AGENT:MANAGE` (`BY_TARGET`) | exige `If-Match`/`rowVersion` (400 se ausente, 412 se divergente); versão corrente precisa ser `VALID` e é revalidada contra o catálogo efetivo (422); já publicado → 409; fixa `PUBLISHED` e pina a versão sem alterar `agents_flow_versions` |
+
+Regras do validador (códigos estáveis, caminho no JSON): `SCHEMA_VERSION_UNSUPPORTED`,
+`SCHEMA_VERSION_MISMATCH`, `NODE_LIMIT_EXCEEDED` (20), `EDGE_LIMIT_EXCEEDED` (40),
+`NODE_KIND_UNKNOWN`, `NODE_COORDINATES_INVALID`, `AGENT_KEY_UNKNOWN` (inexistente/inativo),
+`EDGE_ENDPOINT_UNKNOWN`, `EDGE_SELF_LOOP`, `EDGE_DUPLICATED`, `TASK_COUNT_INVALID`,
+`RESULT_COUNT_INVALID`, `TASK_HAS_INCOMING`, `RESULT_HAS_OUTGOING`, `CYCLE`,
+`NODE_UNREACHABLE`, `RESULT_UNREACHABLE`, `NODE_WITHOUT_OUTPUT`,
+`MERGE_INSUFFICIENT_INPUTS`, `MERGE_MULTIPLE_OUTPUTS`, `BRANCH_NOT_CONSOLIDATED`.
+`needsMerge` só é `true` quando há `BRANCH_NOT_CONSOLIDATED`.
 
 Portas internas previstas em `agents.api`:
 - `AgentCatalogQuery.catalogFor(TenantId, UserId, UUID departmentId?)` — catálogo
