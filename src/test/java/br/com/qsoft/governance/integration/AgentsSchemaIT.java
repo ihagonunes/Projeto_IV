@@ -117,13 +117,14 @@ class AgentsSchemaIT {
     }
 
     @Test
-    void executionTablesDoNotExistYet() {
+    void executionTablesExistInV030() {
         Integer tables = jdbcTemplate.queryForObject("""
             SELECT count(*) FROM information_schema.tables
-             WHERE table_name IN ('agents_flow_executions', 'agents_flow_steps')
+             WHERE table_schema = 'public'
+               AND table_name IN ('agents_flow_executions', 'agents_flow_steps')
             """, Integer.class);
 
-        assertThat(tables).isZero();
+        assertThat(tables).isEqualTo(2);
     }
 
     private void insertCatalog(String key, int version, String status) {

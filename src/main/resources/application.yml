@@ -69,3 +69,10 @@ app:
       # Sem valor, a aplicação falha no boot (não há default inseguro).
       secret: ${JWT_SECRET:}
       ttl-minutes: 30
+
+# Execucao de pipelines de agentes (ADR-45 / SPI-180)
+agents:
+  execution:
+    max-parallelism: 2
+    step-timeout-seconds: 30
+    total-timeout-seconds: 120
