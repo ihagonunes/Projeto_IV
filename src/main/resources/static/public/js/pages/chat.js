@@ -376,7 +376,12 @@
         event.preventDefault(); event.stopPropagation(); agentPlaza.clearSelection();
     });
     $("chat-agent")?.addEventListener("click", () => {
-        agentPlaza ||= window.AtlasAgentPlaza.mount({ onConfirm: () => { closeDialog(); toast("Esteira de agentes confirmada."); } });
+        const options = { onConfirm: () => { closeDialog(); toast("Esteira de agentes confirmada."); } };
+        if (preview) options.catalog = window.AtlasAgentPlaza.catalog;
+        else options.client = window.API;
+        const flowId = new URLSearchParams(window.location.search).get("fluxo");
+        if (flowId) options.flowId = flowId;
+        agentPlaza ||= window.AtlasAgentPlaza.mount(options);
         dialog("Praça dos agentes", [agentPlaza]);
     });
     $("chat-usage").addEventListener("click", usageDialog);

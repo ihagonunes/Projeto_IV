@@ -1,4 +1,4 @@
-/* SPI-136: editor visual local; não executa agentes nem concede acesso a dados. */
+/* SPI-136/SPI-180: editor visual; a persistência usa a API real fora da prévia. */
 (function (root, factory) {
     const api = factory();
     if (typeof module === "object" && module.exports) module.exports = api;
@@ -13,6 +13,9 @@
         stock: "14_estoque-e-compras", review: "15_revisor-critico", finance: "16_financeiro",
         operations: "17_operacoes-e-producao", merge: "18_consolidador"
     };
+    const artworkPath = kind => `/public/img/agents/${artwork[kind] || "01_politicas-internas"}.png`;
+    // Catálogo estático: usado apenas na prévia pública (/chat/previa) e como
+    // fallback de arte. A produção recebe o catálogo da API.
     const catalog = [
         ["policies", "Políticas internas", "Consulta políticas e documentos internos.", "Gerais"],
         ["writing", "Escrita e documentos", "Organiza textos, PDFs e documentos Word.", "Gerais"],
@@ -32,19 +35,26 @@
         ["research", "Pesquisa", "Reúne fontes e sintetiza informações.", "Gerais"],
         ["review", "Revisor crítico", "Aponta lacunas e contradições.", "Gerais"],
         ["merge", "Consolidador", "Reúne os ramos em uma única entrega.", "Gerais"]
-    ].map(([kind, name, description, category]) => ({ kind, name, description, category, image: `/public/img/agents/${artwork[kind]}.png` }));
+    ].map(([kind, name, description, category]) => ({ kind, name, description, category, image: artworkPath(kind) }));
     const endpoints = {
         task: { name: "Tarefa do usuário", description: "Recebe sua tarefa e inicia a esteira de agentes.", image: "/public/img/agents/19_tarefa-do-usuario.png" },
         result: { name: "Resultado", description: "Recebe a entrega final da esteira de agentes.", image: "/public/img/agents/20_resultado.png" }
     };
+    const mergeAgent = catalog.find(agent => agent.kind === "merge");
     const clamp = value => Math.max(0, Math.min(1, value));
-    function createGraph() {
-        return { nodes: [{ id: "task", kind: "task", name: "Tarefa do usuário", x: 0, y: 0 }], edges: [], nextId: 1 };
+    let uidCounter = 0;
+    function uid() {
+        if (globalThis.crypto && typeof globalThis.crypto.randomUUID === "function") return globalThis.crypto.randomUUID();
+        uidCounter += 1;
+        return `node-${Date.now().toString(36)}-${uidCounter}`;
     }
-    function addNode(graph, kind, x = 0, y = 0) {
-        const item = kind === "result" ? { name: "Resultado" } : catalog.find(a => a.kind === kind);
+    function createGraph() {
+        return { nodes: [{ id: "task", kind: "task", name: "Tarefa do usuário", x: 0, y: 0 }], edges: [] };
+    }
+    function addNode(graph, kind, x = 0, y = 0, items = catalog) {
+        const item = kind === "result" ? { name: "Resultado" } : items.find(a => a.kind === kind);
         if (!item || (kind === "result" && graph.nodes.some(n => n.kind === "result"))) return null;
-        const entry = { id: `step-${graph.nextId++}`, kind, name: item.name, x: clamp(x), y: clamp(y) };
+        const entry = { id: uid(), kind, name: item.name, x: clamp(x), y: clamp(y) };
         graph.nodes.push(entry); return entry;
     }
     function connect(graph, from, to) {
@@ -128,8 +138,94 @@
         }
         return true;
     }
-    function mount({ onConfirm = () => {} } = {}) {
-        const graph = createGraph(); let source = null, confirmedSignature = null, missingResultWarning = false;
+
+    // ----------------------------------------------------------------------
+    // Contrato com a API de agentes (BE-02/BE-03/BE-04)
+    // ----------------------------------------------------------------------
+    function catalogFromApi(entries) {
+        return (entries || []).filter(entry => entry && entry.agentKey).map(entry => ({
+            kind: entry.agentKey,
+            name: entry.name || entry.agentKey,
+            description: entry.description || "",
+            category: entry.category || "Gerais",
+            status: entry.status,
+            executable: entry.executable === true,
+            image: artworkPath(entry.agentKey)
+        }));
+    }
+    function toServerGraph(graph) {
+        return {
+            schemaVersion: 1,
+            nodes: graph.nodes.map(node => node.kind === "task" || node.kind === "result" || node.kind === "merge"
+                ? { id: node.id, kind: node.kind, x: node.x, y: node.y }
+                : { id: node.id, kind: "agent", agentKey: node.kind, x: node.x, y: node.y }),
+            edges: graph.edges.map(edge => ({ from: edge.from, to: edge.to }))
+        };
+    }
+    function fromServerGraph(serverGraph) {
+        const graph = { nodes: [], edges: [] };
+        const nodes = (serverGraph && serverGraph.nodes) || [];
+        graph.nodes = nodes.map(node => ({
+            id: node.id,
+            kind: node.kind === "agent" ? (node.agentKey || "policies") : node.kind,
+            name: node.name,
+            x: clamp(Number(node.x) || 0),
+            y: clamp(Number(node.y) || 0)
+        }));
+        graph.edges = ((serverGraph && serverGraph.edges) || []).map(edge => ({ from: edge.from, to: edge.to }));
+        return graph;
+    }
+    function createService(client) {
+        if (!client) throw new Error("client é obrigatório.");
+        return {
+            async catalog() {
+                const data = await client.get("/agentes/catalogo");
+                return catalogFromApi(data && data.agentes);
+            },
+            async load(flowId) {
+                const data = await client.get(`/agentes/fluxos/${flowId}`);
+                return {
+                    id: data.id,
+                    name: data.name,
+                    rowVersion: data.rowVersion,
+                    status: data.status,
+                    graph: fromServerGraph(data.currentVersion && data.currentVersion.graph)
+                };
+            },
+            async create(name, graph) {
+                return client.post("/agentes/fluxos", { name, schemaVersion: 1, graphJson: toServerGraph(graph) });
+            },
+            async save(flowId, rowVersion, name, graph) {
+                return client.put(`/agentes/fluxos/${flowId}`,
+                    { name, schemaVersion: 1, graphJson: toServerGraph(graph) },
+                    { headers: { "If-Match": `"${rowVersion}"` } });
+            },
+            async validate(flowId, graph) {
+                return client.post(`/agentes/fluxos/${flowId}/validar`,
+                    { schemaVersion: 1, graphJson: toServerGraph(graph) });
+            },
+            async publish(flowId, rowVersion) {
+                return client.post(`/agentes/fluxos/${flowId}/publicar`, {},
+                    { headers: { "If-Match": `"${rowVersion}"` } });
+            },
+            isConflict(error) {
+                return Boolean(error && (error.status === 409 || error.status === 412));
+            }
+        };
+    }
+
+    function mount({ onConfirm = () => {}, client = null, catalog: initialCatalog = null, flowId = null,
+        graph: initialGraph = null } = {}) {
+        const graph = initialGraph
+            ? { nodes: initialGraph.nodes.map(node => ({ ...node })),
+                edges: initialGraph.edges.map(edge => ({ ...edge })) }
+            : createGraph();
+        let source = null, confirmedSignature = null, missingResultWarning = false;
+        let available = initialCatalog ? initialCatalog.slice() : (client ? [] : catalog.slice());
+        let nodeErrors = [];
+        let currentFlowId = flowId, rowVersion = null, lastSavedSignature = null;
+        let flowStatus = null;
+        const service = client ? createService(client) : null;
         const pendingClicks = new Map();
         function cancelClick(id) {
             if (pendingClicks.has(id)) window.clearTimeout(pendingClicks.get(id).timer);
@@ -141,6 +237,10 @@
         const root = el("section", null, "chat-agent-plaza");
         const toolbar = el("div", null, "plaza-toolbar");
         const summary = el("span", "Monte seu fluxo", "plaza-summary");
+        const agentFor = kind => endpoints[kind] || available.find(a => a.kind === kind)
+            || catalog.find(a => a.kind === kind) || (kind === "merge" ? mergeAgent : null);
+        const libraryItems = () => available.some(a => a.kind === "merge")
+            ? available : [...available, mergeAgent];
         const addResult = button("+ Adicionar resultado", () => {
             const result = addAtAvailablePosition("result");
             if (result) { render(); announce("Resultado adicionado. Conecte a saída do consolidador à entrada do resultado."); }
@@ -153,9 +253,12 @@
             }
             const validation = validateGraph(graph);
             if (!validation.valid) return announce(validation.message);
-            confirmedSignature = signature(); render();
-            announce("Esteira confirmada nesta sessão. A execução dos agentes ainda não está conectada.");
-            onConfirm();
+            if (!service) {
+                confirmedSignature = signature(); render();
+                announce("Esteira confirmada nesta sessão. A execução dos agentes ainda não está conectada.");
+                onConfirm(); return;
+            }
+            confirmFlow();
         }, "chat-action-button is-primary");
         toolbar.append(summary, addResult, confirm);
         const instructions = el("p", "Para conectar, clique primeiro na origem e depois no destino. Clique duas vezes no agente para removê-lo ou na seta para remover a conexão. Arraste para mover.", "plaza-instructions");
@@ -218,12 +321,150 @@
         toolbar.insertBefore(toggle, addResult);
         const search = el("input"); search.type = "search"; search.placeholder = "Buscar agente…"; search.setAttribute("aria-label", "Buscar agente");
         const category = el("select"); category.setAttribute("aria-label", "Categoria dos agentes");
-        ["Todos", ...new Set(catalog.map(a => a.category))].forEach(name => { const o = el("option", name); category.append(o); });
+        ["Todos", ...new Set(libraryItems().map(a => a.category))].forEach(name => { const o = el("option", name); category.append(o); });
         libraryHeader.append(el("strong", "Agentes disponíveis"), search, category);
         const cards = el("div", null, "plaza-catalog"); library.append(libraryHeader, cards);
         workspace.append(viewport, library);
         root.append(toolbar, instructions, resultNotice, mergeNotice, workspace, live, tooltip,
-            el("p", "Rascunho visual · permanece ao fechar esta janela e é apagado ao recarregar a página. A execução dos agentes ainda não está conectada.", "plaza-footnote"));
+            el("p", "Rascunho visual — fora da prévia, salvar e publicar usam a API.", "plaza-footnote"));
+
+        // Persistência real (oculta na prévia, onde `service` é nulo).
+        const nameInput = el("input"); nameInput.type = "text"; nameInput.value = "Fluxo sem nome";
+        nameInput.setAttribute("aria-label", "Nome do fluxo");
+        const saveButton = button("Salvar rascunho", () => saveDraft());
+        const conflictNotice = el("div", null, "plaza-merge-notice");
+        conflictNotice.hidden = true;
+        const conflictMessage = el("p", "O fluxo foi alterado por outra pessoa. Recarregue ou sobrescreva com a sua versão.");
+        conflictMessage.setAttribute("role", "alert");
+        const reloadButton = button("Recarregar", () => reloadFlow());
+        const overwriteButton = button("Sobrescrever", () => overwriteFlow());
+        conflictNotice.append(conflictMessage, reloadButton, overwriteButton);
+        if (service) {
+            const nameField = el("label", null, "plaza-name-field");
+            nameField.append(el("span", "Nome do fluxo"), nameInput);
+            toolbar.insertBefore(nameField, addResult);
+            toolbar.insertBefore(saveButton, addResult);
+            root.insertBefore(conflictNotice, resultNotice);
+        }
+
+        async function persist() {
+            const name = (nameInput.value || "").trim() || "Fluxo sem nome";
+            if (!currentFlowId) {
+                const created = await service.create(name, graph);
+                currentFlowId = created.id;
+                rowVersion = created.rowVersion;
+                flowStatus = created.status || "DRAFT";
+                lastSavedSignature = signature();
+                return;
+            }
+            if (lastSavedSignature === signature()) return;
+            const saved = await service.save(currentFlowId, rowVersion, name, graph);
+            rowVersion = saved.rowVersion;
+            flowStatus = saved.status || flowStatus;
+            lastSavedSignature = signature();
+        }
+        async function saveDraft() {
+            if (!service) return;
+            busy(true);
+            try {
+                await persist();
+                conflictNotice.hidden = true;
+                render();
+                announce("Rascunho salvo no servidor.");
+            } catch (error) {
+                handleError(error);
+            } finally {
+                busy(false);
+            }
+        }
+        async function confirmFlow() {
+            busy(true);
+            try {
+                await persist();
+                const validation = await service.validate(currentFlowId, graph);
+                showServerErrors(validation);
+                if (!validation.valid) return;
+                const published = await service.publish(currentFlowId, rowVersion);
+                rowVersion = published.rowVersion;
+                flowStatus = "PUBLISHED";
+                confirmedSignature = signature();
+                missingResultWarning = false;
+                render();
+                announce("Fluxo publicado. A esteira já pode ser executada pela API.");
+            } catch (error) {
+                handleError(error);
+            } finally {
+                busy(false);
+            }
+        }
+        async function reloadFlow() {
+            if (!service || !currentFlowId) return;
+            try {
+                const loaded = await service.load(currentFlowId);
+                applyLoaded(loaded);
+                conflictNotice.hidden = true;
+                announce("Fluxo recarregado do servidor.");
+            } catch (error) { handleError(error); }
+        }
+        async function overwriteFlow() {
+            if (!service || !currentFlowId) return;
+            try {
+                const loaded = await service.load(currentFlowId);
+                rowVersion = loaded.rowVersion;
+                lastSavedSignature = null;
+                await persist();
+                conflictNotice.hidden = true;
+                render();
+                announce("Versão local salva sobre a versão mais recente.");
+            } catch (error) { handleError(error); }
+        }
+        function applyLoaded(loaded) {
+            graph.nodes = loaded.graph.nodes.length ? loaded.graph.nodes : createGraph().nodes;
+            graph.edges = loaded.graph.edges.slice();
+            graph.nodes.forEach(node => {
+                const agent = agentFor(node.kind);
+                if (!node.name && agent) node.name = agent.name;
+            });
+            currentFlowId = loaded.id;
+            rowVersion = loaded.rowVersion;
+            flowStatus = loaded.status || "DRAFT";
+            lastSavedSignature = signature();
+            confirmedSignature = loaded.status === "PUBLISHED" ? signature() : null;
+            nameInput.value = loaded.name || "Fluxo sem nome";
+            nodeErrors = [];
+            source = null;
+            render();
+        }
+        function showServerErrors(validation) {
+            nodeErrors = (validation && validation.errors) || [];
+            if (!nodeErrors.length) { render(); return; }
+            const first = nodeErrors[0];
+            announce(`O servidor recusou o fluxo: ${first.message}`);
+            render();
+        }
+        function handleError(error) {
+            if (service && service.isConflict(error)) {
+                conflictNotice.hidden = false;
+                announce("Conflito de versão: recarregue o fluxo ou sobrescreva com a sua versão.");
+                return;
+            }
+            const code = error && error.data && error.data.code ? ` (${error.data.code})` : "";
+            announce(`Não foi possível concluir a operação${code}. ${error && error.message ? error.message : ""}`.trim());
+        }
+        function busy(value) {
+            confirm.disabled = value || confirmedSignature === signature()
+                || flowStatus === "PUBLISHED";
+            saveButton.disabled = value || flowStatus === "PUBLISHED";
+        }
+        function hasNodeError(index) {
+            return nodeErrors.some(error => typeof error.path === "string"
+                && error.path.startsWith(`/nodes/${index}`));
+        }
+        function serverErrorsFor(index) {
+            return nodeErrors.filter(error => typeof error.path === "string"
+                && error.path.startsWith(`/nodes/${index}`)).map(error => error.message).join(" ");
+        }
+
         const inset = 8;
         const cardWidth = 148;
         const cardHeight = 86;
@@ -246,7 +487,7 @@
                     const y = rows ? row / rows : 0;
                     const candidate = position({ x, y }, bounds);
                     if (occupied.every(p => Math.abs(p.x - candidate.x) >= cardWidth || Math.abs(p.y - candidate.y) >= cardHeight)) {
-                        return addNode(graph, kind, x, y);
+                        return addNode(graph, kind, x, y, libraryItems());
                     }
                 }
             }
@@ -260,7 +501,7 @@
                     if (overlap < best.overlap) best = { x, y, overlap };
                 }
             }
-            return addNode(graph, kind, best.x, best.y);
+            return addNode(graph, kind, best.x, best.y, libraryItems());
         }
         function drag(event, payload) { event.dataTransfer.setData("application/x-atlas-agent", JSON.stringify(payload)); event.dataTransfer.effectAllowed = payload.id ? "move" : "copy"; }
         canvas.addEventListener("dragover", event => { if (Array.from(event.dataTransfer.types).includes("application/x-atlas-agent")) event.preventDefault(); });
@@ -348,11 +589,18 @@
             return true;
         };
         function render() {
+            const focusedId = document.activeElement && document.activeElement.dataset
+                ? document.activeElement.dataset.nodeId : null;
+            hideTooltip();
             nodes.replaceChildren();
-            graph.nodes.forEach(n => {
-                const card = el("article", null, `plaza-node plaza-${n.kind}${source === n.id ? " is-connecting" : ""}`);
+            graph.nodes.forEach((n, index) => {
+                const hasError = hasNodeError(index);
+                const card = el("article", null, `plaza-node plaza-${n.kind}${source === n.id ? " is-connecting" : ""}${hasError ? " has-error" : ""}`);
+                card.dataset.nodeId = n.id;
+                if (hasError) card.setAttribute("aria-invalid", "true");
                 card.draggable = true;
                 card.tabIndex = 0; card.setAttribute("aria-label", `${n.name}. Use as setas para mover.`);
+                if (hasError) card.setAttribute("aria-description", serverErrorsFor(index));
                 card.addEventListener("dragstart", event => { cancelClick(n.id); const r = card.getBoundingClientRect(); drag(event, { id: n.id, dx: event.clientX - r.left, dy: event.clientY - r.top }); });
                 card.addEventListener("click", event => {
                     if (event.detail > 1) return;
@@ -383,7 +631,7 @@
                     if (bounds.y && event.key === "ArrowDown") n.y = clamp(n.y + 20 / bounds.y);
                     layout();
                 });
-                const agent = endpoints[n.kind] || catalog.find(a => a.kind === n.kind);
+                const agent = agentFor(n.kind);
                 if (agent) { card.className += " plaza-character"; character(card, agent); }
                 else card.append(el("span", n.kind === "task" ? "INÍCIO" : "ENTREGA FINAL", "plaza-node-label"), el("strong", n.name));
                 nodes.append(card);
@@ -397,18 +645,36 @@
             mergeMessage.textContent = validation.needsMerge ? validation.message : "";
             const confirmed = confirmedSignature === signature();
             root.dataset.confirmed = String(confirmed);
-            confirm.textContent = confirmed ? "Esteira confirmada" : "Confirmar esteira";
-            confirm.disabled = confirmed;
+            root.dataset.flowId = currentFlowId || "";
+            root.dataset.flowStatus = flowStatus || "";
+            root.dataset.rowVersion = rowVersion == null ? "" : String(rowVersion);
+            const published = flowStatus === "PUBLISHED";
+            confirm.textContent = published ? "Esteira publicada"
+                : confirmed ? "Esteira confirmada" : "Confirmar esteira";
+            confirm.disabled = confirmed || published;
+            saveButton.disabled = published;
+            if (focusedId) {
+                const target = [...nodes.children].find(card => card.dataset && card.dataset.nodeId === focusedId);
+                if (target && typeof target.focus === "function") target.focus();
+            }
         }
         function renderCatalog() {
             cards.replaceChildren();
             const normalize = s => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-            catalog.filter(a => (category.value === "Todos" || a.category === category.value) && normalize(a.name + a.description).includes(normalize(search.value))).forEach(a => {
+            libraryItems().filter(a => (category.value === "Todos" || a.category === category.value) && normalize(a.name + a.description).includes(normalize(search.value))).forEach(a => {
+                const executable = a.executable !== false;
+                const label = a === mergeAgent ? `Adicionar ${a.name}`
+                    : executable
+                        ? (a.status ? `Adicionar ${a.name} (${a.status})` : `Adicionar ${a.name}`)
+                        : `${a.name} (${a.status || "DRAFT"}, não executável)`;
                 const card = button("", () => {
+                    if (!executable) { announce(`${a.name} está em DRAFT e não pode ser executado.`); return; }
                     addAtAvailablePosition(a.kind);
                     render(); announce(`${a.name} adicionado. Conecte as etapas para definir a ordem.`);
                 }, "plaza-agent-card");
-                card.draggable = true; card.setAttribute("aria-label", `Adicionar ${a.name}`); card.addEventListener("dragstart", event => drag(event, { kind: a.kind }));
+                card.draggable = executable; card.setAttribute("aria-label", label);
+                if (!executable) { card.disabled = true; card.setAttribute("aria-disabled", "true"); }
+                if (executable) card.addEventListener("dragstart", event => drag(event, { kind: a.kind }));
                 character(card, a); cards.append(card);
             });
             if (!cards.children.length) cards.append(el("p", "Nenhum agente encontrado."));
@@ -416,7 +682,28 @@
         search.addEventListener("input", renderCatalog); category.addEventListener("change", renderCatalog);
         root.addEventListener("mouseleave", hideTooltip);
         new ResizeObserver(layout).observe(canvas);
-        render(); renderCatalog(); return root;
+        render(); renderCatalog();
+        if (service) {
+            (async () => {
+                try {
+                    available = await service.catalog();
+                    if (currentFlowId) {
+                        const loaded = await service.load(currentFlowId);
+                        applyLoaded(loaded);
+                    } else {
+                        render();
+                    }
+                    const categories = ["Todos", ...new Set(libraryItems().map(a => a.category))];
+                    category.replaceChildren(...categories.map(name => { const o = el("option", name); return o; }));
+                    category.value = "Todos";
+                    renderCatalog();
+                } catch (error) {
+                    handleError(error);
+                }
+            })();
+        }
+        return root;
     }
-    return { catalog, createGraph, addNode, connect, removeNode, validateGraph, consolidate, mount };
+    return { catalog, createGraph, addNode, connect, removeNode, validateGraph, consolidate, mount,
+        createService, toServerGraph, fromServerGraph, catalogFromApi };
 });
