@@ -94,7 +94,7 @@ class AgentsExecutionSchemaIT {
     @Test
     void executionTablesDoNotStorePromptOrResponse() {
         List<String> forbidden = List.of("prompt", "question", "pergunta", "answer", "resposta",
-            "response", "content", "message");
+            "response", "content", "message", "result_text");
         for (String table : List.of("agents_flow_executions", "agents_flow_steps")) {
             List<String> columns = jdbcTemplate.queryForList(
                 "SELECT column_name FROM information_schema.columns WHERE table_name = ?",

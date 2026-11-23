@@ -85,8 +85,11 @@ Executa `*IT` com Testcontainers/PostgreSQL real e exige Docker.
   5 recibos `KNOWN`, custo `0.00828`. Em 23/11/2026 foram cobertos também:
   drag real (`dragTo`), conflito 412 live no save, isolamento live (Tenant B →
   404), 412 de publicação (DOM) e concorrência real
-  (`AgentsFlowConcurrencyIT`). Runbook e evidências em
-  `docs/development/E2E_AGENTES_PLAYWRIGHT.md`. Nenhuma dependência npm nova.
+  (`AgentsFlowConcurrencyIT`). A decisão 4-B (não persistir o resultado) é
+  verificada por `AgentsFlowExecutionIT` (POST devolve `result`; GET/replay não)
+  e por `AgentsExecutionSchemaIT` (nenhuma coluna de conteúdo). Runbook e
+  evidências em `docs/development/E2E_AGENTES_PLAYWRIGHT.md`. Nenhuma dependência
+  npm nova.
 
 ### E2E
 

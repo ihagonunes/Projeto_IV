@@ -20,13 +20,13 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
 
-/** Persistência tenant-scoped da execução e das etapas (V030). */
+/** Persistência tenant-scoped da execução e das etapas (V030/V031). */
 @Component
 public class AgentFlowExecutionJdbcAdapter implements AgentFlowExecutionRepository {
 
     private static final String EXECUTION_COLUMNS = """
         SELECT id, tenant_id, flow_id, flow_version_id, owner_user_id, status,
-               idempotency_key, result_text, error_code, started_at, finished_at, created_at
+               idempotency_key, error_code, started_at, finished_at, created_at
           FROM agents_flow_executions
         """;
 
@@ -39,7 +39,7 @@ public class AgentFlowExecutionJdbcAdapter implements AgentFlowExecutionReposito
             UserId.of(rs.getObject("owner_user_id", UUID.class)),
             ExecutionStatus.valueOf(rs.getString("status")),
             rs.getString("idempotency_key"),
-            rs.getString("result_text"),
+            null,
             rs.getString("error_code"),
             instantOrNull(rs, "started_at"),
             instantOrNull(rs, "finished_at"),
@@ -69,8 +69,8 @@ public class AgentFlowExecutionJdbcAdapter implements AgentFlowExecutionReposito
         return jdbcTemplate.update("""
             INSERT INTO agents_flow_executions
                 (id, tenant_id, flow_id, flow_version_id, owner_user_id, status,
-                 idempotency_key, result_text, error_code, started_at, finished_at, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 idempotency_key, error_code, started_at, finished_at, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT DO NOTHING
             """, (PreparedStatement ps) -> {
             ps.setObject(1, execution.id());
@@ -80,11 +80,10 @@ public class AgentFlowExecutionJdbcAdapter implements AgentFlowExecutionReposito
             ps.setObject(5, execution.ownerUserId().value());
             ps.setString(6, execution.status().name());
             ps.setString(7, execution.idempotencyKey());
-            ps.setString(8, execution.result());
-            ps.setString(9, execution.errorCode());
-            setInstant(ps, 10, execution.startedAt());
-            setInstant(ps, 11, execution.finishedAt());
-            ps.setTimestamp(12, Timestamp.from(execution.createdAt()));
+            ps.setString(8, execution.errorCode());
+            setInstant(ps, 9, execution.startedAt());
+            setInstant(ps, 10, execution.finishedAt());
+            ps.setTimestamp(11, Timestamp.from(execution.createdAt()));
         }) > 0;
     }
 
@@ -153,15 +152,14 @@ public class AgentFlowExecutionJdbcAdapter implements AgentFlowExecutionReposito
     public void finish(FlowExecution execution) {
         jdbcTemplate.update("""
             UPDATE agents_flow_executions
-               SET status = ?, result_text = ?, error_code = ?, finished_at = ?
+               SET status = ?, error_code = ?, finished_at = ?
              WHERE tenant_id = ? AND id = ?
             """, (PreparedStatement ps) -> {
             ps.setString(1, execution.status().name());
-            ps.setString(2, execution.result());
-            ps.setString(3, execution.errorCode());
-            setInstant(ps, 4, execution.finishedAt());
-            ps.setObject(5, execution.tenantId().value());
-            ps.setObject(6, execution.id());
+            ps.setString(2, execution.errorCode());
+            setInstant(ps, 3, execution.finishedAt());
+            ps.setObject(4, execution.tenantId().value());
+            ps.setObject(5, execution.id());
         });
     }
 

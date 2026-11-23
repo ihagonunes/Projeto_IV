@@ -95,8 +95,12 @@ O `aigateway` continua sendo o único caminho para o provider e a única origem 
   para `agents_flow_steps` como fonte primária.
 - `INCONCLUSIVE` não vira zero; a execução deve expor custo parcial/desconhecido.
 - O resultado final e os metadados de execução não incluem prompt/resposta em
-  logs, eventos ou analytics. A retenção do conteúdo final é decisão de produto
-  (LGPD).
+  logs, eventos ou analytics.
+- **Decisão 4-B (2026-11-23):** o resultado final **não é persistido**. Ele
+  existe apenas na resposta síncrona do `POST /execucoes`; `GET` e o replay
+  idempotente devolvem status, etapas e recibos, sem `result_text`. A coluna
+  criada em V030 foi removida por V031. Retenção de conteúdo fica fora do escopo
+  (LGPD) enquanto o resultado não for armazenado.
 - Não adicionar `agent_id` a `UsageRecord` sem necessidade; o vínculo por
   `request_id` + `agents_flow_steps` evita duplicar a fonte e mantém a fronteira.
 
@@ -135,6 +139,21 @@ Quando aprovada:
 - a mensagem ASSISTANT final continua privada ao dono; o histórico não expõe
   etapas de outros usuários;
 - o envio sem `agentFlowId` mantém o comportamento atual.
+
+## Decisões do MVP (23/11/2026)
+
+Decisões do responsável pela plataforma para o incremento SPI-180:
+
+1. **Playwright:** manter o E2E ad-hoc via MCP, sem `@playwright/test` versionado
+   no CI por enquanto (rever quando o frontend estabilizar).
+2. **Retry:** sem retry automático de falhas transitórias; nova tentativa exige
+   nova `Idempotency-Key` do cliente.
+3. **Concorrência:** sem limite de execuções concorrentes por tenant/usuário nesta
+   fase; o limite fica registrado como pendência (§6).
+4. **Retenção:** o resultado final **não** é persistido (acima, §5); só a resposta
+   síncrona do POST o devolve.
+5. **Chat:** manter o endpoint de execução separado; a integração `chat -> agents`
+   fica fora do MVP (§8).
 
 ## Alternativas consideradas
 

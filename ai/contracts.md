@@ -62,7 +62,7 @@ Contratos são Java APIs internas entre módulos. Não equivalem automaticamente
 | aigateway | `AICompletionService`, `ModelResolutionQuery` (`resolve`/`allowedModels`), `AttemptReceiptQuery` (recibo por tenant + dono), `AIToolCatalogQuery` (`findModel`/`allModelsExist`), catálogo administrativo HTTP |
 | chat | HTTP `/api/v1/conversas` (lista/busca, mensagens, PATCH, DELETE, `GET /modelos`); casos de uso internos `ChatExchange`, `SendMessage`, `ListConversations`, `UpdateConversation`, `DeleteConversation` |
 | agentpolicies | `KnowledgeAccessService`, `AskPolicyAgent`, KnowledgeDocument commands/queries; porta de resposta de políticas a expor para `agents` (planejada) |
-| agents | `GET /api/v1/agentes/catalogo` e override do catálogo (BE-02); fluxos e execução planejados; sem dependência de `chat` no MVP |
+| agents | `GET /api/v1/agentes/catalogo` e override do catálogo (BE-02); fluxos, validação/publicação e execução síncrona (BE-03–BE-06); sem dependência de `chat` no MVP |
 | observability | `UsageActivityQuery` (dias ativos por usuário, dia UTC e `tenant_id` explícito); HTTP `GET /observability/orcamentos/projecao` (`projection-v1`, interno `ProjectDepartmentBudget`); `UsageMetricsQueryPort`, `CostMetricsQueryPort`, `BudgetStatusQueryPort` (implementado por `QueryBudgetStatus`) |
 | engagement | Sem superfície `api.*` consumida por outro módulo na Sprint 4; HTTP `/api/v1/engajamento/*`; internos `EngagementFactsPort` (OPERACIONAL/HISTORICO), `QueryAdoption`, `QueryTrainingCross`, `QueryCredits`, cálculos puros de adoção/treinamento/Credits |
 | governancescore | `GovernanceScoreQueryPort`, Breakdown, Department scores, History |
@@ -87,10 +87,10 @@ Contratos são Java APIs internas entre módulos. Não equivalem automaticamente
 
 ### Agentes (ADR-44/45)
 
-> **Status:** catálogo global (V027/V029), RBAC (V028) e leitura/override pela
-> API estão implementados. `agents.api` (portas Java) segue vazia: nenhum outro
-> módulo consome agentes. Fluxos e execução continuam planejados; execução só
-> depois do ADR-45.
+> **Status:** catálogo global (V027/V029), RBAC (V028), leitura/override pela
+> API, fluxos/versões, validação/publicação e execução síncrona (V030/V031)
+> estão implementados. `agents.api` (portas Java) segue vazia: nenhum outro
+> módulo consome agentes e a integração com o chat não faz parte do MVP.
 >
 > **Sem RAG neste incremento.** `agentpolicies` continua sendo o módulo de
 > políticas/RAG e **não** é consumido por `agents`. O seed tem 6 agentes "Gerais"
@@ -128,8 +128,8 @@ Fluxos e execução (implementado no BE-06, ADR-45 ACCEPTED):
 
 | Método | Rota | Permissão | Regra |
 |---|---|---|---|
-| POST | `/api/v1/agentes/fluxos/{id}/execucoes` | `AGENT:RUN` (`BY_TARGET`) | `Idempotency-Key` obrigatória; fluxo `PUBLISHED` e versão `VALID`; execução síncrona, fail-fast, timeout por etapa/total, paralelismo 2; 409 se não publicado, 422 se versão inválida, 404 fora do escopo |
-| GET | `/api/v1/agentes/execucoes/{id}` | `AGENT:READ` (`BY_TARGET`) | status, etapas, `requestId` e recibos; custo agregado preserva `INCONCLUSIVE`; outro tenant/fora do escopo → 404 |
+| POST | `/api/v1/agentes/fluxos/{id}/execucoes` | `AGENT:RUN` (`BY_TARGET`) | `Idempotency-Key` obrigatória; fluxo `PUBLISHED` e versão `VALID`; execução síncrona, fail-fast, timeout por etapa/total, paralelismo 2; 409 se não publicado, 422 se versão inválida, 404 fora do escopo; o `result` só existe nesta resposta (decisão 4-B) |
+| GET | `/api/v1/agentes/execucoes/{id}` | `AGENT:READ` (`BY_TARGET`) | status, etapas, `requestId` e recibos; custo agregado preserva `INCONCLUSIVE`; **não** devolve o conteúdo final; outro tenant/fora do escopo → 404 |
 
 Propósito `AGENT_FLOW` (novo valor em `RequestPurpose`), modelo resolvido pela
 política do departamento, sem ferramentas/RAG no MVP. `merge`/`result` usam
@@ -157,7 +157,8 @@ Portas internas previstas em `agents.api`:
 - `AgentCatalogOverrideCommandService.upsert/remove(TenantId, UserId, AgentKey, ...)`.
 - `AgentFlowQuery.flow(TenantId, UserId, UUID flowId)`.
 - `AgentFlowCommandService.create/update/validate/publish/archive(...)`.
-- `AgentFlowExecutionService.execute(ExecuteAgentFlowCommand)` — somente após ADR-45.
+- `AgentFlowExecutionService.execute(ExecuteAgentFlowCommand)` — implementado em
+  BE-06 após ADR-45; o conteúdo final não é persistido (decisão 4-B).
 - DTOs próprios, sem expor entidades JPA ou repositórios.
 
 O grafo é JSON versionado (`schema_version`), com `agent_key` estável — nunca o

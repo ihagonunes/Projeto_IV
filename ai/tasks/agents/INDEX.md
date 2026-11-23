@@ -43,7 +43,8 @@ ADRs: `ADR-44` (módulo e persistência) e `ADR-45` (execução, **ACCEPTED** em
 | V028 | RBAC `AGENT:*` |
 | V029 | Seed global das 17 definições |
 | V030 | Execução (`agents_flow_executions`/`agents_flow_steps`) |
-| V031+ | Só com nova decisão (ex.: limite de concorrência, retenção) |
+| V031 | Remove `result_text` (decisão 4-B: conteúdo só na resposta síncrona) |
+| V032+ | Só com nova decisão (ex.: limite de concorrência) |
 
 ## Protocolo
 
@@ -55,6 +56,7 @@ Ao terminar, entregar o relatório do HANDOFF §7.
 - Revisão humana do componente de chat (BE-05) ainda não registrada.
 - Sem retry automático para falhas transitórias no BE-06.
 - Sem limite de execuções concorrentes por tenant/usuário.
-- `result_text` guarda o resultado final; política de retenção/LGPD pendente.
+- Decisão 4-B (23/11/2026): o resultado final não é persistido; só a resposta
+  síncrona do POST o devolve. Sem conteúdo armazenado, não há retenção a decidir.
 - Integração `chat -> agents.api` fora do MVP (emenda ao ADR-45 + allowlist).
 - E2E de navegador: executado no BE-07 (`docs/development/E2E_AGENTES_PLAYWRIGHT.md`).

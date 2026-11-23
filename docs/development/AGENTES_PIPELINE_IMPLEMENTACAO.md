@@ -17,17 +17,19 @@ entre tenants.
 | BE-03 | Fluxos/versões, `If-Match`/412, soft delete e paginação | — | ✅ |
 | BE-04 | Validação do DAG e publicação | — | ✅ |
 | BE-05 | Frontend persistente (catálogo/save/publish, conflito, foco) | — | ✅ (revisão da responsável pelo chat pendente) |
-| BE-06 | Execução síncrona, etapas, recibos, idempotência e timeout | V030 | ✅ |
+| BE-06 | Execução síncrona, etapas, recibos, idempotência e timeout | V030, V031 | ✅ |
 | BE-07 | Execução no frontend + seed + E2E Playwright MCP | — | ✅ |
 
 Pendências conhecidas após o BE-06:
 
 - retry automático apenas para falhas transitórias e limite de execuções
   concorrentes por tenant/usuário (ADR-45 §3/§6);
-- política de retenção/expurgo do `result_text` (LGPD);
 - integração `chat -> agents.api` (emenda ao ADR-45 + allowlist);
 - correção do SRI do Bootstrap no front (pré-existente, fora da praça);
 - revisão humana do componente de chat (BE-05).
+
+Decisão 4-B (23/11/2026): o resultado final **não** é persistido; só a resposta
+síncrona do POST o devolve, e a coluna `result_text` foi removida em V031.
 
 Runbook do E2E e seed: `docs/development/E2E_AGENTES_PLAYWRIGHT.md`.
 Pacote do BE-07: `ai/tasks/agents/TASK-AGENTS-BE-07-execucao-frontend-e2e.md`.
@@ -316,10 +318,10 @@ CREATE TABLE agents_flow_versions (
 - `row_version`/`If-Match` evitam lost update.
 - `deleted_at` é arquivamento lógico; `DELETED` não aparece em leitura.
 
-### 4.3 Execução (futuro, após ADR-45)
+### 4.3 Execução (implementada no BE-06, ADR-45)
 
-Estas tabelas **não entram no Marco A**. Só devem ser criadas em `V030+` depois
-do aceite do ADR-45.
+Estas tabelas entram em `V030`; o conteúdo final não é persistido (decisão 4-B,
+`V031`).
 
 ```sql
 CREATE TABLE agents_flow_executions (
@@ -751,7 +753,7 @@ Saída: pipeline executável com limites claros.
 | Tenant/RBAC | Alto | Permissões explícitas; testes A≠B; 404 cross-tenant |
 | Foco/teclado no editor | Médio | Restaurar foco; testes de DOM |
 | Drag de conexão | Médio | Pointer Events desktop; fallback clique |
-| Retenção de conteúdo | Médio | Não logar; decidir retenção do resultado |
+| Retenção de conteúdo | Médio | Não logar; resultado não persistido (decisão 4-B) |
 | Provider real | Médio | STUB para testes; S4-D1 para demo |
 | Complexidade de testes | Médio | Unit + IT + provider simulado + E2E desktop |
 
@@ -763,7 +765,8 @@ Saída: pipeline executável com limites claros.
 4. **Visibilidade:** fluxo SELF, DEPARTMENT ou TENANT? Proposta: rascunho SELF;
    publicado conforme escopo; definir na implementação.
 5. **Catálogo:** 3 agentes iniciais; expansão gradual.
-6. **Retenção:** resultado final armazenado? por quanto tempo? LGPD.
+6. **Retenção:** decidido em 23/11/2026 (4-B): o resultado final não é
+   armazenado; se o produto exigir histórico de conteúdo, nova decisão/ADR.
 7. **Orçamento:** alerta não bloqueia; decidir se execução tem limite duro.
 8. **Chat:** integrar só depois de múltiplos recibos e allowlist.
 

@@ -60,7 +60,7 @@ test('local setup boots real Flyway/API, seeds roles, imports history and safely
     assert.ok(!result.output.includes(password));
     const empty = { ...source, database: 'setup_empty' };
     assert.equal(await loader.json(config, empty, 'SELECT count(*) FROM app_user'), 5);
-    assert.equal(await loader.json(config, empty, 'SELECT max(version::int) FROM flyway_schema_history WHERE success'), 30);
+    assert.equal(await loader.json(config, empty, 'SELECT max(version::int) FROM flyway_schema_history WHERE success'), 31);
     result = await command(process.execPath, emptyArgs); assert.equal(result.code, 0, result.output);
     assert.equal(await loader.json(config, empty, 'SELECT count(*) FROM app_user'), 5);
     result = await command(process.execPath, args(emptyEnv, 'setup_empty', path.join(settings.workDir, 'foreign')));

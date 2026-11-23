@@ -149,6 +149,8 @@ class AgentsFlowExecutionIT {
         assertThat(fetched.getStatusCode().value()).isEqualTo(200);
         assertThat(fetched.getBody()).containsEntry("id", execution.get("id"));
         assertThat(steps(fetched.getBody())).hasSize(9);
+        // Decisão 4-B: o conteúdo não é persistido; GET não devolve o resultado.
+        assertThat(fetched.getBody().get("result")).isNull();
     }
 
     @Test
@@ -161,6 +163,8 @@ class AgentsFlowExecutionIT {
         Map<String, Object> second = execute(token, flowId, "same-key-1", "Tarefa única").getBody();
 
         assertThat(second.get("id")).isEqualTo(first.get("id"));
+        // Decisão 4-B: o replay devolve a execução persistida, sem o conteúdo final.
+        assertThat(second.get("result")).isNull();
         assertThat(attempts("AGENT_FLOW")).isEqualTo(attempts);
     }
 

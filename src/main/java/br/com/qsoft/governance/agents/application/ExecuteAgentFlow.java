@@ -150,11 +150,15 @@ public class ExecuteAgentFlow {
                     stepResult.requestId(), stepResult.errorCode(), stepResult.startedAt(),
                     stepResult.finishedAt()));
             }
-            FlowExecution finished = new FlowExecution(execution.id(), tenantId, flow.id(),
-                version.id(), actorUserId, result.status(), idempotencyKey, result.result(),
+            FlowExecution stored = new FlowExecution(execution.id(), tenantId, flow.id(),
+                version.id(), actorUserId, result.status(), idempotencyKey, null,
                 result.errorCode(), now, Instant.now(), execution.createdAt());
-            executionRepository.finish(finished);
-            return assembler.view(tenantId, finished);
+            executionRepository.finish(stored);
+            // Decisão 4-B: o conteúdo final não é persistido; só a resposta síncrona o carrega.
+            FlowExecution response = new FlowExecution(stored.id(), tenantId, flow.id(),
+                version.id(), actorUserId, stored.status(), idempotencyKey, result.result(),
+                stored.errorCode(), stored.startedAt(), stored.finishedAt(), stored.createdAt());
+            return assembler.view(tenantId, response);
         } catch (RuntimeException ex) {
             FlowExecution failed = new FlowExecution(execution.id(), tenantId, flow.id(),
                 version.id(), actorUserId, ExecutionStatus.FAILED, idempotencyKey, null,

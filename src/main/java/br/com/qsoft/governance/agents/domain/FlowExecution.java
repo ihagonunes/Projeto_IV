@@ -7,6 +7,8 @@ import java.util.UUID;
 
 /**
  * Execução de uma versão publicada (ADR-45). Não guarda prompt nem entrada.
+ * O {@code result} é <b>transiente</b> (decisão 4-B): existe apenas na resposta
+ * síncrona do POST e nunca é persistido; GET/replay não devolvem conteúdo.
  */
 public record FlowExecution(
     UUID id,

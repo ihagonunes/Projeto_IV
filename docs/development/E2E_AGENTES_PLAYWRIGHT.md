@@ -48,7 +48,7 @@ runtime do produto.
    NODE_ENV=development
    ```
 3. `scripts/setup-local.js` (com `--skip-build false`) compila o JAR, aplica o
-   Flyway (V001–V030) e cria o tenant `qsoft-local`, admin e contas por papel
+   Flyway (V001–V031) e cria o tenant `qsoft-local`, admin e contas por papel
    no `work-dir` (`accounts.local.json`). Ele inicia o backend durante o setup;
    ao final, garanta que o backend esteja rodando em `:8081` (reinicie o JAR se
    necessário).
@@ -206,7 +206,8 @@ com um job noturno (não bloqueante em PR) para reduzir flakiness.
 
 - Execução síncrona (até 120 s); sem polling nem cancelamento por endpoint.
 - Sem retry automático de transitórias (BE-06).
-- `result_text` guarda o resultado final; retenção/LGPD pendente.
+- O resultado final não é persistido (decisão 4-B): só a resposta síncrona do
+  POST e a tela da execução o exibem; GET/replay não devolvem conteúdo.
 - Sem integração com o chat (`agentFlowId`).
 - Sem `@playwright/test` versionado: o roteiro é executado pelo MCP e
   documentado; transformar em teste de CI exige decisão de dependência.

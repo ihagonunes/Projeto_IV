@@ -130,8 +130,8 @@ catálogo/overrides/fluxos/versões (V027), RBAC `AGENT:*` (V028), seed global d
 17 definições (V029), API de catálogo/override (BE-02), CRUD de fluxos com
 versão imutável, `If-Match`/412 e soft delete (BE-03), validação server-side
 do DAG + publicação (BE-04) e execução síncrona determinística com etapas e
-recibos (BE-06, V030). A integração com o chat continua fora do MVP e exige
-emenda ao ADR-45 + allowlist.
+recibos (BE-06, V030; V031 remove `result_text` pela decisão 4-B). A integração
+com o chat continua fora do MVP e exige emenda ao ADR-45 + allowlist.
 
 > **Sem RAG nesta fase.** O nó de políticas **não** consome `agentpolicies`
 > (RAG de políticas) no MVP: o agente trabalha apenas com o material da tarefa.
@@ -150,9 +150,9 @@ O módulo `agents` é o dono do catálogo e dos fluxos determinísticos de agent
   pode sobrescrever esses campos em `AgentDefinitionOverride`.
 - O fluxo é um DAG validado no servidor: uma tarefa, um resultado, sem ciclos,
   sem arestas duplicadas, com limites de nós/arestas e versão de schema.
-- A execução é determinística por versão publicada (somente após ADR-45 aceito);
-  cada etapa usará `AICompletionService` e cada tentativa/recibo continua no
-  `aigateway`.
+- A execução é determinística por versão publicada (ADR-45 aceito); cada etapa
+  usa `AICompletionService` e cada tentativa/recibo continua no `aigateway`.
+  O resultado final não é persistido (decisão 4-B).
 - A execução não lê tabelas de outro módulo e não usa FK cross-module.
 - O caminho inicial é um endpoint de execução próprio. Integração com o chat
   (`chat -> agents.api`) só entra depois de ADR-45 aceito e da allowlist
@@ -162,7 +162,10 @@ O módulo `agents` é o dono do catálogo e dos fluxos determinísticos de agent
   existir.
 - Persistência: `agents_catalog` (global, sem `tenant_id`),
   `agents_catalog_overrides`, `agents_flows` e `agents_flow_versions`. Tabelas de
-  execução ficam em `V030+`, após o ADR-45.
+  execução em V030 (`agents_flow_executions`/`agents_flow_steps`), sem conteúdo.
+- As execuções não guardam prompt, entrada, resposta de etapa nem resultado final
+  (decisão 4-B, 23/11/2026). GET devolve status/etapas/recibos; o conteúdo só
+  aparece na resposta síncrona do POST.
 
 ## Segurança
 
