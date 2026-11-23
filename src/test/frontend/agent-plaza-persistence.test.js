@@ -57,6 +57,33 @@ function catalogEntry(agentKey, status, executable) {
 
 const tick = () => new Promise(resolve => setImmediate(resolve));
 
+async function mountPublished(t, executionView, failures) {
+    const calls = { execute: [] };
+    let confirmed = 0;
+    const client = {
+        async get() {
+            return { agentes: [catalogEntry("policies", "ACTIVE", true)] };
+        },
+        async post(path, body, options) {
+            if (path.endsWith("/validar")) return { valid: true, needsMerge: false, errors: [] };
+            if (path.endsWith("/publicar")) return { rowVersion: 2, status: "PUBLISHED" };
+            if (path.endsWith("/execucoes")) {
+                calls.execute.push({ body, options });
+                return executionView;
+            }
+            return { id: "flow-1", rowVersion: 1, status: "DRAFT" };
+        },
+        async put() { throw new Error("put inesperado"); }
+    };
+    const dom = fakeDom(t);
+    const root = P.mount({ client, graph: validGraphFixture(),
+        onConfirm: () => { confirmed += 1; } });
+    await tick(); await tick();
+    dom.all(root).find(node => node.textContent === "Confirmar esteira").click();
+    await tick(); await tick(); await tick();
+    return { dom, root, calls, confirmed: () => confirmed };
+}
+
 test("praça: grafo do servidor usa agentKey e ids opacos; a UI converte nos dois sentidos", () => {
     const graph = P.createGraph();
     const agent = P.addNode(graph, "policies");
@@ -93,6 +120,10 @@ test("praça: serviço usa a API real, If-Match e detecta conflito 409/412", asy
             calls.push(["POST", path, body, options]);
             if (path.endsWith("/publicar")) return { rowVersion: 6, status: "PUBLISHED" };
             if (path.endsWith("/validar")) return { valid: true, needsMerge: false, errors: [] };
+            if (path.endsWith("/execucoes")) {
+                return { id: "exec-1", status: "SUCCEEDED", result: "ok", steps: [],
+                    cost: { status: "KNOWN", estimatedCost: 0.01 } };
+            }
             return { id: "flow-1", rowVersion: 1 };
         },
         async put(path, body, options) {
@@ -120,6 +151,12 @@ test("praça: serviço usa a API real, If-Match e detecta conflito 409/412", asy
 
     await service.publish("flow-1", 5);
     assert.equal(calls.at(-1)[3].headers["If-Match"], "\"5\"");
+
+    const execution = await service.execute("flow-1", "idem-1234", "Tarefa");
+    assert.deepEqual(calls.at(-1).slice(0, 2), ["POST", "/agentes/fluxos/flow-1/execucoes"]);
+    assert.equal(calls.at(-1)[2].input, "Tarefa");
+    assert.equal(calls.at(-1)[3].headers["Idempotency-Key"], "idem-1234");
+    assert.equal(execution.status, "SUCCEEDED");
 
     assert.equal(service.isConflict({ status: 412 }), true);
     assert.equal(service.isConflict({ status: 409 }), true);
@@ -169,6 +206,78 @@ test("praça: foco do teclado é preservado após novo render", t => {
     assert.equal(globalThis.document.activeElement.dataset.nodeId, taskId);
 });
 
+test("praça: após publicar, executa na tela e mostra resultado/etapas/custo", async t => {
+    const view = {
+        id: "exec-1", status: "SUCCEEDED", result: "[stub] resultado da esteira",
+        errorCode: null,
+        steps: [
+            { nodeId: "t", nodeKind: "task", status: "SUCCEEDED", requestId: null, receipt: null },
+            { nodeId: "a", nodeKind: "agent", status: "SUCCEEDED", requestId: "req-1",
+                receipt: { costStatus: "KNOWN", estimatedCost: 0.03 } }
+        ],
+        cost: { status: "KNOWN", estimatedCost: 0.03 }
+    };
+    const { dom, root, calls, confirmed } = await mountPublished(t, view, 1);
+
+    assert.equal(root.dataset.flowStatus, "PUBLISHED");
+    assert.equal(root.dataset.flowId, "flow-1");
+    assert.equal(confirmed(), 0, "publicar não fecha o diálogo nem confirma a execução");
+    assert.ok(dom.all(root).some(node => node.textContent === "Executar esteira"));
+
+    const input = dom.all(root).find(node => node.attrs["aria-label"] === "Entrada da execução");
+    input.value = "Tarefa E2E";
+    dom.all(root).find(node => node.textContent === "Executar esteira").click();
+    await tick(); await tick(); await tick();
+
+    const status = dom.all(root).find(node => node.className === "plaza-execution-status");
+    assert.match(status.textContent, /SUCCEEDED/);
+    const result = dom.all(root).find(node => node.className === "plaza-execution-result");
+    assert.equal(result.textContent, "[stub] resultado da esteira");
+    assert.equal(result.hidden, false);
+    const steps = dom.all(root).find(node => node.className === "plaza-execution-steps");
+    assert.equal(steps.children.length, 2);
+    const cost = dom.all(root).find(node => node.className === "plaza-execution-cost");
+    assert.match(cost.textContent, /KNOWN/);
+    assert.equal(calls.execute.length, 1);
+    assert.equal(calls.execute[0].body.input, "Tarefa E2E");
+    assert.ok(calls.execute[0].options.headers["Idempotency-Key"].length >= 8);
+});
+
+test("praça: falha de execução mostra status e libera nova tentativa com outra chave", async t => {
+    const failed = {
+        id: "exec-2", status: "FAILED", errorCode: "AGENT_COMPLETION_FAILED", result: null,
+        steps: [{ nodeId: "a", nodeKind: "agent", status: "FAILED", requestId: null,
+            receipt: null }],
+        cost: { status: "INCONCLUSIVE", estimatedCost: null }
+    };
+    const { dom, root, calls } = await mountPublished(t, failed, 2);
+
+    const input = dom.all(root).find(node => node.attrs["aria-label"] === "Entrada da execução");
+    input.value = "Tarefa";
+    dom.all(root).find(node => node.textContent === "Executar esteira").click();
+    await tick(); await tick(); await tick();
+
+    const status = dom.all(root).find(node => node.className === "plaza-execution-status");
+    assert.match(status.textContent, /FAILED/);
+    const retry = dom.all(root).find(node => node.textContent === "Nova tentativa");
+    assert.equal(retry.hidden, false);
+
+    retry.click();
+    await tick(); await tick(); await tick();
+    assert.equal(calls.execute.length, 2);
+    assert.notEqual(calls.execute[0].options.headers["Idempotency-Key"],
+        calls.execute[1].options.headers["Idempotency-Key"]);
+});
+
+test("praça: prévia não monta a seção de execução", t => {
+    const dom = fakeDom(t);
+    const root = P.mount({ onConfirm: () => {} });
+
+    assert.equal(dom.all(root).some(node => node.textContent === "Executar esteira"), false);
+    assert.equal(root.dataset.flowStatus, "");
+    assert.equal(root.dataset.flowId, "");
+});
+
 test("praça: conflito 412 na publicação mostra o aviso e não publica", async t => {
     const client = {
         async get() { return { agentes: [catalogEntry("policies", "ACTIVE", true)] }; },
@@ -197,6 +306,51 @@ test("praça: conflito 412 na publicação mostra o aviso e não publica", async
     assert.ok(message);
     const container = root.children.find(child => child.children.includes(message));
     assert.equal(container.hidden, false);
+    const section = dom.all(root).find(node => node.className === "plaza-execution");
+    assert.equal(section.hidden, true, "execução não aparece sem publicar");
+});
+
+test("praça: clique duplo em executar não duplica a chamada", async t => {
+    const view = {
+        id: "exec-dup", status: "SUCCEEDED", result: "ok", errorCode: null,
+        steps: [], cost: { status: "KNOWN", estimatedCost: 0.01 }
+    };
+    const { dom, root, calls } = await mountPublished(t, view, 3);
+    const input = dom.all(root).find(node => node.attrs["aria-label"] === "Entrada da execução");
+    input.value = "Tarefa";
+    const execute = dom.all(root).find(node => node.textContent === "Executar esteira");
+    execute.click();
+    execute.click();
+    await tick(); await tick(); await tick();
+
+    assert.equal(calls.execute.length, 1);
+});
+
+test("praça: fluxo de outro tenant (404) não carrega dados nem executa", async t => {
+    const client = {
+        async get(path) {
+            if (path === "/agentes/catalogo") {
+                return { agentes: [catalogEntry("policies", "ACTIVE", true)] };
+            }
+            const error = new Error("não encontrado");
+            error.status = 404;
+            error.data = { code: "AGENT_FLOW_NOT_FOUND" };
+            throw error;
+        },
+        async post() { throw new Error("post inesperado"); },
+        async put() { throw new Error("put inesperado"); }
+    };
+    const dom = fakeDom(t);
+    const root = P.mount({ client, flowId: "flow-de-outro-tenant" });
+    await tick(); await tick(); await tick();
+
+    const live = dom.all(root).find(node => node.className === "plaza-status");
+    assert.match(live.textContent, /AGENT_FLOW_NOT_FOUND/);
+    assert.equal(root.dataset.flowStatus, "");
+    const section = dom.all(root).find(node => node.className === "plaza-execution");
+    assert.equal(section.hidden, true, "seção de execução oculta sem fluxo carregado");
+    const articles = dom.all(root).filter(node => node.tag === "article");
+    assert.equal(articles.length, 1, "apenas o nó task inicial");
 });
 
 test("praça: arrastar do catálogo e soltar no canvas adiciona o agente", t => {

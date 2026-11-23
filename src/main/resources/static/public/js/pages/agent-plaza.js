@@ -208,6 +208,10 @@
                 return client.post(`/agentes/fluxos/${flowId}/publicar`, {},
                     { headers: { "If-Match": `"${rowVersion}"` } });
             },
+            async execute(flowId, idempotencyKey, input) {
+                return client.post(`/agentes/fluxos/${flowId}/execucoes`,
+                    { input }, { headers: { "Idempotency-Key": idempotencyKey } });
+            },
             isConflict(error) {
                 return Boolean(error && (error.status === 409 || error.status === 412));
             }
@@ -224,7 +228,7 @@
         let available = initialCatalog ? initialCatalog.slice() : (client ? [] : catalog.slice());
         let nodeErrors = [];
         let currentFlowId = flowId, rowVersion = null, lastSavedSignature = null;
-        let flowStatus = null;
+        let flowStatus = null, executionView = null, executing = false;
         const service = client ? createService(client) : null;
         const pendingClicks = new Map();
         function cancelClick(id) {
@@ -326,7 +330,7 @@
         const cards = el("div", null, "plaza-catalog"); library.append(libraryHeader, cards);
         workspace.append(viewport, library);
         root.append(toolbar, instructions, resultNotice, mergeNotice, workspace, live, tooltip,
-            el("p", "Rascunho visual — fora da prévia, salvar e publicar usam a API.", "plaza-footnote"));
+            el("p", "Rascunho visual — fora da prévia, salvar, publicar e executar usam a API.", "plaza-footnote"));
 
         // Persistência real (oculta na prévia, onde `service` é nulo).
         const nameInput = el("input"); nameInput.type = "text"; nameInput.value = "Fluxo sem nome";
@@ -345,6 +349,99 @@
             toolbar.insertBefore(nameField, addResult);
             toolbar.insertBefore(saveButton, addResult);
             root.insertBefore(conflictNotice, resultNotice);
+        }
+
+        // Execução (somente fora da prévia e após publicar).
+        const executionSection = el("section", null, "plaza-execution");
+        executionSection.hidden = true;
+        const executionTitle = el("h3", "Execução");
+        const executionInput = el("textarea");
+        executionInput.setAttribute("aria-label", "Entrada da execução");
+        executionInput.placeholder = "Descreva a tarefa que a esteira deve executar…";
+        executionInput.rows = 3;
+        const executeButton = button("Executar esteira", () => executeFlow());
+        const retryButton = button("Nova tentativa", () => executeFlow());
+        retryButton.hidden = true;
+        const executionStatus = el("p", "Pronto para executar.", "plaza-execution-status");
+        executionStatus.setAttribute("role", "status");
+        const executionResult = el("pre", null, "plaza-execution-result");
+        executionResult.hidden = true;
+        const executionSteps = el("ul", null, "plaza-execution-steps");
+        const executionCost = el("p", null, "plaza-execution-cost");
+        executionSection.append(executionTitle, executionInput, executeButton, retryButton,
+            executionStatus, executionResult, executionSteps, executionCost);
+        if (service) root.insertBefore(executionSection, live);
+        executionInput.addEventListener("input", () => {
+            if (executionView) { executionView = null; renderExecution(); }
+        });
+
+        function newIdempotencyKey() {
+            if (globalThis.crypto && typeof globalThis.crypto.randomUUID === "function") {
+                return globalThis.crypto.randomUUID();
+            }
+            return `exec-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+        }
+        async function executeFlow() {
+            if (!service || !currentFlowId || flowStatus !== "PUBLISHED" || executing) return;
+            const input = (executionInput.value || "").trim();
+            if (!input) {
+                announce("Informe a entrada da execução.");
+                if (typeof executionInput.focus === "function") executionInput.focus();
+                return;
+            }
+            executing = true;
+            executionView = null;
+            retryButton.hidden = true;
+            render();
+            try {
+                executionView = await service.execute(currentFlowId,
+                    newIdempotencyKey(), input);
+                announce(executionView.status === "SUCCEEDED"
+                    ? "Execução concluída."
+                    : `Execução ${executionView.status}.`);
+            } catch (error) {
+                executionView = null;
+                const code = error && error.data && error.data.code
+                    ? ` (${error.data.code})` : "";
+                announce(`Não foi possível executar${code}. `
+                    + (error && error.message ? error.message : ""));
+            } finally {
+                executing = false;
+                render();
+            }
+        }
+        function renderExecution() {
+            executionSection.hidden = !(service && flowStatus === "PUBLISHED");
+            if (executionSection.hidden) return;
+            executeButton.disabled = executing || !currentFlowId;
+            retryButton.hidden = !(executionView
+                && ["FAILED", "TIMED_OUT"].includes(executionView.status));
+            if (executing) {
+                executionStatus.textContent = "Executando…";
+                executionResult.hidden = true;
+                executionSteps.replaceChildren();
+                executionCost.textContent = "";
+                return;
+            }
+            const view = executionView;
+            if (!view) {
+                executionStatus.textContent = currentFlowId
+                    ? "Pronto para executar." : "Salve o fluxo antes de executar.";
+                executionResult.hidden = true;
+                executionSteps.replaceChildren();
+                executionCost.textContent = "";
+                return;
+            }
+            executionStatus.textContent = `Status: ${view.status}`
+                + (view.errorCode ? ` (${view.errorCode})` : "");
+            executionResult.textContent = view.result || "";
+            executionResult.hidden = !view.result;
+            executionSteps.replaceChildren(...((view.steps || []).map(step => el("li",
+                `${step.nodeKind} ${step.nodeId}: ${step.status}`
+                + (step.receipt ? ` · ${step.receipt.costStatus}` : "")))));
+            executionCost.textContent = `Custo: ${view.cost ? view.cost.status : "INCONCLUSIVE"}`
+                + (view.cost && view.cost.estimatedCost != null
+                    ? ` (${view.cost.estimatedCost})` : "");
         }
 
         async function persist() {
@@ -390,7 +487,7 @@
                 confirmedSignature = signature();
                 missingResultWarning = false;
                 render();
-                announce("Fluxo publicado. A esteira já pode ser executada pela API.");
+                announce("Fluxo publicado. Informe a entrada e execute a esteira.");
             } catch (error) {
                 handleError(error);
             } finally {
@@ -455,6 +552,7 @@
             confirm.disabled = value || confirmedSignature === signature()
                 || flowStatus === "PUBLISHED";
             saveButton.disabled = value || flowStatus === "PUBLISHED";
+            executeButton.disabled = value || executing || flowStatus !== "PUBLISHED";
         }
         function hasNodeError(index) {
             return nodeErrors.some(error => typeof error.path === "string"
@@ -651,8 +749,9 @@
             const published = flowStatus === "PUBLISHED";
             confirm.textContent = published ? "Esteira publicada"
                 : confirmed ? "Esteira confirmada" : "Confirmar esteira";
-            confirm.disabled = confirmed || published;
-            saveButton.disabled = published;
+            confirm.disabled = confirmed || published || executing;
+            saveButton.disabled = published || executing;
+            renderExecution();
             if (focusedId) {
                 const target = [...nodes.children].find(card => card.dataset && card.dataset.nodeId === focusedId);
                 if (target && typeof target.focus === "function") target.focus();
