@@ -166,6 +166,11 @@ public final class AgentFlowExecutor {
                 ? input
                 : input + "\n\nContexto das etapas anteriores:\n" + context;
             AgentCompletion completion = gateway.complete(node.agentKey(), prompt, content);
+            if (completion.content().isBlank()) {
+                // Preserve the receipt: the provider may have charged for this call.
+                return new NodeOutcome(step(node, ExecutionStepStatus.FAILED,
+                    completion.requestId(), "AGENT_EMPTY_RESPONSE", startedAt), null);
+            }
             return new NodeOutcome(step(node, ExecutionStepStatus.SUCCEEDED,
                 completion.requestId(), null, startedAt), completion.content());
         }

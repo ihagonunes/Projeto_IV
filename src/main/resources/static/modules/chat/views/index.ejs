@@ -1,5 +1,6 @@
 <%- contentFor("espaco-head") %>
 <link rel="stylesheet" href="/public/css/pages/chat.css?v=spi-136-escape-selection">
+<link rel="stylesheet" href="/public/css/pages/agent-plaza.css?v=spi-180-flow-studio-4">
 <%- contentFor("body") %>
 <a class="chat-skip" href="#chat-input">Pular para a mensagem</a>
 <div id="chat-app" class="chat-shell" data-preview="<%= preview %>">
@@ -48,6 +49,7 @@
         <button id="chat-scroll-bottom" class="chat-scroll-bottom chat-icon" aria-label="Ir para a última mensagem" hidden>↓</button>
         <div class="chat-composer-area">
             <div id="chat-token-warning" class="chat-token-warning" hidden></div>
+            <div id="chat-flow-context" class="chat-flow-context" role="status" hidden></div>
             <form id="chat-form" class="chat-composer">
                 <div id="chat-files" class="chat-files" hidden></div>
                 <label for="chat-input" class="chat-visually-hidden">Sua mensagem</label>
@@ -74,5 +76,6 @@
 <div id="chat-toast" class="chat-toast" role="status" aria-live="polite" hidden></div>
 <% if (!preview) { %><script src="/public/js/core/api-client.js"></script><% } %>
 <script src="/public/js/pages/chat-core.js?v=local-budget-001-final"></script>
-<script src="/public/js/pages/agent-plaza.js?v=spi-180-execucao-2"></script>
-<script src="/public/js/pages/chat.js?v=spi-180-execucao"></script>
+<script src="/public/js/pages/agent-plaza.js?v=spi-180-flow-studio-4"></script>
+<script src="/public/js/pages/agent-chat.js?v=spi-180-empty-response-1"></script>
+<script src="/public/js/pages/chat.js?v=spi-180-flow-studio-2"></script>

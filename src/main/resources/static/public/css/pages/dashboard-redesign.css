@@ -32,3 +32,53 @@
 .dashboard-layout .dashboard-overview-grid{display:grid;grid-template-columns:minmax(0,1.8fr) minmax(0,1fr);gap:18px;margin:22px 0;align-items:stretch}.dashboard-layout .dashboard-overview-grid>.dashboard-timeline{margin:0}.dashboard-layout .dashboard-overview-grid>.demo-chart-panel{margin:0}.dashboard-layout .dashboard-overview-grid .dashboard-connected-chart{max-height:460px;overflow-y:auto}.dashboard-layout .dashboard-timeline .dashboard-native-line{max-height:360px}.dashboard-layout .dashboard-native-line{max-height:360px}
 @media(max-width:1100px){.dashboard-layout .dashboard-overview-grid{grid-template-columns:1fr}.dashboard-layout .dashboard-overview-grid .dashboard-connected-chart{max-height:none;overflow:visible}}
 @media(prefers-reduced-motion:reduce){.dashboard-layout *{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+/* SPI-92 / SPI-124: navigation and a legible departmental budget overview. */
+.dashboard-layout .demo-header { display:flex;align-items:center;justify-content:space-between;gap:24px; }
+.dashboard-layout .dashboard-chat-link { display:inline-flex;align-items:center;justify-content:center;gap:10px;flex-shrink:0;min-height:44px;padding:11px 18px;border:1px solid #eed06755;border-radius:10px;background:#f0c64712;color:#f0d27a;text-decoration:none;font-size:13px;font-weight:500;transition:background .15s,border-color .15s; }
+.dashboard-layout .dashboard-chat-link:hover { background:#f0c64722;border-color:#eed067;color:#ffe59c; }
+.dashboard-layout .dashboard-chat-link:focus-visible,.dashboard-layout .budget-table-scroll:focus-visible { outline:2px solid #f0c647;outline-offset:4px; }
+.dashboard-layout .budget-overview-header { display:flex;align-items:center;justify-content:space-between;gap:20px; }
+.dashboard-layout .budget-eyebrow { display:block;font-size:9px;font-weight:600;letter-spacing:1.5px;color:#a3b1c7;margin-bottom:9px; }
+.dashboard-layout #budget-notification-title { font-size:20px;font-weight:500;letter-spacing:-.5px;margin:0; }
+.dashboard-layout .budget-period { font-size:11px;color:#b5c2d7;padding:7px 10px;border:1px solid #ffffff14;border-radius:7px;white-space:nowrap; }
+.dashboard-layout .budget-period:empty { display:none; }
+.dashboard-layout #budget-notification-message { font-size:12px;color:#a3b1c7;margin:12px 0 20px;line-height:1.65; }
+.dashboard-layout .budget-overview-stats { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid #ffffff10;border-radius:10px;margin-bottom:20px;background:#ffffff02; }
+.dashboard-layout .budget-overview-stats>div { display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px; }
+.dashboard-layout .budget-overview-stats>div+div { border-left:1px solid #ffffff10; }
+.dashboard-layout .budget-overview-stats span { font-size:11px;color:#a7b5cd; }
+.dashboard-layout .budget-overview-stats strong { font-size:25px;font-weight:500;line-height:1;letter-spacing:-.7px;font-variant-numeric:tabular-nums;color:#e1e8f4; }
+.dashboard-layout #budget-notification-missing { color:#e0c47c; }
+.dashboard-layout #budget-notification-details>summary { display:flex;align-items:center;gap:10px;padding:4px 0 16px;font-size:12px;font-weight:500;cursor:pointer;color:#ced8e8; }
+.dashboard-layout #budget-notification-details>summary::before { content:"›";font-size:20px;color:#a4b3cb;transition:transform .15s; }
+.dashboard-layout #budget-notification-details[open]>summary::before { transform:rotate(90deg); }
+.dashboard-layout #budget-notification-count { margin-left:auto;font-size:9px;font-weight:500;border-radius:5px;padding:4px 7px; }
+.dashboard-layout .budget-table-scroll { max-width:100%;overflow-x:auto;scrollbar-width:thin; }
+.dashboard-layout .budget-departments-table { width:100%;border-collapse:collapse;font-size:12px;min-width:740px;text-align:left; }
+.dashboard-layout .budget-departments-table caption { caption-side:bottom;text-align:left;font-size:10px;line-height:1.6;padding:14px 0 0;color:#8c9db9; }
+.dashboard-layout .budget-departments-table thead th { color:#8fa1bd;font-weight:400;font-size:10px;padding:10px 12px;border-block:1px solid #ffffff10;white-space:nowrap; }
+.dashboard-layout .budget-departments-table thead th:nth-child(n+3) { text-align:right; }
+.dashboard-layout .budget-departments-table tbody th,.dashboard-layout .budget-departments-table td { padding:13px 12px;border-bottom:1px solid #ffffff0a;vertical-align:middle; }
+.dashboard-layout .budget-departments-table tbody th { font-weight:500;color:#d5dfef;overflow-wrap:anywhere;max-width:260px; }
+.dashboard-layout .budget-departments-table tr:last-child>* { border-bottom:0; }
+.dashboard-layout .budget-departments-table tbody tr:hover { background:#ffffff03; }
+.dashboard-layout .budget-number { text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;color:#c0cee2; }
+.dashboard-layout .budget-state-badge { display:inline-block;white-space:nowrap;font-size:9px;font-weight:500;padding:5px 8px;border-radius:5px; }
+.dashboard-layout .budget-state-badge.text-bg-secondary { background:#8a9ab312!important;color:#a9b8ce!important; }
+.dashboard-layout .budget-state-badge.text-bg-success { background:#85c8a915!important;color:#a1d7be!important; }
+.dashboard-layout .budget-state-badge.text-bg-warning { background:#e4bf5817!important;color:#e7cc82!important; }
+.dashboard-layout .budget-state-badge.text-bg-danger { background:#e18b8517!important;color:#ecaaa4!important; }
+.dashboard-layout .budget-usage { min-width:110px;text-align:right;font-size:10px;color:#aabbd4;font-variant-numeric:tabular-nums; }
+.dashboard-layout .budget-usage meter { display:block;width:100%;height:5px;margin-top:5px;accent-color:#8fc9b1; }
+.dashboard-layout .budget-state-ALERTA meter { accent-color:#dfc16a; }
+.dashboard-layout .budget-state-EXCEDIDO meter { accent-color:#e0968f; }
+@media(max-width:767px) {
+    .dashboard-layout .demo-header { align-items:flex-start;flex-direction:column;gap:16px; }
+    .dashboard-layout .dashboard-chat-link { width:100%; }
+    .dashboard-layout .budget-overview-header { align-items:flex-start;gap:12px; }
+    .dashboard-layout #budget-notification-title { font-size:18px; }
+    .dashboard-layout .budget-overview-stats>div { flex-direction:column;align-items:flex-start;padding:14px 12px;gap:10px; }
+    .dashboard-layout .budget-overview-stats strong { font-size:23px; }
+    .dashboard-layout .budget-period { max-width:130px;white-space:normal;text-align:right; }
+}

@@ -6,11 +6,13 @@
     const app = $("chat-app");
     const preview = app.dataset.preview === "true";
     const service = preview ? C.createPreviewService() : C.createLiveService(window.API);
+    const flowRunner = !preview ? window.AtlasAgentChat.createRunner(window.API) : null;
     const state = { conversations: [], messages: [], models: [], receipts: new Map(), selected: null, selectedConversation: null, modelId: null,
         archived: false, page: 0, totalPages: 0, pending: false, loading: false, controller: null, generation: 0, files: [], usage: { input: 0, output: 0 } };
     let toastTimer;
     let searchTimer;
     let historyVersion = 0;
+    let selectedFlow = null;
     function node(tag, text, className) { const el = document.createElement(tag); if (text != null) el.textContent = text; if (className) el.className = className; return el; }
     function button(text, handler, className = "chat-action-button") { const el = node("button", text, className); el.type = "button"; el.addEventListener("click", handler); return el; }
     function toast(text) { $("chat-toast").textContent = text; $("chat-toast").hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { $("chat-toast").hidden = true; }, 5000); }
@@ -27,10 +29,15 @@
         const input = $("chat-input");
         $("chat-count").textContent = `${input.value.length.toLocaleString("pt-BR")} / 8.000`;
         $("chat-send").disabled = state.pending || state.loading || !C.validateMessage(input.value) || current()?.status === "ARCHIVED";
-        $("chat-send").hidden = state.pending; $("chat-stop").hidden = !state.pending;
+        $("chat-send").hidden = state.pending; $("chat-stop").hidden = !state.pending || Boolean(selectedFlow);
         input.disabled = state.pending || state.loading || current()?.status === "ARCHIVED";
         $("chat-new").disabled = state.pending || state.loading;
         $("chat-model").disabled = state.pending; $("chat-attach").disabled = state.pending;
+        $("chat-agent").disabled = state.pending || state.loading;
+        $("chat-model").hidden = Boolean(selectedFlow);
+        $("chat-attach").hidden = Boolean(selectedFlow);
+        $("chat-input").placeholder = selectedFlow ? "O que sua equipe de agentes vai criar?" : "Pergunte, explore ou comece uma ideia…";
+        $("chat-send").setAttribute("aria-label", selectedFlow ? "Enviar tarefa ao fluxo de agentes" : "Enviar mensagem");
         warning(); resize();
     }
     let financialBalance = null;
@@ -121,6 +128,15 @@
                 const regenerate = button("", () => regenerateDialog(message), "chat-icon"); regenerate.append(node("i", null, "bi bi-arrow-clockwise")); regenerate.setAttribute("aria-label", "Gerar outra resposta"); regenerate.disabled = state.pending;
                 actions.append(copy, regenerate, button(receipt ? `${receipt.tokensEntrada == null || receipt.tokensSaida == null ? "Tokens indisponíveis" : `${C.tokenLabel(receipt.tokensEntrada + receipt.tokensSaida)} tokens`} · Ver recibo` : "Ver detalhes da execução", () => receiptDialog(receipt, message.requestId), "chat-receipt"));
                 article.append(heading, richContent(message.content), actions);
+                if (message.flowView) {
+                    actions.replaceChildren(copy);
+                    article.replaceChildren(heading);
+                    const execution = node("div", null, "chat-agent-result");
+                    execution.append(node("h3", message.flowView.title), richContent(message.content));
+                    const steps = node("ol");
+                    message.flowView.steps.forEach(step => steps.append(node("li", `${step.name} · ${step.status}`, step.failed ? "is-failed" : "")));
+                    execution.append(steps); article.append(execution, actions);
+                }
             }
             container.append(article);
         }
@@ -143,6 +159,7 @@
     }
     async function openConversation(c) {
         if (state.pending || state.loading) return;
+        clearFlow();
         const generation = ++state.generation;
         state.selected = c.id; state.selectedConversation = c; state.messages = []; state.loading = true; status(""); history(); thread(); closeSidebar();
         try {
@@ -158,6 +175,7 @@
     }
     async function newConversation() {
         if (state.pending || state.loading) return;
+        clearFlow(); agentPlaza = null;
         state.generation++; state.selected = null; state.selectedConversation = null; state.messages = []; state.files = []; state.archived = false;
         $("chat-input").value = ""; status(""); renderFiles(); thread(); closeSidebar(); $("chat-input").focus();
         if (!preview) {
@@ -302,6 +320,7 @@
     async function send(event) {
         event.preventDefault(); const content = $("chat-input").value;
         if (state.pending || state.loading || !C.validateMessage(content) || current()?.status === "ARCHIVED") return;
+        if (selectedFlow) return sendFlow(content);
         const selected = state.selected; const before = state.messages.slice();
         const messageId = C.clientMessageId();
         state.pending = true; state.controller = new AbortController();
@@ -366,17 +385,63 @@
     $("chat-more").addEventListener("click", async () => { $("chat-more").disabled = true; try { await loadHistory(true); } catch { status("Não foi possível carregar mais conversas."); } finally { $("chat-more").disabled = false; } });
     $("chat-model").addEventListener("click", modelDialog);
     let agentPlaza;
+    function renderFlow() {
+        const context = $("chat-flow-context");
+        context.replaceChildren(); context.hidden = !selectedFlow;
+        if (!selectedFlow) { composer(); return; }
+        const copy = node("div", null, "chat-flow-copy");
+        const agents = selectedFlow.graph.nodes.filter(n => !["task", "result", "merge"].includes(n.kind));
+        copy.append(node("strong", selectedFlow.name), node("span", agents.map(n => n.name).join(" → ")));
+        const edit = button("Ver fluxo", () => $("chat-agent").click(), "chat-text-button"); edit.disabled = state.pending;
+        const remove = button("×", () => { if (!state.pending) clearFlow(); }, "chat-icon");
+        remove.setAttribute("aria-label", "Remover fluxo e voltar ao chat comum"); remove.disabled = state.pending;
+        context.append(node("span", "⌘", "chat-flow-icon"), copy, edit, remove); composer();
+    }
+    function clearFlow() {
+        if (selectedFlow) { state.messages = []; state.selected = null; state.selectedConversation = null; }
+        selectedFlow = null;
+        const url = new URL(window.location.href); url.searchParams.delete("fluxo");
+        window.history.replaceState(null, "", url); renderFlow(); thread();
+    }
+    function selectFlow(flow) {
+        const sameFlow = selectedFlow && selectedFlow.id === flow.id
+            && JSON.stringify(selectedFlow.graph) === JSON.stringify(flow.graph);
+        selectedFlow = flow;
+        if (!sameFlow) { state.selected = null; state.selectedConversation = null; state.messages = []; state.files = []; }
+        if (flow.id) { const url = new URL(window.location.href); url.searchParams.set("fluxo", flow.id); window.history.replaceState(null, "", url); }
+        closeDialog(); renderFlow(); thread(); history(); renderFiles();
+        $("chat-input").focus(); toast(preview ? "Fluxo de exemplo pronto. Escreva sua tarefa no chat." : "Fluxo salvo. Escreva sua tarefa no chat.");
+    }
+    async function sendFlow(content) {
+        const flow = selectedFlow;
+        state.pending = true; status(""); renderFlow();
+        state.messages.push({ id: C.clientMessageId(), role: "USER", content });
+        $("chat-input").value = ""; thread(); bottom();
+        try {
+            const view = preview ? { status: "SUCCEEDED", result: "Esta é uma demonstração visual do resultado do fluxo. Nenhum agente ou modelo foi executado.",
+                steps: flow.graph.nodes.filter(n => !["task", "result", "merge"].includes(n.kind)).map(n => ({nodeId:n.id,nodeKind:"agent",status:"SUCCEEDED"})) }
+                : await flowRunner.run(flow, content, C.clientMessageId());
+            const displayed = window.AtlasAgentChat.presentation(flow, view);
+            state.messages.push({ id: C.clientMessageId(), role: "ASSISTANT", content: displayed.content, flowView: displayed });
+            if (!displayed.succeeded) $("chat-input").value = content;
+        } catch (error) {
+            status(C.errorMessage(error)); $("chat-input").value = content;
+        } finally {
+            state.pending = false; renderFlow(); thread(); bottom();
+            void refreshTokenTank(); $("chat-input").focus();
+        }
+    }
     const plazaIsOpen = () => agentPlaza && $("chat-dialog-body").contains(agentPlaza);
     $("chat-dialog").addEventListener("cancel", event => {
         if (!plazaIsOpen()) return;
-        event.preventDefault(); agentPlaza.clearSelection();
+        if (agentPlaza.clearSelection()) event.preventDefault();
     });
     $("chat-dialog").addEventListener("keydown", event => {
         if (event.key !== "Escape" || !plazaIsOpen()) return;
-        event.preventDefault(); event.stopPropagation(); agentPlaza.clearSelection();
+        if (agentPlaza.clearSelection()) { event.preventDefault(); event.stopPropagation(); }
     });
     $("chat-agent")?.addEventListener("click", () => {
-        const options = { onConfirm: () => { closeDialog(); toast("Esteira de agentes confirmada."); } };
+        const options = { onConfirm: selectFlow, onNew: () => { agentPlaza = null; clearFlow(); $("chat-agent").click(); } };
         if (preview) options.catalog = window.AtlasAgentPlaza.catalog;
         else options.client = window.API;
         const flowId = new URLSearchParams(window.location.search).get("fluxo");

@@ -115,6 +115,41 @@ class OpenAiCompatibleProviderClientTest {
     }
 
     @Test
+    void deepSeekFlashDisablesThinkingWithoutIncreasingOutputBudget() throws Exception {
+        clientWithoutCredential().call(new ProviderCall(
+            ProviderKind.OPENAI_COMPATIBLE, baseUrl, null, 5000, "deepseek-v4.1-flash",
+            List.of(CompletionMessage.user("Mensagem local de teste")), List.of(), 2048));
+
+        var body = new ObjectMapper().readTree(requestBody.get());
+        assertThat(body.path("thinking").path("type").asText()).isEqualTo("disabled");
+        assertThat(body.path("max_tokens").asInt()).isEqualTo(2048);
+    }
+
+    @Test
+    void otherModelsKeepTheirExistingThinkingBehavior() throws Exception {
+        clientWithoutCredential().call(new ProviderCall(
+            ProviderKind.OPENAI_COMPATIBLE, baseUrl, null, 5000, "gpt-x",
+            List.of(CompletionMessage.user("Mensagem local de teste")), List.of(), 2048));
+
+        var body = new ObjectMapper().readTree(requestBody.get());
+        assertThat(body.has("thinking")).isFalse();
+        assertThat(body.path("max_tokens").asInt()).isEqualTo(2048);
+    }
+
+    @Test
+    void reasoningOnlyResponseIsNeverUsedAsFinalAnswer() {
+        responseOverride.set("""
+            {"choices":[{"finish_reason":"length","message":{"content":null,
+              "reasoning_content":"raciocínio de teste que não é a resposta"}}],
+              "usage":{"prompt_tokens":10,"completion_tokens":2048}}
+            """);
+
+        ProviderResponse response = clientWithoutCredential().call(localCall(List.of(), List.of()));
+        assertThat(response.content()).isNull();
+        assertThat(response.usage()).isEqualTo(new Usage.Known(10, 2048));
+    }
+
+    @Test
     void aceitaChoiceSemMensagemComoRespostaSemConteudo() {
         responseOverride.set("{\"choices\":[{}]}");
         ProviderResponse response = clientWithoutCredential().call(localCall(List.of(), List.of()));

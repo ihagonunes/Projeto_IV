@@ -218,7 +218,7 @@
         };
     }
 
-    function mount({ onConfirm = () => {}, client = null, catalog: initialCatalog = null, flowId = null,
+    function mount({ onConfirm = () => {}, onNew = () => {}, client = null, catalog: initialCatalog = null, flowId = null,
         graph: initialGraph = null } = {}) {
         const graph = initialGraph
             ? { nodes: initialGraph.nodes.map(node => ({ ...node })),
@@ -228,14 +228,14 @@
         let available = initialCatalog ? initialCatalog.slice() : (client ? [] : catalog.slice());
         let nodeErrors = [];
         let currentFlowId = flowId, rowVersion = null, lastSavedSignature = null;
-        let flowStatus = null, executionView = null, executing = false;
+        let flowStatus = null, saving = false;
         const service = client ? createService(client) : null;
         const pendingClicks = new Map();
         function cancelClick(id) {
             if (pendingClicks.has(id)) window.clearTimeout(pendingClicks.get(id).timer);
             pendingClicks.delete(id);
         }
-        const signature = () => JSON.stringify([graph.nodes.map(n => [n.id, n.kind]), graph.edges]);
+        const signature = () => JSON.stringify([graph.nodes.map(n => [n.id, n.kind, n.x, n.y]), graph.edges, nameInput.value]);
         const el = (tag, text, cls) => { const n = document.createElement(tag); if (text) n.textContent = text; if (cls) n.className = cls; return n; };
         const button = (text, action, cls = "chat-action-button") => { const b = el("button", text, cls); b.type = "button"; b.addEventListener("click", action); return b; };
         const root = el("section", null, "chat-agent-plaza");
@@ -243,13 +243,15 @@
         const summary = el("span", "Monte seu fluxo", "plaza-summary");
         const agentFor = kind => endpoints[kind] || available.find(a => a.kind === kind)
             || catalog.find(a => a.kind === kind) || (kind === "merge" ? mergeAgent : null);
-        const libraryItems = () => available.some(a => a.kind === "merge")
-            ? available : [...available, mergeAgent];
-        const addResult = button("+ Adicionar resultado", () => {
+        const libraryItems = () => (available.some(a => a.kind === "merge")
+            ? available.slice() : [...available, mergeAgent]).sort((a, b) => Number(b.executable !== false) - Number(a.executable !== false));
+        const addResult = button("+ Resultado", () => {
             const result = addAtAvailablePosition("result");
             if (result) { render(); announce("Resultado adicionado. Conecte a saída do consolidador à entrada do resultado."); }
         }, "chat-action-button is-primary");
         const confirm = button("Confirmar esteira", () => {
+            if (saving) return;
+            if (flowStatus === "PUBLISHED") return handoff();
             for (const [id, pending] of [...pendingClicks]) { cancelClick(id); pending.activate(); }
             if (!graph.nodes.some(n => n.kind === "result")) {
                 const message = "Falta adicionar o Resultado. Adicione essa etapa e conecte a saída final antes de confirmar a esteira.";
@@ -259,22 +261,27 @@
             if (!validation.valid) return announce(validation.message);
             if (!service) {
                 confirmedSignature = signature(); render();
-                announce("Esteira confirmada nesta sessão. A execução dos agentes ainda não está conectada.");
-                onConfirm(); return;
+                announce("Fluxo pronto. Escreva sua tarefa no chat.");
+                handoff(); return;
             }
             confirmFlow();
         }, "chat-action-button is-primary");
         toolbar.append(summary, addResult, confirm);
-        const instructions = el("p", "Para conectar, clique primeiro na origem e depois no destino. Clique duas vezes no agente para removê-lo ou na seta para remover a conexão. Arraste para mover.", "plaza-instructions");
+        const instructions = el("p", "Clique em uma etapa e depois na próxima para conectar. Arraste para organizar.", "plaza-instructions");
         const viewport = el("div", null, "plaza-viewport");
         const scenery = el("div", null, "plaza-scenery"); scenery.setAttribute("aria-hidden", "true");
-        for (let frame = 1; frame <= 4; frame++) {
+        for (let frame = 1; frame <= 1; frame++) {
             const image = el("img"); image.src = `/public/img/agent-plaza/fundo_0${frame}.png`; image.alt = "";
             image.draggable = false; image.style.animationDelay = `${(frame - 1) * .75}s`;
             scenery.append(image);
         }
         viewport.append(scenery);
         const canvas = el("div", null, "plaza-canvas"); canvas.setAttribute("aria-label", "Área de montagem do fluxo");
+        const canvasHeading = el("div", null, "plaza-canvas-heading");
+        canvasHeading.append(el("span", "ÁREA DE CRIAÇÃO"), el("span", "Seu próximo resultado começa aqui."));
+        const empty = el("div", null, "plaza-empty");
+        empty.append(el("span", "+", "plaza-empty-symbol"), el("strong", "Quem vai fazer parte do seu fluxo?"), el("span", "Adicione um agente da biblioteca para começar."));
+        viewport.append(canvasHeading, empty);
         const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg"); svg.setAttribute("class", "plaza-wires");
         const nodes = el("div"); canvas.append(svg, nodes); viewport.append(canvas);
         const live = el("p", "Comece pela tarefa do usuário e adicione o primeiro agente.", "plaza-status"); live.setAttribute("role", "status");
@@ -285,6 +292,7 @@
         function character(card, agent) {
             const figure = el("span", null, "plaza-figure");
             const image = el("img", null, "plaza-sprite"); image.src = agent.image; image.alt = ""; image.draggable = false;
+            image.width = 64; image.height = 64;
             figure.append(image, el("strong", agent.name, "plaza-agent-name")); card.append(figure);
             card.setAttribute("aria-description", agent.description);
             function showTooltip() {
@@ -326,14 +334,19 @@
         const search = el("input"); search.type = "search"; search.placeholder = "Buscar agente…"; search.setAttribute("aria-label", "Buscar agente");
         const category = el("select"); category.setAttribute("aria-label", "Categoria dos agentes");
         ["Todos", ...new Set(libraryItems().map(a => a.category))].forEach(name => { const o = el("option", name); category.append(o); });
-        libraryHeader.append(el("strong", "Agentes disponíveis"), search, category);
+        libraryHeader.append(el("span", "SUA EQUIPE DE IA", "plaza-eyebrow"), el("strong", "Biblioteca de agentes"), search, category);
         const cards = el("div", null, "plaza-catalog"); library.append(libraryHeader, cards);
         workspace.append(viewport, library);
-        root.append(toolbar, instructions, resultNotice, mergeNotice, workspace, live, tooltip,
-            el("p", "Rascunho visual — fora da prévia, salvar, publicar e executar usam a API.", "plaza-footnote"));
+        const footer = el("footer", null, "plaza-footer");
+        const footerNote = el("div", null, "plaza-footer-note");
+        footerNote.append(live, el("p", "Confirmar salva o fluxo. A execução só começa quando você enviar uma mensagem no chat.", "plaza-footnote"));
+        const footerActions = el("div", null, "plaza-footer-actions");
+        footerActions.append(confirm); footer.append(footerNote, footerActions);
+        root.append(toolbar, instructions, resultNotice, mergeNotice, workspace, footer, tooltip);
 
         // Persistência real (oculta na prévia, onde `service` é nulo).
-        const nameInput = el("input"); nameInput.type = "text"; nameInput.value = "Fluxo sem nome";
+        const nameInput = el("input"); nameInput.type = "text"; nameInput.value = "Meu fluxo"; nameInput.maxLength = 200;
+        nameInput.autocomplete = "off";
         nameInput.setAttribute("aria-label", "Nome do fluxo");
         const saveButton = button("Salvar rascunho", () => saveDraft());
         const conflictNotice = el("div", null, "plaza-merge-notice");
@@ -343,106 +356,41 @@
         const reloadButton = button("Recarregar", () => reloadFlow());
         const overwriteButton = button("Sobrescrever", () => overwriteFlow());
         conflictNotice.append(conflictMessage, reloadButton, overwriteButton);
+        const nameField = el("label", null, "plaza-name-field");
+        nameField.append(el("span", "Nome do fluxo"), nameInput);
+        toolbar.insertBefore(nameField, addResult);
+        toolbar.insertBefore(button("Novo fluxo", onNew), addResult);
         if (service) {
-            const nameField = el("label", null, "plaza-name-field");
-            nameField.append(el("span", "Nome do fluxo"), nameInput);
-            toolbar.insertBefore(nameField, addResult);
-            toolbar.insertBefore(saveButton, addResult);
+            footerActions.insertBefore(saveButton, confirm);
             root.insertBefore(conflictNotice, resultNotice);
         }
 
-        // Execução (somente fora da prévia e após publicar).
-        const executionSection = el("section", null, "plaza-execution");
-        executionSection.hidden = true;
-        const executionTitle = el("h3", "Execução");
-        const executionInput = el("textarea");
-        executionInput.setAttribute("aria-label", "Entrada da execução");
-        executionInput.placeholder = "Descreva a tarefa que a esteira deve executar…";
-        executionInput.rows = 3;
-        const executeButton = button("Executar esteira", () => executeFlow());
-        const retryButton = button("Nova tentativa", () => executeFlow());
-        retryButton.hidden = true;
-        const executionStatus = el("p", "Pronto para executar.", "plaza-execution-status");
-        executionStatus.setAttribute("role", "status");
-        const executionResult = el("pre", null, "plaza-execution-result");
-        executionResult.hidden = true;
-        const executionSteps = el("ul", null, "plaza-execution-steps");
-        const executionCost = el("p", null, "plaza-execution-cost");
-        executionSection.append(executionTitle, executionInput, executeButton, retryButton,
-            executionStatus, executionResult, executionSteps, executionCost);
-        if (service) root.insertBefore(executionSection, live);
-        executionInput.addEventListener("input", () => {
-            if (executionView) { executionView = null; renderExecution(); }
+        function handoff() {
+            onConfirm({ id: currentFlowId, name: nameInput.value.trim() || "Meu fluxo", status: flowStatus,
+                preview: !service, graph: { nodes: graph.nodes.map(n => ({ ...n })), edges: graph.edges.map(e => ({ ...e })) } });
+        }
+        const arrange = button("Organizar fluxo", () => {
+            if (flowStatus === "PUBLISHED") return;
+            const depths = new Map([["task", 0]]);
+            for (let pass = 0; pass < graph.nodes.length; pass++) {
+                for (const edge of graph.edges) if (depths.has(edge.from)) {
+                    depths.set(edge.to, Math.max(depths.get(edge.to) || 0, depths.get(edge.from) + 1));
+                }
+            }
+            const groups = new Map();
+            graph.nodes.forEach((n, index) => {
+                const depth = depths.get(n.id) ?? index;
+                if (!groups.has(depth)) groups.set(depth, []);
+                groups.get(depth).push(n);
+            });
+            const levels = [...groups.keys()].sort((a, b) => a - b);
+            levels.forEach((level, index) => groups.get(level).forEach((n, lane, group) => {
+                n.x = levels.length > 1 ? index / (levels.length - 1) : .12;
+                n.y = group.length > 1 ? lane / (group.length - 1) : .45;
+            }));
+            render(); announce("Etapas organizadas. As conexões foram preservadas.");
         });
-
-        function newIdempotencyKey() {
-            if (globalThis.crypto && typeof globalThis.crypto.randomUUID === "function") {
-                return globalThis.crypto.randomUUID();
-            }
-            return `exec-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-        }
-        async function executeFlow() {
-            if (!service || !currentFlowId || flowStatus !== "PUBLISHED" || executing) return;
-            const input = (executionInput.value || "").trim();
-            if (!input) {
-                announce("Informe a entrada da execução.");
-                if (typeof executionInput.focus === "function") executionInput.focus();
-                return;
-            }
-            executing = true;
-            executionView = null;
-            retryButton.hidden = true;
-            render();
-            try {
-                executionView = await service.execute(currentFlowId,
-                    newIdempotencyKey(), input);
-                announce(executionView.status === "SUCCEEDED"
-                    ? "Execução concluída."
-                    : `Execução ${executionView.status}.`);
-            } catch (error) {
-                executionView = null;
-                const code = error && error.data && error.data.code
-                    ? ` (${error.data.code})` : "";
-                announce(`Não foi possível executar${code}. `
-                    + (error && error.message ? error.message : ""));
-            } finally {
-                executing = false;
-                render();
-            }
-        }
-        function renderExecution() {
-            executionSection.hidden = !(service && flowStatus === "PUBLISHED");
-            if (executionSection.hidden) return;
-            executeButton.disabled = executing || !currentFlowId;
-            retryButton.hidden = !(executionView
-                && ["FAILED", "TIMED_OUT"].includes(executionView.status));
-            if (executing) {
-                executionStatus.textContent = "Executando…";
-                executionResult.hidden = true;
-                executionSteps.replaceChildren();
-                executionCost.textContent = "";
-                return;
-            }
-            const view = executionView;
-            if (!view) {
-                executionStatus.textContent = currentFlowId
-                    ? "Pronto para executar." : "Salve o fluxo antes de executar.";
-                executionResult.hidden = true;
-                executionSteps.replaceChildren();
-                executionCost.textContent = "";
-                return;
-            }
-            executionStatus.textContent = `Status: ${view.status}`
-                + (view.errorCode ? ` (${view.errorCode})` : "");
-            executionResult.textContent = view.result || "";
-            executionResult.hidden = !view.result;
-            executionSteps.replaceChildren(...((view.steps || []).map(step => el("li",
-                `${step.nodeKind} ${step.nodeId}: ${step.status}`
-                + (step.receipt ? ` · ${step.receipt.costStatus}` : "")))));
-            executionCost.textContent = `Custo: ${view.cost ? view.cost.status : "INCONCLUSIVE"}`
-                + (view.cost && view.cost.estimatedCost != null
-                    ? ` (${view.cost.estimatedCost})` : "");
-        }
+        toolbar.insertBefore(arrange, addResult);
 
         async function persist() {
             const name = (nameInput.value || "").trim() || "Fluxo sem nome";
@@ -461,7 +409,7 @@
             lastSavedSignature = signature();
         }
         async function saveDraft() {
-            if (!service) return;
+            if (!service || saving) return;
             busy(true);
             try {
                 await persist();
@@ -487,7 +435,8 @@
                 confirmedSignature = signature();
                 missingResultWarning = false;
                 render();
-                announce("Fluxo publicado. Informe a entrada e execute a esteira.");
+                announce("Fluxo salvo. Continue no chat.");
+                handoff();
             } catch (error) {
                 handleError(error);
             } finally {
@@ -540,6 +489,10 @@
             render();
         }
         function handleError(error) {
+            if (error?.status === 403) {
+                announce("Seu perfil não pode salvar ou publicar este fluxo. Peça acesso ao responsável pelo departamento.");
+                return;
+            }
             if (service && service.isConflict(error)) {
                 conflictNotice.hidden = false;
                 announce("Conflito de versão: recarregue o fluxo ou sobrescreva com a sua versão.");
@@ -549,10 +502,11 @@
             announce(`Não foi possível concluir a operação${code}. ${error && error.message ? error.message : ""}`.trim());
         }
         function busy(value) {
-            confirm.disabled = value || confirmedSignature === signature()
-                || flowStatus === "PUBLISHED";
+            saving = value;
+            root.setAttribute("aria-busy", String(value));
+            confirm.disabled = value;
+            confirm.textContent = value ? "Salvando fluxo…" : flowStatus === "PUBLISHED" ? "Usar no chat →" : "Confirmar e ir para o chat →";
             saveButton.disabled = value || flowStatus === "PUBLISHED";
-            executeButton.disabled = value || executing || flowStatus !== "PUBLISHED";
         }
         function hasNodeError(index) {
             return nodeErrors.some(error => typeof error.path === "string"
@@ -563,7 +517,7 @@
                 && error.path.startsWith(`/nodes/${index}`)).map(error => error.message).join(" ");
         }
 
-        const inset = 8;
+        const inset = 20;
         const cardWidth = 148;
         const cardHeight = 86;
         canvas.style.setProperty("--plaza-card-width", `${cardWidth}px`);
@@ -575,6 +529,7 @@
         const position = (n, bounds) => ({ x: inset + n.x * bounds.x, y: inset + n.y * bounds.y });
         const fraction = (value, span) => span ? clamp(value / span) : 0;
         function addAtAvailablePosition(kind) {
+            if (flowStatus === "PUBLISHED") return null;
             const bounds = travel();
             const occupied = graph.nodes.map(n => position(n, bounds));
             const columns = Math.floor(bounds.x / (cardWidth + 12));
@@ -604,6 +559,7 @@
         function drag(event, payload) { event.dataTransfer.setData("application/x-atlas-agent", JSON.stringify(payload)); event.dataTransfer.effectAllowed = payload.id ? "move" : "copy"; }
         canvas.addEventListener("dragover", event => { if (Array.from(event.dataTransfer.types).includes("application/x-atlas-agent")) event.preventDefault(); });
         canvas.addEventListener("drop", event => {
+            if (flowStatus === "PUBLISHED") return;
             event.preventDefault(); let payload;
             try { payload = JSON.parse(event.dataTransfer.getData("application/x-atlas-agent")); } catch { return; }
             const rect = canvas.getBoundingClientRect();
@@ -646,6 +602,7 @@
                 hit.setAttribute("class", "plaza-wire-hit");
                 wire.append(hit, path);
                 const remove = () => {
+                    if (flowStatus === "PUBLISHED") return;
                     graph.edges = graph.edges.filter(candidate => candidate !== edge);
                     render();
                     announce(`Conexão de ${from} para ${to} removida.`);
@@ -661,6 +618,7 @@
             }
         }
         function selectNode(n) {
+            if (flowStatus === "PUBLISHED") return;
             if (!graph.nodes.some(candidate => candidate.id === n.id)) return;
             if (!source) {
                 if (n.kind === "result") return announce("Resultado é a etapa final. Clique primeiro no agente de origem.");
@@ -690,13 +648,14 @@
             const focusedId = document.activeElement && document.activeElement.dataset
                 ? document.activeElement.dataset.nodeId : null;
             hideTooltip();
+            canvas.style.minWidth = `${Math.max(650, graph.nodes.length * (cardWidth + 36) + 40)}px`;
             nodes.replaceChildren();
             graph.nodes.forEach((n, index) => {
                 const hasError = hasNodeError(index);
                 const card = el("article", null, `plaza-node plaza-${n.kind}${source === n.id ? " is-connecting" : ""}${hasError ? " has-error" : ""}`);
                 card.dataset.nodeId = n.id;
                 if (hasError) card.setAttribute("aria-invalid", "true");
-                card.draggable = true;
+                card.draggable = flowStatus !== "PUBLISHED";
                 card.tabIndex = 0; card.setAttribute("aria-label", `${n.name}. Use as setas para mover.`);
                 if (hasError) card.setAttribute("aria-description", serverErrorsFor(index));
                 card.addEventListener("dragstart", event => { cancelClick(n.id); const r = card.getBoundingClientRect(); drag(event, { id: n.id, dx: event.clientX - r.left, dy: event.clientY - r.top }); });
@@ -708,6 +667,7 @@
                     pendingClicks.set(n.id, { timer, activate });
                 });
                 const remove = () => {
+                    if (flowStatus === "PUBLISHED") return;
                     cancelClick(n.id);
                     if (n.kind === "task") return announce("A tarefa do usuário é o início e não pode ser removida.");
                     removeNode(graph, n.id); if (source === n.id) source = null;
@@ -715,6 +675,7 @@
                 };
                 card.addEventListener("dblclick", remove);
                 card.addEventListener("keydown", event => {
+                    if (flowStatus === "PUBLISHED") return;
                     if (event.target === card && ["Enter", " ", "Delete"].includes(event.key)) {
                         event.preventDefault(); cancelClick(n.id);
                         if (event.key === "Delete") remove(); else selectNode(n);
@@ -730,8 +691,15 @@
                     layout();
                 });
                 const agent = agentFor(n.kind);
+                card.append(el("span", n.kind === "task" ? "ENTRADA" : n.kind === "result" ? "ENTREGA" : `AGENTE ${String(index).padStart(2, "0")}`, "plaza-node-label"));
                 if (agent) { card.className += " plaza-character"; character(card, agent); }
                 else card.append(el("span", n.kind === "task" ? "INÍCIO" : "ENTREGA FINAL", "plaza-node-label"), el("strong", n.name));
+                if (n.kind !== "task") {
+                    const removeButton = button("×", event => { event.stopPropagation(); remove(); }, "plaza-remove");
+                    removeButton.setAttribute("aria-label", `Remover ${n.name}`);
+                    removeButton.disabled = flowStatus === "PUBLISHED";
+                    card.append(removeButton);
+                }
                 nodes.append(card);
             });
             layout(); addResult.disabled = graph.nodes.some(n => n.kind === "result");
@@ -747,11 +715,13 @@
             root.dataset.flowStatus = flowStatus || "";
             root.dataset.rowVersion = rowVersion == null ? "" : String(rowVersion);
             const published = flowStatus === "PUBLISHED";
-            confirm.textContent = published ? "Esteira publicada"
-                : confirmed ? "Esteira confirmada" : "Confirmar esteira";
-            confirm.disabled = confirmed || published || executing;
-            saveButton.disabled = published || executing;
-            renderExecution();
+            confirm.textContent = published ? "Usar no chat →" : "Confirmar e ir para o chat →";
+            confirm.disabled = saving;
+            saveButton.disabled = published || saving;
+            nameInput.disabled = published || saving;
+            arrange.disabled = published || saving;
+            addResult.disabled = addResult.disabled || published;
+            empty.hidden = graph.nodes.length > 1;
             if (focusedId) {
                 const target = [...nodes.children].find(card => card.dataset && card.dataset.nodeId === focusedId);
                 if (target && typeof target.focus === "function") target.focus();
@@ -772,9 +742,12 @@
                     render(); announce(`${a.name} adicionado. Conecte as etapas para definir a ordem.`);
                 }, "plaza-agent-card");
                 card.draggable = executable; card.setAttribute("aria-label", label);
-                if (!executable) { card.disabled = true; card.setAttribute("aria-disabled", "true"); }
+                if (!executable || flowStatus === "PUBLISHED") { card.disabled = true; card.setAttribute("aria-disabled", "true"); }
                 if (executable) card.addEventListener("dragstart", event => drag(event, { kind: a.kind }));
                 character(card, a); cards.append(card);
+                const meta = el("span", null, "plaza-agent-meta");
+                meta.append(el("span", executable ? (a.category || "Fluxo") : "Em breve"), el("span", executable ? "+" : "◇"));
+                card.append(meta);
             });
             if (!cards.children.length) cards.append(el("p", "Nenhum agente encontrado."));
         }

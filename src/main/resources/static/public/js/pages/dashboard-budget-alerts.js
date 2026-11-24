@@ -5,8 +5,8 @@
     const panel = document.getElementById("budget-notification");
     if (!panel || !window.Auth.isAuthenticated()) return;
     const message = get("message"), details = get("details"), list = get("items"), retry = get("retry");
-    const states = { OK: "OK", ALERTA: "Alerta", EXCEDIDO: "Excedido", SEM_ORCAMENTO: "Sem orçamento" };
-    const amount = value => value == null ? "Sem dado" : Number(value).toLocaleString("pt-BR", {
+    const states = { OK: "Dentro do limite", ALERTA: "Atenção", EXCEDIDO: "Excedido", SEM_ORCAMENTO: "Sem orçamento" };
+    const amount = value => value == null || value === "" || !Number.isFinite(Number(value)) ? "—" : Number(value).toLocaleString("pt-BR", {
         minimumFractionDigits: 2, maximumFractionDigits: 2
     });
     let version = 0;
@@ -20,7 +20,9 @@
         details.hidden = true;
         details.open = false;
         list.replaceChildren();
+        for (const name of ["total", "alerts", "missing"]) get(name).textContent = "—";
         message.textContent = "";
+        get("period").textContent = "";
         retry.hidden = true;
         try {
             const response = await window.ApiClient.get(`/v1/observability/orcamentos?mes=${month}`);
@@ -39,24 +41,33 @@
                 get("count").textContent = "Demo";
                 get("count").className = "badge text-bg-secondary";
                 get("icon").hidden = true;
-                const row = document.createElement("li");
-                row.textContent = "Orçamento " + demo.money(demo.budget) + " · consumido " + demo.money(demo.spent)
+                const row = document.createElement("tr");
+                const cell = document.createElement("td"); cell.colSpan = 6;
+                cell.textContent = "Orçamento " + demo.money(demo.budget) + " · consumido " + demo.money(demo.spent)
                     + " · disponível " + demo.money(demo.budget - demo.spent);
+                row.appendChild(cell);
                 list.appendChild(row);
                 return;
             }
             const alerts = items.filter(item => ["ALERTA", "EXCEDIDO"].includes(item.status));
+            const missing = items.filter(item => item.status === "SEM_ORCAMENTO").length;
             const exceeded = alerts.some(item => item.status === "EXCEDIDO");
             panel.hidden = false;
             details.hidden = false;
             details.open = true;
-            get("title").textContent = `Orçamento do mês — ${month}`;
-            message.textContent = alerts.length ? "Atenção ao consumo do orçamento mensal." : "Nenhum departamento em alerta.";
+            get("title").textContent = "Orçamento por departamento";
+            get("period").textContent = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(`${month}-01T12:00:00Z`));
+            get("total").textContent = String(items.length);
+            get("alerts").textContent = String(alerts.length);
+            get("missing").textContent = String(missing);
+            message.textContent = alerts.length ? "Há departamentos que precisam de atenção ao consumo."
+                : missing ? "Há departamentos sem orçamento informado. Confira a situação abaixo."
+                : "Nenhum departamento em alerta nos dados informados.";
             get("summary").textContent = alerts.length
                 ? "Atenção: departamentos atingiram o limite de alerta do orçamento mensal. Ver detalhes"
-                : "Consultar situação dos departamentos";
+                : "Situação dos departamentos";
             get("count").textContent = `${alerts.length} ${alerts.length === 1 ? "alerta" : "alertas"}`;
-            get("count").className = `badge text-bg-${exceeded ? "danger" : alerts.length ? "warning" : "success"}`;
+            get("count").className = `badge text-bg-${exceeded ? "danger" : alerts.length || missing ? "warning" : "success"}`;
             get("icon").hidden = !alerts.length;
             if (alerts.length) {
                 panel.className = `demo-panel p-3 mb-4 border border-${exceeded ? "danger" : "warning"}`;
@@ -64,29 +75,36 @@
             // Críticos primeiro, preservando todos os departamentos autorizados para consulta.
             const ordered = [...alerts, ...items.filter(item => !["ALERTA", "EXCEDIDO"].includes(item.status))];
             for (const item of ordered) {
-                const row = document.createElement("li");
+                const row = document.createElement("tr");
+                row.className = `budget-department-row budget-state-${item.status || "UNKNOWN"}`;
+                const department = document.createElement("th");
+                department.setAttribute("scope", "row");
+                department.textContent = item.departmentName || "Departamento sem nome";
+                row.appendChild(department);
                 const label = document.createElement("span");
                 const status = states[item.status] || "Situação indisponível";
-                label.className = `badge me-2 text-bg-${item.status === "EXCEDIDO" ? "danger"
+                label.className = `budget-state-badge text-bg-${item.status === "EXCEDIDO" ? "danger"
                     : item.status === "ALERTA" ? "warning" : item.status === "OK" ? "success" : "secondary"}`;
                 label.textContent = status;
-                row.appendChild(label);
-                const text = document.createElement("span");
-                const pct = item.pctUsado == null ? null : Number(item.pctUsado);
-                if (["ALERTA", "EXCEDIDO"].includes(item.status)) {
-                    text.textContent = pct != null && Number.isFinite(pct)
-                        ? `Atenção: O departamento ${item.departmentName} atingiu ${pct.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}% do orçamento mensal alocado.`
-                        : `Atenção: O departamento ${item.departmentName} registrou consumo com orçamento mensal igual a zero.`;
-                } else {
-                    text.textContent = `${item.departmentName}: ${status}.`;
-                }
-                row.appendChild(text);
-                const values = document.createElement("div");
-                values.className = "demo-muted small";
+                const statusCell = document.createElement("td");
+                statusCell.appendChild(label); row.appendChild(statusCell);
                 const balance = item.orcamento == null || item.custoReal == null
                     ? null : Number(item.orcamento) - Number(item.custoReal);
-                values.textContent = `Orçamento ${amount(item.orcamento)} · Consumo ${amount(item.custoReal)} · Saldo ${amount(balance)}`;
-                row.appendChild(values);
+                for (const value of [item.orcamento, item.custoReal, balance]) {
+                    const cell = document.createElement("td");
+                    cell.className = "budget-number"; cell.textContent = amount(value); row.appendChild(cell);
+                }
+                const usage = document.createElement("td"); usage.className = "budget-usage";
+                const pct = item.status === "SEM_ORCAMENTO" || item.pctUsado == null ? null : Number(item.pctUsado);
+                if (pct != null && Number.isFinite(pct) && pct >= 0) {
+                    const value = document.createElement("span");
+                    value.textContent = `${pct.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
+                    const meter = document.createElement("meter");
+                    meter.min = 0; meter.max = 100; meter.value = Math.min(100, pct);
+                    meter.setAttribute("aria-label", `Utilização do orçamento de ${item.departmentName}`);
+                    usage.appendChild(value); usage.appendChild(meter);
+                } else { usage.textContent = "—"; }
+                row.appendChild(usage);
                 list.appendChild(row);
             }
         } catch (error) {

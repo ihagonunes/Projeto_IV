@@ -5,6 +5,37 @@ const path = require("node:path");
 const express = require("express");
 const layouts = require("express-ejs-layouts");
 const base = path.resolve(__dirname, "../../main/resources/static");
+
+test("atalho para o chat aparece nos quatro dashboards autorizados e não concede acesso ao administrador", async () => {
+    const ejs = require("ejs");
+    const controller = require(path.join(base, "modules/dashboard/dashboards.controller"));
+    for (const profile of ["colaborador", "lider", "gestor", "executivo", "administrador"]) {
+        const authorized = profile !== "administrador";
+        let data;
+        controller.render({ params: {} }, {
+            locals: { dashboardProfile: profile, permissions: new Set(authorized ? ["CHAT:READ", "CHAT:CREATE"] : ["TENANT:MANAGE"]) },
+            render: (_view, rendered) => { data = rendered; }
+        });
+        assert.equal(data.canAccessChat, authorized);
+        const html = await ejs.renderFile(path.join(base, "modules/dashboard/views/index.ejs"), { ...data, contentFor: () => "" });
+        assert.equal(html.includes('class="dashboard-chat-link"'), authorized);
+        if (authorized) assert.match(html, /<a href="\/chat" class="dashboard-chat-link">/);
+        if (profile !== "colaborador") {
+            assert.match(html, /<table class="budget-departments-table">/);
+            assert.match(html, /<tbody id="budget-notification-items">/);
+            assert.match(html, /A API não informa a moeda/);
+        }
+    }
+});
+
+test("perfil da URL não concede o atalho quando faltam permissões de chat", () => {
+    const controller = require(path.join(base, "modules/dashboard/dashboards.controller"));
+    let data;
+    controller.render({ params: { profile: "executivo" } }, {
+        locals: { permissions: new Set() }, render: (_view, rendered) => { data = rendered; }
+    });
+    assert.equal(data.canAccessChat, false);
+});
 test("render dos cinco layouts com ações de sessão e filtros aguardando autenticação", async () => {
     const app = express();
     app.set("views", [path.join(base, "views"), path.join(base, "modules")]);
