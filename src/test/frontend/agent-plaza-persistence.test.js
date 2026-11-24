@@ -59,7 +59,7 @@ const tick = () => new Promise(resolve => setImmediate(resolve));
 
 async function mountPublished(t, executionView, failures) {
     const calls = { execute: [] };
-    let confirmed = 0;
+    let confirmed = 0, handoff;
     const client = {
         async get() {
             return { agentes: [catalogEntry("policies", "ACTIVE", true)] };
@@ -77,11 +77,11 @@ async function mountPublished(t, executionView, failures) {
     };
     const dom = fakeDom(t);
     const root = P.mount({ client, graph: validGraphFixture(),
-        onConfirm: () => { confirmed += 1; } });
+        onConfirm: flow => { handoff = flow; confirmed += 1; } });
     await tick(); await tick();
-    dom.all(root).find(node => node.textContent === "Confirmar esteira").click();
+    dom.all(root).find(node => node.textContent === "Confirmar e ir para o chat →").click();
     await tick(); await tick(); await tick();
-    return { dom, root, calls, confirmed: () => confirmed };
+    return { dom, root, calls, confirmed: () => confirmed, handoff: () => handoff };
 }
 
 test("praça: grafo do servidor usa agentKey e ids opacos; a UI converte nos dois sentidos", () => {
@@ -206,67 +206,24 @@ test("praça: foco do teclado é preservado após novo render", t => {
     assert.equal(globalThis.document.activeElement.dataset.nodeId, taskId);
 });
 
-test("praça: após publicar, executa na tela e mostra resultado/etapas/custo", async t => {
-    const view = {
-        id: "exec-1", status: "SUCCEEDED", result: "[stub] resultado da esteira",
-        errorCode: null,
-        steps: [
-            { nodeId: "t", nodeKind: "task", status: "SUCCEEDED", requestId: null, receipt: null },
-            { nodeId: "a", nodeKind: "agent", status: "SUCCEEDED", requestId: "req-1",
-                receipt: { costStatus: "KNOWN", estimatedCost: 0.03 } }
-        ],
-        cost: { status: "KNOWN", estimatedCost: 0.03 }
-    };
-    const { dom, root, calls, confirmed } = await mountPublished(t, view, 1);
-
+test("praça: confirmar salva e publica antes de voltar ao chat, sem executar", async t => {
+    const { dom, root, calls, confirmed, handoff } = await mountPublished(t, null);
     assert.equal(root.dataset.flowStatus, "PUBLISHED");
     assert.equal(root.dataset.flowId, "flow-1");
-    assert.equal(confirmed(), 0, "publicar não fecha o diálogo nem confirma a execução");
-    assert.ok(dom.all(root).some(node => node.textContent === "Executar esteira"));
-
-    const input = dom.all(root).find(node => node.attrs["aria-label"] === "Entrada da execução");
-    input.value = "Tarefa E2E";
-    dom.all(root).find(node => node.textContent === "Executar esteira").click();
-    await tick(); await tick(); await tick();
-
-    const status = dom.all(root).find(node => node.className === "plaza-execution-status");
-    assert.match(status.textContent, /SUCCEEDED/);
-    const result = dom.all(root).find(node => node.className === "plaza-execution-result");
-    assert.equal(result.textContent, "[stub] resultado da esteira");
-    assert.equal(result.hidden, false);
-    const steps = dom.all(root).find(node => node.className === "plaza-execution-steps");
-    assert.equal(steps.children.length, 2);
-    const cost = dom.all(root).find(node => node.className === "plaza-execution-cost");
-    assert.match(cost.textContent, /KNOWN/);
-    assert.equal(calls.execute.length, 1);
-    assert.equal(calls.execute[0].body.input, "Tarefa E2E");
-    assert.ok(calls.execute[0].options.headers["Idempotency-Key"].length >= 8);
+    assert.equal(confirmed(), 1, "confirma somente depois de publicar");
+    assert.equal(calls.execute.length, 0, "confirmar nunca gera uma resposta");
+    assert.equal(handoff().id, "flow-1");
+    assert.equal(handoff().status, "PUBLISHED");
+    assert.ok(handoff().graph.nodes.some(n => n.kind === "result"));
+    assert.equal(dom.all(root).some(n => n.tag === "textarea"), false);
+    assert.equal(dom.all(root).some(n => n.textContent === "Executar esteira"), false);
 });
 
-test("praça: falha de execução mostra status e libera nova tentativa com outra chave", async t => {
-    const failed = {
-        id: "exec-2", status: "FAILED", errorCode: "AGENT_COMPLETION_FAILED", result: null,
-        steps: [{ nodeId: "a", nodeKind: "agent", status: "FAILED", requestId: null,
-            receipt: null }],
-        cost: { status: "INCONCLUSIVE", estimatedCost: null }
-    };
-    const { dom, root, calls } = await mountPublished(t, failed, 2);
-
-    const input = dom.all(root).find(node => node.attrs["aria-label"] === "Entrada da execução");
-    input.value = "Tarefa";
-    dom.all(root).find(node => node.textContent === "Executar esteira").click();
-    await tick(); await tick(); await tick();
-
-    const status = dom.all(root).find(node => node.className === "plaza-execution-status");
-    assert.match(status.textContent, /FAILED/);
-    const retry = dom.all(root).find(node => node.textContent === "Nova tentativa");
-    assert.equal(retry.hidden, false);
-
-    retry.click();
-    await tick(); await tick(); await tick();
-    assert.equal(calls.execute.length, 2);
-    assert.notEqual(calls.execute[0].options.headers["Idempotency-Key"],
-        calls.execute[1].options.headers["Idempotency-Key"]);
+test("praça: fluxo publicado volta ao chat sem executar novamente", async t => {
+    const { dom, root, calls, confirmed } = await mountPublished(t, null);
+    dom.all(root).find(n => n.textContent === "Usar no chat →").click();
+    assert.equal(confirmed(), 2);
+    assert.equal(calls.execute.length, 0);
 });
 
 test("praça: prévia não monta a seção de execução", t => {
@@ -297,7 +254,7 @@ test("praça: conflito 412 na publicação mostra o aviso e não publica", async
     const root = P.mount({ client, graph: validGraphFixture(), onConfirm: () => {} });
     await tick(); await tick();
 
-    dom.all(root).find(node => node.textContent === "Confirmar esteira").click();
+    dom.all(root).find(node => node.textContent === "Confirmar e ir para o chat →").click();
     await tick(); await tick(); await tick();
 
     assert.notEqual(root.dataset.flowStatus, "PUBLISHED", "não deve ficar PUBLISHED");
@@ -307,23 +264,7 @@ test("praça: conflito 412 na publicação mostra o aviso e não publica", async
     const container = root.children.find(child => child.children.includes(message));
     assert.equal(container.hidden, false);
     const section = dom.all(root).find(node => node.className === "plaza-execution");
-    assert.equal(section.hidden, true, "execução não aparece sem publicar");
-});
-
-test("praça: clique duplo em executar não duplica a chamada", async t => {
-    const view = {
-        id: "exec-dup", status: "SUCCEEDED", result: "ok", errorCode: null,
-        steps: [], cost: { status: "KNOWN", estimatedCost: 0.01 }
-    };
-    const { dom, root, calls } = await mountPublished(t, view, 3);
-    const input = dom.all(root).find(node => node.attrs["aria-label"] === "Entrada da execução");
-    input.value = "Tarefa";
-    const execute = dom.all(root).find(node => node.textContent === "Executar esteira");
-    execute.click();
-    execute.click();
-    await tick(); await tick(); await tick();
-
-    assert.equal(calls.execute.length, 1);
+    assert.equal(section, undefined, "a praça não contém execução");
 });
 
 test("praça: fluxo de outro tenant (404) não carrega dados nem executa", async t => {
@@ -348,7 +289,7 @@ test("praça: fluxo de outro tenant (404) não carrega dados nem executa", async
     assert.match(live.textContent, /AGENT_FLOW_NOT_FOUND/);
     assert.equal(root.dataset.flowStatus, "");
     const section = dom.all(root).find(node => node.className === "plaza-execution");
-    assert.equal(section.hidden, true, "seção de execução oculta sem fluxo carregado");
+    assert.equal(section, undefined, "a praça não contém execução");
     const articles = dom.all(root).filter(node => node.tag === "article");
     assert.equal(articles.length, 1, "apenas o nó task inicial");
 });
@@ -416,7 +357,7 @@ test("praça: erros do servidor aparecem por nó e impedem a publicação", asyn
     await new Promise(resolve => setImmediate(resolve));
 
     const nodes = dom.all(root);
-    nodes.find(node => node.textContent === "Confirmar esteira").click();
+    nodes.find(node => node.textContent === "Confirmar e ir para o chat →").click();
     await new Promise(resolve => setImmediate(resolve));
     await new Promise(resolve => setImmediate(resolve));
     await new Promise(resolve => setImmediate(resolve));
@@ -451,7 +392,7 @@ test("praça: conflito 412 mostra recarregar/sobrescrever sem confirmar sucesso"
     await new Promise(resolve => setImmediate(resolve));
 
     const nodes = dom.all(root);
-    nodes.find(node => node.textContent === "Confirmar esteira").click();
+    nodes.find(node => node.textContent === "Confirmar e ir para o chat →").click();
     await new Promise(resolve => setImmediate(resolve));
     await new Promise(resolve => setImmediate(resolve));
     await new Promise(resolve => setImmediate(resolve));

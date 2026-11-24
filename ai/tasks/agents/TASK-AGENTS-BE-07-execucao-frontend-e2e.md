@@ -1,5 +1,10 @@
 # TASK-AGENTS-BE-07 — Execução no frontend, seed E2E e Playwright
 
+> Atualização de UX autorizada por Vulpi em 23/11/2026:
+> [SPI-180 — praça e chat](TASK-AGENTS-UX-01-praca-chat.md) substitui a seção
+> de execução dentro da praça. Confirmar salva/publica e volta ao compositor;
+> a execução explícita e o resultado usam a tela do chat e a API de agentes existente.
+
 ## Metadados
 
 - **Jira:** SPI-180.
