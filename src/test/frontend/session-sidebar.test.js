@@ -6,6 +6,61 @@ const ejs = require("ejs");
 const base = path.resolve(__dirname, "../../main/resources/static");
 const render = (file, data) => ejs.renderFile(path.join(base, file), { contentFor: () => "", ...data });
 
+async function switchPage(pathname, destination, ok = true) {
+    const events = {}, navigation = [], writes = [];
+    const select = { value: "", addEventListener(name, callback) { this[name] = callback; }, replaceChildren() {}, add() {} };
+    const status = {};
+    const location = { pathname, assign: value => navigation.push(value), reload: () => navigation.push("reload") };
+    require("node:vm").runInNewContext(require("node:fs").readFileSync(path.join(base, "public/js/core/demo-profiles.js"), "utf8"), {
+        document: { getElementById: id => id === "demo-profile-select" ? select : id === "demo-profile-status" ? status : null },
+        window: { addEventListener(name, callback) { events[name] = callback; } }, location, Option: class {},
+        localStorage: { removeItem: key => writes.push(key), setItem: key => writes.push(key) },
+        fetch: async (_path, options) => options.method === "POST"
+            ? { ok, json: async () => ({ destination, message: "Sessão vencida" }) }
+            : { ok: true, json: async () => ({ profiles: [{ profile: "executivo", active: true }] }) }
+    });
+    await new Promise(resolve => setImmediate(resolve));
+    select.value = "gestor";
+    return { select, status, events, navigation, writes };
+}
+
+test("sessão: trocar conta no chat mantém o chat e usa URL limpa", async () => {
+    for (const pathname of ["/chat", "/chat/"]) {
+        const p = await switchPage(pathname, "/dashboard");
+        await p.select.change();
+        assert.deepEqual(p.navigation, ["/chat"]);
+        assert.ok(p.writes.includes("qsoft.user"));
+        assert.ok(p.writes.includes("qsoft.profile-changed"));
+    }
+});
+
+test("sessão: administrador mantém destino autorizado e outros painéis mantêm navegação anterior", async () => {
+    for (const [page, destination] of [["/chat", "/onboarding"], ["/dashboard", "/dashboard"]]) {
+        const p = await switchPage(page, destination);
+        await p.select.change();
+        assert.deepEqual(p.navigation, [destination]);
+    }
+});
+
+test("sessão: falha na troca não navega nem confirma a nova sessão", async () => {
+    const p = await switchPage("/chat", "/dashboard", false);
+    await p.select.change();
+    assert.deepEqual(p.navigation, []);
+    assert.deepEqual(p.writes, []);
+    assert.equal(p.status.textContent, "Sessão vencida");
+});
+
+test("sessão: troca em outra aba limpa o contexto do chat e recarrega demais páginas", async () => {
+    const chat = await switchPage("/chat", "/dashboard");
+    chat.events.storage({ key: "outra-chave" });
+    assert.deepEqual(chat.navigation, []);
+    chat.events.storage({ key: "qsoft.profile-changed" });
+    assert.deepEqual(chat.navigation, ["/chat"]);
+    const dashboard = await switchPage("/dashboard", "/dashboard");
+    dashboard.events.storage({ key: "qsoft.profile-changed" });
+    assert.deepEqual(dashboard.navigation, ["reload"]);
+});
+
 test("sessão: engrenagem abre e recolhe a troca de conta", async () => {
     const html = await render("views/partials/demo-profiles.ejs", {});
     assert.match(html, /aria-expanded="false" aria-controls="demo-profile-panel"/);

@@ -9,6 +9,8 @@ function render(req, res) {
         titulo: layouts[profile].title,
         bodyClass: "auth-bg dashboard-demo dashboard-layout",
         profile, panel: layouts[profile], indicatorReason: reason,
+        canAccessChat: Boolean(res.locals.permissions?.has("CHAT:READ")
+            && res.locals.permissions?.has("CHAT:CREATE")),
         canManageBudget: profile === "executivo" && res.locals.permissions?.has("SPENDING_BUDGET:MANAGE"),
         canManageSpending: profile === "executivo" && res.locals.permissions?.has("SPENDING_BUDGET:MANAGE"),
         canManageSpendingAlert: profile === "gestor" && res.locals.permissions?.has("SPENDING_ALERT:MANAGE"),

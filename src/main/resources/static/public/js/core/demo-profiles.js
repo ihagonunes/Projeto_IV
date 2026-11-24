@@ -47,14 +47,21 @@
                 localStorage.setItem("qsoft.session", "1");
                 localStorage.setItem("qsoft.profile-changed", String(Date.now()));
             } catch { /* a sessão HTTP é a autoridade */ }
-            location.assign(result.destination);
+            // Stay in the chat when the new account can use it. Navigate to a
+            // clean URL so a flow from the previous account is not carried over.
+            const destination = location.pathname.replace(/\/+$/, "") === "/chat"
+                && result.destination === "/dashboard" ? "/chat" : result.destination;
+            location.assign(destination);
         } catch (error) {
             status.textContent = error.message;
             try { await load(); } catch { select.disabled = true; }
         }
     });
     window.addEventListener("storage", event => {
-        if (event.key === "qsoft.profile-changed") location.reload();
+        if (event.key === "qsoft.profile-changed") {
+            if (location.pathname.replace(/\/+$/, "") === "/chat") location.assign("/chat");
+            else location.reload();
+        }
     });
     load().catch(error => { status.textContent = error.message; });
 })();

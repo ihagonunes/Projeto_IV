@@ -8,7 +8,8 @@ const tick = () => new Promise(resolve => setImmediate(resolve));
 const item = (name, status, pct = null) => ({ departmentName: name, status, pctUsado: pct });
 async function page(reply, authenticated = true) {
     const elements = new Map(), calls = [], events = {};
-    const element = () => ({ hidden: true, textContent: "", children: [], events: {},
+    const element = tag => ({ tag, hidden: true, textContent: "", children: [], events: {}, attrs: {},
+        setAttribute(key, value) { this.attrs[key] = value; },
         appendChild(value) { this.children.push(value); }, replaceChildren() { this.children = []; },
         addEventListener(event, handler) { this.events[event] = handler; } });
     const get = id => { if (!elements.has(id)) elements.set(id, element()); return elements.get(id); };
@@ -27,7 +28,15 @@ test("alerta está no mês UTC corrente, exibe badge e descrição expansível d
     assert.match(p.panel.className, /border-danger/);
     assert.equal(p.get("details").hidden, false);
     assert.equal(p.get("count").textContent, "2 alertas");
-    assert.match(p.get("items").children[0].children[1].textContent, /Atenção: O departamento Marketing atingiu 125,5% do orçamento mensal alocado/);
+    const row = p.get("items").children[0];
+    assert.equal(row.tag, "tr");
+    assert.equal(row.children[0].textContent, "Marketing");
+    assert.equal(row.children[0].attrs.scope, "row");
+    assert.equal(row.children[1].children[0].textContent, "Excedido");
+    assert.equal(row.children[5].children[0].textContent, "125,5%");
+    assert.equal(row.children[5].children[1].value, 100);
+    assert.equal(p.get("total").textContent, "3");
+    assert.equal(p.get("alerts").textContent, "2");
     assert.equal(p.get("items").children.length, 3);
 });
 
@@ -37,9 +46,9 @@ test("gestor recebe apenas as áreas que vieram da API, sem inferir escopo pelo 
     }] }));
     assert.equal(p.get("items").children.length, 1);
     assert.equal(p.get("details").open, true);
-    assert.match(p.get("items").children[0].children[1].textContent, /Minha área/);
-    assert.equal(p.get("items").children[0].children[2].textContent,
-        "Orçamento 100,00 · Consumo 80,00 · Saldo 20,00");
+    const cells = p.get("items").children[0].children;
+    assert.equal(cells[0].textContent, "Minha área");
+    assert.deepEqual(cells.slice(2, 5).map(c => c.textContent), ["100,00", "80,00", "20,00"]);
     assert.equal(p.get("count").textContent, "1 alerta");
     assert.match(p.panel.className, /border-warning/);
 });
@@ -55,9 +64,11 @@ test("403 oculta o painel e não expõe dados; usuário sem sessão não consult
 test("sem orçamento e orçamento zero com consumo não exibem percentuais inventados", async () => {
     const p = await page(() => ({ itens: [item("Sem limite", "SEM_ORCAMENTO"), item("Zero", "EXCEDIDO")] }));
     const rows = p.get("items").children;
-    assert.match(rows[0].children[1].textContent, /orçamento mensal igual a zero/);
-    assert.match(rows[1].children[1].textContent, /Sem orçamento/);
-    assert.ok(!rows.map(row => row.children[1].textContent).join().includes("null%"));
+    assert.equal(rows[0].children[1].children[0].textContent, "Excedido");
+    assert.equal(rows[1].children[1].children[0].textContent, "Sem orçamento");
+    assert.equal(rows[0].children[5].textContent, "—");
+    assert.equal(rows[1].children[5].textContent, "—");
+    assert.equal(rows[1].children[2].textContent, "—");
 });
 
 test("vazio não mostra alarme; nomes com HTML são texto e estados saudáveis têm rótulo", async () => {
@@ -66,7 +77,7 @@ test("vazio não mostra alarme; nomes com HTML são texto e estados saudáveis t
     const healthy = await page(() => ({ itens: [item("<img onerror=alert(1)>", "OK", 20)] }));
     assert.equal(healthy.get("icon").hidden, true);
     assert.equal(healthy.get("count").textContent, "0 alertas");
-    assert.equal(healthy.get("items").children[0].children[1].textContent, "<img onerror=alert(1)>: OK.");
+    assert.equal(healthy.get("items").children[0].children[0].textContent, "<img onerror=alert(1)>");
 });
 
 test("erro não afirma ausência de alertas; nova tentativa e retorno à janela atualizam sem manter dados antigos", async () => {
@@ -91,6 +102,27 @@ test("resposta atrasada de uma consulta anterior não substitui a atualização"
     const last = p.events.focus();
     pending[1]({ itens: [item("Atual", "EXCEDIDO", 101)] }); await last;
     pending[0]({ itens: [item("Antigo", "ALERTA", 80)] }); await first;
-    assert.match(p.get("items").children[0].children[1].textContent, /Atual/);
+    assert.equal(p.get("items").children[0].children[0].textContent, "Atual");
     assert.equal(p.get("items").children.length, 1);
+});
+
+test("departamentos sem orçamento têm resumo próprio e não aparecem como situação regular", async () => {
+    const p = await page(() => ({ itens: [{ ...item("Dados", "SEM_ORCAMENTO"), orcamento: null, custoReal: 0 }] }));
+    assert.equal(p.get("missing").textContent, "1");
+    assert.equal(p.get("alerts").textContent, "0");
+    assert.match(p.get("message").textContent, /sem orçamento informado/);
+    assert.doesNotMatch(p.get("message").textContent, /Nenhum departamento em alerta/);
+    assert.doesNotMatch(p.get("count").className, /success/);
+    const cells = p.get("items").children[0].children;
+    assert.equal(cells[2].textContent, "—");
+    assert.equal(cells[3].textContent, "0,00");
+    assert.equal(cells[4].textContent, "—");
+});
+
+test("valores e percentuais inválidos não produzem NaN ou porcentagem inventada", async () => {
+    const p = await page(() => ({ itens: [{ ...item("TI", "OK", "inválido"), orcamento: "inválido", custoReal: 0 }] }));
+    const cells = p.get("items").children[0].children;
+    assert.equal(cells[2].textContent, "—");
+    assert.equal(cells[4].textContent, "—");
+    assert.equal(cells[5].textContent, "—");
 });

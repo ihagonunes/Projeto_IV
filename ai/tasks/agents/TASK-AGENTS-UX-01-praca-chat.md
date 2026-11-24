@@ -36,3 +36,21 @@ Validação automatizada usa clientes falsos. Inspeção visual usa `/chat/previ
 em Chrome headless. Nenhuma geração de IA ou execução paga deve ser realizada.
 Checks: `node --test src/test/frontend/*.test.js`; não há mudança de backend,
 schema ou fronteiras modulares, portanto os checks Maven e integração não se aplicam.
+
+## Correção de resposta vazia — SPI-180
+
+Após uma execução real iniciada por Vulpi, o DeepSeek V4.1 Flash 1017 atingiu
+o teto de 2048 tokens e o fluxo foi marcado como concluído sem texto final.
+O frontend interpretava o texto vazio como erro financeiro.
+
+- O adapter OpenAI-compatible envia `thinking: {type: "disabled"}` somente
+  para `deepseek-v4.1-flash`, conforme a documentação do modelo. O teto de saída
+  e a reserva financeira permanecem em 2048 tokens; não há retry automático.
+- Um agente que responde vazio interrompe o fluxo com `AGENT_EMPTY_RESPONSE`.
+  O requestId permanece na etapa para não perder o recibo e o custo da chamada.
+- A interface distingue resultado ausente de falha financeira, inclusive para
+  respostas de execuções anteriores que vierem como `SUCCEEDED` sem texto.
+- Não exibir `reasoning_content` como resposta nem gravá-lo em logs ou banco.
+- Verificação restrita aos testes dos componentes alterados: adapter com HTTP
+  local simulado, executor com gateway falso e apresentação frontend.
+- Referência: https://api-docs.deepseek.com/guides/thinking_mode/

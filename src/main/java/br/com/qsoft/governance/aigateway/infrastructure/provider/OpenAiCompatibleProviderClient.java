@@ -100,6 +100,11 @@ public class OpenAiCompatibleProviderClient implements ProviderClient {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("model", call.externalModelName());
         if (call.maxOutputTokens() != null) body.put("max_tokens", call.maxOutputTokens());
+        // This model enables thinking by default. Keep the reserved output budget
+        // available for the final answer instead of an undisplayed reasoning trace.
+        if ("deepseek-v4.1-flash".equals(call.externalModelName())) {
+            body.put("thinking", Map.of("type", "disabled"));
+        }
         body.put("messages", call.messages().stream().map(message -> {
             Map<String, Object> map = new LinkedHashMap<>();
             map.put("role", message.role().toLowerCase(Locale.ROOT));

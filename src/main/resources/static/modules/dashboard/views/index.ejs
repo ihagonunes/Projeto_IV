@@ -5,7 +5,7 @@
 <% const spendingBudgetEnabled = typeof canManageSpending !== 'undefined' && canManageSpending; %>
 <% const spendingAlertEnabled = typeof canManageSpendingAlert !== 'undefined' && canManageSpendingAlert; %>
 <link rel="stylesheet" href="/public/css/pages/dashboard.css?v=20261019-session-actions">
-<link rel="stylesheet" href="/public/css/pages/dashboard-redesign.css?v=spi92-20261120-2">
+<link rel="stylesheet" href="/public/css/pages/dashboard-redesign.css?v=spi92-budget-chat-1">
 <%- contentFor("body") %>
 
 <a class="demo-skip" href="#dashboard-main">Pular para o conteúdo</a>
@@ -53,6 +53,9 @@
                 <h1><%= panel.title %></h1>
                 <p class="demo-muted"><%= panel.description %></p>
             </div>
+            <% if (typeof canAccessChat !== 'undefined' && canAccessChat) { %>
+            <a href="/chat" class="dashboard-chat-link"><i class="bi bi-chat-square-text" aria-hidden="true"></i><span>Abrir chat</span><span aria-hidden="true">↗</span></a>
+            <% } %>
         </header>
         <% if (spendingBudgetEnabled || spendingAlertEnabled) { %>
         <div class="dashboard-actions mb-3" aria-label="Configuração financeira"><button type="button" data-spending-open class="btn btn-outline-secondary"><%= spendingBudgetEnabled ? 'Definir orçamento e distribuição' : 'Definir alerta de gastos' %></button></div>
@@ -101,14 +104,23 @@
         <% } %>
         <% if (profile !== 'colaborador') { %>
         <section id="budget-notification" class="demo-panel p-3 mb-4" aria-labelledby="budget-notification-title" hidden>
-            <h2 id="budget-notification-title" class="h5">Orçamento do mês</h2>
+            <div class="budget-overview-header"><div><span class="budget-eyebrow">ACOMPANHAMENTO FINANCEIRO</span><h2 id="budget-notification-title" class="h5">Orçamento por departamento</h2></div><span id="budget-notification-period" class="budget-period"></span></div>
             <p id="budget-notification-message" role="status" aria-live="polite"></p>
+            <div class="budget-overview-stats" aria-label="Resumo dos departamentos">
+                <div><span>Departamentos</span><strong id="budget-notification-total">—</strong></div>
+                <div><span>Em alerta</span><strong id="budget-notification-alerts">—</strong></div>
+                <div><span>Sem orçamento</span><strong id="budget-notification-missing">—</strong></div>
+            </div>
             <details id="budget-notification-details" hidden>
                 <summary><i id="budget-notification-icon" class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
                     <span id="budget-notification-summary"></span>
                     <span id="budget-notification-count" class="badge text-bg-warning"></span>
                 </summary>
-                <ul id="budget-notification-items" class="mt-3 mb-0"></ul>
+                <div class="budget-table-scroll" role="region" aria-label="Orçamento dos departamentos" tabindex="0"><table class="budget-departments-table">
+                    <caption>Orçamento departamental operacional. A API não informa a moeda dos valores.</caption>
+                    <thead><tr><th scope="col">Departamento</th><th scope="col">Situação</th><th scope="col">Orçamento</th><th scope="col">Consumo</th><th scope="col">Saldo</th><th scope="col">Utilização</th></tr></thead>
+                    <tbody id="budget-notification-items"></tbody>
+                </table></div>
             </details>
             <button id="budget-notification-retry" type="button" class="btn btn-outline-secondary btn-sm" hidden>Tentar novamente</button>
         </section>
@@ -341,7 +353,7 @@
 <% if ((teamDashboard || profile === 'executivo') && typeof demoProfilesEnabled !== 'undefined' && demoProfilesEnabled) { %>
 <script src="/public/js/pages/dashboard-budget-demo.js?v=1"></script>
 <% } %>
-<script src="/public/js/pages/dashboard-budget-alerts.js?v=spi124-budget-values"></script>
+<script src="/public/js/pages/dashboard-budget-alerts.js?v=spi124-budget-table-1"></script>
 <script src="/public/js/pages/dashboard-budget-projection.js?v=spi92-20261120-2"></script>
 <% } %>
 <script src="/public/js/pages/dashboard-historical.js?v=spi92-leader"></script>

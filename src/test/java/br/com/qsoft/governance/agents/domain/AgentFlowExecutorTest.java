@@ -37,6 +37,35 @@ class AgentFlowExecutorTest {
     }
 
     @Test
+    void blankAnswerFailsFastPreservesTheReceiptAndDoesNotCallNextAgent() {
+        FlowGraph graph = graph(List.of(task("t"), agent("a", "policies"),
+            agent("b", "writing"), result("r")),
+            List.of(edge("t", "a"), edge("a", "b"), edge("b", "r")));
+        UUID requestId = UUID.randomUUID();
+        AtomicInteger calls = new AtomicInteger();
+        for (String empty : List.of("", " \n\t")) {
+            calls.set(0);
+            FlowExecutionResult result = executor.execute(graph, "Tarefa local",
+                Map.of("policies", "P", "writing", "W"), (key, system, input) -> {
+                    calls.incrementAndGet();
+                    return new AgentCompletion(requestId, empty);
+                }, LIMITS);
+
+            assertThat(result.status()).isEqualTo(ExecutionStatus.FAILED);
+            assertThat(result.errorCode()).isEqualTo("AGENT_EMPTY_RESPONSE");
+            assertThat(result.result()).isNull();
+            assertThat(calls.get()).isEqualTo(1);
+            assertThat(result.steps()).filteredOn(s -> s.nodeId().equals("a"))
+                .singleElement().satisfies(s -> {
+                    assertThat(s.status()).isEqualTo(ExecutionStepStatus.FAILED);
+                    assertThat(s.requestId()).isEqualTo(requestId);
+                });
+            assertThat(result.steps()).filteredOn(s -> List.of("b", "r").contains(s.nodeId()))
+                .extracting(FlowStepResult::status).containsOnly(ExecutionStepStatus.SKIPPED);
+        }
+    }
+
+    @Test
     void fanOutIsConcatenatedByMergeInStableEdgeOrder() {
         FlowGraph graph = graph(
             List.of(task("t"), agent("a", "policies"), agent("b", "writing"), merge("m"),

@@ -23,16 +23,23 @@
     function presentation(flow, view) {
         const states = { SUCCEEDED: "Concluído", FAILED: "Interrompido", TIMED_OUT: "Tempo excedido", SKIPPED: "Não executado", CANCELLED: "Cancelado" };
         const graph = flow?.graph?.nodes || [];
+        const hasResult = typeof view.result === "string" && view.result.trim().length > 0;
+        const completedWithoutText = view.status === "SUCCEEDED" && !hasResult;
+        const emptyResponse = view.errorCode === "AGENT_EMPTY_RESPONSE";
         return {
-            title: view.status === "SUCCEEDED" ? "Resultado do fluxo" : "O fluxo foi interrompido",
-            content: view.result || (view.status === "TIMED_OUT"
+            title: completedWithoutText ? "Fluxo concluído sem resposta" : view.status === "SUCCEEDED" ? "Resultado do fluxo" : "O fluxo foi interrompido",
+            content: hasResult ? view.result : completedWithoutText
+                ? "Os agentes concluíram a execução, mas nenhum texto de resultado foi recebido. Não houve uma nova tentativa automática."
+                : emptyResponse
+                ? "O modelo devolveu uma resposta vazia. O fluxo foi interrompido para não executar as próximas etapas. O consumo desta chamada pode ter sido registrado."
+                : (view.status === "TIMED_OUT"
                 ? "A execução ultrapassou o tempo disponível. Você pode tentar novamente quando quiser."
                 : "Não foi possível concluir a tarefa. Confira o orçamento de IA e a disponibilidade do modelo antes de tentar novamente."),
             steps: (view.steps || []).filter(s => s.nodeKind === "agent").map(s => ({
                 name: graph.find(n => n.id === s.nodeId)?.name || "Agente",
                 status: states[s.status] || "Em andamento", failed: ["FAILED", "TIMED_OUT"].includes(s.status)
             })),
-            succeeded: view.status === "SUCCEEDED"
+            succeeded: view.status === "SUCCEEDED" && hasResult
         };
     }
     return { createRunner, presentation };
